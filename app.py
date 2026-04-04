@@ -12,15 +12,12 @@ import os
 
 app = Flask(__name__)
 
-VERCEL_ENV = os.environ.get('VERCEL_ENV', 'development')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-elif VERCEL_ENV == 'production':
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///social.db'
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///social.db'
 
