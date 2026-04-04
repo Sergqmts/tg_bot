@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} - Блог{% endblock %}
+{% block content %}
+    <article class="post">
+        <h1>{{ post.title }}</h1>
+        <p class="date">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+        <hr>
+        <div class="content">{{ post.content }}</div>
+        <br>
+        <form action="{{ url_for('delete', post_id=post.id) }}" method="POST" onsubmit="return confirm('Удалить эту запись?')">
+            <button type="submit" class="btn btn-danger">Удалить</button>
+        </form>
+    </article>
+    <a href="{{ url_for('index') }}" class="btn">На главную</a>
+{% endblock %}

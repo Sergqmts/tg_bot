@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ user.username }} - Social{% endblock %}
+{% block content %}
+    <div class="card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {% if user.avatar != 'default.png' %}
+                    <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="">
+                {% else %}
+                    {{ user.username[0].upper() }}
+                {% endif %}
+            </div>
+            <h1>{{ user.username }}</h1>
+            {% if user.bio %}
+                <p style="color: #65676b; margin: 10px 0;">{{ user.bio }}</p>
+            {% endif %}
+            <p style="color: #65676b; font-size: 0.9em;">На сайте с {{ user.created_at.strftime('%d.%m.%Y') }}</p>
+            
+            <div class="profile-stats">
+                <div class="stat">
+                    <div class="stat-value">{{ user.posts.count() }}</div>
+                    <div class="stat-label">постов</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">{{ user.followers.count() }}</div>
+                    <div class="stat-label">подписчиков</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">{{ user.followed.count() }}</div>
+                    <div class="stat-label">подписок</div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                {% if current_user.is_authenticated and user != current_user %}
+                    <form method="POST" action="{{ url_for('follow' if not is_following else 'unfollow', username=user.username) }}">
+                        <button type="submit" class="btn btn-primary">
+                            {{ 'Подписаться' if not is_following else 'Отписаться' }}
+                        </button>
+                    </form>
+                    <a href="{{ url_for('conversation', username=user.username) }}" class="btn btn-secondary">Написать</a>
+                {% elif current_user.is_authenticated and user == current_user %}
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Редактировать профиль</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <h3 style="margin: 20px 0 15px;">Посты</h3>
+    {% for post in posts %}
+        <div class="card">
+            <div class="post-header">
+                <div class="avatar">
+                    {% if post.author.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
+                    {% else %}
+                        {{ post.author.username[0].upper() }}
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="{{ url_for('user_profile', username=post.author.username) }}" class="username">{{ post.author.username }}</a>
+                    <div class="post-time">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                </div>
+            </div>
+            {% if post.body %}
+                <div class="post-content">{{ post.body }}</div>
+            {% endif %}
+            
+            {% for m in post.media %}
+                <div class="post-media">
+                    {% if m.media_type == 'video' %}
+                        <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                    {% else %}
+                        <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div class="post-actions">
+                <form method="POST" action="{{ url_for('like', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-like {% if post.liked_by(current_user) %}liked{% endif %}">
+                        ❤️ {{ post.likes.count() }}
+                    </button>
+                </form>
+                <span class="btn btn-like">💬 {{ post.comments.count() }}</span>
+                {% if current_user.is_authenticated and post.author == current_user %}
+                    <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить пост?')" style="display:inline;">
+                        <button type="submit" class="btn btn-secondary">Удалить</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center; color: #65676b;">
+            Пока нет постов
+        </div>
+    {% endfor %}
+{% endblock %}

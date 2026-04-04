@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Регистрация - Social{% endblock %}
+{% block content %}
+    <div class="card" style="max-width: 400px; margin: 40px auto;">
+        <h2 style="text-align: center; margin-bottom: 20px;">Регистрация</h2>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.username.label }}
+                {{ form.username() }}
+                {% for error in form.username.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                {{ form.email.label }}
+                {{ form.email() }}
+                {% for error in form.email.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                {{ form.password.label }}
+                {{ form.password() }}
+                {% for error in form.password.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                {{ form.confirm.label }}
+                {{ form.confirm() }}
+                {% for error in form.confirm.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+        </form>
+        <p style="text-align: center; margin-top: 15px; color: #65676b;">
+            Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a>
+        </p>
+    </div>
+{% endblock %}

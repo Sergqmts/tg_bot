@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Новый пост - Social{% endblock %}
+{% block content %}
+    <div class="card">
+        <h2 style="margin-bottom: 15px;">Новый пост</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Текст (необязательно)</label>
+                <textarea name="body" placeholder="Что у вас нового?"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Фото или видео</label>
+                <input type="file" name="media" accept="image/*,video/*">
+                <small style="color: #65676b; display: block; margin-top: 5px;">PNG, JPG, GIF, MP4, WEBM, MOV (макс. 50MB)</small>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn btn-primary">Опубликовать</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

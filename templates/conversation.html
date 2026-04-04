@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ other_user.username }} - Сообщения - Social{% endblock %}
+{% block content %}
+    <div class="card">
+        <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+            <a href="{{ url_for('messages') }}" class="btn btn-secondary" style="margin-right: 15px;">←</a>
+            <div class="avatar" style="margin-right: 10px;">{{ other_user.username[0].upper() }}</div>
+            <a href="{{ url_for('user_profile', username=other_user.username) }}" class="username">{{ other_user.username }}</a>
+        </div>
+        
+        <div class="chat" id="chat">
+            {% for msg in messages %}
+                <div class="chat-message {% if msg.sender == current_user %}sent{% else %}received{% endif %}">
+                    <div>{{ msg.body }}</div>
+                    <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
+                </div>
+            {% else %}
+                <div style="text-align: center; color: #65676b; padding: 20px;">
+                    Начните общение с {{ other_user.username }}
+                </div>
+            {% endfor %}
+        </div>
+        
+        <form method="POST" action="{{ url_for('send_message', username=other_user.username) }}">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" name="body" placeholder="Напишите сообщение..." required autofocus>
+                <button type="submit" class="btn btn-primary">Отправить</button>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
+    </script>
+{% endblock %}

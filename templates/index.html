@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Лента - Social{% endblock %}
+{% block content %}
+    {% if current_user.is_authenticated %}
+        <div class="card">
+            <form method="POST" action="{{ url_for('create') }}" enctype="multipart/form-data">
+                <div class="form-group">
+                    <textarea name="body" placeholder="Что у вас нового?"></textarea>
+                </div>
+                <div class="form-group">
+                    <input type="file" name="media" accept="image/*,video/*">
+                </div>
+                <button type="submit" class="btn btn-primary">Опубликовать</button>
+            </form>
+        </div>
+    {% endif %}
+    
+    {% for post in posts %}
+        <div class="card">
+            <div class="post-header">
+                <div class="avatar">
+                    {% if post.author.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
+                    {% else %}
+                        {{ post.author.username[0].upper() }}
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="{{ url_for('user_profile', username=post.author.username) }}" class="username">{{ post.author.username }}</a>
+                    <div class="post-time">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                </div>
+            </div>
+            {% if post.body %}
+                <div class="post-content">{{ post.body }}</div>
+            {% endif %}
+            
+            {% for m in post.media %}
+                <div class="post-media">
+                    {% if m.media_type == 'video' %}
+                        <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                    {% else %}
+                        <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div class="post-actions">
+                <form method="POST" action="{{ url_for('like', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-like {% if post.liked_by(current_user) %}liked{% endif %}">
+                        ❤️ {{ post.likes.count() }}
+                    </button>
+                </form>
+                <span class="btn btn-like">💬 {{ post.comments.count() }}</span>
+                {% if current_user.is_authenticated and post.author == current_user %}
+                    <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить пост?')" style="display:inline;">
+                        <button type="submit" class="btn btn-secondary">Удалить</button>
+                    </form>
+                {% endif %}
+            </div>
+            
+            <div class="comments">
+                {% for comment in post.comments.order_by('created_at').all()[:3] %}
+                    <div class="comment">
+                        <div class="avatar" style="width:30px;height:30px;font-size:0.8em;">{{ comment.author.username[0].upper() }}</div>
+                        <div>
+                            <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="username" style="font-size:0.9em;">{{ comment.author.username }}</a>
+                            <div style="font-size:0.9em;">{{ comment.body }}</div>
+                        </div>
+                        {% if current_user.is_authenticated and comment.author == current_user %}
+                            <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" style="margin-left:auto;">
+                                <button type="submit" class="btn btn-secondary" style="padding:4px 8px;font-size:0.8em;">✕</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                
+                {% if post.comments.count() > 3 %}
+                    <div style="text-align:center;padding:5px;color:#65676b;font-size:0.85em;">
+                        Показано {{ post.comments.count() - 3 }} ещё комментариев
+                    </div>
+                {% endif %}
+                
+                {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form">
+                        <input type="text" name="body" placeholder="Добавить комментарий..." required>
+                        <button type="submit" class="btn btn-primary" style="padding:8px 12px;">→</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center; color: #65676b;">
+            {% if current_user.is_authenticated %}
+                Пока нет постов. Подпишитесь на кого-нибудь или создайте первый пост!
+            {% else %}
+                <a href="{{ url_for('login') }}">Войдите</a> или <a href="{{ url_for('register') }}">зарегистрируйтесь</a> чтобы видеть посты
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endblock %}
