@@ -7,10 +7,12 @@
 ```
 /Users/a1234/first_prod/tg_bot/
 ├── app.py              # Основное приложение Flask
-├── social.db           # База данных SQLite
+├── vercel.json         # Конфигурация Vercel
 ├── requirements.txt    # Зависимости
+├── api/
+│   └── index.py       # Vercel serverless handler
 ├── static/
-│   └── uploads/        # Загруженные медиафайлы
+│   └── uploads/       # Загруженные медиафайлы
 └── templates/
     ├── base.html       # Базовый шаблон
     ├── index.html      # Лента постов
@@ -28,6 +30,22 @@
     ├── community_post.html  # Пост в сообществе
     └── community_members.html # Участники сообщества
 ```
+
+## Деплой на Vercel
+
+Для деплоя на Vercel:
+
+```bash
+npm i -g vercel
+vercel
+```
+
+**Важно:** Для production используйте облачную базу данных (PostgreSQL, MySQL) вместо SQLite, так как SQLite не работает в serverless окружении.
+
+Переменные окружения для Vercel:
+- `DATABASE_URL` - URL облачной БД
+- `SECRET_KEY` - секретный ключ для сессий
+- `VERCEL_ENV=production` - для production режима
 
 ## Установка и запуск
 ```bash

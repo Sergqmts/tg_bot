@@ -1,19 +1,30 @@
 from flask import Flask, render_template, redirect, url_for, flash, request, abort, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, TextAreaField, SubmitField, PasswordField, BooleanField, SelectField
+from wtforms import StringField, TextAreaField, SubmitField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from datetime import datetime
 import os
 
 app = Flask(__name__)
+
+VERCEL_ENV = os.environ.get('VERCEL_ENV', 'development')
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+elif VERCEL_ENV == 'production':
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///social.db'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///social.db'
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///social.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
@@ -22,7 +33,6 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите для доступа'
@@ -117,10 +127,6 @@ class User(UserMixin, db.Model):
     def is_admin(self, community):
         member = CommunityMember.query.filter_by(user=self, community=community).first()
         return member and member.role in ('admin', 'creator')
-
-    def get_role(self, community):
-        member = CommunityMember.query.filter_by(user=self, community=community).first()
-        return member.role if member else None
 
 
 class Post(db.Model):
@@ -229,10 +235,6 @@ class PostForm(FlaskForm):
 class CommentForm(FlaskForm):
     body = StringField('Комментарий', validators=[DataRequired()])
     submit = SubmitField('Отправить')
-
-
-class MessageForm(FlaskForm):
-    body = TextAreaField('Сообщение', validators=[DataRequired()])
 
 
 class EditProfileForm(FlaskForm):
@@ -356,7 +358,6 @@ def add_comment(post_id):
         comment = Comment(body=form.body.data, author=current_user, post=post)
         db.session.add(comment)
         db.session.commit()
-        flash('Комментарий добавлен')
     return redirect(request.referrer or url_for('index'))
 
 
@@ -368,7 +369,6 @@ def delete_comment(comment_id):
         abort(403)
     db.session.delete(comment)
     db.session.commit()
-    flash('Комментарий удалён')
     return redirect(request.referrer or url_for('index'))
 
 
@@ -487,24 +487,6 @@ def conversation(username):
     return render_template('conversation.html', other_user=other_user, messages=messages)
 
 
-@app.route('/messages/send/<username>', methods=['POST'])
-@login_required
-def send_message(username):
-    recipient = User.query.filter_by(username=username).first_or_404()
-    body = request.form.get('body')
-    if body:
-        msg = Message(body=body, sender=current_user, recipient=recipient)
-        db.session.add(msg)
-        db.session.commit()
-        flash('Сообщение отправлено')
-    return redirect(url_for('conversation', username=username))
-
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-
 @app.route('/communities')
 def communities():
     all_communities = Community.query.order_by(Community.created_at.desc()).all()
@@ -619,17 +601,19 @@ def delete_community(slug):
     comm = Community.query.filter_by(slug=slug).first_or_404()
     if comm.creator != current_user:
         abort(403)
-    
-    for post in comm.posts:
-        for media in post.media:
-            try:
-                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], media.filename))
-            except: pass
-    
     db.session.delete(comm)
     db.session.commit()
     flash('Сообщество удалено')
     return redirect(url_for('communities'))
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+with app.app_context():
+    db.create_all()
 
 
 if __name__ == '__main__':
