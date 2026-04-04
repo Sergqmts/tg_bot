@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ community.name }} - Участники{% endblock %}
+{% block content %}
+    <div class="card" style="margin-bottom: 20px;">
+        <a href="{{ url_for('community', slug=community.slug) }}" class="btn btn-secondary" style="margin-bottom: 15px;">← Назад</a>
+        <h2 style="margin-bottom: 5px;">{{ community.name }}</h2>
+        <p style="color: #65676b;">{{ members|length }} участников</p>
+    </div>
+    
+    <div class="card" style="padding: 0;">
+        {% for member in members %}
+            <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee;">
+                <div class="avatar" style="margin-right: 10px;">
+                    {% if member.user.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=member.user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        {{ member.user.username[0].upper() }}
+                    {% endif %}
+                </div>
+                <div style="flex: 1;">
+                    <a href="{{ url_for('user_profile', username=member.user.username) }}" class="username">{{ member.user.username }}</a>
+                    <div style="color: #65676b; font-size: 0.85em;">
+                        {% if member.role == 'creator' %}Создатель{% elif member.role == 'admin' %}Админ{% else %}Участник{% endif %}
+                    </div>
+                </div>
+                <span style="color: #65676b; font-size: 0.85em;">{{ member.created_at.strftime('%d.%m.%Y') }}</span>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

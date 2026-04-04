@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ community.name }} - Новая запись{% endblock %}
+{% block content %}
+    <div class="card">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+            <a href="{{ url_for('community', slug=community.slug) }}" class="btn btn-secondary">←</a>
+            <span>Запись в <strong>{{ community.name }}</strong></span>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.body.label }}
+                {{ form.body() }}
+            </div>
+            <div class="form-group">
+                {{ form.media.label }}
+                {{ form.media() }}
+                <small style="color: #65676b;">PNG, JPG, GIF, MP4, WEBM, MOV (макс. 50MB)</small>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('community', slug=community.slug) }}" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

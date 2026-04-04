@@ -101,18 +101,66 @@ class User(UserMixin, db.Model):
     def unread_messages(self):
         return self.messages_received.filter_by(read=False).count()
 
+    def join_community(self, community):
+        if not self.is_member(community):
+            member = CommunityMember(user=self, community=community)
+            db.session.add(member)
+
+    def leave_community(self, community):
+        member = CommunityMember.query.filter_by(user=self, community=community).first()
+        if member:
+            db.session.delete(member)
+
+    def is_member(self, community):
+        return CommunityMember.query.filter_by(user=self, community=community).first() is not None
+
+    def is_admin(self, community):
+        member = CommunityMember.query.filter_by(user=self, community=community).first()
+        return member and member.role in ('admin', 'creator')
+
+    def get_role(self, community):
+        member = CommunityMember.query.filter_by(user=self, community=community).first()
+        return member.role if member else None
+
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=True)
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     media = db.relationship('Media', backref='post', lazy='dynamic', cascade='all, delete-orphan')
 
     def liked_by(self, user):
         return self.likes.filter_by(user_id=user.id).first() is not None
+
+
+class Community(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    slug = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    image = db.Column(db.String(200), default='community_default.png')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    creator = db.relationship('User', backref='created_communities')
+    posts = db.relationship('Post', backref='community', lazy='dynamic', cascade='all, delete-orphan')
+    members = db.relationship('CommunityMember', backref='community', lazy='dynamic', cascade='all, delete-orphan')
+
+
+class CommunityMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=False)
+    role = db.Column(db.String(20), default='member')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='community_memberships')
+    
+    __table_args__ = (db.UniqueConstraint('user_id', 'community_id', name='unique_membership'),)
 
 
 class Media(db.Model):
@@ -192,6 +240,26 @@ class EditProfileForm(FlaskForm):
     bio = StringField('О себе', validators=[Length(max=200)])
     avatar = FileField('Аватар', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
     submit = SubmitField('Сохранить')
+
+
+class CommunityForm(FlaskForm):
+    name = StringField('Название', validators=[DataRequired(), Length(min=3, max=50)])
+    description = TextAreaField('Описание', validators=[Length(max=500)])
+    image = FileField('Обложка', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
+    submit = SubmitField('Создать')
+
+    def validate_name(self, name):
+        slug = name.data.lower().replace(' ', '-').replace('_', '-')
+        slug = ''.join(c for c in slug if c.isalnum() or c == '-')
+        community = Community.query.filter_by(slug=slug).first()
+        if community:
+            raise ValidationError('Сообщество с таким названием уже существует')
+
+
+class CommunityPostForm(FlaskForm):
+    body = TextAreaField('Текст записи')
+    media = FileField('Фото/Видео', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'mov'], 'Только изображения и видео!')])
+    submit = SubmitField('Опубликовать')
 
 
 @app.route('/')
@@ -435,6 +503,133 @@ def send_message(username):
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+@app.route('/communities')
+def communities():
+    all_communities = Community.query.order_by(Community.created_at.desc()).all()
+    return render_template('communities.html', communities=all_communities)
+
+
+@app.route('/communities/create', methods=['GET', 'POST'])
+@login_required
+def create_community():
+    form = CommunityForm()
+    if form.validate_on_submit():
+        slug = form.name.data.lower().replace(' ', '-').replace('_', '-')
+        slug = ''.join(c for c in slug if c.isalnum() or c == '-')
+        
+        community = Community(
+            name=form.name.data,
+            slug=slug,
+            description=form.description.data,
+            creator=current_user
+        )
+        
+        if form.image.data:
+            file = form.image.data
+            filename = secure_filename(f"community_{slug}.{file.filename.rsplit('.', 1)[1].lower()}")
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            community.image = filename
+        
+        db.session.add(community)
+        db.session.flush()
+        
+        member = CommunityMember(user=current_user, community=community, role='creator')
+        db.session.add(member)
+        
+        db.session.commit()
+        flash('Сообщество создано!')
+        return redirect(url_for('community', slug=slug))
+    return render_template('create_community.html', form=form)
+
+
+@app.route('/community/<slug>')
+def community(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    is_member = current_user.is_authenticated and current_user.is_member(comm)
+    is_admin = current_user.is_authenticated and current_user.is_admin(comm)
+    posts = comm.posts.order_by(Post.created_at.desc()).all()
+    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin)
+
+
+@app.route('/community/<slug>/join', methods=['POST'])
+@login_required
+def join_community(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    if not current_user.is_member(comm):
+        current_user.join_community(comm)
+        db.session.commit()
+        flash(f'Вы вступили в сообщество "{comm.name}"')
+    return redirect(url_for('community', slug=slug))
+
+
+@app.route('/community/<slug>/leave', methods=['POST'])
+@login_required
+def leave_community(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    if current_user.is_admin(comm) and comm.creator == current_user:
+        flash('Создатель не может покинуть сообщество')
+    else:
+        current_user.leave_community(comm)
+        db.session.commit()
+        flash(f'Вы покинули сообщество "{comm.name}"')
+    return redirect(url_for('community', slug=slug))
+
+
+@app.route('/community/<slug>/post', methods=['GET', 'POST'])
+@login_required
+def community_post(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    if not current_user.is_member(comm):
+        flash('Вы должны быть участником сообщества')
+        return redirect(url_for('community', slug=slug))
+    
+    form = CommunityPostForm()
+    if form.validate_on_submit():
+        post = Post(body=form.body.data, author=current_user, community=comm)
+        db.session.add(post)
+        db.session.flush()
+        
+        if form.media.data:
+            file = form.media.data
+            filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            ext = filename.rsplit('.', 1)[1].lower()
+            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+            media = Media(filename=filename, media_type=media_type, post=post)
+            db.session.add(media)
+        
+        db.session.commit()
+        flash('Запись опубликована!')
+        return redirect(url_for('community', slug=slug))
+    return render_template('community_post.html', form=form, community=comm)
+
+
+@app.route('/community/<slug>/members')
+def community_members(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    members = comm.members.order_by(CommunityMember.created_at.desc()).all()
+    return render_template('community_members.html', community=comm, members=members)
+
+
+@app.route('/community/<slug>/delete', methods=['POST'])
+@login_required
+def delete_community(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    if comm.creator != current_user:
+        abort(403)
+    
+    for post in comm.posts:
+        for media in post.media:
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], media.filename))
+            except: pass
+    
+    db.session.delete(comm)
+    db.session.commit()
+    flash('Сообщество удалено')
+    return redirect(url_for('communities'))
 
 
 if __name__ == '__main__':

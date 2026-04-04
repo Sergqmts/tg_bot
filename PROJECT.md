@@ -21,7 +21,12 @@
     ├── edit_profile.html # Редактирование профиля
     ├── messages.html   # Список диалогов
     ├── conversation.html # Чат с пользователем
-    └── explore.html    # Поиск пользователей
+    ├── explore.html    # Поиск пользователей
+    ├── communities.html    # Список сообществ
+    ├── community.html      # Страница сообщества
+    ├── create_community.html # Создание сообщества
+    ├── community_post.html  # Пост в сообществе
+    └── community_members.html # Участники сообщества
 ```
 
 ## Установка и запуск
@@ -68,12 +73,20 @@ python app.py
 - Отметка непрочитанных сообщений
 - Бейдж с количеством непрочитанных в навигации
 
+### Сообщества
+- Создание сообществ с названием, описанием и обложкой
+- Вступление/выход из сообществ
+- Роли: создатель, участник
+- Посты внутри сообществ
+- Список участников
+- Удаление сообщества (только создатель)
+
 ## Модели базы данных
 
 ### User
 - id, username, email, password_hash, bio, avatar, created_at
-- Отношения: posts, likes, comments, messages_sent, messages_received
-- Методы: follow, unfollow, like_post, unlike_post
+- Отношения: posts, likes, comments, messages_sent, messages_received, community_memberships, created_communities
+- Методы: follow, unfollow, like_post, unlike_post, join_community, leave_community, is_member, is_admin, get_role
 
 ### Post
 - id, body, created_at, user_id
@@ -91,6 +104,15 @@ python app.py
 
 ### Message
 - id, body, created_at, read, sender_id, recipient_id
+
+### Community
+- id, name, slug, description, image, created_at, creator_id
+- Отношения: creator, posts, members
+
+### CommunityMember
+- id, user_id, community_id, role, created_at
+- role: 'creator', 'admin', 'member'
+- unique constraint на (user_id, community_id)
 
 ## Маршруты
 
@@ -112,6 +134,14 @@ python app.py
 | `/explore` | GET | Найти людей |
 | `/messages` | GET | Список диалогов |
 | `/messages/<username>` | GET/POST | Чат |
+| `/communities` | GET | Список сообществ |
+| `/communities/create` | GET/POST | Создать сообщество |
+| `/community/<slug>` | GET | Страница сообщества |
+| `/community/<slug>/join` | POST | Вступить |
+| `/community/<slug>/leave` | POST | Покинуть |
+| `/community/<slug>/post` | GET/POST | Пост в сообществе |
+| `/community/<slug>/members` | GET | Участники |
+| `/community/<slug>/delete` | POST | Удалить сообщество |
 | `/uploads/<filename>` | GET | Получить медиафайл |
 
 ## Следующие шаги (TODO)
