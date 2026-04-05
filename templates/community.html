@@ -41,7 +41,7 @@
             {% if is_admin %}
                 <a href="{{ url_for('community_post', slug=community.slug) }}" class="btn btn-primary">Написать</a>
             {% endif %}
-            {% if community.creator == current_user %}
+            {% if current_user.is_authenticated and community.creator == current_user %}
                 <form method="POST" action="{{ url_for('delete_community', slug=community.slug) }}" onsubmit="return confirm('Удалить сообщество?')" style="margin-left: auto;">
                     <button type="submit" class="btn btn-danger">Удалить</button>
                 </form>
