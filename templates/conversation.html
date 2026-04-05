@@ -10,7 +10,7 @@
         
         <div class="chat" id="chat">
             {% for msg in messages %}
-                <div class="chat-message {% if msg.sender == current_user %}sent{% else %}received{% endif %}">
+                <div class="chat-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
                     <div>{{ msg.body }}</div>
                     <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
                 </div>
@@ -21,7 +21,7 @@
             {% endfor %}
         </div>
         
-        <form method="POST" action="{{ url_for('send_message', username=other_user.username) }}">
+        <form method="POST" action="">
             <div style="display: flex; gap: 10px;">
                 <input type="text" name="body" placeholder="Напишите сообщение..." required autofocus>
                 <button type="submit" class="btn btn-primary">Отправить</button>
