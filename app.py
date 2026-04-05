@@ -269,11 +269,11 @@ class CommunityPostForm(FlaskForm):
 
 @app.route('/')
 def index():
-    if current_user.is_authenticated:
-        followed_ids = [f.id for f in current_user.followed] + [current_user.id]
-        posts = Post.query.filter(Post.user_id.in_(followed_ids)).order_by(Post.created_at.desc()).all()
-    else:
+    try:
         posts = Post.query.order_by(Post.created_at.desc()).all()
+    except Exception as e:
+        app.logger.error(f"DB Error: {e}")
+        posts = []
     return render_template('index.html', posts=posts)
 
 
