@@ -88,11 +88,15 @@
             {% endfor %}
             
             <div class="post-actions">
+                {% if current_user.is_authenticated %}
                 <form method="POST" action="{{ url_for('like', post_id=post.id) }}" style="display:inline;">
                     <button type="submit" class="btn btn-like {% if post.liked_by(current_user) %}liked{% endif %}">
                         ❤️ {{ post.likes.count() }}
                     </button>
                 </form>
+                {% else %}
+                <span class="btn btn-like">❤️ {{ post.likes.count() }}</span>
+                {% endif %}
                 <span class="btn btn-like">💬 {{ post.comments.count() }}</span>
                 {% if current_user.is_authenticated and post.author == current_user %}
                     <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить?')" style="display:inline;">
