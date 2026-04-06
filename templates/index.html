@@ -4,7 +4,6 @@
     {% if current_user.is_authenticated %}
         <div class="card">
             <form method="POST" action="{{ url_for('create') }}" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <textarea name="body" placeholder="Что у вас нового?"></textarea>
                 </div>
@@ -89,7 +88,6 @@
                 
                 {% if current_user.is_authenticated %}
                     <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="text" name="body" placeholder="Добавить комментарий..." required>
                         <button type="submit" class="btn btn-primary" style="padding:8px 12px;">→</button>
                     </form>

@@ -22,7 +22,6 @@
         </div>
         
         <form method="POST" action="">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div style="display: flex; gap: 10px;">
                 <input type="text" name="body" placeholder="Напишите сообщение..." required autofocus>
                 <button type="submit" class="btn btn-primary">Отправить</button>
