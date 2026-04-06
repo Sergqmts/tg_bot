@@ -29,12 +29,10 @@
             {% if current_user.is_authenticated %}
                 {% if is_member %}
                     <form method="POST" action="{{ url_for('leave_community', slug=community.slug) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-secondary">Покинуть</button>
                     </form>
                 {% else %}
                     <form method="POST" action="{{ url_for('join_community', slug=community.slug) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary">Вступить</button>
                     </form>
                 {% endif %}
@@ -45,7 +43,6 @@
             {% endif %}
             {% if current_user.is_authenticated and community.creator == current_user %}
                 <form method="POST" action="{{ url_for('delete_community', slug=community.slug) }}" onsubmit="return confirm('Удалить сообщество?')" style="margin-left: auto;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger">Удалить</button>
                 </form>
             {% endif %}
