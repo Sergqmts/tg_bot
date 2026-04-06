@@ -366,11 +366,16 @@ def like(post_id):
 @login_required
 def add_comment(post_id):
     post = Post.query.get_or_404(post_id)
-    form = CommentForm()
-    if form.validate_on_submit():
-        comment = Comment(body=form.body.data, author=current_user, post=post)
-        db.session.add(comment)
-        db.session.commit()
+    body = request.form.get('body', '').strip()
+    if body:
+        try:
+            comment = Comment(body=body, author=current_user, post=post)
+            db.session.add(comment)
+            db.session.commit()
+            app.logger.info(f"Comment added to post {post_id}")
+        except Exception as e:
+            app.logger.error(f"Comment error: {e}")
+            db.session.rollback()
     return redirect(request.referrer or url_for('index'))
 
 
