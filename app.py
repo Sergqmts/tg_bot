@@ -273,6 +273,7 @@ class CommunityPostForm(FlaskForm):
 def index():
     try:
         posts = Post.query.order_by(Post.created_at.desc()).all()
+        app.logger.info(f"Found {len(posts)} posts")
     except Exception as e:
         app.logger.error(f"DB Error: {e}")
         posts = []
