@@ -321,23 +321,29 @@ def logout():
 def create():
     form = PostForm()
     if form.validate_on_submit():
-        post = Post(body=form.body.data, author=current_user)
-        db.session.add(post)
-        db.session.flush()
-        
-        if form.media.data:
-            file = form.media.data
-            filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        try:
+            post = Post(body=form.body.data, author=current_user)
+            db.session.add(post)
+            db.session.flush()
             
-            ext = filename.rsplit('.', 1)[1].lower()
-            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+            if form.media.data:
+                file = form.media.data
+                filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                
+                ext = filename.rsplit('.', 1)[1].lower()
+                media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                
+                media = Media(filename=filename, media_type=media_type, post=post)
+                db.session.add(media)
             
-            media = Media(filename=filename, media_type=media_type, post=post)
-            db.session.add(media)
-        
-        db.session.commit()
-        flash('Пост опубликован!')
+            db.session.commit()
+            app.logger.info(f"Post created: {post.id} by user {current_user.id}")
+            flash('Пост опубликован!')
+        except Exception as e:
+            app.logger.error(f"Post creation error: {e}")
+            db.session.rollback()
+            flash(f'Ошибка: {e}')
         return redirect(url_for('index'))
     return render_template('create.html', form=form)
 
