@@ -320,23 +320,24 @@ def logout():
 @app.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():
-    form = PostForm()
-    if form.validate_on_submit():
+    if request.method == 'POST':
         try:
-            post = Post(body=form.body.data, author=current_user)
+            body = request.form.get('body', '').strip()
+            post = Post(body=body, author=current_user)
             db.session.add(post)
             db.session.flush()
             
-            if form.media.data:
-                file = form.media.data
-                filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                
-                ext = filename.rsplit('.', 1)[1].lower()
-                media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                
-                media = Media(filename=filename, media_type=media_type, post=post)
-                db.session.add(media)
+            if 'media' in request.files:
+                file = request.files['media']
+                if file.filename:
+                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    
+                    ext = filename.rsplit('.', 1)[1].lower()
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                    
+                    media = Media(filename=filename, media_type=media_type, post=post)
+                    db.session.add(media)
             
             db.session.commit()
             app.logger.info(f"Post created: {post.id} by user {current_user.id}")
@@ -346,7 +347,7 @@ def create():
             db.session.rollback()
             flash(f'Ошибка: {e}')
         return redirect(url_for('index'))
-    return render_template('create.html', form=form)
+    return render_template('create.html')
 
 
 @app.route('/post/<int:post_id>/like', methods=['POST'])
