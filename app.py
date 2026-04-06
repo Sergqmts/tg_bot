@@ -365,17 +365,21 @@ def like(post_id):
 @app.route('/post/<int:post_id>/comment', methods=['POST'])
 @login_required
 def add_comment(post_id):
+    app.logger.info(f"Adding comment to post {post_id} by user {current_user.id}")
     post = Post.query.get_or_404(post_id)
     body = request.form.get('body', '').strip()
+    app.logger.info(f"Comment body: {body}")
     if body:
         try:
             comment = Comment(body=body, author=current_user, post=post)
             db.session.add(comment)
             db.session.commit()
-            app.logger.info(f"Comment added to post {post_id}")
+            app.logger.info(f"Comment added successfully")
         except Exception as e:
             app.logger.error(f"Comment error: {e}")
             db.session.rollback()
+    else:
+        app.logger.warning("Empty comment body")
     return redirect(request.referrer or url_for('index'))
 
 
