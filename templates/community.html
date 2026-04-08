@@ -106,7 +106,7 @@
             </div>
             
             <div class="comments">
-                {% for comment in post.comments.order_by('created_at').all()[:3] %}
+                {% for comment in post.comments.order_by('created_at').all()[:1] %}
                     <div class="comment">
                         <div class="avatar" style="width:30px;height:30px;font-size:0.8em;">{{ comment.author.username[0].upper() }}</div>
                         <div>
@@ -115,6 +115,23 @@
                         </div>
                     </div>
                 {% endfor %}
+                
+                {% if post.comments.count() > 1 %}
+                    <div onclick="this.style.display='none'; document.getElementById('all-comments-comm-{{ post.id }}').style.display='block';" style="text-align:center;padding:5px;color:#65676b;font-size:0.85em;cursor:pointer;">
+                        Показать ещё {{ post.comments.count() - 1 }} комментариев
+                    </div>
+                    <div id="all-comments-comm-{{ post.id }}" style="display:none;">
+                        {% for comment in post.comments.order_by('created_at').all()[1:] %}
+                            <div class="comment">
+                                <div class="avatar" style="width:30px;height:30px;font-size:0.8em;">{{ comment.author.username[0].upper() }}</div>
+                                <div>
+                                    <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="username" style="font-size:0.9em;">{{ comment.author.username }}</a>
+                                    <div style="font-size:0.9em;">{{ comment.body }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
                 
                 {% if current_user.is_authenticated %}
                     <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form">
