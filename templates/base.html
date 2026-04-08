@@ -10,9 +10,22 @@
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         header { background: #fff; border-bottom: 1px solid #ddd; padding: 10px 0; position: sticky; top: 0; z-index: 100; }
         header .container { display: flex; justify-content: space-between; align-items: center; max-width: 900px; }
-        nav a { margin-left: 20px; text-decoration: none; color: #1c1e21; font-weight: 600; }
+        nav a { text-decoration: none; color: #1c1e21; font-weight: 600; }
         nav a:hover { color: #1877f2; }
         nav .brand { font-size: 1.4em; color: #1877f2; }
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+        .profile-link { display: flex; align-items: center; gap: 8px; }
+        .profile-icon { width: 36px; height: 36px; border-radius: 50%; background: #1877f2; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; overflow: hidden; }
+        .profile-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .menu-btn { padding: 8px 15px; background: #e4e6eb; border-radius: 20px; cursor: pointer; font-size: 0.9em; border: none; }
+        .menu-btn:hover { background: #d8dadf; }
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; right: 0; background: #fff; min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; margin-top: 5px; }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown-content a { display: block; padding: 12px 20px; border-bottom: 1px solid #eee; }
+        .dropdown-content a:last-child { border-bottom: none; }
+        .dropdown-content a:hover { background: #f5f5f5; color: #1877f2; }
+        .badge { background: #ff4444; color: #fff; border-radius: 50%; padding: 2px 6px; font-size: 0.7em; margin-left: 5px; }
         .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); padding: 15px; margin-bottom: 15px; }
         .post-header { display: flex; align-items: center; margin-bottom: 10px; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; background: #ddd; margin-right: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; background: #1877f2; overflow: hidden; }
@@ -77,16 +90,27 @@
             <a href="{{ url_for('index') }}" class="brand">Social</a>
             <nav>
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('communities') }}">Сообщества</a>
-                    <a href="{{ url_for('messages') }}">Сообщения{% if current_user.unread_messages() > 0 %}<span class="badge">{{ current_user.unread_messages() }}</span>{% endif %}</a>
-                    <a href="{{ url_for('user_profile', username=current_user.username) }}">{{ current_user.username }}</a>
-                    <a href="{{ url_for('create') }}">Новый пост</a>
-                    <a href="{{ url_for('explore') }}">Люди</a>
-                    <a href="{{ url_for('logout') }}">Выйти</a>
+                    <div class="nav-right">
+                        <a href="{{ url_for('user_profile', username=current_user.username) }}" class="profile-link">
+                            <div class="profile-icon">{{ current_user.username[0].upper() }}</div>
+                        </a>
+                        <div class="dropdown">
+                            <button class="menu-btn">☰ Меню</button>
+                            <div class="dropdown-content">
+                                <a href="{{ url_for('create') }}">📝 Новый пост</a>
+                                <a href="{{ url_for('explore') }}">👥 Люди</a>
+                                <a href="{{ url_for('communities') }}">🏠 Сообщества</a>
+                                <a href="{{ url_for('messages') }}">💬 Сообщения{% if current_user.unread_messages() > 0 %}<span class="badge">{{ current_user.unread_messages() }}</span>{% endif %}</a>
+                                <a href="{{ url_for('logout') }}">🚪 Выйти</a>
+                            </div>
+                        </div>
+                    </div>
                 {% else %}
-                    <a href="{{ url_for('communities') }}">Сообщества</a>
-                    <a href="{{ url_for('login') }}">Войти</a>
-                    <a href="{{ url_for('register') }}">Регистрация</a>
+                    <div class="nav-right">
+                        <a href="{{ url_for('communities') }}">Сообщества</a>
+                        <a href="{{ url_for('login') }}">Войти</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 8px 15px; border-radius: 20px;">Регистрация</a>
+                    </div>
                 {% endif %}
             </nav>
         </div>
