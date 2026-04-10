@@ -329,7 +329,7 @@ class CommentForm(FlaskForm):
 class EditProfileForm(FlaskForm):
     username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=3, max=50)])
     bio = StringField('О себе', validators=[Length(max=200)])
-    avatar = FileField('Аватар', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')]
+    avatar = FileField('Аватар', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
     location = StringField('Местоположение', validators=[Length(max=100)])
     website = StringField('Веб-сайт', validators=[Length(max=200)])
     birthday = StringField('Дата рождения (ДД.ММ.ГГГГ)')
