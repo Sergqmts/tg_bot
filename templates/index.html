@@ -19,7 +19,9 @@
         <div class="card">
             <div class="post-header">
                 <div class="avatar">
-                    {% if post.author.avatar != 'default.png' %}
+                    {% if post.author.avatar_url %}
+                        <img src="{{ post.author.avatar_url }}" alt="">
+                    {% elif post.author.avatar != 'default.png' %}
                         <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
                     {% else %}
                         {{ post.author.username[0].upper() }}
@@ -36,10 +38,18 @@
             
             {% for m in post.media %}
                 <div class="post-media">
-                    {% if m.media_type == 'video' %}
-                        <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                    {% if m.cloudinary_url %}
+                        {% if m.media_type == 'video' %}
+                            <video controls><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+                        {% else %}
+                            <img src="{{ m.cloudinary_url }}" alt="Медиа">
+                        {% endif %}
                     {% else %}
-                        <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                        {% if m.media_type == 'video' %}
+                            <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                        {% else %}
+                            <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                        {% endif %}
                     {% endif %}
                 </div>
             {% endfor %}
@@ -56,6 +66,12 @@
                 {% endif %}
                 <span class="btn btn-like">💬 {{ post.comments.count() }}</span>
                 {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('repost', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-like {% if post.reposts.filter_by(user_id=current_user.id).first() %}reposted{% endif %}">
+                        🔄 {{ post.reposts.count() }}
+                    </button>
+                </form>
+                <a href="{{ url_for('forward_post', post_id=post.id) }}" class="btn btn-like">📤</a>
                     {% if post.author == current_user %}
                     <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить пост?')" style="display:inline;">
                         <button type="submit" class="btn btn-secondary">Удалить</button>

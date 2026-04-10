@@ -4,7 +4,9 @@
     <div class="card" style="margin-bottom: 20px;">
         <div style="display: flex; align-items: center; gap: 15px;">
             <div class="avatar" style="width: 80px; height: 80px; font-size: 2em;">
-                {% if community.image != 'community_default.png' %}
+                {% if community.image_url %}
+                    <img src="{{ community.image_url }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                {% elif community.image != 'community_default.png' %}
                     <img src="{{ url_for('uploaded_file', filename=community.image) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
                 {% else %}
                     {{ community.name[0].upper() }}
@@ -62,7 +64,9 @@
         <div class="card">
             <div class="post-header">
                 <div class="avatar">
-                    {% if post.author.avatar != 'default.png' %}
+                    {% if post.author.avatar_url %}
+                        <img src="{{ post.author.avatar_url }}" alt="">
+                    {% elif post.author.avatar != 'default.png' %}
                         <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
                     {% else %}
                         {{ post.author.username[0].upper() }}
@@ -79,10 +83,18 @@
             
             {% for m in post.media %}
                 <div class="post-media">
-                    {% if m.media_type == 'video' %}
-                        <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                    {% if m.cloudinary_url %}
+                        {% if m.media_type == 'video' %}
+                            <video controls><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+                        {% else %}
+                            <img src="{{ m.cloudinary_url }}" alt="Медиа">
+                        {% endif %}
                     {% else %}
-                        <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                        {% if m.media_type == 'video' %}
+                            <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                        {% else %}
+                            <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                        {% endif %}
                     {% endif %}
                 </div>
             {% endfor %}

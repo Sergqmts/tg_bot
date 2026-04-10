@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Переслать пост - Social{% endblock %}
+{% block content %}
+<div class="card">
+    <h3>Переслать пост</h3>
+    
+    <div class="post-preview">
+        <div class="post-header">
+            <div class="avatar">
+                {% if post.author.avatar_url %}
+                    <img src="{{ post.author.avatar_url }}" alt="">
+                {% else %}
+                    {{ post.author.username[0].upper() }}
+                {% endif %}
+            </div>
+            <div>
+                <a href="{{ url_for('user_profile', username=post.author.username) }}" class="username">{{ post.author.username }}</a>
+            </div>
+        </div>
+        {% if post.body %}
+            <div class="post-content">{{ post.body }}</div>
+        {% endif %}
+    </div>
+    
+    <form method="POST">
+        <input type="hidden" name="action" value="to_profile">
+        <button type="submit" class="btn btn-primary">Добавить в мой профиль</button>
+    </form>
+    
+    <hr>
+    
+    <h4>Отправить в личные сообщения</h4>
+    <form method="POST">
+        <input type="hidden" name="action" value="to_message">
+        <div class="form-group">
+            <label>Выберите получателя:</label>
+            <select name="username" required>
+                <option value="">-- Выберите пользователя --</option>
+                {% for user in users %}
+                    <option value="{{ user.username }}">{{ user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Отправить</button>
+    </form>
+</div>
+{% endblock %}

@@ -9,6 +9,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
+import cloudinary
+import cloudinary.uploader
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -33,6 +35,13 @@ app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov'}
 
+cloudinary.config(
+    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.environ.get('CLOUDINARY_API_KEY'),
+    api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
+    secure=True
+)
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
@@ -45,6 +54,29 @@ login_manager.login_message = 'Пожалуйста, войдите для до�
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+
+def upload_to_cloudinary(file, folder='social'):
+    if not file.filename:
+        return None
+    result = cloudinary.uploader.upload(
+        file,
+        folder=folder,
+        resource_type='auto',
+        transformation=[{'quality': 'auto', 'fetch_format': 'auto'}]
+    )
+    return result['secure_url']
+
+
+def get_cloudinary_url(public_id, resource_type='image'):
+    if not public_id:
+        return None
+    return cloudinary.CloudinaryImage(public_id).build_url(
+        width=800,
+        crop='scale',
+        quality='auto',
+        fetch_format='auto'
+    )
 
 
 @login_manager.user_loader
@@ -66,6 +98,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     bio = db.Column(db.Text)
     avatar = db.Column(db.String(200), default='default.png')
+    avatar_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
@@ -129,6 +162,19 @@ class User(UserMixin, db.Model):
     def is_member(self, community):
         return CommunityMember.query.filter_by(user=self, community=community).first() is not None
 
+    def has_reposted(self, post):
+        return Repost.query.filter_by(user_id=self.id, post_id=post.id).first() is not None
+
+    def repost(self, post):
+        if not self.has_reposted(post):
+            repost = Repost(user_id=self.id, post_id=post.id)
+            db.session.add(repost)
+
+    def unrepost(self, post):
+        repost = Repost.query.filter_by(user_id=self.id, post_id=post.id).first()
+        if repost:
+            db.session.delete(repost)
+
     def is_admin(self, community):
         member = CommunityMember.query.filter_by(user=self, community=community).first()
         return member and member.role in ('admin', 'creator')
@@ -154,6 +200,7 @@ class Community(db.Model):
     slug = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
     image = db.Column(db.String(200), default='community_default.png')
+    image_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
@@ -177,6 +224,7 @@ class CommunityMember(db.Model):
 class Media(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(200), nullable=False)
+    cloudinary_url = db.Column(db.String(500))
     media_type = db.Column(db.String(20), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -197,6 +245,16 @@ class Comment(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
 
 
+class Repost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='reposts')
+    post = db.relationship('Post', backref='reposts')
+
+
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
@@ -204,6 +262,7 @@ class Message(db.Model):
     read = db.Column(db.Boolean, default=False)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
 
 
 class RegistrationForm(FlaskForm):
@@ -273,11 +332,13 @@ class CommunityPostForm(FlaskForm):
 def index():
     try:
         posts = Post.query.order_by(Post.created_at.desc()).all()
+        reposts = Repost.query.all()
         app.logger.info(f"Found {len(posts)} posts")
     except Exception as e:
         app.logger.error(f"DB Error: {e}")
         posts = []
-    return render_template('index.html', posts=posts)
+        reposts = []
+    return render_template('index.html', posts=posts, reposts=reposts)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -330,14 +391,14 @@ def create():
             if 'media' in request.files:
                 file = request.files['media']
                 if file.filename:
-                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    
-                    ext = filename.rsplit('.', 1)[1].lower()
+                    ext = file.filename.rsplit('.', 1)[1].lower()
                     media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
                     
-                    media = Media(filename=filename, media_type=media_type, post=post)
-                    db.session.add(media)
+                    url = upload_to_cloudinary(file, folder='posts')
+                    if url:
+                        filename = url.split('/')[-1].split('.')[0]
+                        media = Media(filename=filename, cloudinary_url=url, media_type=media_type, post=post)
+                        db.session.add(media)
             
             db.session.commit()
             app.logger.info(f"Post created: {post.id} by user {current_user.id}")
@@ -348,6 +409,49 @@ def create():
             flash(f'Ошибка: {e}')
         return redirect(url_for('index'))
     return render_template('create.html')
+
+
+@app.route('/post/<int:post_id>/repost', methods=['POST'])
+@login_required
+def repost(post_id):
+    post = Post.query.get_or_404(post_id)
+    if current_user.has_reposted(post):
+        current_user.unrepost(post)
+    else:
+        current_user.repost(post)
+    db.session.commit()
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])
+@login_required
+def forward_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'to_profile':
+            new_post = Post(body=post.body, author=current_user)
+            db.session.add(new_post)
+            db.session.flush()
+            for media in post.media:
+                new_media = Media(filename=media.filename, cloudinary_url=media.cloudinary_url, media_type=media.media_type, post=new_post)
+                db.session.add(new_media)
+            db.session.commit()
+            flash('Пост добавлен в ваш профиль')
+            return redirect(url_for('user_profile', username=current_user.username))
+        username = request.form.get('username', '').strip()
+        user = User.query.filter_by(username=username).first()
+        if user:
+            message_body = f"Репост от @{post.author.username}:\n\n{post.body}"
+            msg = Message(body=message_body, sender=current_user, recipient=user, post_id=post.id)
+            db.session.add(msg)
+            db.session.commit()
+            flash(f'Пост отправлен пользователю {user.username}')
+            return redirect(url_for('index'))
+        else:
+            flash('Пользователь не найден')
+    users = User.query.filter(User.id != current_user.id).all()
+    return render_template('forward_post.html', post=post, users=users)
 
 
 @app.route('/post/<int:post_id>/like', methods=['POST'])
@@ -414,8 +518,9 @@ def delete(post_id):
 def user_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     posts = user.posts.order_by(Post.created_at.desc()).all()
+    user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all()
     is_following = current_user.is_authenticated and current_user.is_following(user)
-    return render_template('profile.html', user=user, posts=posts, is_following=is_following)
+    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, is_following=is_following)
 
 
 @app.route('/follow/<username>', methods=['POST'])
@@ -448,9 +553,9 @@ def edit_profile():
         current_user.bio = form.bio.data
         if form.avatar.data:
             file = form.avatar.data
-            filename = secure_filename(f"avatar_{current_user.id}.{file.filename.rsplit('.', 1)[1].lower()}")
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            current_user.avatar = filename
+            url = upload_to_cloudinary(file, folder='avatars')
+            if url:
+                current_user.avatar_url = url
         db.session.commit()
         flash('Профиль обновлён')
         return redirect(url_for('user_profile', username=current_user.username))
@@ -532,9 +637,9 @@ def create_community():
         
         if form.image.data:
             file = form.image.data
-            filename = secure_filename(f"community_{slug}.{file.filename.rsplit('.', 1)[1].lower()}")
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            community.image = filename
+            url = upload_to_cloudinary(file, folder='communities')
+            if url:
+                community.image_url = url
         
         db.session.add(community)
         db.session.flush()

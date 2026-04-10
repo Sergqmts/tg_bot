@@ -4,7 +4,9 @@
     <div class="card">
         <div class="profile-header">
             <div class="profile-avatar">
-                {% if user.avatar != 'default.png' %}
+                {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}" alt="">
+                {% elif user.avatar != 'default.png' %}
                     <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="">
                 {% else %}
                     {{ user.username[0].upper() }}
@@ -47,11 +49,51 @@
     </div>
     
     <h3 style="margin: 20px 0 15px;">Посты</h3>
+    {% if user_reposts %}
+    <h4 style="margin: 20px 0 15px; color: #65676b;">Репосты</h4>
+    {% for repost in user_reposts %}
+        <div class="card">
+            <div class="post-header">
+                <div class="avatar">
+                    {% if repost.post.author.avatar_url %}
+                        <img src="{{ repost.post.author.avatar_url }}" alt="">
+                    {% else %}
+                        {{ repost.post.author.username[0].upper() }}
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="{{ url_for('user_profile', username=repost.post.author.username) }}" class="username">{{ repost.post.author.username }}</a>
+                    <div class="post-time">{{ repost.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+                </div>
+            </div>
+            {% if repost.post.body %}
+                <div class="post-content">{{ repost.post.body }}</div>
+            {% endif %}
+            {% for m in repost.post.media %}
+                <div class="post-media">
+                    {% if m.cloudinary_url %}
+                        {% if m.media_type == 'video' %}
+                            <video controls><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+                        {% else %}
+                            <img src="{{ m.cloudinary_url }}" alt="Медиа">
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <div class="post-actions">
+                <span class="btn btn-like">❤️ {{ repost.post.likes.count() }}</span>
+                <span class="btn btn-like">💬 {{ repost.post.comments.count() }}</span>
+            </div>
+        </div>
+    {% endfor %}
+    {% endif %}
     {% for post in posts %}
         <div class="card">
             <div class="post-header">
                 <div class="avatar">
-                    {% if post.author.avatar != 'default.png' %}
+                    {% if post.author.avatar_url %}
+                        <img src="{{ post.author.avatar_url }}" alt="">
+                    {% elif post.author.avatar != 'default.png' %}
                         <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
                     {% else %}
                         {{ post.author.username[0].upper() }}
@@ -68,10 +110,18 @@
             
             {% for m in post.media %}
                 <div class="post-media">
-                    {% if m.media_type == 'video' %}
-                        <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                    {% if m.cloudinary_url %}
+                        {% if m.media_type == 'video' %}
+                            <video controls><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+                        {% else %}
+                            <img src="{{ m.cloudinary_url }}" alt="Медиа">
+                        {% endif %}
                     {% else %}
-                        <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                        {% if m.media_type == 'video' %}
+                            <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                        {% else %}
+                            <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                        {% endif %}
                     {% endif %}
                 </div>
             {% endfor %}
@@ -87,10 +137,18 @@
                 <span class="btn btn-like">❤️ {{ post.likes.count() }}</span>
                 {% endif %}
                 <span class="btn btn-like">💬 {{ post.comments.count() }}</span>
-                {% if current_user.is_authenticated and post.author == current_user %}
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('repost', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-like {% if post.reposts.filter_by(user_id=current_user.id).first() %}reposted{% endif %}">
+                        🔄 {{ post.reposts.count() }}
+                    </button>
+                </form>
+                <a href="{{ url_for('forward_post', post_id=post.id) }}" class="btn btn-like">📤</a>
+                    {% if post.author == current_user %}
                     <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить пост?')" style="display:inline;">
                         <button type="submit" class="btn btn-secondary">Удалить</button>
                     </form>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
