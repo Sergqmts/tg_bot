@@ -20,20 +20,38 @@
                 
                 <!-- Медиа -->
                 {% if post.media.count() > 0 %}
-                    {% set media_item = post.media.first() %}
-                    <div class="post-media-square" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
-                        {% if media_item.cloudinary_url %}
-                            {% if media_item.media_type == 'video' %}
-                                <video src="{{ media_item.cloudinary_url }}" muted></video>
-                            {% else %}
-                                <img src="{{ media_item.cloudinary_url }}" alt="Пост">
-                            {% endif %}
-                        {% else %}
-                            {% if media_item.media_type == 'video' %}
-                                <video src="{{ url_for('uploaded_file', filename=media_item.filename) }}" muted></video>
-                            {% else %}
-                                <img src="{{ url_for('uploaded_file', filename=media_item.filename) }}" alt="Пост">
-                            {% endif %}
+                    {% set media_count = post.media.count() %}
+                    <div class="post-media-square" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'" style="position: relative;">
+                        {% for idx, m in enumerate(post.media.all()) %}
+                            <div class="media-slide" data-post="{{ post.id }}" style="display: {% if idx == 0 %}block{% else %}none{% endif %};">
+                                {% if m.cloudinary_url %}
+                                    {% if m.media_type == 'video' %}
+                                        <video src="{{ m.cloudinary_url }}" muted></video>
+                                    {% else %}
+                                        <img src="{{ m.cloudinary_url }}" alt="Пост">
+                                    {% endif %}
+                                {% else %}
+                                    {% if m.media_type == 'video' %}
+                                        <video src="{{ url_for('uploaded_file', filename=m.filename) }}" muted></video>
+                                    {% else %}
+                                        <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Пост">
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        
+                        <!-- Стрелки навигации -->
+                        {% if media_count > 1 %}
+                            <div class="gallery-nav" style="position: absolute; top: 50%; transform: translateY(-50%); width: 100%; display: flex; justify-content: space-between; padding: 0 10px; pointer-events: none;">
+                                <span onclick="changeMedia(event, {{ post.id }}, {{ media_count }}, 'prev')" style="pointer-events: auto; background: rgba(0,0,0,0.5); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.7;">‹</span>
+                                <span onclick="changeMedia(event, {{ post.id }}, {{ media_count }}, 'next')" style="pointer-events: auto; background: rgba(0,0,0,0.5); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.7;">›</span>
+                            </div>
+                            <!-- Индикаторы -->
+                            <div class="gallery-dots" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px;">
+                                {% for i in range(media_count) %}
+                                    <span class="dot" data-index="{{ i }}" style="width: 8px; height: 8px; border-radius: 50%; background: {% if i == 0 %}white{% else %}rgba(255,255,255,0.5){% endif %};"></span>
+                                {% endfor %}
+                            </div>
                         {% endif %}
                     </div>
                 {% elif post.body %}
@@ -58,4 +76,33 @@
     {% if current_user.is_authenticated %}
         <a href="{{ url_for('create') }}" class="btn btn-primary" style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">+</a>
     {% endif %}
+    
+    <script>
+        const currentIndex = {};
+        
+        function changeMedia(event, postId, total, direction) {
+            event.stopPropagation();
+            
+            if (!currentIndex[postId]) currentIndex[postId] = 0;
+            
+            if (direction === 'next') {
+                currentIndex[postId] = (currentIndex[postId] + 1) % total;
+            } else {
+                currentIndex[postId] = (currentIndex[postId] - 1 + total) % total;
+            }
+            
+            // Скрыть все, показать текущий
+            const container = event.target.closest('.post-media-square');
+            const slides = container.querySelectorAll('.media-slide');
+            slides.forEach((slide, i) => {
+                slide.style.display = i === currentIndex[postId] ? 'block' : 'none';
+            });
+            
+            // Обновить точки
+            const dots = container.querySelectorAll('.gallery-dots .dot');
+            dots.forEach((dot, i) => {
+                dot.style.background = i === currentIndex[postId] ? 'white' : 'rgba(255,255,255,0.5)';
+            });
+        }
+    </script>
 {% endblock %}
