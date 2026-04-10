@@ -845,6 +845,13 @@ with app.app_context():
         app.logger.info("Created message_media table")
     except Exception as e:
         app.logger.info(f"Table message_media may already exist: {e}")
+    
+    try:
+        db.session.execute(text("ALTER TABLE message ALTER COLUMN body DROP NOT NULL"))
+        db.session.commit()
+        app.logger.info("Made body nullable in message")
+    except Exception as e:
+        app.logger.info(f"Body may already be nullable: {e}")
 
 
 if __name__ == '__main__':
