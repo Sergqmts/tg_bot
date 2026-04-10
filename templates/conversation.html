@@ -2,7 +2,7 @@
 {% block title %}{{ other_user.username }} - Сообщения - Social{% endblock %}
 {% block content %}
     <div class="card">
-        <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+        <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
             <a href="{{ url_for('messages') }}" class="btn btn-secondary" style="margin-right: 15px;">←</a>
             <div class="avatar" style="margin-right: 10px;">{{ other_user.username[0].upper() }}</div>
             <a href="{{ url_for('user_profile', username=other_user.username) }}" class="username">{{ other_user.username }}</a>
@@ -11,11 +11,58 @@
         <div class="chat" id="chat">
             {% for msg in messages %}
                 <div class="chat-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
-                    <div>{{ msg.body }}</div>
+                    {% if msg.post_id %}
+                        <!-- Вложенный пост -->
+                        <a href="{{ url_for('view_post', post_id=msg.post_id) }}" style="text-decoration: none; color: inherit;">
+                            <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg);">
+                                {% set post = msg.post %}
+                                {% if post %}
+                                    <div style="padding: 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border);">
+                                        <div class="avatar" style="width: 24px; height: 24px; font-size: 0.7rem;">
+                                            {% if post.author.avatar != 'default.png' %}
+                                                <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
+                                            {% else %}
+                                                {{ post.author.username[0].upper() }}
+                                            {% endif %}
+                                        </div>
+                                        <span style="font-size: 0.85rem; font-weight: 600;">{{ post.author.username }}</span>
+                                    </div>
+                                    {% if post.media.count() > 0 %}
+                                        {% set media = post.media.first() %}
+                                        <div style="aspect-ratio: 1;">
+                                            {% if media.cloudinary_url %}
+                                                {% if media.media_type == 'video' %}
+                                                    <video src="{{ media.cloudinary_url }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                                {% else %}
+                                                    <img src="{{ media.cloudinary_url }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                                                {% endif %}
+                                            {% else %}
+                                                {% if media.media_type == 'video' %}
+                                                    <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                                {% else %}
+                                                    <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    {% elif post.body %}
+                                        <div style="padding: 15px; color: var(--text); font-size: 0.9rem;">
+                                            {{ post.body[:80] }}{% if post.body|length > 80 %}...{% endif %}
+                                        </div>
+                                    {% endif %}
+                                    <div style="padding: 8px; display: flex; gap: 15px; font-size: 0.8rem; color: var(--text-light);">
+                                        <span>❤️ {{ post.likes.count() }}</span>
+                                        <span>💬 {{ post.comments.count() }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </a>
+                    {% else %}
+                        <div>{{ msg.body }}</div>
+                    {% endif %}
                     <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
                 </div>
             {% else %}
-                <div style="text-align: center; color: #65676b; padding: 20px;">
+                <div style="text-align: center; color: var(--text-light); padding: 20px;">
                     Начните общение с {{ other_user.username }}
                 </div>
             {% endfor %}
