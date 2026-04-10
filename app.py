@@ -509,6 +509,12 @@ def delete_comment(comment_id):
     return redirect(request.referrer or url_for('index'))
 
 
+@app.route('/post/<int:post_id>')
+def view_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    return render_template('post.html', post=post)
+
+
 @app.route('/delete/<int:post_id>', methods=['POST'])
 @login_required
 def delete(post_id):
