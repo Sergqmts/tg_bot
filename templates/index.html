@@ -24,18 +24,18 @@
                     {% set media_count = media_list|length %}
                     <div class="post-media-square" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'" style="position: relative;">
                         {% for m in media_list %}
-                            <div class="media-slide" data-post="{{ post.id }}" style="display: {% if loop.index == 1 %}block{% else %}none{% endif %};">
+                            <div class="media-slide" data-post="{{ post.id }}" style="display: {% if loop.index == 1 %}block{% else %}none{% endif %}; width: 100%; height: 100%;">
                                 {% if m.cloudinary_url %}
                                     {% if m.media_type == 'video' %}
-                                        <video src="{{ m.cloudinary_url }}" muted></video>
+                                        <video src="{{ m.cloudinary_url }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
                                     {% else %}
-                                        <img src="{{ m.cloudinary_url }}" alt="Пост">
+                                        <img src="{{ m.cloudinary_url }}" alt="Пост" style="width: 100%; height: 100%; object-fit: cover;">
                                     {% endif %}
                                 {% else %}
                                     {% if m.media_type == 'video' %}
-                                        <video src="{{ url_for('uploaded_file', filename=m.filename) }}" muted></video>
+                                        <video src="{{ url_for('uploaded_file', filename=m.filename) }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
                                     {% else %}
-                                        <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Пост">
+                                        <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Пост" style="width: 100%; height: 100%; object-fit: cover;">
                                     {% endif %}
                                 {% endif %}
                             </div>
