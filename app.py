@@ -512,7 +512,8 @@ def delete_comment(comment_id):
 @app.route('/post/<int:post_id>')
 def view_post(post_id):
     post = Post.query.get_or_404(post_id)
-    return render_template('post.html', post=post)
+    repost_count = Repost.query.filter_by(post_id=post.id).count()
+    return render_template('post.html', post=post, repost_count=repost_count)
 
 
 @app.route('/delete/<int:post_id>', methods=['POST'])
