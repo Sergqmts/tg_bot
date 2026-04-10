@@ -266,12 +266,21 @@ class Repost(db.Model):
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.Text, nullable=False)
+    body = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     read = db.Column(db.Boolean, default=False)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    
+    medias = db.relationship('MessageMedia', backref='message', lazy='dynamic')
+
+
+class MessageMedia(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
+    media_url = db.Column(db.String(500))
+    media_type = db.Column(db.String(20))
 
 
 class RegistrationForm(FlaskForm):
@@ -627,10 +636,27 @@ def conversation(username):
     
     if request.method == 'POST':
         body = request.form.get('body', '').strip()
-        if body:
+        media_url = None
+        media_type = None
+        
+        if 'media' in request.files:
+            file = request.files['media']
+            if file.filename:
+                media_url = upload_to_cloudinary(file, folder='messages')
+                if media_url:
+                    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+        
+        if body or media_url:
             try:
-                msg = Message(body=body, sender=current_user, recipient=other_user)
+                msg = Message(body=body if body else None, sender=current_user, recipient=other_user)
                 db.session.add(msg)
+                db.session.flush()
+                
+                if media_url:
+                    media = MessageMedia(message_id=msg.id, media_url=media_url, media_type=media_type)
+                    db.session.add(media)
+                
                 db.session.commit()
             except Exception as e:
                 app.logger.error(f"Message error: {e}")
@@ -800,6 +826,13 @@ with app.app_context():
         app.logger.info("Added post_id column to message")
     except Exception as e:
         app.logger.info(f"Column post_id in message may already exist: {e}")
+    
+    try:
+        db.session.execute(text("CREATE TABLE IF NOT EXISTS message_media (id SERIAL PRIMARY KEY, message_id INTEGER NOT NULL, media_url VARCHAR(500), media_type VARCHAR(20))"))
+        db.session.commit()
+        app.logger.info("Created message_media table")
+    except Exception as e:
+        app.logger.info(f"Table message_media may already exist: {e}")
 
 
 if __name__ == '__main__':
