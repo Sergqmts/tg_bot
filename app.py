@@ -334,13 +334,15 @@ class CommunityPostForm(FlaskForm):
 def index():
     try:
         posts = Post.query.order_by(Post.created_at.desc()).all()
-        reposts = {r.post_id: r for r in Repost.query.all()}
+        repost_counts = {}
+        for p in posts:
+            repost_counts[p.id] = Repost.query.filter_by(post_id=p.id).count()
         app.logger.info(f"Found {len(posts)} posts")
     except Exception as e:
         app.logger.error(f"DB Error: {e}")
         posts = []
-        reposts = {}
-    return render_template('index.html', posts=posts, reposts=reposts)
+        repost_counts = {}
+    return render_template('index.html', posts=posts, repost_counts=repost_counts)
 
 
 @app.route('/register', methods=['GET', 'POST'])
