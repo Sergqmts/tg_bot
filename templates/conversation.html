@@ -9,7 +9,7 @@
         </div>
         
         <div class="chat" id="chat">
-            {% for msg in messages %}
+            {% for msg, extra in messages_data %}
                 <div class="chat-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
                     {% if msg.post_id %}
                         <!-- Вложенный пост -->
@@ -56,14 +56,14 @@
                                 {% endif %}
                             </div>
                         </a>
-                    {% elif msg.media_url %}
+                    {% elif extra.media_url %}
                         <!-- Медиа в сообщении -->
-                        {% if msg.media_type == 'video' %}
-                            <video src="{{ msg.media_url }}" controls style="max-width: 200px; border-radius: 8px;"></video>
+                        {% if extra.media_type == 'video' %}
+                            <video src="{{ extra.media_url }}" controls style="max-width: 200px; border-radius: 8px;"></video>
                         {% else %}
-                            <img src="{{ msg.media_url }}" alt="" style="max-width: 200px; border-radius: 8px;">
+                            <img src="{{ extra.media_url }}" alt="" style="max-width: 200px; border-radius: 8px;">
                         {% endif %}
-                    {% else %}
+                    {% elif msg.body %}
                         <div>{{ msg.body }}</div>
                     {% endif %}
                     <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
@@ -79,7 +79,7 @@
             <div style="display: flex; gap: 10px; align-items: center;">
                 <label for="file-input" style="cursor: pointer; font-size: 1.5rem; color: var(--primary);">📎</label>
                 <input type="file" id="file-input" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.submit()">
-                <input type="text" name="body" placeholder="Напишите сообщение..." required autofocus style="flex: 1;">
+                <input type="text" name="body" placeholder="Напишите сообщение..." style="flex: 1;">
                 <button type="submit" class="btn btn-primary">Отправить</button>
             </div>
         </form>

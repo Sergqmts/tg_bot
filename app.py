@@ -266,14 +266,12 @@ class Repost(db.Model):
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.Text, nullable=True)
+    body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     read = db.Column(db.Boolean, default=False)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
-    media_url = db.Column(db.String(500))
-    media_type = db.Column(db.String(20))
 
 
 class RegistrationForm(FlaskForm):
@@ -621,11 +619,14 @@ def messages():
 def conversation(username):
     other_user = User.query.filter_by(username=username).first_or_404()
     
-    Message.query.filter_by(sender=other_user, recipient=current_user, read=False).update({'read': True})
-    db.session.commit()
+    try:
+        Message.query.filter_by(sender=other_user, recipient=current_user, read=False).update({'read': True})
+        db.session.commit()
+    except:
+        db.session.rollback()
     
     if request.method == 'POST':
-        body = request.form.get('body')
+        body = request.form.get('body', '')
         media_url = None
         media_type = None
         
@@ -638,16 +639,40 @@ def conversation(username):
                     media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
         
         if body or media_url:
-            msg = Message(body=body, sender=current_user, recipient=other_user, media_url=media_url, media_type=media_type)
-            db.session.add(msg)
-            db.session.commit()
+            try:
+                msg = Message(body=body, sender=current_user, recipient=other_user)
+                db.session.add(msg)
+                db.session.flush()
+                
+                if media_url:
+                    from sqlalchemy import text
+                    db.session.execute(text("UPDATE message SET media_url = :url, media_type = :type WHERE id = :id"), 
+                                       {'url': media_url, 'type': media_type, 'id': msg.id})
+                
+                db.session.commit()
+            except:
+                db.session.rollback()
     
-    messages = Message.query.filter(
-        ((Message.sender == current_user) & (Message.recipient == other_user)) |
-        ((Message.sender == other_user) & (Message.recipient == current_user))
-    ).order_by(Message.created_at.asc()).all()
+    try:
+        messages = Message.query.filter(
+            ((Message.sender == current_user) & (Message.recipient == other_user)) |
+            ((Message.sender == other_user) & (Message.recipient == current_user))
+        ).order_by(Message.created_at.asc()).all()
+        
+        messages_data = []
+        for msg in messages:
+            from sqlalchemy import text
+            result = db.session.execute(text("SELECT media_url, media_type FROM message WHERE id = :id"), {'id': msg.id}).fetchone()
+            extra = {'media_url': result[0] if result else None, 'media_type': result[1] if result else None}
+            messages_data.append((msg, extra))
+    except:
+        messages = Message.query.filter(
+            ((Message.sender == current_user) & (Message.recipient == other_user)) |
+            ((Message.sender == other_user) & (Message.recipient == current_user))
+        ).order_by(Message.created_at.asc()).all()
+        messages_data = [(msg, {}) for msg in messages]
     
-    return render_template('conversation.html', other_user=other_user, messages=messages)
+    return render_template('conversation.html', other_user=other_user, messages_data=messages_data)
 
 
 @app.route('/communities')
