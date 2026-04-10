@@ -705,7 +705,7 @@ def conversation(username):
         app.logger.error(f"Load messages error: {e}")
         messages = []
     
-    return render_template('conversation.html', other_user=other_user, messages=messages)
+    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post)
 
 
 @app.route('/communities')
