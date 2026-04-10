@@ -42,6 +42,7 @@
     <h3 style="text-align: center; margin-bottom: 20px; color: var(--text-light);">Репосты</h3>
     <div class="posts-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
         {% for repost in user_reposts %}
+            {% if repost.post %}
             <div class="post-card" onclick="window.location='{{ url_for('view_post', post_id=repost.post.id) }}'">
                 {% set media = repost.post.media.first() %}
                 {% if media %}
@@ -66,6 +67,7 @@
                     <span>💬 {{ repost.post.comments.count() }}</span>
                 </div>
             </div>
+            {% endif %}
         {% endfor %}
     </div>
     {% endif %}
