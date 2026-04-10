@@ -642,15 +642,15 @@ def conversation(username):
             try:
                 msg = Message(body=body, sender=current_user, recipient=other_user)
                 db.session.add(msg)
-                db.session.flush()
+                db.session.commit()
                 
                 if media_url:
                     from sqlalchemy import text
                     db.session.execute(text("UPDATE message SET media_url = :url, media_type = :type WHERE id = :id"), 
                                        {'url': media_url, 'type': media_type, 'id': msg.id})
-                
-                db.session.commit()
-            except:
+                    db.session.commit()
+            except Exception as e:
+                app.logger.error(f"Message error: {e}")
                 db.session.rollback()
     
     try:
@@ -661,16 +661,16 @@ def conversation(username):
         
         messages_data = []
         for msg in messages:
-            from sqlalchemy import text
-            result = db.session.execute(text("SELECT media_url, media_type FROM message WHERE id = :id"), {'id': msg.id}).fetchone()
-            extra = {'media_url': result[0] if result else None, 'media_type': result[1] if result else None}
+            try:
+                from sqlalchemy import text
+                result = db.session.execute(text("SELECT media_url, media_type FROM message WHERE id = :id"), {'id': msg.id}).fetchone()
+                extra = {'media_url': result[0] if result else None, 'media_type': result[1] if result else None}
+            except:
+                extra = {'media_url': None, 'media_type': None}
             messages_data.append((msg, extra))
-    except:
-        messages = Message.query.filter(
-            ((Message.sender == current_user) & (Message.recipient == other_user)) |
-            ((Message.sender == other_user) & (Message.recipient == current_user))
-        ).order_by(Message.created_at.asc()).all()
-        messages_data = [(msg, {}) for msg in messages]
+    except Exception as e:
+        app.logger.error(f"Load messages error: {e}")
+        messages_data = []
     
     return render_template('conversation.html', other_user=other_user, messages_data=messages_data)
 
