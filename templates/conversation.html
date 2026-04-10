@@ -59,16 +59,17 @@
                         {% if msg.body %}
                             <div>{{ msg.body }}</div>
                         {% endif %}
-                        {% set media_list = [] %}
+                        <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 100%;">
                         {% for m in msg.medias %}
                             {% if m.media_url %}
                                 {% if m.media_type == 'video' %}
-                                    <video src="{{ m.media_url }}" controls style="max-width: 200px; border-radius: 8px; margin-top: 5px;"></video>
+                                    <video src="{{ m.media_url }}" controls style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px;"></video>
                                 {% else %}
-                                    <img src="{{ m.media_url }}" alt="" style="max-width: 200px; border-radius: 8px; margin-top: 5px;">
+                                    <img src="{{ m.media_url }}" alt="" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px;">
                                 {% endif %}
                             {% endif %}
                         {% endfor %}
+                        </div>
                     {% endif %}
                     <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
                 </div>
