@@ -4,9 +4,7 @@
     <div class="card">
         <div class="profile-header">
             <div class="profile-avatar">
-                {% if user.avatar_url %}
-                    <img src="{{ user.avatar_url }}" alt="">
-                {% elif user.avatar != 'default.png' %}
+                {% if user.avatar != 'default.png' %}
                     <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="">
                 {% else %}
                     {{ user.username[0].upper() }}
@@ -55,8 +53,8 @@
         <div class="card">
             <div class="post-header">
                 <div class="avatar">
-                    {% if repost.post.author.avatar_url %}
-                        <img src="{{ repost.post.author.avatar_url }}" alt="">
+                    {% if repost.post.author.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=repost.post.author.avatar) }}" alt="">
                     {% else %}
                         {{ repost.post.author.username[0].upper() }}
                     {% endif %}
@@ -91,9 +89,7 @@
         <div class="card">
             <div class="post-header">
                 <div class="avatar">
-                    {% if post.author.avatar_url %}
-                        <img src="{{ post.author.avatar_url }}" alt="">
-                    {% elif post.author.avatar != 'default.png' %}
+                    {% if post.author.avatar != 'default.png' %}
                         <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
                     {% else %}
                         {{ post.author.username[0].upper() }}

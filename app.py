@@ -98,7 +98,6 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     bio = db.Column(db.Text)
     avatar = db.Column(db.String(200), default='default.png')
-    avatar_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
@@ -553,9 +552,9 @@ def edit_profile():
         current_user.bio = form.bio.data
         if form.avatar.data:
             file = form.avatar.data
-            url = upload_to_cloudinary(file, folder='avatars')
-            if url:
-                current_user.avatar_url = url
+            filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            current_user.avatar = filename
         db.session.commit()
         flash('Профиль обновлён')
         return redirect(url_for('user_profile', username=current_user.username))
@@ -743,12 +742,6 @@ with app.app_context():
     db.create_all()
     try:
         from sqlalchemy import text
-        db.session.execute(text("ALTER TABLE user ADD COLUMN avatar_url VARCHAR(500)"))
-        db.session.commit()
-    except Exception as e:
-        app.logger.info(f"Column avatar_url may already exist: {e}")
-    
-    try:
         db.session.execute(text("CREATE TABLE IF NOT EXISTS repost (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"))
         db.session.commit()
     except Exception as e:

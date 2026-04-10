@@ -7,8 +7,8 @@
     <div class="post-preview">
         <div class="post-header">
             <div class="avatar">
-                {% if post.author.avatar_url %}
-                    <img src="{{ post.author.avatar_url }}" alt="">
+                {% if post.author.avatar != 'default.png' %}
+                    <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
                 {% else %}
                     {{ post.author.username[0].upper() }}
                 {% endif %}
