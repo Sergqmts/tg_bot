@@ -35,12 +35,14 @@ app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov'}
 
-cloudinary.config(
-    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.environ.get('CLOUDINARY_API_KEY'),
-    api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
-    secure=True
-)
+cloudinary_configured = os.environ.get('CLOUDINARY_CLOUD_NAME') and os.environ.get('CLOUDINARY_API_KEY')
+if cloudinary_configured:
+    cloudinary.config(
+        cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.environ.get('CLOUDINARY_API_KEY'),
+        api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
+        secure=True
+    )
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -59,24 +61,30 @@ def allowed_file(filename):
 def upload_to_cloudinary(file, folder='social'):
     if not file.filename:
         return None
-    result = cloudinary.uploader.upload(
-        file,
-        folder=folder,
-        resource_type='auto',
-        transformation=[{'quality': 'auto', 'fetch_format': 'auto'}]
-    )
-    return result['secure_url']
+    if cloudinary_configured:
+        result = cloudinary.uploader.upload(
+            file,
+            folder=folder,
+            resource_type='auto',
+            transformation=[{'quality': 'auto', 'fetch_format': 'auto'}]
+        )
+        return result['secure_url']
+    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    return filename
 
 
 def get_cloudinary_url(public_id, resource_type='image'):
     if not public_id:
         return None
-    return cloudinary.CloudinaryImage(public_id).build_url(
-        width=800,
-        crop='scale',
-        quality='auto',
-        fetch_format='auto'
-    )
+    if cloudinary_configured:
+        return cloudinary.CloudinaryImage(public_id).build_url(
+            width=800,
+            crop='scale',
+            quality='auto',
+            fetch_format='auto'
+        )
+    return url_for('uploaded_file', filename=public_id)
 
 
 @login_manager.user_loader
@@ -202,7 +210,6 @@ class Community(db.Model):
     slug = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
     image = db.Column(db.String(200), default='community_default.png')
-    image_url = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
@@ -643,7 +650,7 @@ def create_community():
             file = form.image.data
             url = upload_to_cloudinary(file, folder='communities')
             if url:
-                community.image_url = url
+                community.image = url
         
         db.session.add(community)
         db.session.flush()
