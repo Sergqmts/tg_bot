@@ -639,13 +639,24 @@ def conversation(username):
         media_url = None
         media_type = None
         
+        app.logger.info(f"Files: {request.files}")
+        
         if 'media' in request.files:
             file = request.files['media']
-            if file.filename:
-                media_url = upload_to_cloudinary(file, folder='messages')
-                if media_url:
-                    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+            app.logger.info(f"File: {file.filename}")
+            if file.filename and allowed_file(file.filename):
+                if cloudinary_configured:
+                    media_url = upload_to_cloudinary(file, folder='messages')
+                    if media_url:
+                        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                else:
+                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    media_url = url_for('uploaded_file', filename=filename)
+                    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                     media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                app.logger.info(f"Media URL: {media_url}, type: {media_type}")
         
         if body or media_url:
             try:
@@ -658,6 +669,7 @@ def conversation(username):
                     db.session.add(media)
                 
                 db.session.commit()
+                app.logger.info(f"Message saved with media: {media_url}")
             except Exception as e:
                 app.logger.error(f"Message error: {e}")
                 db.session.rollback()
