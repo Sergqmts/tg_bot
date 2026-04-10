@@ -799,26 +799,23 @@ with app.app_context():
     try:
         db.session.execute(text("ALTER TABLE message ADD COLUMN post_id INTEGER REFERENCES post(id)"))
         db.session.commit()
+        app.logger.info("Added post_id column to message")
     except Exception as e:
         app.logger.info(f"Column post_id in message may already exist: {e}")
     
     try:
         db.session.execute(text("ALTER TABLE message ADD COLUMN media_url VARCHAR(500)"))
         db.session.commit()
+        app.logger.info("Added media_url column to message")
     except Exception as e:
         app.logger.info(f"Column media_url may already exist: {e}")
     
     try:
         db.session.execute(text("ALTER TABLE message ADD COLUMN media_type VARCHAR(20)"))
         db.session.commit()
+        app.logger.info("Added media_type column to message")
     except Exception as e:
         app.logger.info(f"Column media_type may already exist: {e}")
-    
-    try:
-        db.session.execute(text("ALTER TABLE message ALTER COLUMN body DROP NOT NULL"))
-        db.session.commit()
-    except Exception as e:
-        app.logger.info(f"Column body may already be nullable: {e}")
 
 
 if __name__ == '__main__':
