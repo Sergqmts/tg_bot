@@ -1,0 +1,427 @@
+/* ========================================
+   Основные стили и переменные
+   ======================================== */
+:root {
+    --primary: #405de6;        /* Instagram синий */
+    --gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    --bg: #fafafa;           /* Светлый фон */
+    --card-bg: #ffffff;       /* Белые карточки */
+    --text: #262626;          /* Основной текст */
+    --text-light: #8e8e8e;    /* Серый текст */
+    --border: #dbdbdb;        /* Границы */
+    --shadow: 0 1px 3px rgba(0,0,0,0.1);
+    --radius: 8px;
+}
+
+/* Сброс стилей */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+}
+
+/* ========================================
+   Верхняя навигационная панель
+   ======================================== */
+.header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 12px 20px;
+}
+
+.header-inner {
+    max-width: 975px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Логотип слева */
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-decoration: none;
+    font-family: 'Segoe Script', cursive;
+}
+
+/* Правая часть - иконки */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-right a {
+    color: var(--text);
+    font-size: 1.5rem;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.header-right a:hover {
+    opacity: 0.7;
+}
+
+/* Аватар в навигации */
+.nav-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Меню пользователя */
+.user-menu {
+    position: relative;
+}
+
+.menu-toggle {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: var(--text);
+    padding: 5px;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 35px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 200px;
+    box-shadow: var(--shadow);
+}
+
+.user-menu:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 12px 16px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.dropdown-menu a:last-child {
+    border-bottom: none;
+}
+
+.dropdown-menu a:hover {
+    background: var(--bg);
+}
+
+/* ========================================
+   Основной контент
+   ======================================== */
+.main-content {
+    max-width: 935px;
+    margin: 80px auto 40px;
+    padding: 0 20px;
+}
+
+/* ========================================
+   Сетка постов (Grid Layout)
+   ======================================== */
+.posts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    padding-bottom: 40px;
+}
+
+/* Карточка поста */
+.post-card {
+    position: relative;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    aspect-ratio: 1;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.post-card:hover {
+    transform: scale(1.02);
+}
+
+/* Изображение поста */
+.post-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Оверлей с информацией */
+.post-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: #fff;
+    font-weight: 600;
+}
+
+.post-card:hover .post-overlay {
+    opacity: 1;
+}
+
+.post-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.post-stat svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Если нет изображения - показываем текст */
+.post-text-only {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+}
+
+/* ========================================
+   Адаптивность
+   ======================================== */
+@media (max-width: 768px) {
+    .posts-grid {
+        gap: 10px;
+    }
+    
+    .header-inner {
+        padding: 0 10px;
+    }
+    
+    .main-content {
+        padding: 0 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .posts-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
+    }
+    
+    .logo {
+        font-size: 1.2rem;
+    }
+}
+
+/* ========================================
+   Формы и кнопки
+   ======================================== */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #3658b8;
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.btn-secondary:hover {
+    background: var(--bg);
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-family: inherit;
+    background: var(--card-bg);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* ========================================
+   Карточки и контейнеры
+   ======================================== */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.flash {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+}
+
+/* ========================================
+   Профиль
+   ======================================== */
+.profile-header {
+    padding: 30px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 30px;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.profile-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--card-bg);
+    box-shadow: 0 0 0 2px var(--border);
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-details h1 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 30px;
+    margin: 15px 0;
+}
+
+.profile-stats span {
+    font-weight: 600;
+}
+
+/* ========================================
+   Сообщения
+   ======================================== */
+.message-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text);
+}
+
+.message-item:hover {
+    background: var(--bg);
+}
+
+.message-item.unread {
+    background: #e8f4ff;
+}
+
+/* ========================================
+   Комментарии
+   ======================================== */
+.comments-section {
+    padding: 15px;
+    border-top: 1px solid var(--border);
+}
+
+.comment {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+}
+
+.comment-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.comment-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

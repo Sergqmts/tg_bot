@@ -1,136 +1,52 @@
 {% extends "base.html" %}
 {% block title %}Лента - Social{% endblock %}
 {% block content %}
-    {% if current_user.is_authenticated %}
-        <div class="card">
-            <form method="POST" action="{{ url_for('create') }}" enctype="multipart/form-data">
-                <div class="form-group">
-                    <textarea name="body" placeholder="Что у вас нового?"></textarea>
-                </div>
-                <div class="form-group">
-                    <input type="file" name="media" accept="image/*,video/*">
-                </div>
-                <button type="submit" class="btn btn-primary">Опубликовать</button>
-            </form>
-        </div>
-    {% endif %}
-    
-    {% for post in posts %}
-        <div class="card">
-            <div class="post-header">
-                <div class="avatar">
-                    {% if post.author.avatar != 'default.png' %}
-                        <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
-                    {% else %}
-                        {{ post.author.username[0].upper() }}
-                    {% endif %}
-                </div>
-                <div>
-                    <a href="{{ url_for('user_profile', username=post.author.username) }}" class="username">{{ post.author.username }}</a>
-                    <div class="post-time">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
-                </div>
-            </div>
-            {% if post.body %}
-                <div class="post-content">{{ post.body }}</div>
-            {% endif %}
-            
-            {% for m in post.media %}
-                <div class="post-media">
-                    {% if m.cloudinary_url %}
-                        {% if m.media_type == 'video' %}
-                            <video controls><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+    <!-- Сетка постов в стиле Instagram -->
+    <div class="posts-grid">
+        {% for post in posts %}
+            <div class="post-card" onclick="window.location='{{ url_for('user_profile', username=post.author.username) }}'">
+                {% if post.media.count() > 0 %}
+                    <!-- Первое изображение/видео из поста -->
+                    {% set media_item = post.media.first() %}
+                    {% if media_item.cloudinary_url %}
+                        {% if media_item.media_type == 'video' %}
+                            <video class="post-image" src="{{ media_item.cloudinary_url }}" muted></video>
                         {% else %}
-                            <img src="{{ m.cloudinary_url }}" alt="Медиа">
+                            <img class="post-image" src="{{ media_item.cloudinary_url }}" alt="Пост">
                         {% endif %}
                     {% else %}
-                        {% if m.media_type == 'video' %}
-                            <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                        {% if media_item.media_type == 'video' %}
+                            <video class="post-image" src="{{ url_for('uploaded_file', filename=media_item.filename) }}" muted></video>
                         {% else %}
-                            <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                            <img class="post-image" src="{{ url_for('uploaded_file', filename=media_item.filename) }}" alt="Пост">
                         {% endif %}
                     {% endif %}
-                </div>
-            {% endfor %}
-            
-            <div class="post-actions">
-                {% if current_user.is_authenticated %}
-                <form method="POST" action="{{ url_for('like', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-like {% if post.liked_by(current_user) %}liked{% endif %}">
-                        ❤️ {{ post.likes.count() }}
-                    </button>
-                </form>
+                {% elif post.body %}
+                    <!-- Если нет медиа - показываем текст с градиентом -->
+                    <div class="post-text-only">
+                        {{ post.body[:50] }}{% if post.body|length > 50 %}...{% endif %}
+                    </div>
                 {% else %}
-                <span class="btn btn-like">❤️ {{ post.likes.count() }}</span>
-                {% endif %}
-                <span class="btn btn-like">💬 {{ post.comments.count() }}</span>
-                {% if current_user.is_authenticated %}
-                <form method="POST" action="{{ url_for('repost', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-like {% if post.reposted_by(current_user) %}reposted{% endif %}">
-                        🔄 {{ repost_counts[post.id] if post.id in repost_counts else 0 }}
-                    </button>
-                </form>
-                <a href="{{ url_for('forward_post', post_id=post.id) }}" class="btn btn-like">📤</a>
-                    {% if post.author == current_user %}
-                    <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить пост?')" style="display:inline;">
-                        <button type="submit" class="btn btn-secondary">Удалить</button>
-                    </form>
-                    {% endif %}
-                {% endif %}
-            </div>
-            
-            <div class="comments">
-                {% for comment in post.comments.order_by('created_at').all()[:1] %}
-                    <div class="comment">
-                        <div class="avatar" style="width:30px;height:30px;font-size:0.8em;">{{ comment.author.username[0].upper() }}</div>
-                        <div>
-                            <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="username" style="font-size:0.9em;">{{ comment.author.username }}</a>
-                            <div style="font-size:0.9em;">{{ comment.body }}</div>
-                        </div>
-                        {% if current_user.is_authenticated and comment.author == current_user %}
-                            <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" style="margin-left:auto;">
-                                <button type="submit" class="btn btn-secondary" style="padding:4px 8px;font-size:0.8em;">✕</button>
-                            </form>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-                
-                {% if post.comments.count() > 1 %}
-                    <div onclick="this.style.display='none'; document.getElementById('all-comments-{{ post.id }}').style.display='block';" style="text-align:center;padding:5px;color:#65676b;font-size:0.85em;cursor:pointer;">
-                        Показать ещё {{ post.comments.count() - 1 }} комментариев
-                    </div>
-                    <div id="all-comments-{{ post.id }}" style="display:none;">
-                        {% for comment in post.comments.order_by('created_at').all()[1:] %}
-                            <div class="comment">
-                                <div class="avatar" style="width:30px;height:30px;font-size:0.8em;">{{ comment.author.username[0].upper() }}</div>
-                                <div>
-                                    <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="username" style="font-size:0.9em;">{{ comment.author.username }}</a>
-                                    <div style="font-size:0.9em;">{{ comment.body }}</div>
-                                </div>
-                                {% if current_user.is_authenticated and comment.author == current_user %}
-                                    <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" style="margin-left:auto;">
-                                        <button type="submit" class="btn btn-secondary" style="padding:4px 8px;font-size:0.8em;">✕</button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    </div>
+                    <div class="post-text-only">Пост</div>
                 {% endif %}
                 
-                {% if current_user.is_authenticated %}
-                    <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form">
-                        <input type="text" name="body" placeholder="Добавить комментарий..." required>
-                        <button type="submit" class="btn btn-primary" style="padding:8px 12px;">→</button>
-                    </form>
-                {% endif %}
+                <!-- Оверлей с лайками и комментариями -->
+                <div class="post-overlay">
+                    <span class="post-stat">❤️ {{ post.likes.count() }}</span>
+                    <span class="post-stat">💬 {{ post.comments.count() }}</span>
+                </div>
             </div>
-        </div>
-    {% else %}
-        <div class="card" style="text-align: center; color: #65676b;">
-            {% if current_user.is_authenticated %}
-                Пока нет постов. Подпишитесь на кого-нибудь или создайте первый пост!
-            {% else %}
-                <a href="{{ url_for('login') }}">Войдите</a> или <a href="{{ url_for('register') }}">зарегистрируйтесь</a> чтобы видеть посты
-            {% endif %}
-        </div>
-    {% endfor %}
+        {% else %}
+            <!-- Если постов нет -->
+            <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #8e8e8e;">
+                <p style="font-size: 1.2rem; margin-bottom: 10px;">Пока нет постов</p>
+                <p>Подпишитесь на кого-нибудь или создайте первый пост!</p>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Кнопка создания поста для мобильных -->
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('create') }}" class="btn btn-primary" style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">+</a>
+    {% endif %}
 {% endblock %}
