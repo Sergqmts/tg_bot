@@ -188,9 +188,13 @@ class Post(db.Model):
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     media = db.relationship('Media', backref='post', lazy='dynamic', cascade='all, delete-orphan')
+    reposts = db.relationship('Repost', backref='post', lazy='dynamic', cascade='all, delete-orphan')
 
     def liked_by(self, user):
         return self.likes.filter_by(user_id=user.id).first() is not None
+
+    def reposted_by(self, user):
+        return self.reposts.filter_by(user_id=user.id).first() is not None
 
 
 class Community(db.Model):

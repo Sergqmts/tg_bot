@@ -135,7 +135,7 @@
                 <span class="btn btn-like">💬 {{ post.comments.count() }}</span>
                 {% if current_user.is_authenticated %}
                 <form method="POST" action="{{ url_for('repost', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-like {% if post.reposts.filter_by(user_id=current_user.id).first() %}reposted{% endif %}">
+                    <button type="submit" class="btn btn-like {% if post.reposted_by(current_user) %}reposted{% endif %}">
                         🔄 {{ post.reposts.count() }}
                     </button>
                 </form>
