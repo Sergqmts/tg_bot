@@ -536,7 +536,7 @@ def delete(post_id):
 def user_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     posts = user.posts.order_by(Post.created_at.desc()).all()
-    user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all()
+    user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all() if user.id else []
     repost_counts = {}
     for p in posts:
         repost_counts[p.id] = Repost.query.filter_by(post_id=p.id).count()
