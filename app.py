@@ -472,7 +472,9 @@ def forward_post(post_id):
         username = request.form.get('username', '').strip()
         user = User.query.filter_by(username=username).first()
         if user:
-            message_body = f"Репост от @{post.author.username}:\n\n{post.body}"
+            message_body = f"Репост от @{post.author.username}"
+            if post.body:
+                message_body += f":\n\n{post.body}"
             msg = Message(body=message_body, sender=current_user, recipient=user, post_id=post.id)
             db.session.add(msg)
             db.session.commit()
