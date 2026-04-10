@@ -20,10 +20,11 @@
                 
                 <!-- Медиа -->
                 {% if post.media.count() > 0 %}
-                    {% set media_count = post.media.count() %}
+                    {% set media_list = post.media.all() %}
+                    {% set media_count = media_list|length %}
                     <div class="post-media-square" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'" style="position: relative;">
-                        {% for idx, m in enumerate(post.media.all()) %}
-                            <div class="media-slide" data-post="{{ post.id }}" style="display: {% if idx == 0 %}block{% else %}none{% endif %};">
+                        {% for m in media_list %}
+                            <div class="media-slide" data-post="{{ post.id }}" style="display: {% if loop.index == 1 %}block{% else %}none{% endif %};">
                                 {% if m.cloudinary_url %}
                                     {% if m.media_type == 'video' %}
                                         <video src="{{ m.cloudinary_url }}" muted></video>
@@ -49,7 +50,7 @@
                             <!-- Индикаторы -->
                             <div class="gallery-dots" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px;">
                                 {% for i in range(media_count) %}
-                                    <span class="dot" data-index="{{ i }}" style="width: 8px; height: 8px; border-radius: 50%; background: {% if i == 0 %}white{% else %}rgba(255,255,255,0.5){% endif %};"></span>
+                                    <span class="dot" style="width: 8px; height: 8px; border-radius: 50%; background: {% if loop.index == 1 %}white{% else %}rgba(255,255,255,0.5){% endif %};"></span>
                                 {% endfor %}
                             </div>
                         {% endif %}
@@ -80,15 +81,15 @@
     <script>
         const currentIndex = {};
         
-        function changeMedia(event, postId, total, direction) {
+        function changeMedia(event, postId, mediaCount, direction) {
             event.stopPropagation();
             
             if (!currentIndex[postId]) currentIndex[postId] = 0;
             
             if (direction === 'next') {
-                currentIndex[postId] = (currentIndex[postId] + 1) % total;
+                currentIndex[postId] = (currentIndex[postId] + 1) % mediaCount;
             } else {
-                currentIndex[postId] = (currentIndex[postId] - 1 + total) % total;
+                currentIndex[postId] = (currentIndex[postId] - 1 + mediaCount) % mediaCount;
             }
             
             // Скрыть все, показать текущий
