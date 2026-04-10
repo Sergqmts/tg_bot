@@ -626,29 +626,12 @@ def conversation(username):
         db.session.rollback()
     
     if request.method == 'POST':
-        body = request.form.get('body', '')
-        media_url = None
-        media_type = None
-        
-        if 'media' in request.files:
-            file = request.files['media']
-            if file.filename:
-                media_url = upload_to_cloudinary(file, folder='messages')
-                if media_url:
-                    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-        
-        if body or media_url:
+        body = request.form.get('body', '').strip()
+        if body:
             try:
                 msg = Message(body=body, sender=current_user, recipient=other_user)
                 db.session.add(msg)
                 db.session.commit()
-                
-                if media_url:
-                    from sqlalchemy import text
-                    db.session.execute(text("UPDATE message SET media_url = :url, media_type = :type WHERE id = :id"), 
-                                       {'url': media_url, 'type': media_type, 'id': msg.id})
-                    db.session.commit()
             except Exception as e:
                 app.logger.error(f"Message error: {e}")
                 db.session.rollback()
@@ -658,21 +641,11 @@ def conversation(username):
             ((Message.sender == current_user) & (Message.recipient == other_user)) |
             ((Message.sender == other_user) & (Message.recipient == current_user))
         ).order_by(Message.created_at.asc()).all()
-        
-        messages_data = []
-        for msg in messages:
-            try:
-                from sqlalchemy import text
-                result = db.session.execute(text("SELECT media_url, media_type FROM message WHERE id = :id"), {'id': msg.id}).fetchone()
-                extra = {'media_url': result[0] if result else None, 'media_type': result[1] if result else None}
-            except:
-                extra = {'media_url': None, 'media_type': None}
-            messages_data.append((msg, extra))
     except Exception as e:
         app.logger.error(f"Load messages error: {e}")
-        messages_data = []
+        messages = []
     
-    return render_template('conversation.html', other_user=other_user, messages_data=messages_data)
+    return render_template('conversation.html', other_user=other_user, messages=messages)
 
 
 @app.route('/communities')
@@ -827,20 +800,6 @@ with app.app_context():
         app.logger.info("Added post_id column to message")
     except Exception as e:
         app.logger.info(f"Column post_id in message may already exist: {e}")
-    
-    try:
-        db.session.execute(text("ALTER TABLE message ADD COLUMN media_url VARCHAR(500)"))
-        db.session.commit()
-        app.logger.info("Added media_url column to message")
-    except Exception as e:
-        app.logger.info(f"Column media_url may already exist: {e}")
-    
-    try:
-        db.session.execute(text("ALTER TABLE message ADD COLUMN media_type VARCHAR(20)"))
-        db.session.commit()
-        app.logger.info("Added media_type column to message")
-    except Exception as e:
-        app.logger.info(f"Column media_type may already exist: {e}")
 
 
 if __name__ == '__main__':

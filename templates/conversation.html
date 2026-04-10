@@ -9,10 +9,9 @@
         </div>
         
         <div class="chat" id="chat">
-            {% for msg, extra in messages_data %}
+            {% for msg in messages %}
                 <div class="chat-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
                     {% if msg.post_id %}
-                        <!-- Вложенный пост -->
                         <a href="{{ url_for('view_post', post_id=msg.post_id) }}" style="text-decoration: none; color: inherit;">
                             <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); max-width: 250px;">
                                 {% set post = msg.post %}
@@ -56,14 +55,7 @@
                                 {% endif %}
                             </div>
                         </a>
-                    {% elif extra.media_url %}
-                        <!-- Медиа в сообщении -->
-                        {% if extra.media_type == 'video' %}
-                            <video src="{{ extra.media_url }}" controls style="max-width: 200px; border-radius: 8px;"></video>
-                        {% else %}
-                            <img src="{{ extra.media_url }}" alt="" style="max-width: 200px; border-radius: 8px;">
-                        {% endif %}
-                    {% elif msg.body %}
+                    {% else %}
                         <div>{{ msg.body }}</div>
                     {% endif %}
                     <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
@@ -75,11 +67,9 @@
             {% endfor %}
         </div>
         
-        <form method="POST" action="" enctype="multipart/form-data">
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <label for="file-input" style="cursor: pointer; font-size: 1.5rem; color: var(--primary);">📎</label>
-                <input type="file" id="file-input" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.submit()">
-                <input type="text" name="body" placeholder="Напишите сообщение..." style="flex: 1;">
+        <form method="POST" action="">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" name="body" placeholder="Напишите сообщение..." required autofocus>
                 <button type="submit" class="btn btn-primary">Отправить</button>
             </div>
         </form>
