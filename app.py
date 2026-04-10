@@ -740,8 +740,20 @@ def uploaded_file(filename):
 
 with app.app_context():
     db.create_all()
+    
     try:
         from sqlalchemy import text
+        result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
+        columns = [row[0] for row in result]
+        
+        if 'avatar_url' in columns:
+            db.session.execute(text("ALTER TABLE user DROP COLUMN avatar_url"))
+            db.session.commit()
+            app.logger.info("Dropped avatar_url column")
+    except Exception as e:
+        app.logger.info(f"Column check/drop error: {e}")
+    
+    try:
         db.session.execute(text("CREATE TABLE IF NOT EXISTS repost (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"))
         db.session.commit()
     except Exception as e:
