@@ -136,7 +136,7 @@
                 {% if current_user.is_authenticated %}
                 <form method="POST" action="{{ url_for('repost', post_id=post.id) }}" style="display:inline;">
                     <button type="submit" class="btn btn-like {% if post.reposted_by(current_user) %}reposted{% endif %}">
-                        🔄 {{ Repost.query.filter_by(post_id=post.id).count() }}
+                        🔄 {{ repost_counts[post.id] if post.id in repost_counts else 0 }}
                     </button>
                 </form>
                 <a href="{{ url_for('forward_post', post_id=post.id) }}" class="btn btn-like">📤</a>

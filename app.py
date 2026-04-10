@@ -530,8 +530,11 @@ def user_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
     posts = user.posts.order_by(Post.created_at.desc()).all()
     user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all()
+    repost_counts = {}
+    for p in posts:
+        repost_counts[p.id] = Repost.query.filter_by(post_id=p.id).count()
     is_following = current_user.is_authenticated and current_user.is_following(user)
-    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, is_following=is_following)
+    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following)
 
 
 @app.route('/follow/<username>', methods=['POST'])
