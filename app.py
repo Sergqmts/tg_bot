@@ -408,16 +408,23 @@ def create():
             db.session.add(post)
             db.session.flush()
             
-            if 'media' in request.files:
-                file = request.files['media']
-                if file.filename:
-                    ext = file.filename.rsplit('.', 1)[1].lower()
-                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                    
-                    url = upload_to_cloudinary(file, folder='posts')
-                    if url:
-                        filename = url.split('/')[-1].split('.')[0]
-                        media = Media(filename=filename, cloudinary_url=url, media_type=media_type, post=post)
+            files = request.files.getlist('media')
+            for file in files:
+                if file.filename and allowed_file(file.filename):
+                    if cloudinary_configured:
+                        url = upload_to_cloudinary(file, folder='posts')
+                        if url:
+                            filename = url.split('/')[-1].split('.')[0]
+                            ext = file.filename.rsplit('.', 1)[1].lower()
+                            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                            media = Media(filename=filename, cloudinary_url=url, media_type=media_type, post=post)
+                            db.session.add(media)
+                    else:
+                        filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        ext = filename.rsplit('.', 1)[1].lower()
+                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                        media = Media(filename=filename, media_type=media_type, post=post)
                         db.session.add(media)
             
             db.session.commit()
