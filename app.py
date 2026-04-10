@@ -423,6 +423,7 @@ def create():
                             db.session.add(media)
                     else:
                         filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                        app.logger.info(f"Saving file: {filename}")
                         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                         ext = filename.rsplit('.', 1)[1].lower()
                         media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
@@ -817,6 +818,7 @@ def delete_community(slug):
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
+    app.logger.info(f"Looking for file: {filename}")
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
