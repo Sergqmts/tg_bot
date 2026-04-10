@@ -541,6 +541,13 @@ def delete(post_id):
     post = Post.query.get_or_404(post_id)
     if post.author != current_user:
         abort(403)
+    
+    try:
+        from sqlalchemy import text
+        db.session.execute(text("UPDATE message SET post_id = NULL WHERE post_id = :post_id"), {'post_id': post_id})
+        db.session.execute(text("DELETE FROM repost WHERE post_id = :post_id"), {'post_id': post_id})
+    except: pass
+    
     for media in post.media:
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], media.filename))
