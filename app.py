@@ -660,7 +660,7 @@ def conversation(username):
         
         if body or media_url:
             try:
-                msg = Message(body=body if body else None, sender=current_user, recipient=other_user)
+                msg = Message(body=body or '', sender=current_user, recipient=other_user)
                 db.session.add(msg)
                 db.session.flush()
                 
@@ -847,11 +847,11 @@ with app.app_context():
         app.logger.info(f"Table message_media may already exist: {e}")
     
     try:
-        db.session.execute(text("ALTER TABLE message ALTER COLUMN body DROP NOT NULL"))
+        db.session.execute(text("UPDATE message SET body = COALESCE(body, '')"))
         db.session.commit()
-        app.logger.info("Made body nullable in message")
+        app.logger.info("Updated null bodies to empty string")
     except Exception as e:
-        app.logger.info(f"Body may already be nullable: {e}")
+        app.logger.info(f"Error updating bodies: {e}")
 
 
 if __name__ == '__main__':
