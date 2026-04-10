@@ -266,12 +266,14 @@ class Repost(db.Model):
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.Text, nullable=False)
+    body = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     read = db.Column(db.Boolean, default=False)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    media_url = db.Column(db.String(500))
+    media_type = db.Column(db.String(20))
 
 
 class RegistrationForm(FlaskForm):
@@ -624,8 +626,19 @@ def conversation(username):
     
     if request.method == 'POST':
         body = request.form.get('body')
-        if body:
-            msg = Message(body=body, sender=current_user, recipient=other_user)
+        media_url = None
+        media_type = None
+        
+        if 'media' in request.files:
+            file = request.files['media']
+            if file.filename:
+                media_url = upload_to_cloudinary(file, folder='messages')
+                if media_url:
+                    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+        
+        if body or media_url:
+            msg = Message(body=body, sender=current_user, recipient=other_user, media_url=media_url, media_type=media_type)
             db.session.add(msg)
             db.session.commit()
     
@@ -788,6 +801,24 @@ with app.app_context():
         db.session.commit()
     except Exception as e:
         app.logger.info(f"Column post_id in message may already exist: {e}")
+    
+    try:
+        db.session.execute(text("ALTER TABLE message ADD COLUMN media_url VARCHAR(500)"))
+        db.session.commit()
+    except Exception as e:
+        app.logger.info(f"Column media_url may already exist: {e}")
+    
+    try:
+        db.session.execute(text("ALTER TABLE message ADD COLUMN media_type VARCHAR(20)"))
+        db.session.commit()
+    except Exception as e:
+        app.logger.info(f"Column media_type may already exist: {e}")
+    
+    try:
+        db.session.execute(text("ALTER TABLE message ALTER COLUMN body DROP NOT NULL"))
+        db.session.commit()
+    except Exception as e:
+        app.logger.info(f"Column body may already be nullable: {e}")
 
 
 if __name__ == '__main__':

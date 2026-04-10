@@ -14,7 +14,7 @@
                     {% if msg.post_id %}
                         <!-- Вложенный пост -->
                         <a href="{{ url_for('view_post', post_id=msg.post_id) }}" style="text-decoration: none; color: inherit;">
-                            <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg);">
+                            <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); max-width: 250px;">
                                 {% set post = msg.post %}
                                 {% if post %}
                                     <div style="padding: 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border);">
@@ -56,6 +56,13 @@
                                 {% endif %}
                             </div>
                         </a>
+                    {% elif msg.media_url %}
+                        <!-- Медиа в сообщении -->
+                        {% if msg.media_type == 'video' %}
+                            <video src="{{ msg.media_url }}" controls style="max-width: 200px; border-radius: 8px;"></video>
+                        {% else %}
+                            <img src="{{ msg.media_url }}" alt="" style="max-width: 200px; border-radius: 8px;">
+                        {% endif %}
                     {% else %}
                         <div>{{ msg.body }}</div>
                     {% endif %}
@@ -68,9 +75,11 @@
             {% endfor %}
         </div>
         
-        <form method="POST" action="">
-            <div style="display: flex; gap: 10px;">
-                <input type="text" name="body" placeholder="Напишите сообщение..." required autofocus>
+        <form method="POST" action="" enctype="multipart/form-data">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label for="file-input" style="cursor: pointer; font-size: 1.5rem; color: var(--primary);">📎</label>
+                <input type="file" id="file-input" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.submit()">
+                <input type="text" name="body" placeholder="Напишите сообщение..." required autofocus style="flex: 1;">
                 <button type="submit" class="btn btn-primary">Отправить</button>
             </div>
         </form>
