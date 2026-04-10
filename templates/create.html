@@ -84,9 +84,18 @@
         
         function updateFileInput() {
             const input = document.getElementById('media-input');
+            // Создаём новый DataTransfer для каждого обновления
             const dt = new DataTransfer();
-            files.forEach(f => dt.items.add(f));
-            input.files = dt.files;
+            for (let i = 0; i < files.length; i++) {
+                dt.items.add(files[i]);
+            }
+            // Присваиваем новый FileList
+            Object.defineProperty(input, 'files', {
+                value: dt.files,
+                writable: false,
+                configurable: true
+            });
+            console.log('Files updated:', input.files.length);
         }
     </script>
 {% endblock %}

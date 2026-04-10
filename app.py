@@ -409,7 +409,9 @@ def create():
             db.session.flush()
             
             files = request.files.getlist('media')
+            app.logger.info(f"Files count: {len(files)}")
             for file in files:
+                app.logger.info(f"Processing file: {file.filename}")
                 if file.filename and allowed_file(file.filename):
                     if cloudinary_configured:
                         url = upload_to_cloudinary(file, folder='posts')
