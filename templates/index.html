@@ -1,51 +1,60 @@
 {% extends "base.html" %}
 {% block title %}Лента - Social{% endblock %}
 {% block content %}
-    <!-- Сетка постов в стиле Instagram -->
-    <div class="posts-grid">
+    <!-- Один столбец - полные посты -->
+    <div style="max-width: 470px; margin: 0 auto;">
         {% for post in posts %}
-            <div class="post-card" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
-                {% if post.media.count() > 0 %}
-                    <!-- Первое изображение/видео из поста -->
-                    {% set media_item = post.media.first() %}
-                    {% if media_item.cloudinary_url %}
-                        {% if media_item.media_type == 'video' %}
-                            <video class="post-image" src="{{ media_item.cloudinary_url }}" muted></video>
+            <div class="card" style="margin-bottom: 20px;">
+                <!-- Автор -->
+                <div class="post-header">
+                    <div class="avatar" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                        {% if post.author.avatar != 'default.png' %}
+                            <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
                         {% else %}
-                            <img class="post-image" src="{{ media_item.cloudinary_url }}" alt="Пост">
+                            {{ post.author.username[0].upper() }}
                         {% endif %}
-                    {% else %}
-                        {% if media_item.media_type == 'video' %}
-                            <video class="post-image" src="{{ url_for('uploaded_file', filename=media_item.filename) }}" muted></video>
-                        {% else %}
-                            <img class="post-image" src="{{ url_for('uploaded_file', filename=media_item.filename) }}" alt="Пост">
-                        {% endif %}
-                    {% endif %}
-                {% elif post.body %}
-                    <!-- Если нет медиа - показываем текст с градиентом -->
-                    <div class="post-text-only">
-                        {{ post.body[:50] }}{% if post.body|length > 50 %}...{% endif %}
                     </div>
-                {% else %}
-                    <div class="post-text-only">Пост</div>
+                    <a href="{{ url_for('user_profile', username=post.author.username) }}" class="username" style="font-size: 0.95rem;">{{ post.author.username }}</a>
+                    <span class="post-time" style="margin-left: auto;">{{ post.created_at.strftime('%H:%M') }}</span>
+                </div>
+                
+                <!-- Медиа -->
+                {% if post.media.count() > 0 %}
+                    {% set media_item = post.media.first() %}
+                    <div class="post-media-square" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
+                        {% if media_item.cloudinary_url %}
+                            {% if media_item.media_type == 'video' %}
+                                <video src="{{ media_item.cloudinary_url }}" muted></video>
+                            {% else %}
+                                <img src="{{ media_item.cloudinary_url }}" alt="Пост">
+                            {% endif %}
+                        {% else %}
+                            {% if media_item.media_type == 'video' %}
+                                <video src="{{ url_for('uploaded_file', filename=media_item.filename) }}" muted></video>
+                            {% else %}
+                                <img src="{{ url_for('uploaded_file', filename=media_item.filename) }}" alt="Пост">
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% elif post.body %}
+                    <div class="post-text-preview" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
+                        {{ post.body[:100] }}{% if post.body|length > 100 %}...{% endif %}
+                    </div>
                 {% endif %}
                 
-                <!-- Оверлей с лайками и комментариями -->
-                <div class="post-overlay">
-                    <span class="post-stat">❤️ {{ post.likes.count() }}</span>
-                    <span class="post-stat">💬 {{ post.comments.count() }}</span>
+                <!-- Действия -->
+                <div class="post-actions" style="border: none; padding: 10px 0 0;">
+                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="action-btn" title="Лайки">❤️ {{ post.likes.count() }}</a>
+                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="action-btn" title="Комментарии">💬 {{ post.comments.count() }}</a>
                 </div>
             </div>
         {% else %}
-            <!-- Если постов нет -->
-            <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #8e8e8e;">
-                <p style="font-size: 1.2rem; margin-bottom: 10px;">Пока нет постов</p>
-                <p>Подпишитесь на кого-нибудь или создайте первый пост!</p>
+            <div style="text-align: center; padding: 60px 20px; color: #8e8e8e;">
+                <p style="font-size: 1rem;">Пока нет постов</p>
             </div>
         {% endfor %}
     </div>
     
-    <!-- Кнопка создания поста для мобильных -->
     {% if current_user.is_authenticated %}
         <a href="{{ url_for('create') }}" class="btn btn-primary" style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">+</a>
     {% endif %}

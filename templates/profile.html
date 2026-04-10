@@ -1,156 +1,105 @@
 {% extends "base.html" %}
 {% block title %}{{ user.username }} - Social{% endblock %}
 {% block content %}
-    <div class="card">
-        <div class="profile-header">
-            <div class="profile-avatar">
+    <!-- Профиль -->
+    <div class="profile-header" style="padding: 30px 0; border-bottom: 1px solid var(--border); margin-bottom: 30px;">
+        <div class="profile-info" style="display: flex; align-items: center; gap: 30px; max-width: 600px; margin: 0 auto;">
+            <div class="profile-avatar" style="width: 120px; height: 120px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border); flex-shrink: 0;">
                 {% if user.avatar != 'default.png' %}
-                    <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="">
+                    <img src="{{ url_for('uploaded_file', filename=user.avatar) %}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
                 {% else %}
-                    {{ user.username[0].upper() }}
+                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--primary); color: #fff; font-size: 2.5rem;">{{ user.username[0].upper() }}</div>
                 {% endif %}
             </div>
-            <h1>{{ user.username }}</h1>
-            {% if user.bio %}
-                <p style="color: #65676b; margin: 10px 0;">{{ user.bio }}</p>
-            {% endif %}
-            <p style="color: #65676b; font-size: 0.9em;">На сайте с {{ user.created_at.strftime('%d.%m.%Y') }}</p>
-            
-            <div class="profile-stats">
-                <div class="stat">
-                    <div class="stat-value">{{ user.posts.count() }}</div>
-                    <div class="stat-label">постов</div>
+            <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                    <h1 style="font-size: 1.5rem; font-weight: 600;">{{ user.username }}</h1>
                 </div>
-                <div class="stat">
-                    <div class="stat-value">{{ user.followers.count() }}</div>
-                    <div class="stat-label">подписчиков</div>
+                <div class="profile-stats" style="display: flex; gap: 25px;">
+                    <span><strong>{{ user.posts.count() }}</strong> постов</span>
+                    <span><strong>{{ user.followers.count() }}</strong> подписчиков</span>
+                    <span><strong>{{ user.followed.count() }}</strong> подписок</span>
                 </div>
-                <div class="stat">
-                    <div class="stat-value">{{ user.followed.count() }}</div>
-                    <div class="stat-label">подписок</div>
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                {% if current_user.is_authenticated and user != current_user %}
-                    <form method="POST" action="{{ url_for('follow' if not is_following else 'unfollow', username=user.username) }}">
-                        <button type="submit" class="btn btn-primary">
-                            {{ 'Подписаться' if not is_following else 'Отписаться' }}
-                        </button>
-                    </form>
-                    <a href="{{ url_for('conversation', username=user.username) }}" class="btn btn-secondary">Написать</a>
-                {% elif current_user.is_authenticated and user == current_user %}
-                    <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Редактировать профиль</a>
+                {% if user.bio %}
+                    <p style="color: var(--text-light); margin-top: 10px;">{{ user.bio }}</p>
                 {% endif %}
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    {% if current_user.is_authenticated and user != current_user %}
+                        <form method="POST" action="{{ url_for('follow' if not is_following else 'unfollow', username=user.username) }}">
+                            <button type="submit" class="btn btn-primary">{{ 'Подписаться' if not is_following else 'Отписаться' }}</button>
+                        </form>
+                        <a href="{{ url_for('conversation', username=user.username) }}" class="btn btn-secondary">Написать</a>
+                    {% elif current_user.is_authenticated and user == current_user %}
+                        <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Редактировать</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
     
-    <h3 style="margin: 20px 0 15px;">Посты</h3>
+    <!-- Репосты -->
     {% if user_reposts %}
-    <h4 style="margin: 20px 0 15px; color: #65676b;">Репосты</h4>
-    {% for repost in user_reposts %}
-        <div class="card">
-            <div class="post-header">
-                <div class="avatar">
-                    {% if repost.post.author.avatar != 'default.png' %}
-                        <img src="{{ url_for('uploaded_file', filename=repost.post.author.avatar) }}" alt="">
-                    {% else %}
-                        {{ repost.post.author.username[0].upper() }}
-                    {% endif %}
-                </div>
-                <div>
-                    <a href="{{ url_for('user_profile', username=repost.post.author.username) }}" class="username">{{ repost.post.author.username }}</a>
-                    <div class="post-time">{{ repost.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
-                </div>
-            </div>
-            {% if repost.post.body %}
-                <div class="post-content">{{ repost.post.body }}</div>
-            {% endif %}
-            {% for m in repost.post.media %}
-                <div class="post-media">
-                    {% if m.cloudinary_url %}
-                        {% if m.media_type == 'video' %}
-                            <video controls><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+    <h3 style="text-align: center; margin-bottom: 20px; color: var(--text-light);">Репосты</h3>
+    <div class="posts-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        {% for repost in user_reposts %}
+            <div class="post-card" onclick="window.location='{{ url_for('view_post', post_id=repost.post.id) }}'">
+                {% set media = repost.post.media.first() %}
+                {% if media %}
+                    {% if media.cloudinary_url %}
+                        {% if media.media_type == 'video' %}
+                            <video src="{{ media.cloudinary_url }}" muted></video>
                         {% else %}
-                            <img src="{{ m.cloudinary_url }}" alt="Медиа">
+                            <img src="{{ media.cloudinary_url }}" alt="">
+                        {% endif %}
+                    {% else %}
+                        {% if media.media_type == 'video' %}
+                            <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
+                        {% else %}
+                            <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
                         {% endif %}
                     {% endif %}
+                {% elif repost.post.body %}
+                    <div class="post-text-only" style="font-size: 0.7rem;">{{ repost.post.body[:30] }}...</div>
+                {% endif %}
+                <div class="post-overlay">
+                    <span>❤️ {{ repost.post.likes.count() }}</span>
+                    <span>💬 {{ repost.post.comments.count() }}</span>
                 </div>
-            {% endfor %}
-            <div class="post-actions">
-                <span class="btn btn-like">❤️ {{ repost.post.likes.count() }}</span>
-                <span class="btn btn-like">💬 {{ repost.post.comments.count() }}</span>
             </div>
-        </div>
-    {% endfor %}
+        {% endfor %}
+    </div>
     {% endif %}
-    {% for post in posts %}
-        <div class="card">
-            <div class="post-header">
-                <div class="avatar">
-                    {% if post.author.avatar != 'default.png' %}
-                        <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
-                    {% else %}
-                        {{ post.author.username[0].upper() }}
-                    {% endif %}
-                </div>
-                <div>
-                    <a href="{{ url_for('user_profile', username=post.author.username) }}" class="username">{{ post.author.username }}</a>
-                    <div class="post-time">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
-                </div>
-            </div>
-            {% if post.body %}
-                <div class="post-content">{{ post.body }}</div>
-            {% endif %}
-            
-            {% for m in post.media %}
-                <div class="post-media">
-                    {% if m.cloudinary_url %}
-                        {% if m.media_type == 'video' %}
-                            <video controls><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+    
+    <!-- Посты в сетке 3 колонки -->
+    <h3 style="text-align: center; margin-bottom: 20px; color: var(--text-light);">Посты</h3>
+    <div class="posts-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        {% for post in posts %}
+            <div class="post-card" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
+                {% set media = post.media.first() %}
+                {% if media %}
+                    {% if media.cloudinary_url %}
+                        {% if media.media_type == 'video' %}
+                            <video src="{{ media.cloudinary_url }}" muted></video>
                         {% else %}
-                            <img src="{{ m.cloudinary_url }}" alt="Медиа">
+                            <img src="{{ media.cloudinary_url }}" alt="">
                         {% endif %}
                     {% else %}
-                        {% if m.media_type == 'video' %}
-                            <video controls><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                        {% if media.media_type == 'video' %}
+                            <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
                         {% else %}
-                            <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
+                            <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
                         {% endif %}
                     {% endif %}
+                {% elif post.body %}
+                    <div class="post-text-only" style="font-size: 0.7rem;">{{ post.body[:30] }}...</div>
+                {% endif %}
+                <div class="post-overlay">
+                    <span>❤️ {{ post.likes.count() }}</span>
+                    <span>💬 {{ post.comments.count() }}</span>
                 </div>
-            {% endfor %}
-            
-            <div class="post-actions">
-                {% if current_user.is_authenticated %}
-                <form method="POST" action="{{ url_for('like', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-like {% if post.liked_by(current_user) %}liked{% endif %}">
-                        ❤️ {{ post.likes.count() }}
-                    </button>
-                </form>
-                {% else %}
-                <span class="btn btn-like">❤️ {{ post.likes.count() }}</span>
-                {% endif %}
-                <span class="btn btn-like">💬 {{ post.comments.count() }}</span>
-                {% if current_user.is_authenticated %}
-                <form method="POST" action="{{ url_for('repost', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-like {% if post.reposted_by(current_user) %}reposted{% endif %}">
-                        🔄 {{ repost_counts[post.id] if post.id in repost_counts else 0 }}
-                    </button>
-                </form>
-                <a href="{{ url_for('forward_post', post_id=post.id) }}" class="btn btn-like">📤</a>
-                    {% if post.author == current_user %}
-                    <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить пост?')" style="display:inline;">
-                        <button type="submit" class="btn btn-secondary">Удалить</button>
-                    </form>
-                    {% endif %}
-                {% endif %}
             </div>
-        </div>
-    {% else %}
-        <div class="card" style="text-align: center; color: #65676b;">
-            Пока нет постов
-        </div>
-    {% endfor %}
+        {% else %}
+            <p style="grid-column: 1/-1; text-align: center; color: var(--text-light); padding: 40px;">Пока нет постов</p>
+        {% endfor %}
+    </div>
 {% endblock %}
