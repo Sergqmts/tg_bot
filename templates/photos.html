@@ -5,7 +5,6 @@
         <h1 style="margin-bottom: 20px;">📷 Фото</h1>
         
         {% if user_media %}
-            <h2 style="font-size: 1.1rem; margin: 20px 0 15px; color: var(--text-light);">Ваши фото</h2>
             <div class="posts-grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
                 {% for m in user_media %}
                     <div class="post-card" onclick="openModal('{{ m.cloudinary_url or url_for('uploaded_file', filename=m.filename) }}', '{{ m.media_type }}')">
@@ -27,30 +26,7 @@
             </div>
         {% endif %}
         
-        {% if other_media %}
-            <h2 style="font-size: 1.1rem; margin: 20px 0 15px; color: var(--text-light);">Недавние фото</h2>
-            <div class="posts-grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                {% for m in other_media %}
-                    <div class="post-card" onclick="openModal('{{ m.cloudinary_url or url_for('uploaded_file', filename=m.filename) }}', '{{ m.media_type }}')">
-                        {% if m.cloudinary_url %}
-                            {% if m.media_type == 'video' %}
-                                <video src="{{ m.cloudinary_url }}" muted></video>
-                            {% else %}
-                                <img src="{{ m.cloudinary_url }}" alt="">
-                            {% endif %}
-                        {% else %}
-                            {% if m.media_type == 'video' %}
-                                <video src="{{ url_for('uploaded_file', filename=m.filename) }}" muted></video>
-                            {% else %}
-                                <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="">
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-        
-        {% if not user_media and not other_media %}
+        {% if not user_media %}
             <p style="text-align: center; color: var(--text-light); padding: 40px;">Пока нет фото</p>
         {% endif %}
     </div>

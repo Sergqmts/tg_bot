@@ -756,24 +756,8 @@ def explore():
 @app.route('/photos')
 @login_required
 def photos():
-    user_media = Media.query.filter(
-        Media.post_id.isnot(None),
-        Media.post_id.in_(
-            db.session.query(Post.id).join(Post.author).filter(Post.user_id == current_user.id)
-        )
-    ).order_by(Media.post_id.desc()).all()
-    
-    other_media = Media.query.filter(
-        Media.post_id.isnot(None),
-        Media.post_id.in_(
-            db.session.query(Post.id).join(Post.author).filter(
-                Post.user_id != current_user.id,
-                Post.community_id.is_(None)
-            )
-        )
-    ).order_by(Media.post_id.desc()).limit(50).all()
-    
-    return render_template('photos.html', user_media=user_media, other_media=other_media)
+    user_media = Media.query.join(Post).filter(Post.user_id == current_user.id).order_by(Post.created_at.desc()).all()
+    return render_template('photos.html', user_media=user_media)
 
 
 @app.route('/messages')
