@@ -92,6 +92,30 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+_migration_done = False
+
+@app.before_request
+def run_migrations():
+    global _migration_done
+    if _migration_done:
+        return
+    _migration_done = True
+    
+    from sqlalchemy import text
+    is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
+    
+    if is_postgres:
+        try:
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
+            existing = [row[0] for row in result]
+            for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
+                if col not in existing:
+                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
+                    db.session.commit()
+        except Exception as e:
+            app.logger.info(f"Migration: {e}")
+
+
 followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id')),
@@ -108,11 +132,11 @@ class User(UserMixin, db.Model):
     avatar = db.Column(db.String(200), default='default.png')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    location = db.Column(db.String(100))
-    website = db.Column(db.String(200))
-    birthday = db.Column(db.Date)
-    interests = db.Column(db.Text)
-    occupation = db.Column(db.String(100))
+    location = db.Column(db.String(100), nullable=True)
+    website = db.Column(db.String(200), nullable=True)
+    birthday = db.Column(db.Date, nullable=True)
+    interests = db.Column(db.Text, nullable=True)
+    occupation = db.Column(db.String(100), nullable=True)
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
@@ -906,19 +930,7 @@ with app.app_context():
     except Exception as e:
         app.logger.info(f"Error updating bodies: {e}")
     
-    is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
-    
-    if is_postgres:
-        try:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
-            existing = [row[0] for row in result]
-            for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
-                if col not in existing:
-                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-                    app.logger.info(f"Added column: {col}")
-        except Exception as e:
-            app.logger.info(f"Profile migration error: {e}")
+    pass
 
 
 if __name__ == '__main__':
