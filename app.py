@@ -1027,30 +1027,32 @@ with app.app_context():
         db.session.execute(text("CREATE TABLE IF NOT EXISTS repost (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"))
         db.session.commit()
     except Exception as e:
+        db.session.rollback()
         app.logger.info(f"Table repost may already exist: {e}")
     
     try:
-        db.session.execute(text("ALTER TABLE message ADD COLUMN post_id INTEGER REFERENCES post(id)"))
-        db.session.commit()
-        app.logger.info("Added post_id column to message")
+        result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message' AND column_name='post_id'"))
+        if result.fetchone() is None:
+            db.session.execute(text("ALTER TABLE message ADD COLUMN post_id INTEGER REFERENCES post(id)"))
+            db.session.commit()
+            app.logger.info("Added post_id column to message")
     except Exception as e:
+        db.session.rollback()
         app.logger.info(f"Column post_id in message may already exist: {e}")
     
     try:
         db.session.execute(text("CREATE TABLE IF NOT EXISTS message_media (id SERIAL PRIMARY KEY, message_id INTEGER NOT NULL, media_url VARCHAR(500), media_type VARCHAR(20))"))
         db.session.commit()
-        app.logger.info("Created message_media table")
     except Exception as e:
+        db.session.rollback()
         app.logger.info(f"Table message_media may already exist: {e}")
     
     try:
         db.session.execute(text("UPDATE message SET body = COALESCE(body, '')"))
         db.session.commit()
-        app.logger.info("Updated null bodies to empty string")
     except Exception as e:
+        db.session.rollback()
         app.logger.info(f"Error updating bodies: {e}")
-    
-    pass
 
 
 if __name__ == '__main__':
