@@ -850,7 +850,7 @@ def create_community():
         db.session.add(community)
         db.session.flush()
         
-        member = CommunityMember(user=current_user, community=community, role='creator')
+        member = CommunityMember(user_id=current_user.id, community_id=community.id, role='creator', status='approved')
         db.session.add(member)
         
         db.session.commit()
