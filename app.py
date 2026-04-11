@@ -906,17 +906,19 @@ with app.app_context():
     except Exception as e:
         app.logger.info(f"Error updating bodies: {e}")
     
-    is_sqlite = 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']
     is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
     
     if is_postgres:
-        for col in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
-            try:
-                db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS {col[0]} {col[1]}'))
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-        app.logger.info("Profile columns migration attempted")
+        try:
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
+            existing = [row[0] for row in result]
+            for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
+                if col not in existing:
+                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
+                    db.session.commit()
+                    app.logger.info(f"Added column: {col}")
+        except Exception as e:
+            app.logger.info(f"Profile migration error: {e}")
 
 
 if __name__ == '__main__':
