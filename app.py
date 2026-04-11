@@ -227,28 +227,28 @@ class User(UserMixin, db.Model):
         return self.messages_received.filter_by(read=False).count()
 
     def join_community(self, community):
-        existing = CommunityMember.query.filter_by(user=self, community=community).first()
+        existing = CommunityMember.query.filter_by(user_id=self.id, community_id=community.id).first()
         if existing:
             return
         if community.is_private:
-            member = CommunityMember(user=self, community=community, status='pending')
+            member = CommunityMember(user_id=self.id, community_id=community.id, status='pending')
         else:
-            member = CommunityMember(user=self, community=community, status='approved')
+            member = CommunityMember(user_id=self.id, community_id=community.id, status='approved')
         db.session.add(member)
 
     def leave_community(self, community):
-        member = CommunityMember.query.filter_by(user=self, community=community).first()
+        member = CommunityMember.query.filter_by(user_id=self.id, community_id=community.id).first()
         if member:
             db.session.delete(member)
 
     def is_member(self, community):
-        return CommunityMember.query.filter_by(user=self, community=community, status='approved').first() is not None
+        return CommunityMember.query.filter_by(user_id=self.id, community_id=community.id, status='approved').first() is not None
 
     def is_pending(self, community):
-        return CommunityMember.query.filter_by(user=self, community=community, status='pending').first() is not None
+        return CommunityMember.query.filter_by(user_id=self.id, community_id=community.id, status='pending').first() is not None
 
     def is_approved_member(self, community):
-        return CommunityMember.query.filter_by(user=self, community=community, status='approved').first() is not None
+        return CommunityMember.query.filter_by(user_id=self.id, community_id=community.id, status='approved').first() is not None
 
     def has_reposted(self, post):
         return Repost.query.filter_by(user_id=self.id, post_id=post.id).first() is not None
@@ -264,7 +264,7 @@ class User(UserMixin, db.Model):
             db.session.delete(repost)
 
     def is_admin(self, community):
-        member = CommunityMember.query.filter_by(user=self, community=community, status='approved').first()
+        member = CommunityMember.query.filter_by(user_id=self.id, community_id=community.id, status='approved').first()
         return member and member.role in ('admin', 'creator')
 
 
