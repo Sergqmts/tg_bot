@@ -154,6 +154,22 @@ def run_migrations():
                 pass
     except Exception as e:
         app.logger.info(f"Member migration: {e}")
+    
+    try:
+        if is_postgres:
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='post'"))
+            existing = [row[0] for row in result]
+            if 'is_community_post' not in existing:
+                db.session.execute(text('ALTER TABLE "post" ADD COLUMN is_community_post BOOLEAN DEFAULT FALSE'))
+                db.session.commit()
+        elif is_sqlite:
+            try:
+                db.session.execute(text("ALTER TABLE post ADD COLUMN is_community_post BOOLEAN DEFAULT 0"))
+                db.session.commit()
+            except:
+                pass
+    except Exception as e:
+        app.logger.info(f"Post migration: {e}")
 
 
 followers = db.Table('followers',
@@ -274,6 +290,7 @@ class Post(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=True)
+    is_community_post = db.Column(db.Boolean, default=False)
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     media = db.relationship('Media', backref='post', lazy='dynamic', cascade='all, delete-orphan')
@@ -903,13 +920,13 @@ def leave_community(slug):
 @login_required
 def community_post(slug):
     comm = Community.query.filter_by(slug=slug).first_or_404()
-    if not current_user.is_member(comm):
-        flash('Вы должны быть участником сообщества')
+    if comm.creator_id != current_user.id:
+        flash('Только создатель может публиковать записи')
         return redirect(url_for('community', slug=slug))
     
     form = CommunityPostForm()
     if form.validate_on_submit():
-        post = Post(body=form.body.data, author=current_user, community=comm)
+        post = Post(body=form.body.data, author=current_user, community=comm, is_community_post=True)
         db.session.add(post)
         db.session.flush()
         
