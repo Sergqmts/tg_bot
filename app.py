@@ -7,7 +7,7 @@ from wtforms import StringField, TextAreaField, SubmitField, PasswordField, Bool
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import datetime
+from datetime import datetime, date
 import os
 import cloudinary
 import cloudinary.uploader
@@ -107,6 +107,12 @@ class User(UserMixin, db.Model):
     bio = db.Column(db.Text)
     avatar = db.Column(db.String(200), default='default.png')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    location = db.Column(db.String(100))
+    website = db.Column(db.String(200))
+    birthday = db.Column(db.Date)
+    interests = db.Column(db.Text)
+    occupation = db.Column(db.String(100))
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
@@ -323,6 +329,11 @@ class EditProfileForm(FlaskForm):
     username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=3, max=50)])
     bio = StringField('О себе', validators=[Length(max=200)])
     avatar = FileField('Аватар', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
+    location = StringField('Местоположение', validators=[Length(max=100)])
+    website = StringField('Веб-сайт', validators=[Length(max=200)])
+    birthday = StringField('Дата рождения (ДД.ММ.ГГГГ)')
+    interests = TextAreaField('Интересы', validators=[Length(max=500)])
+    occupation = StringField('Род деятельности', validators=[Length(max=100)])
     submit = SubmitField('Сохранить')
 
 
@@ -605,6 +616,10 @@ def edit_profile():
     if form.validate_on_submit():
         current_user.username = form.username.data
         current_user.bio = form.bio.data
+        current_user.location = form.location.data
+        current_user.website = form.website.data
+        current_user.occupation = form.occupation.data
+        current_user.interests = form.interests.data
         
         if form.avatar.data:
             file = form.avatar.data
@@ -612,12 +627,25 @@ def edit_profile():
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             current_user.avatar = filename
         
+        if form.birthday.data:
+            try:
+                current_user.birthday = datetime.strptime(form.birthday.data, '%d.%m.%Y').date()
+            except ValueError:
+                flash('Неверный формат даты. Используйте ДД.ММ.ГГГГГ')
+                return render_template('edit_profile.html', form=form)
+        
         db.session.commit()
         flash('Профиль обновлён')
         return redirect(url_for('user_profile', username=current_user.username))
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.bio.data = current_user.bio
+        form.location.data = current_user.location
+        form.website.data = current_user.website
+        form.occupation.data = current_user.occupation
+        form.interests.data = current_user.interests
+        if current_user.birthday:
+            form.birthday.data = current_user.birthday.strftime('%d.%m.%Y')
     return render_template('edit_profile.html', form=form)
 
 
