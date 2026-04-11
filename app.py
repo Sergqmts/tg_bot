@@ -909,30 +909,14 @@ with app.app_context():
     is_sqlite = 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']
     is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
     
-    if is_sqlite:
-        try:
-            db.session.execute(text("ALTER TABLE user ADD COLUMN location VARCHAR(100)"))
-            db.session.execute(text("ALTER TABLE user ADD COLUMN website VARCHAR(200)"))
-            db.session.execute(text("ALTER TABLE user ADD COLUMN birthday DATE"))
-            db.session.execute(text("ALTER TABLE user ADD COLUMN interests TEXT"))
-            db.session.execute(text("ALTER TABLE user ADD COLUMN occupation VARCHAR(100)"))
-            db.session.commit()
-            app.logger.info("Added profile info columns")
-        except Exception as e:
-            db.session.rollback()
-            app.logger.info(f"Profile columns may already exist: {e}")
-    elif is_postgres:
-        try:
-            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS location VARCHAR(100)"))
-            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS website VARCHAR(200)"))
-            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS birthday DATE"))
-            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS interests TEXT"))
-            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS occupation VARCHAR(100)"))
-            db.session.commit()
-            app.logger.info("Added profile info columns")
-        except Exception as e:
-            db.session.rollback()
-            app.logger.info(f"Profile columns may already exist: {e}")
+    if is_postgres:
+        for col in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
+            try:
+                db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN IF NOT EXISTS {col[0]} {col[1]}'))
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+        app.logger.info("Profile columns migration attempted")
 
 
 if __name__ == '__main__':
