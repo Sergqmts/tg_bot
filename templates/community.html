@@ -12,7 +12,10 @@
                 {% endif %}
             </div>
             <div style="flex: 1;">
-                <h1 style="font-size: 1.5rem; margin-bottom: 5px;">{{ community.name }}</h1>
+                <h1 style="font-size: 1.5rem; margin-bottom: 5px;">
+                {{ community.name }}
+                {% if community.is_private %}<span style="font-size: 0.8rem; background: var(--accent); padding: 2px 8px; border-radius: 10px;">🔒</span>{% endif %}
+            </h1>
                 <div style="color: var(--text-light); font-size: 0.9rem;">
                     {{ community.members.count() }} участников · {{ community.posts.count() }} записей
                 </div>
@@ -32,15 +35,22 @@
                     <form method="POST" action="{{ url_for('leave_community', slug=community.slug) }}">
                         <button type="submit" class="btn btn-secondary">Покинуть</button>
                     </form>
+                {% elif current_user.is_pending(community) %}
+                    <span class="btn btn-secondary" style="opacity: 0.7;">Заявка на рассмотрении</span>
                 {% else %}
                     <form method="POST" action="{{ url_for('join_community', slug=community.slug) }}">
-                        <button type="submit" class="btn btn-primary">Вступить</button>
+                        <button type="submit" class="btn btn-primary">
+                            {% if community.is_private %}Подать заявку{% else %}Вступить{% endif %}
+                        </button>
                     </form>
                 {% endif %}
             {% endif %}
             <a href="{{ url_for('community_members', slug=community.slug) }}" class="btn btn-secondary">Участники</a>
             {% if is_admin %}
                 <a href="{{ url_for('community_post', slug=community.slug) }}" class="btn btn-primary">Написать</a>
+                {% if community.is_private %}
+                <a href="{{ url_for('community_requests', slug=community.slug) }}" class="btn btn-secondary">Заявки</a>
+                {% endif %}
             {% endif %}
         </div>
     </div>

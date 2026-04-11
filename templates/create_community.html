@@ -19,6 +19,13 @@
                     <div class="error">{{ error }}</div>
                 {% endfor %}
             </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                {{ form.is_private() }}
+                {{ form.is_private.label }}
+            </div>
+            <div class="form-group" style="color: var(--text-light); font-size: 0.85rem;">
+                Закрытое сообщество - участники попадают через заявку
+            </div>
             <div class="form-group">
                 {{ form.image.label }}
                 {{ form.image() }}

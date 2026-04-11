@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Заявки - {{ community.name }}{% endblock %}
+{% block content %}
+    <div style="max-width: 600px; margin: 40px auto;">
+        <div style="margin-bottom: 20px;">
+            <a href="{{ url_for('community', slug=community.slug) }}">← Назад к сообществу</a>
+        </div>
+        <h1>Заявки в сообщество "{{ community.name }}"</h1>
+        
+        {% for request in requests %}
+            <div class="card" style="margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="avatar">
+                        {% if request.user.avatar != 'default.png' %}
+                            <img src="{{ url_for('uploaded_file', filename=request.user.avatar) }}" alt="">
+                        {% else %}
+                            {{ request.user.username[0].upper() }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{{ url_for('user_profile', username=request.user.username) }}">{{ request.user.username }}</a>
+                        <div style="color: var(--text-light); font-size: 0.85rem;">
+                            Заявка от {{ request.created_at.strftime('%d.%m.%Y %H:%M') }}
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <form method="POST" action="{{ url_for('approve_member', slug=community.slug, user_id=request.user_id) }}">
+                        <button type="submit" class="btn btn-primary">Принять</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('deny_member', slug=community.slug, user_id=request.user_id) }}">
+                        <button type="submit" class="btn btn-secondary">Отклонить</button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <p style="text-align: center; color: var(--text-light); padding: 40px;">Нет заявок</p>
+        {% endfor %}
+    </div>
+{% endblock %}

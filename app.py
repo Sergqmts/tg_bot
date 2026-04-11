@@ -103,17 +103,57 @@ def run_migrations():
     
     from sqlalchemy import text
     is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
+    is_sqlite = 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']
     
-    if is_postgres:
-        try:
+    try:
+        if is_postgres:
             result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
             existing = [row[0] for row in result]
             for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
                 if col not in existing:
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
-        except Exception as e:
-            app.logger.info(f"Migration: {e}")
+        elif is_sqlite:
+            for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
+                try:
+                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
+                    db.session.commit()
+                except:
+                    pass
+    except Exception as e:
+        app.logger.info(f"User migration: {e}")
+    
+    try:
+        if is_postgres:
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='community'"))
+            existing = [row[0] for row in result]
+            if 'is_private' not in existing:
+                db.session.execute(text('ALTER TABLE "community" ADD COLUMN is_private BOOLEAN DEFAULT FALSE'))
+                db.session.commit()
+        elif is_sqlite:
+            try:
+                db.session.execute(text("ALTER TABLE community ADD COLUMN is_private BOOLEAN DEFAULT 0"))
+                db.session.commit()
+            except:
+                pass
+    except Exception as e:
+        app.logger.info(f"Community migration: {e}")
+    
+    try:
+        if is_postgres:
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='community_member'"))
+            existing = [row[0] for row in result]
+            if 'status' not in existing:
+                db.session.execute(text('ALTER TABLE "community_member" ADD COLUMN status VARCHAR(20) DEFAULT \'approved\''))
+                db.session.commit()
+        elif is_sqlite:
+            try:
+                db.session.execute(text("ALTER TABLE community_member ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
+                db.session.commit()
+            except:
+                pass
+    except Exception as e:
+        app.logger.info(f"Member migration: {e}")
 
 
 followers = db.Table('followers',
@@ -187,9 +227,14 @@ class User(UserMixin, db.Model):
         return self.messages_received.filter_by(read=False).count()
 
     def join_community(self, community):
-        if not self.is_member(community):
-            member = CommunityMember(user=self, community=community)
-            db.session.add(member)
+        existing = CommunityMember.query.filter_by(user=self, community=community).first()
+        if existing:
+            return
+        if community.is_private:
+            member = CommunityMember(user=self, community=community, status='pending')
+        else:
+            member = CommunityMember(user=self, community=community, status='approved')
+        db.session.add(member)
 
     def leave_community(self, community):
         member = CommunityMember.query.filter_by(user=self, community=community).first()
@@ -197,7 +242,13 @@ class User(UserMixin, db.Model):
             db.session.delete(member)
 
     def is_member(self, community):
-        return CommunityMember.query.filter_by(user=self, community=community).first() is not None
+        return CommunityMember.query.filter_by(user=self, community=community, status='approved').first() is not None
+
+    def is_pending(self, community):
+        return CommunityMember.query.filter_by(user=self, community=community, status='pending').first() is not None
+
+    def is_approved_member(self, community):
+        return CommunityMember.query.filter_by(user=self, community=community, status='approved').first() is not None
 
     def has_reposted(self, post):
         return Repost.query.filter_by(user_id=self.id, post_id=post.id).first() is not None
@@ -213,7 +264,7 @@ class User(UserMixin, db.Model):
             db.session.delete(repost)
 
     def is_admin(self, community):
-        member = CommunityMember.query.filter_by(user=self, community=community).first()
+        member = CommunityMember.query.filter_by(user=self, community=community, status='approved').first()
         return member and member.role in ('admin', 'creator')
 
 
@@ -240,12 +291,16 @@ class Community(db.Model):
     slug = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
     image = db.Column(db.String(200), default='community_default.png')
+    is_private = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     creator = db.relationship('User', backref='created_communities')
     posts = db.relationship('Post', backref='community', lazy='dynamic', cascade='all, delete-orphan')
-    members = db.relationship('CommunityMember', backref='community', lazy='dynamic', cascade='all, delete-orphan')
+    members = db.relationship('CommunityMember', backref='community', lazy='dynamic', cascade='all, delete-orphan',
+                           primaryjoin="CommunityMember.community_id==Community.id",
+                           foreign_keys='CommunityMember.community_id',
+                           viewonly=True)
 
 
 class CommunityMember(db.Model):
@@ -253,9 +308,10 @@ class CommunityMember(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=False)
     role = db.Column(db.String(20), default='member')
+    status = db.Column(db.String(20), default='approved')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    user = db.relationship('User', backref='community_memberships')
+    user = db.relationship('User', backref=db.backref('community_memberships', lazy='dynamic'))
     
     __table_args__ = (db.UniqueConstraint('user_id', 'community_id', name='unique_membership'),)
 
@@ -364,6 +420,7 @@ class EditProfileForm(FlaskForm):
 class CommunityForm(FlaskForm):
     name = StringField('Название', validators=[DataRequired(), Length(min=3, max=50)])
     description = TextAreaField('Описание', validators=[Length(max=500)])
+    is_private = BooleanField('Закрытое сообщество')
     image = FileField('Обложка', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
     submit = SubmitField('Создать')
 
@@ -780,6 +837,7 @@ def create_community():
             name=form.name.data,
             slug=slug,
             description=form.description.data,
+            is_private=form.is_private.data,
             creator=current_user
         )
         
@@ -814,10 +872,17 @@ def community(slug):
 @login_required
 def join_community(slug):
     comm = Community.query.filter_by(slug=slug).first_or_404()
-    if not current_user.is_member(comm):
+    if current_user.is_member(comm):
+        flash('Вы уже участник сообщества')
+    elif current_user.is_pending(comm):
+        flash('Ваша заявка на рассмотрении')
+    else:
         current_user.join_community(comm)
         db.session.commit()
-        flash(f'Вы вступили в сообщество "{comm.name}"')
+        if comm.is_private:
+            flash('Заявка отправлена на рассмотрение')
+        else:
+            flash(f'Вы вступили в сообщество "{comm.name}"')
     return redirect(url_for('community', slug=slug))
 
 
@@ -866,8 +931,46 @@ def community_post(slug):
 @app.route('/community/<slug>/members')
 def community_members(slug):
     comm = Community.query.filter_by(slug=slug).first_or_404()
-    members = comm.members.order_by(CommunityMember.created_at.desc()).all()
+    members = comm.members.filter_by(status='approved').order_by(CommunityMember.created_at.desc()).all()
     return render_template('community_members.html', community=comm, members=members)
+
+
+@app.route('/community/<slug>/requests')
+@login_required
+def community_requests(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    if not current_user.is_admin(comm):
+        abort(403)
+    requests = comm.members.filter_by(status='pending').order_by(CommunityMember.created_at.desc()).all()
+    return render_template('community_requests.html', community=comm, requests=requests)
+
+
+@app.route('/community/<slug>/approve/<int:user_id>', methods=['POST'])
+@login_required
+def approve_member(slug, user_id):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    if not current_user.is_admin(comm):
+        abort(403)
+    member = CommunityMember.query.filter_by(community=comm, user_id=user_id, status='pending').first()
+    if member:
+        member.status = 'approved'
+        db.session.commit()
+        flash('Участник одобрен')
+    return redirect(url_for('community_requests', slug=slug))
+
+
+@app.route('/community/<slug>/deny/<int:user_id>', methods=['POST'])
+@login_required
+def deny_member(slug, user_id):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    if not current_user.is_admin(comm):
+        abort(403)
+    member = CommunityMember.query.filter_by(community=comm, user_id=user_id, status='pending').first()
+    if member:
+        db.session.delete(member)
+        db.session.commit()
+        flash('Заявка отклонена')
+    return redirect(url_for('community_requests', slug=slug))
 
 
 @app.route('/community/<slug>/delete', methods=['POST'])
