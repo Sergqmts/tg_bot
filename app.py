@@ -905,6 +905,34 @@ with app.app_context():
         app.logger.info("Updated null bodies to empty string")
     except Exception as e:
         app.logger.info(f"Error updating bodies: {e}")
+    
+    is_sqlite = 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']
+    is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
+    
+    if is_sqlite:
+        try:
+            db.session.execute(text("ALTER TABLE user ADD COLUMN location VARCHAR(100)"))
+            db.session.execute(text("ALTER TABLE user ADD COLUMN website VARCHAR(200)"))
+            db.session.execute(text("ALTER TABLE user ADD COLUMN birthday DATE"))
+            db.session.execute(text("ALTER TABLE user ADD COLUMN interests TEXT"))
+            db.session.execute(text("ALTER TABLE user ADD COLUMN occupation VARCHAR(100)"))
+            db.session.commit()
+            app.logger.info("Added profile info columns")
+        except Exception as e:
+            db.session.rollback()
+            app.logger.info(f"Profile columns may already exist: {e}")
+    elif is_postgres:
+        try:
+            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS location VARCHAR(100)"))
+            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS website VARCHAR(200)"))
+            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS birthday DATE"))
+            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS interests TEXT"))
+            db.session.execute(text("ALTER TABLE user ADD COLUMN IF NOT EXISTS occupation VARCHAR(100)"))
+            db.session.commit()
+            app.logger.info("Added profile info columns")
+        except Exception as e:
+            db.session.rollback()
+            app.logger.info(f"Profile columns may already exist: {e}")
 
 
 if __name__ == '__main__':
