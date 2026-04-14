@@ -831,7 +831,7 @@ def user_profile(username):
     is_following = current_user.is_authenticated and current_user.is_following(user)
     is_blocked = current_user.is_authenticated and current_user.is_blocking(user)
     is_pending = current_user.is_authenticated and current_user.is_pending(user)
-    pending_count = current_user.get_pending_followers()|length if current_user.is_authenticated and user.id == current_user.id else 0
+    pending_count = len(current_user.get_pending_followers()) if current_user.is_authenticated and user.id == current_user.id else 0
     return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count)
 
 
