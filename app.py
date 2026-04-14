@@ -34,6 +34,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov'}
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 cloudinary_configured = os.environ.get('CLOUDINARY_CLOUD_NAME') and os.environ.get('CLOUDINARY_API_KEY')
 if cloudinary_configured:
@@ -1245,6 +1246,7 @@ def chat_view(chat_id):
             app.logger.info(f"File: '{file.filename}', content_type: {file.content_type}, size: {file_len}, allowed: {allowed_file(file.filename) if file.filename else False}")
             if file.filename and file_len > 0 and allowed_file(file.filename):
                 try:
+                    media_url = None
                     if cloudinary_configured:
                         app.logger.info("Uploading to cloudinary...")
                         media_url = upload_to_cloudinary(file, folder='messages')
@@ -1257,7 +1259,10 @@ def chat_view(chat_id):
                     else:
                         app.logger.warning("Cloudinary not configured, using local storage")
                     
+                    app.logger.info(f"Before local save check, media_url: {media_url}")
+                    
                     if not media_url:
+                        app.logger.info("Entering local save block")
                         filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
                         full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                         app.logger.info(f"Saving to: {full_path}")
