@@ -83,10 +83,10 @@
             {% endfor %}
         </div>
         
-        <form class="message-form" method="POST" action="" enctype="multipart/form-data">
+        <form class="message-form" method="POST" action="" enctype="multipart/form-data" id="messageForm">
             <div style="display: flex; gap: 10px; align-items: center;">
                 <label for="file-input" style="cursor: pointer; font-size: 1.5rem; color: var(--primary);">📎</label>
-                <input type="file" id="file-input" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.submit()">
+                <input type="file" id="file-input" name="media" accept="image/*,video/*" style="display: none;" onchange="document.getElementById('messageForm').submit()">
                 <input type="text" name="body" placeholder="Напишите сообщение..." style="flex: 1;">
                 <button type="submit" class="btn btn-primary">Отправить</button>
             </div>
