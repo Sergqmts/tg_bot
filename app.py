@@ -277,22 +277,17 @@ class User(UserMixin, db.Model):
         return Like.query.filter_by(user_id=self.id, post_id=post.id).first() is not None
 
     def follow(self, user):
-        if not self.is_following(user):
-            from sqlalchemy import and_
-            existing = followers.select().where(
-                and_(followers.c.follower_id == self.id, followers.c.followed_id == user.id)
-            ).execute().fetchone()
-            if not existing:
-                stmt = followers.insert().values(
-                    follower_id=self.id,
-                    followed_id=user.id,
-                    status='pending' if user.approve_followers else 'approved'
-                )
-                db.session.execute(stmt)
-                db.session.commit()
+        if not self.is_following(user) and not self.is_pending(user):
+            stmt = followers.insert().values(
+                follower_id=self.id,
+                followed_id=user.id,
+                status='pending' if user.approve_followers else 'approved'
+            )
+            db.session.execute(stmt)
+            db.session.commit()
 
     def unfollow(self, user):
-        if self.is_following(user):
+        if self.is_following(user) or self.is_pending(user):
             from sqlalchemy import and_
             stmt = followers.delete().where(
                 and_(followers.c.follower_id == self.id, followers.c.followed_id == user.id)
@@ -303,9 +298,11 @@ class User(UserMixin, db.Model):
     def get_pending_followers(self):
         try:
             from sqlalchemy import and_
-            result = followers.select().where(
-                and_(followers.c.followed_id == self.id, followers.c.status == 'pending')
-            ).execute().fetchall()
+            result = db.session.execute(
+                followers.select().where(
+                    and_(followers.c.followed_id == self.id, followers.c.status == 'pending')
+                )
+            ).fetchall()
             return [User.query.get(r.follower_id) for r in result]
         except Exception:
             return []
