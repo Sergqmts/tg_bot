@@ -301,11 +301,14 @@ class User(UserMixin, db.Model):
             db.session.commit()
 
     def get_pending_followers(self):
-        from sqlalchemy import and_
-        result = followers.select().where(
-            and_(followers.c.followed_id == self.id, followers.c.status == 'pending')
-        ).execute().fetchall()
-        return [User.query.get(r.follower_id) for r in result]
+        try:
+            from sqlalchemy import and_
+            result = followers.select().where(
+                and_(followers.c.followed_id == self.id, followers.c.status == 'pending')
+            ).execute().fetchall()
+            return [User.query.get(r.follower_id) for r in result]
+        except Exception:
+            return []
 
     def approve_follower(self, user):
         from sqlalchemy import and_
