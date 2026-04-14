@@ -203,7 +203,8 @@ def run_migrations():
 followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id')),
-    db.Column('created_at', db.DateTime, default=datetime.utcnow)
+    db.Column('created_at', db.DateTime, default=datetime.utcnow),
+    db.Column('status', db.String(20), default='approved')
 )
 
 blocked = db.Table('blocked',
