@@ -16,7 +16,64 @@
                             {{ msg.sender.username }}
                         </div>
                     {% endif %}
-                    <div>{{ msg.body }}</div>
+                    
+                    {% if msg.post_id %}
+                        {% set post = Post.query.get(msg.post_id) %}
+                        {% if post %}
+                        <a href="{{ url_for('view_post', post_id=post.id) }}" style="text-decoration: none; color: inherit;">
+                            <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); max-width: 250px;">
+                                <div style="padding: 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border);">
+                                    <div class="avatar" style="width: 24px; height: 24px; font-size: 0.7rem;">
+                                        {% if post.author.avatar != 'default.png' %}
+                                            <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
+                                        {% else %}
+                                            {{ post.author.username[0].upper() }}
+                                        {% endif %}
+                                    </div>
+                                    <span style="font-size: 0.85rem; font-weight: 600;">{{ post.author.username }}</span>
+                                </div>
+                                {% if post.media.count() > 0 %}
+                                    {% set media = post.media.first() %}
+                                    <div style="aspect-ratio: 1;">
+                                        {% if media.cloudinary_url %}
+                                            {% if media.media_type == 'video' %}
+                                                <video src="{{ media.cloudinary_url }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                            {% else %}
+                                                <img src="{{ media.cloudinary_url }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% endif %}
+                                        {% else %}
+                                            {% if media.media_type == 'video' %}
+                                                <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                            {% else %}
+                                                <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                {% elif post.body %}
+                                    <div style="padding: 15px; color: var(--text); font-size: 0.9rem;">
+                                        {{ post.body[:80] }}{% if post.body|length > 80 %}...{% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% endif %}
+                    {% elif msg.body %}
+                        <div>{{ msg.body }}</div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 100%;">
+                            {% for m in msg.medias %}
+                                {% if m.media_url %}
+                                    {% if m.media_type == 'video' %}
+                                        <div onclick="openModal('{{ m.media_url }}', 'video')" style="cursor: pointer; width: 120px; height: 120px; border-radius: 8px; overflow: hidden; position: relative;">
+                                            <video src="{{ m.media_url }}" style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 2rem;">▶</div>
+                                        </div>
+                                    {% else %}
+                                        <img src="{{ m.media_url }}" alt="" onclick="openModal('{{ m.media_url }}', 'image')" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;">
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                     <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
                 </div>
             {% else %}
@@ -26,15 +83,48 @@
             {% endfor %}
         </div>
         
-        <form class="message-form" method="POST" action="">
+        <form class="message-form" method="POST" action="" enctype="multipart/form-data">
             <div style="display: flex; gap: 10px; align-items: center;">
+                <label for="file-input" style="cursor: pointer; font-size: 1.5rem; color: var(--primary);">📎</label>
+                <input type="file" id="file-input" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.submit()">
                 <input type="text" name="body" placeholder="Напишите сообщение..." style="flex: 1;">
                 <button type="submit" class="btn btn-primary">Отправить</button>
             </div>
         </form>
     </div>
     
+    <div id="mediaModal" class="modal" onclick="closeModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center;">
+        <span onclick="closeModal()" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 2rem; cursor: pointer;">&times;</span>
+        <img id="modalImage" style="max-width: 90%; max-height: 90%; object-fit: contain;">
+        <video id="modalVideo" controls style="max-width: 90%; max-height: 90%;"></video>
+    </div>
+    
     <script>
         document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
+        
+        function openModal(url, type) {
+            const modal = document.getElementById('mediaModal');
+            const img = document.getElementById('modalImage');
+            const video = document.getElementById('modalVideo');
+            
+            if (type === 'video') {
+                img.style.display = 'none';
+                video.style.display = 'block';
+                video.src = url;
+            } else {
+                img.style.display = 'block';
+                video.style.display = 'none';
+                img.src = url;
+            }
+            modal.style.display = 'flex';
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('mediaModal');
+            const video = document.getElementById('modalVideo');
+            video.pause();
+            video.src = '';
+            modal.style.display = 'none';
+        }
     </script>
 {% endblock %}

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Переслать пост - Social{% endblock %}
 {% block content %}
-<div class="card">
+<div class="card" style="max-width: 500px; margin: 40px auto;">
     <h3>Переслать пост</h3>
     
-    <div class="post-preview">
+    <div class="post-preview" style="padding: 15px; background: var(--bg); border-radius: 8px; margin-bottom: 20px;">
         <div class="post-header">
             <div class="avatar">
                 {% if post.author.avatar != 'default.png' %}
@@ -18,16 +18,34 @@
             </div>
         </div>
         {% if post.body %}
-            <div class="post-content">{{ post.body }}</div>
+            <div class="post-content">{{ post.body[:100] }}{% if post.body|length > 100 %}...{% endif %}</div>
         {% endif %}
     </div>
     
     <form method="POST">
         <input type="hidden" name="action" value="to_profile">
-        <button type="submit" class="btn btn-primary">Добавить в мой профиль</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">Добавить в мой профиль</button>
     </form>
     
-    <hr>
+    {% if chats %}
+    <hr style="margin: 20px 0;">
+    
+    <h4>Отправить в групповой чат</h4>
+    <form method="POST">
+        <div class="form-group">
+            <label>Выберите чат:</label>
+            <select name="chat_id" required>
+                <option value="">-- Выберите чат --</option>
+                {% for chat in chats %}
+                    <option value="{{ chat.id }}">{{ chat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Отправить</button>
+    </form>
+    {% endif %}
+    
+    <hr style="margin: 20px 0;">
     
     <h4>Отправить в личные сообщения</h4>
     <form method="POST">
@@ -41,7 +59,7 @@
                 {% endfor %}
             </select>
         </div>
-        <button type="submit" class="btn btn-primary">Отправить</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Отправить</button>
     </form>
 </div>
 {% endblock %}

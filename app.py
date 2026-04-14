@@ -800,24 +800,37 @@ def forward_post(post_id):
             db.session.commit()
             flash('Пост добавлен в ваш профиль')
             return redirect(url_for('user_profile', username=current_user.username))
+        
+        chat_id = request.form.get('chat_id')
+        if chat_id:
+            chat = Chat.query.get(int(chat_id))
+            member = ChatMember.query.filter_by(chat_id=chat.id, user_id=current_user.id).first()
+            if member:
+                message_body = f"Репост от @{post.author.username}"
+                if post.body:
+                    message_body += f":\n\n{post.body}"
+                msg = Message(body=message_body, sender_id=current_user.id, chat_id=chat.id, post_id=post.id)
+                db.session.commit()
+                flash(f'Пост отправлен в чат {chat.name}')
+                return redirect(url_for('chat_view', chat_id=chat.id))
+        
         username = request.form.get('username', '').strip()
         user = User.query.filter_by(username=username).first()
         if user:
-            app.logger.info(f"Forwarding post {post.id} to user {user.username}")
-            app.logger.info(f"Post body: {post.body}")
             message_body = f"Репост от @{post.author.username}"
             if post.body:
                 message_body += f":\n\n{post.body}"
-            msg = Message(body=message_body, sender=current_user, recipient=user, post_id=post.id)
-            db.session.add(msg)
+            msg = Message(body=message_body, sender_id=current_user.id, recipient_id=user.id, post_id=post.id)
             db.session.commit()
-            app.logger.info(f"Message saved with post_id={msg.post_id}")
             flash(f'Пост отправлен пользователю {user.username}')
             return redirect(url_for('index'))
         else:
             flash('Пользователь не найден')
+    
     users = User.query.filter(User.id != current_user.id).all()
-    return render_template('forward_post.html', post=post, users=users)
+    user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
+    chats = [Chat.query.get(cm.chat_id) for cm in user_chats]
+    return render_template('forward_post.html', post=post, users=users, chats=chats)
 
 
 @app.route('/post/<int:post_id>/like', methods=['POST'])
@@ -1218,19 +1231,51 @@ def chat_view(chat_id):
     
     if request.method == 'POST':
         body = request.form.get('body', '').strip()
+        post_id = request.form.get('post_id')
+        media_url = None
+        media_type = None
         
-        if body:
-            msg = Message(body=body, sender_id=current_user.id, chat_id=chat_id)
-            db.session.add(msg)
-            db.session.commit()
+        if 'media' in request.files:
+            file = request.files['media']
+            if file.filename and allowed_file(file.filename):
+                if cloudinary_configured:
+                    media_url = upload_to_cloudinary(file, folder='messages')
+                    if media_url:
+                        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                else:
+                    filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    media_url = url_for('uploaded_file', filename=filename)
+                    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+        
+        if body or media_url or post_id:
+            try:
+                msg = Message(
+                    body=body or '', 
+                    sender_id=current_user.id, 
+                    chat_id=chat_id,
+                    post_id=int(post_id) if post_id else None
+                )
+                db.session.add(msg)
+                db.session.flush()
+                
+                if media_url:
+                    media = MessageMedia(message_id=msg.id, media_url=media_url, media_type=media_type)
+                    db.session.add(media)
+                
+                db.session.commit()
+            except Exception as e:
+                app.logger.error(f"Chat message error: {e}")
+                db.session.rollback()
     
     messages = chat.messages.order_by(Message.created_at.asc()).all()
     
-    # Отметить сообщения как прочитанные
     Message.query.filter_by(chat_id=chat_id).filter(Message.sender_id != current_user.id, Message.read == False).update({'read': True})
     db.session.commit()
     
-    return render_template('chat.html', chat=chat, messages=messages)
+    return render_template('chat.html', chat=chat, messages=messages, Post=Post)
 
 
 @app.route('/chat/<int:chat_id>/leave', methods=['POST'])
