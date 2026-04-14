@@ -1261,9 +1261,15 @@ def chat_view(chat_id):
                         filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
                         full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                         app.logger.info(f"Saving to: {full_path}")
-                        file.save(full_path)
-                        app.logger.info(f"File saved, exists: {os.path.exists(full_path)}")
+                        try:
+                            file.save(full_path)
+                            app.logger.info(f"File saved, exists: {os.path.exists(full_path)}")
+                            list_files = os.listdir(app.config['UPLOAD_FOLDER'])
+                            app.logger.info(f"Files in upload dir: {list_files[:5]}")
+                        except Exception as e:
+                            app.logger.error(f"Save error: {e}")
                         media_url = url_for('uploaded_file', filename=filename)
+                        app.logger.info(f"Generated URL: {media_url}")
                         ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                         media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
                     app.logger.info(f"Media URL: {media_url}, type: {media_type}")
