@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ other_user.username }} - Сообщения - Social{% endblock %}
 {% block content %}
-    <div class="card">
-        <div style="display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
-            <a href="{{ url_for('messages') }}" class="btn btn-secondary" style="margin-right: 15px;">←</a>
+    <div class="card chat-card">
+        <div class="chat-header">
+            <a href="{{ url_for('messages') }}" class="btn btn-secondary">←</a>
             <div class="avatar" style="margin-right: 10px;">{{ other_user.username[0].upper() }}</div>
             <a href="{{ url_for('user_profile', username=other_user.username) }}" class="username">{{ other_user.username }}</a>
         </div>
@@ -81,7 +81,7 @@
             {% endfor %}
         </div>
         
-        <form method="POST" action="" enctype="multipart/form-data">
+        <form class="message-form" method="POST" action="" enctype="multipart/form-data">
             <div style="display: flex; gap: 10px; align-items: center;">
                 <label for="file-input" style="cursor: pointer; font-size: 1.5rem; color: var(--primary);">📎</label>
                 <input type="file" id="file-input" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.submit()">
@@ -125,5 +125,20 @@
         }
         
         document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
+        
+        // Адаптация для мобильных - поднятие формы над клавиатурой
+        const messageInput = document.querySelector('input[name="body"]');
+        const messageForm = document.querySelector('.message-form');
+        if (messageInput && messageForm) {
+            messageInput.addEventListener('focus', function() {
+                setTimeout(function() {
+                    messageForm.scrollIntoView({behavior: 'smooth', block: 'end'});
+                }, 100);
+            });
+            
+            window.addEventListener('resize', function() {
+                document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
+            });
+        }
     </script>
 {% endblock %}

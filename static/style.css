@@ -845,6 +845,52 @@ label {
     margin-bottom: 15px;
 }
 
+.chat-card {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    padding: 15px;
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.chat-card .chat {
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 0;
+}
+
+.message-form {
+    flex-shrink: 0;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+
+@media (max-width: 480px) {
+    .chat-card {
+        height: calc(100vh - 70px);
+        padding: 10px;
+    }
+    
+    .chat-header {
+        padding-bottom: 10px;
+    }
+    
+    .chat-header .btn {
+        padding: 6px 10px;
+        font-size: 1.2rem;
+    }
+}
+
 .chat-message {
     max-width: 70%;
     padding: 10px 14px;
