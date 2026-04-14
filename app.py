@@ -458,11 +458,21 @@ class CommunityPostForm(FlaskForm):
 @app.route('/')
 def index():
     try:
-        posts = Post.query.order_by(Post.created_at.desc()).all()
-        repost_counts = {}
-        for p in posts:
-            repost_counts[p.id] = Repost.query.filter_by(post_id=p.id).count()
-        app.logger.info(f"Found {len(posts)} posts")
+        if current_user.is_authenticated:
+            followed_ids = [u.id for u in current_user.followed]
+            member_communities = [cm.community_id for cm in current_user.community_memberships.filter_by(status='approved').all()]
+            
+            posts = Post.query.filter(
+                db.or_(
+                    Post.user_id.in_(followed_ids),
+                    Post.community_id.in_(member_communities) if member_communities else False,
+                    Post.user_id == current_user.id
+                )
+            ).order_by(Post.created_at.desc()).all()
+        else:
+            posts = Post.query.order_by(Post.created_at.desc()).all()
+        
+        repost_counts = {p.id: Repost.query.filter_by(post_id=p.id).count() for p in posts}
     except Exception as e:
         app.logger.error(f"DB Error: {e}")
         posts = []
