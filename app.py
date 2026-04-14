@@ -178,6 +178,12 @@ followers = db.Table('followers',
     db.Column('created_at', db.DateTime, default=datetime.utcnow)
 )
 
+blocked = db.Table('blocked',
+    db.Column('blocker_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('blocked_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('created_at', db.DateTime, default=datetime.utcnow)
+)
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -203,6 +209,14 @@ class User(UserMixin, db.Model):
         primaryjoin=(followers.c.follower_id == id),
         secondaryjoin=(followers.c.followed_id == id),
         backref=db.backref('followers', lazy='dynamic'),
+        lazy='dynamic'
+    )
+    
+    blocked = db.relationship(
+        'User', secondary=blocked,
+        primaryjoin=(blocked.c.blocker_id == id),
+        secondaryjoin=(blocked.c.blocked_id == id),
+        backref=db.backref('blocked_by', lazy='dynamic'),
         lazy='dynamic'
     )
     
@@ -238,6 +252,19 @@ class User(UserMixin, db.Model):
 
     def is_following(self, user):
         return self.followed.filter(followers.c.followed_id == user.id).first() is not None
+
+    def block(self, user):
+        if not self.is_blocking(user):
+            self.blocked.append(user)
+            if self.is_following(user):
+                self.unfollow(user)
+
+    def unblock(self, user):
+        if self.is_blocking(user):
+            self.blocked.remove(user)
+
+    def is_blocking(self, user):
+        return self.blocked.filter(blocked.c.blocked_id == user.id).first() is not None
 
     def unread_messages(self):
         return self.messages_received.filter_by(read=False).count()
@@ -461,6 +488,7 @@ def index():
         return redirect(url_for('login'))
     try:
         followed_ids = [u.id for u in current_user.followed]
+        blocked_ids = [u.id for u in current_user.blocked]
         member_communities = [cm.community_id for cm in current_user.community_memberships.filter_by(status='approved').all()]
         
         posts = Post.query.filter(
@@ -468,7 +496,8 @@ def index():
                 Post.user_id.in_(followed_ids),
                 Post.community_id.in_(member_communities) if member_communities else False,
                 Post.user_id == current_user.id
-            )
+            ),
+            ~Post.user_id.in_(blocked_ids)
         ).order_by(Post.created_at.desc()).all()
         
         repost_counts = {p.id: Repost.query.filter_by(post_id=p.id).count() for p in posts}
@@ -684,15 +713,24 @@ def delete(post_id):
 @app.route('/user/<username>')
 def user_profile(username):
     user = User.query.filter_by(username=username).first_or_404()
-    posts = user.posts.order_by(Post.created_at.desc()).all()
-    user_reposts = []
-    if user.id:
-        user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all()
+    
+    blocked_by_user = current_user.is_authenticated and current_user.is_blocking(user)
+    
+    if blocked_by_user:
+        posts = []
+        user_reposts = []
+    else:
+        posts = user.posts.order_by(Post.created_at.desc()).all()
+        user_reposts = []
+        if user.id:
+            user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all()
+    
     repost_counts = {}
     for p in posts:
         repost_counts[p.id] = Repost.query.filter_by(post_id=p.id).count() if p.id else 0
     is_following = current_user.is_authenticated and current_user.is_following(user)
-    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following)
+    is_blocked = current_user.is_authenticated and current_user.is_blocking(user)
+    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked)
 
 
 @app.route('/follow/<username>', methods=['POST'])
@@ -713,6 +751,27 @@ def unfollow(username):
     current_user.unfollow(user)
     db.session.commit()
     flash(f'Вы отписались от {user.username}')
+    return redirect(url_for('user_profile', username=user.username))
+
+
+@app.route('/block/<username>', methods=['POST'])
+@login_required
+def block_user(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user != current_user:
+        current_user.block(user)
+        db.session.commit()
+        flash(f'Вы заблокировали {user.username}')
+    return redirect(url_for('user_profile', username=user.username))
+
+
+@app.route('/unblock/<username>', methods=['POST'])
+@login_required
+def unblock_user(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    current_user.unblock(user)
+    db.session.commit()
+    flash(f'Вы разблокировали {user.username}')
     return redirect(url_for('user_profile', username=user.username))
 
 
