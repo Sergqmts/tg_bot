@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ chat.name }} - Social{% endblock %}
+{% block content %}
+    <div class="card chat-card">
+        <div class="chat-header">
+            <a href="{{ url_for('messages') }}" class="btn btn-secondary">←</a>
+            <div class="avatar" style="margin-right: 10px;">👥</div>
+            <a href="{{ url_for('messages') }}" class="username">{{ chat.name }}</a>
+        </div>
+        
+        <div class="chat" id="chat">
+            {% for msg in messages %}
+                <div class="chat-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+                    {% if msg.sender_id != current_user.id %}
+                        <div style="font-size: 0.75rem; color: var(--primary); font-weight: 600; margin-bottom: 3px;">
+                            {{ msg.sender.username }}
+                        </div>
+                    {% endif %}
+                    <div>{{ msg.body }}</div>
+                    <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
+                </div>
+            {% else %}
+                <div style="text-align: center; color: var(--text-light); padding: 20px;">
+                    Пока нет сообщений
+                </div>
+            {% endfor %}
+        </div>
+        
+        <form class="message-form" method="POST" action="">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" name="body" placeholder="Напишите сообщение..." style="flex: 1;">
+                <button type="submit" class="btn btn-primary">Отправить</button>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
+    </script>
+{% endblock %}

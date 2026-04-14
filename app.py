@@ -198,6 +198,52 @@ def run_migrations():
                 pass
     except Exception as e:
         app.logger.info(f"Followers migration: {e}")
+    
+    try:
+        if is_postgres:
+            result = db.session.execute(text("SELECT table_name FROM information_schema.tables WHERE table_name='chat'"))
+            if not result.fetchone():
+                db.session.execute(text('''
+                    CREATE TABLE chat (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(100) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        creator_id INTEGER REFERENCES "user"(id) NOT NULL,
+                        avatar VARCHAR(200) DEFAULT 'chat_default.png'
+                    );
+                    CREATE TABLE chat_member (
+                        id SERIAL PRIMARY KEY,
+                        chat_id INTEGER REFERENCES chat(id) ON DELETE CASCADE NOT NULL,
+                        user_id INTEGER REFERENCES "user"(id) NOT NULL,
+                        role VARCHAR(20) DEFAULT 'member',
+                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                    ALTER TABLE message ADD COLUMN chat_id INTEGER REFERENCES chat(id);
+                '''))
+                db.session.commit()
+        elif is_sqlite:
+            result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='chat'"))
+            if not result.fetchone():
+                db.session.execute(text('''
+                    CREATE TABLE chat (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name VARCHAR(100) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        creator_id INTEGER NOT NULL,
+                        avatar VARCHAR(200) DEFAULT 'chat_default.png'
+                    );
+                    CREATE TABLE chat_member (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        chat_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        role VARCHAR(20) DEFAULT 'member',
+                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                    ALTER TABLE message ADD COLUMN chat_id INTEGER;
+                '''))
+                db.session.commit()
+    except Exception as e:
+        app.logger.info(f"Chat migration: {e}")
 
 
 followers = db.Table('followers',
@@ -337,6 +383,13 @@ class User(UserMixin, db.Model):
             return False
         except Exception:
             return False
+
+    def is_member(self, chat):
+        return ChatMember.query.filter_by(chat_id=chat.id, user_id=self.id).first() is not None
+
+    def is_admin(self, chat):
+        member = ChatMember.query.filter_by(chat_id=chat.id, user_id=self.id).first()
+        return member and member.role == 'admin'
 
     def block(self, user):
         if not self.is_blocking(user):
@@ -485,10 +538,32 @@ class Message(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     read = db.Column(db.Boolean, default=False)
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
     
     medias = db.relationship('MessageMedia', backref='message', lazy='dynamic')
+
+
+class Chat(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    avatar = db.Column(db.String(200), default='chat_default.png')
+    
+    messages = db.relationship('Message', backref='chat', lazy='dynamic')
+    members = db.relationship('ChatMember', backref='chat', lazy='dynamic', cascade='all, delete-orphan')
+
+
+class ChatMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    role = db.Column(db.String(20), default='member')
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='chat_memberships')
 
 
 class MessageMedia(db.Model):
@@ -976,21 +1051,39 @@ def photos():
 def messages():
     blocked_ids = [u.id for u in current_user.blocked]
     
+    # Личные переписки
     conversations = {}
     for msg in current_user.messages_received.filter(~Message.sender_id.in_(blocked_ids)):
         if msg.sender_id not in conversations:
-            conversations[msg.sender_id] = {'user': msg.sender, 'last': msg, 'unread': 0}
+            conversations[msg.sender_id] = {'user': msg.sender, 'last': msg, 'unread': 0, 'type': 'private'}
         if not msg.read:
             conversations[msg.sender_id]['unread'] += 1
     
     for msg in current_user.messages_sent.filter(~Message.recipient_id.in_(blocked_ids)):
         if msg.recipient_id not in conversations:
-            conversations[msg.recipient_id] = {'user': msg.recipient, 'last': msg, 'unread': 0}
+            conversations[msg.recipient_id] = {'user': msg.recipient, 'last': msg, 'unread': 0, 'type': 'private'}
     
-    conversations = sorted(conversations.values(), key=lambda x: x['last'].created_at, reverse=True)
+    # Групповые чаты
+    user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
+    group_chats = []
+    for member in user_chats:
+        chat = Chat.query.get(member.chat_id)
+        if chat:
+            last_msg = chat.messages.order_by(Message.created_at.desc()).first()
+            unread_count = Message.query.filter_by(chat_id=chat.id).filter(Message.sender_id != current_user.id, Message.read == False).count()
+            group_chats.append({
+                'chat': chat,
+                'last': last_msg,
+                'unread': unread_count,
+                'type': 'group'
+            })
+    
+    conversations = sorted(conversations.values(), key=lambda x: x['last'].created_at if x.get('last') else datetime.min, reverse=True)
+    group_chats = sorted(group_chats, key=lambda x: x['last'].created_at if x.get('last') else datetime.min, reverse=True)
+    
     suggested = [u for u in User.query.order_by(User.created_at.desc()).all() 
                  if u != current_user and u.id not in conversations and not current_user.is_blocking(u)]
-    return render_template('messages.html', conversations=conversations, suggested_users=suggested)
+    return render_template('messages.html', conversations=conversations, group_chats=group_chats, suggested_users=suggested)
 
 
 @app.route('/messages/<username>', methods=['GET', 'POST'])
@@ -1058,6 +1151,86 @@ def conversation(username):
         messages = []
     
     return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post)
+
+
+@app.route('/chat/create', methods=['GET', 'POST'])
+@login_required
+def create_chat():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        member_ids = request.form.getlist('members')
+        
+        if not name:
+            flash('Введите название чата')
+            return redirect(url_for('create_chat'))
+        
+        chat = Chat(name=name, creator_id=current_user.id)
+        db.session.add(chat)
+        db.session.flush()
+        
+        # Добавить создателя как админа
+        member = ChatMember(chat_id=chat.id, user_id=current_user.id, role='admin')
+        db.session.add(member)
+        
+        # Добавить участников
+        for member_id in member_ids:
+            if int(member_id) != current_user.id:
+                member = ChatMember(chat_id=chat.id, user_id=int(member_id), role='member')
+                db.session.add(member)
+        
+        db.session.commit()
+        flash(f'Чат "{name}" создан')
+        return redirect(url_for('messages'))
+    
+    users = User.query.filter(User.id != current_user.id).all()
+    return render_template('create_chat.html', users=users)
+
+
+@app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
+@login_required
+def chat_view(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    if request.method == 'POST':
+        body = request.form.get('body', '').strip()
+        
+        if body:
+            msg = Message(body=body, sender_id=current_user.id, chat_id=chat_id)
+            db.session.add(msg)
+            db.session.commit()
+    
+    messages = chat.messages.order_by(Message.created_at.asc()).all()
+    
+    # Отметить сообщения как прочитанные
+    Message.query.filter_by(chat_id=chat_id).filter(Message.sender_id != current_user.id, Message.read == False).update({'read': True})
+    db.session.commit()
+    
+    return render_template('chat.html', chat=chat, messages=messages)
+
+
+@app.route('/chat/<int:chat_id>/leave', methods=['POST'])
+@login_required
+def leave_chat(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    if chat.creator_id == current_user.id:
+        flash('Создатель не может покинуть чат')
+        return redirect(url_for('chat_view', chat_id=chat_id))
+    
+    db.session.delete(member)
+    db.session.commit()
+    flash('Вы покинули чат')
+    return redirect(url_for('messages'))
 
 
 @app.route('/communities')

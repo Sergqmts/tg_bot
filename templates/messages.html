@@ -3,7 +3,10 @@
 {% block content %}
     <div class="two-columns">
         <div>
-            <h2 style="margin-bottom: 15px;">Найти пользователя</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>Найти пользователя</h2>
+                <a href="{{ url_for('create_chat') }}" class="btn btn-primary">Создать чат</a>
+            </div>
             <div class="card">
                 <form action="{{ url_for('explore') }}" method="GET">
                     <div style="display: flex; gap: 10px;">
@@ -36,6 +39,36 @@
             <h2 style="margin-bottom: 15px;">Сообщения</h2>
             <div class="card" style="padding: 0;">
                 <ul class="messages-list">
+                    {% if group_chats %}
+                        <li style="padding: 10px; background: var(--bg); font-weight: 600; color: var(--text-light); border-bottom: 1px solid var(--border);">
+                            Группы
+                        </li>
+                    {% endif %}
+                    {% for item in group_chats %}
+                        <li>
+                            <a href="{{ url_for('chat_view', chat_id=item.chat.id) }}" class="message-item {% if item.unread > 0 %}unread{% endif %}">
+                                <div class="avatar" style="width:40px;height:40px;">👥</div>
+                                <div class="message-preview">
+                                    <div class="username">{{ item.chat.name }}</div>
+                                    <div style="color: var(--text-light); font-size: 0.9rem;">{{ item.last.body[:50] if item.last else '' }}{% if item.last and item.last.body|length > 50 %}...{% endif %}</div>
+                                </div>
+                                <div>
+                                    {% if item.last %}
+                                    <div class="message-time">{{ item.last.created_at.strftime('%d.%m %H:%M') }}</div>
+                                    {% endif %}
+                                    {% if item.unread > 0 %}
+                                        <div style="text-align: center;"><span class="unread-badge">{{ item.unread }}</span></div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </li>
+                    {% endfor %}
+                    
+                    {% if conversations %}
+                        <li style="padding: 10px; background: var(--bg); font-weight: 600; color: var(--text-light); border-bottom: 1px solid var(--border);">
+                            Личные
+                        </li>
+                    {% endif %}
                     {% for conv in conversations %}
                         <li>
                             <a href="{{ url_for('conversation', username=conv.user.username) }}" class="message-item {% if conv.unread > 0 %}unread{% endif %}">
@@ -59,9 +92,11 @@
                             </a>
                         </li>
                     {% else %}
+                        {% if not group_chats %}
                         <li class="message-item" style="justify-content: center; color: var(--text-light);">
                             Нет сообщений
                         </li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
             </div>
