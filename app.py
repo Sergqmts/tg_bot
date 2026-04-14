@@ -810,6 +810,7 @@ def forward_post(post_id):
                 if post.body:
                     message_body += f":\n\n{post.body}"
                 msg = Message(body=message_body, sender_id=current_user.id, chat_id=chat.id, post_id=post.id)
+                db.session.add(msg)
                 db.session.commit()
                 flash(f'Пост отправлен в чат {chat.name}')
                 return redirect(url_for('chat_view', chat_id=chat.id))
@@ -1235,8 +1236,11 @@ def chat_view(chat_id):
         media_url = None
         media_type = None
         
+        app.logger.info(f"Files in request: {request.files}")
+        
         if 'media' in request.files:
             file = request.files['media']
+            app.logger.info(f"File: {file.filename}")
             if file.filename and allowed_file(file.filename):
                 if cloudinary_configured:
                     media_url = upload_to_cloudinary(file, folder='messages')
@@ -1249,6 +1253,9 @@ def chat_view(chat_id):
                     media_url = url_for('uploaded_file', filename=filename)
                     ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                     media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                app.logger.info(f"Media URL: {media_url}, type: {media_type}")
+        
+        app.logger.info(f"body: '{body}', media_url: {media_url}, post_id: {post_id}")
         
         if body or media_url or post_id:
             try:
@@ -1266,6 +1273,7 @@ def chat_view(chat_id):
                     db.session.add(media)
                 
                 db.session.commit()
+                app.logger.info(f"Message saved with id={msg.id}, media={media_url}")
             except Exception as e:
                 app.logger.error(f"Chat message error: {e}")
                 db.session.rollback()
