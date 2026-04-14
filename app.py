@@ -226,6 +226,9 @@ def run_migrations():
             if 'chat_id' not in existing:
                 db.session.execute(text('ALTER TABLE message ADD COLUMN chat_id INTEGER'))
                 db.session.commit()
+            
+            db.session.execute(text('ALTER TABLE message ALTER COLUMN recipient_id DROP NOT NULL'))
+            db.session.commit()
         elif is_sqlite:
             result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='chat'"))
             if not result.fetchone():
