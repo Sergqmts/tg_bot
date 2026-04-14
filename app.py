@@ -1236,24 +1236,29 @@ def chat_view(chat_id):
         media_url = None
         media_type = None
         
-        app.logger.info(f"Files in request: {request.files}")
+        app.logger.info(f"Files in request: {list(request.files.keys())}")
         
         if 'media' in request.files:
             file = request.files['media']
-            app.logger.info(f"File: {file.filename}")
-            if file.filename and allowed_file(file.filename):
-                if cloudinary_configured:
-                    media_url = upload_to_cloudinary(file, folder='messages')
-                    if media_url:
-                        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+            app.logger.info(f"File: '{file.filename}', content_type: {file.content_type}")
+            if file.filename:
+                try:
+                    if cloudinary_configured:
+                        app.logger.info("Uploading to cloudinary...")
+                        media_url = upload_to_cloudinary(file, folder='messages')
+                        app.logger.info(f"Cloudinary result: {media_url}")
+                        if media_url:
+                            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                    else:
+                        filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        media_url = url_for('uploaded_file', filename=filename)
+                        ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                         media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                else:
-                    filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    media_url = url_for('uploaded_file', filename=filename)
-                    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                app.logger.info(f"Media URL: {media_url}, type: {media_type}")
+                    app.logger.info(f"Media URL: {media_url}, type: {media_type}")
+                except Exception as e:
+                    app.logger.error(f"Media upload error: {e}")
         
         app.logger.info(f"body: '{body}', media_url: {media_url}, post_id: {post_id}")
         
@@ -1267,13 +1272,14 @@ def chat_view(chat_id):
                 )
                 db.session.add(msg)
                 db.session.flush()
+                app.logger.info(f"Message created with id={msg.id}")
                 
                 if media_url:
                     media = MessageMedia(message_id=msg.id, media_url=media_url, media_type=media_type)
                     db.session.add(media)
+                    app.logger.info(f"Media added: {media_url}")
                 
                 db.session.commit()
-                app.logger.info(f"Message saved with id={msg.id}, media={media_url}")
             except Exception as e:
                 app.logger.error(f"Chat message error: {e}")
                 db.session.rollback()
