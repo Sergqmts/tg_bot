@@ -1240,8 +1240,8 @@ def chat_view(chat_id):
         
         if 'media' in request.files:
             file = request.files['media']
-            app.logger.info(f"File: '{file.filename}', content_type: {file.content_type}")
-            if file.filename:
+            app.logger.info(f"File: '{file.filename}', content_type: {file.content_type}, allowed: {allowed_file(file.filename) if file.filename else False}")
+            if file.filename and allowed_file(file.filename):
                 try:
                     if cloudinary_configured:
                         app.logger.info("Uploading to cloudinary...")
@@ -1259,6 +1259,8 @@ def chat_view(chat_id):
                     app.logger.info(f"Media URL: {media_url}, type: {media_type}")
                 except Exception as e:
                     app.logger.error(f"Media upload error: {e}")
+            else:
+                app.logger.warning("File not allowed or no filename")
         
         app.logger.info(f"body: '{body}', media_url: {media_url}, post_id: {post_id}")
         
