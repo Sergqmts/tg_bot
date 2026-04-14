@@ -113,8 +113,20 @@ def run_migrations():
                 if col not in existing:
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
+            
+            privacy_cols = [('is_private', 'BOOLEAN DEFAULT FALSE'), ('hide_followers', 'BOOLEAN DEFAULT FALSE'), ('hide_following', 'BOOLEAN DEFAULT FALSE'), ('approve_followers', 'BOOLEAN DEFAULT FALSE')]
+            for col, typ in privacy_cols:
+                if col not in existing:
+                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
+                    db.session.commit()
         elif is_sqlite:
             for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
+                try:
+                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
+                    db.session.commit()
+                except:
+                    pass
+            for col, typ in [('is_private', 'BOOLEAN DEFAULT 0'), ('hide_followers', 'BOOLEAN DEFAULT 0'), ('hide_following', 'BOOLEAN DEFAULT 0'), ('approve_followers', 'BOOLEAN DEFAULT 0')]:
                 try:
                     db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
                     db.session.commit()
