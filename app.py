@@ -831,20 +831,22 @@ def photos():
 @app.route('/messages')
 @login_required
 def messages():
+    blocked_ids = [u.id for u in current_user.blocked]
+    
     conversations = {}
-    for msg in current_user.messages_received:
+    for msg in current_user.messages_received.filter(~Message.sender_id.in_(blocked_ids)):
         if msg.sender_id not in conversations:
             conversations[msg.sender_id] = {'user': msg.sender, 'last': msg, 'unread': 0}
         if not msg.read:
             conversations[msg.sender_id]['unread'] += 1
     
-    for msg in current_user.messages_sent:
+    for msg in current_user.messages_sent.filter(~Message.recipient_id.in_(blocked_ids)):
         if msg.recipient_id not in conversations:
             conversations[msg.recipient_id] = {'user': msg.recipient, 'last': msg, 'unread': 0}
     
     conversations = sorted(conversations.values(), key=lambda x: x['last'].created_at, reverse=True)
     suggested = [u for u in User.query.order_by(User.created_at.desc()).all() 
-                 if u != current_user and u.id not in conversations]
+                 if u != current_user and u.id not in conversations and not current_user.is_blocking(u)]
     return render_template('messages.html', conversations=conversations, suggested_users=suggested)
 
 
@@ -852,6 +854,10 @@ def messages():
 @login_required
 def conversation(username):
     other_user = User.query.filter_by(username=username).first_or_404()
+    
+    if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
+        flash('Вы не можете отправить сообщение этому пользователю')
+        return redirect(url_for('messages'))
     
     try:
         Message.query.filter_by(sender=other_user, recipient=current_user, read=False).update({'read': True})
