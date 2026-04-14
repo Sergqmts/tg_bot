@@ -332,6 +332,15 @@ class User(UserMixin, db.Model):
             return result.status == 'approved'
         return result is not None
 
+    def is_pending(self, user):
+        try:
+            result = self.followed.filter(followers.c.followed_id == user.id).first()
+            if result and hasattr(result, 'status'):
+                return result.status == 'pending'
+            return False
+        except Exception:
+            return False
+
     def block(self, user):
         if not self.is_blocking(user):
             self.blocked.append(user)
@@ -821,7 +830,8 @@ def user_profile(username):
         repost_counts[p.id] = Repost.query.filter_by(post_id=p.id).count() if p.id else 0
     is_following = current_user.is_authenticated and current_user.is_following(user)
     is_blocked = current_user.is_authenticated and current_user.is_blocking(user)
-    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, can_view=can_view)
+    is_pending = current_user.is_authenticated and current_user.is_pending(user)
+    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view)
 
 
 @app.route('/follow/<username>', methods=['POST'])

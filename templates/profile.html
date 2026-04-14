@@ -38,6 +38,10 @@
                             <form method="POST" action="{{ url_for('unblock_user', username=user.username) }}">
                                 <button type="submit" class="btn btn-secondary">Разблокировать</button>
                             </form>
+                            {% elif is_pending %}
+                            <form method="POST" action="{{ url_for('unfollow', username=user.username) }}">
+                                <button type="submit" class="btn btn-secondary">Отменить заявку</button>
+                            </form>
                             {% else %}
                             <form method="POST" action="{{ url_for('follow', username=user.username) }}">
                                 <button type="submit" class="btn btn-primary">Подписаться</button>
@@ -49,6 +53,10 @@
                             {% endif %}
                         {% elif user.id == current_user.id %}
                         <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Редактировать</a>
+                        {% set pending_count = current_user.get_pending_followers()|length %}
+                        {% if pending_count > 0 %}
+                            <a href="{{ url_for('follower_requests') }}" class="btn btn-primary">Заявки ({{ pending_count }})</a>
+                        {% endif %}
                         {% endif %}
                     {% endif %}
                 </div>
