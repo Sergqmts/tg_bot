@@ -1252,9 +1252,17 @@ def chat_view(chat_id):
                         if media_url:
                             ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
                             media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                        else:
+                            app.logger.warning("Cloudinary returned empty URL, falling back to local")
                     else:
+                        app.logger.warning("Cloudinary not configured, using local storage")
+                    
+                    if not media_url:
                         filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
-                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                        app.logger.info(f"Saving to: {full_path}")
+                        file.save(full_path)
+                        app.logger.info(f"File saved, exists: {os.path.exists(full_path)}")
                         media_url = url_for('uploaded_file', filename=filename)
                         ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                         media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
