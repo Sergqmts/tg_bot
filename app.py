@@ -559,8 +559,6 @@ class Message(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
     
-    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
-    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
     medias = db.relationship('MessageMedia', backref='message', lazy='dynamic')
 
 
