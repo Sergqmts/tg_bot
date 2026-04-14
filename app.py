@@ -218,8 +218,13 @@ def run_migrations():
                         role VARCHAR(20) DEFAULT 'member',
                         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
-                    ALTER TABLE message ADD COLUMN chat_id INTEGER REFERENCES chat(id);
                 '''))
+                db.session.commit()
+            
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message'"))
+            existing = [row[0] for row in result]
+            if 'chat_id' not in existing:
+                db.session.execute(text('ALTER TABLE message ADD COLUMN chat_id INTEGER'))
                 db.session.commit()
         elif is_sqlite:
             result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='chat'"))
@@ -239,8 +244,13 @@ def run_migrations():
                         role VARCHAR(20) DEFAULT 'member',
                         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
-                    ALTER TABLE message ADD COLUMN chat_id INTEGER;
                 '''))
+                db.session.commit()
+            
+            try:
+                db.session.execute(text("SELECT chat_id FROM message LIMIT 1"))
+            except:
+                db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
                 db.session.commit()
     except Exception as e:
         app.logger.info(f"Chat migration: {e}")
@@ -542,6 +552,8 @@ class Message(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
     
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
     medias = db.relationship('MessageMedia', backref='message', lazy='dynamic')
 
 
