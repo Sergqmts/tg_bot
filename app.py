@@ -248,10 +248,13 @@ def run_migrations():
                 db.session.commit()
             
             try:
-                db.session.execute(text("SELECT chat_id FROM message LIMIT 1"))
-            except:
-                db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
-                db.session.commit()
+                result = db.session.execute(text("PRAGMA table_info(message)"))
+                columns = [row[1] for row in result.fetchall()]
+                if 'chat_id' not in columns:
+                    db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
+                    db.session.commit()
+            except Exception as e:
+                app.logger.info(f"Chat ID column add: {e}")
     except Exception as e:
         app.logger.info(f"Chat migration: {e}")
 
@@ -415,7 +418,11 @@ class User(UserMixin, db.Model):
         return self.blocked.filter(blocked.c.blocked_id == user.id).first() is not None
 
     def unread_messages(self):
-        return self.messages_received.filter_by(read=False).count()
+        try:
+            return Message.query.filter_by(recipient_id=self.id, read=False).count()
+        except Exception as e:
+            app.logger.info(f"unread_messages error: {e}")
+            return 0
 
     def join_community(self, community):
         existing = CommunityMember.query.filter_by(user_id=self.id, community_id=community.id).first()
