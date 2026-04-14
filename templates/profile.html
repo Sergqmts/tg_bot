@@ -2,9 +2,9 @@
 {% block title %}{{ user.username }} - Social{% endblock %}
 {% block content %}
     <!-- Профиль -->
-    <div class="profile-header" style="padding: 30px 0; border-bottom: 1px solid var(--border); margin-bottom: 30px;">
-        <div class="profile-info" style="display: flex; align-items: center; gap: 30px; max-width: 600px; margin: 0 auto;">
-            <div class="profile-avatar" style="width: 120px; height: 120px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border); flex-shrink: 0;">
+    <div class="profile-header">
+        <div class="profile-info" style="max-width: 600px; margin: 0 auto; width: 100%; padding: 0 10px;">
+            <div class="profile-avatar">
                 {% if user.avatar %}
                     {% if user.avatar != 'default.png' %}
                     <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
@@ -16,10 +16,10 @@
                 {% endif %}
             </div>
             <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;">
                     <h1 style="font-size: 1.5rem; font-weight: 600;">{{ user.username }}</h1>
                 </div>
-                <div class="profile-stats" style="display: flex; gap: 25px;">
+                <div class="profile-stats" style="gap: 15px;">
                     <span><strong>{{ user.posts.count() }}</strong> постов</span>
                     {% if not user.hide_followers %}
                     <span><strong>{{ user.followers.count() }}</strong> подписчиков</span>
@@ -31,7 +31,7 @@
                 {% if user.bio %}
                     <p style="color: var(--text-light); margin-top: 10px;">{{ user.bio }}</p>
                 {% endif %}
-                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
                     {% if current_user.is_authenticated %}
                         {% if user.id != current_user.id %}
                             {% if is_blocked %}

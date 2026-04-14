@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Сообщества - Social{% endblock %}
 {% block content %}
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2>Сообщества</h2>
-        {% if current_user.is_authenticated %}
-            <a href="{{ url_for('create_community') }}" class="btn btn-primary">Создать сообщество</a>
-        {% endif %}
-    </div>
+    <div style="max-width: 600px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <h2>Сообщества</h2>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('create_community') }}" class="btn btn-primary">Создать</a>
+            {% endif %}
+        </div>
     
     {% for comm in communities %}
         <div class="card" style="display: flex; gap: 15px;">
