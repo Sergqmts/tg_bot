@@ -53,7 +53,6 @@
                             {% endif %}
                         {% elif user.id == current_user.id %}
                         <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Редактировать</a>
-                        {% set pending_count = current_user.get_pending_followers()|length %}
                         {% if pending_count > 0 %}
                             <a href="{{ url_for('follower_requests') }}" class="btn btn-primary">Заявки ({{ pending_count }})</a>
                         {% endif %}
