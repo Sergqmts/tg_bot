@@ -200,6 +200,11 @@ class User(UserMixin, db.Model):
     interests = db.Column(db.Text, nullable=True)
     occupation = db.Column(db.String(100), nullable=True)
     
+    is_private = db.Column(db.Boolean, default=False)
+    hide_followers = db.Column(db.Boolean, default=False)
+    hide_following = db.Column(db.Boolean, default=False)
+    approve_followers = db.Column(db.Boolean, default=False)
+    
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
@@ -458,6 +463,10 @@ class EditProfileForm(FlaskForm):
     birthday = StringField('Дата рождения (ДД.ММ.ГГГГ)')
     interests = TextAreaField('Интересы', validators=[Length(max=500)])
     occupation = StringField('Род деятельности', validators=[Length(max=100)])
+    is_private = BooleanField('Закрытый профиль')
+    hide_followers = BooleanField('Скрыть подписчиков')
+    hide_following = BooleanField('Скрыть подписки')
+    approve_followers = BooleanField('Одобрять подписчиков')
     submit = SubmitField('Сохранить')
 
 
@@ -719,18 +728,26 @@ def user_profile(username):
     if blocked_by_user:
         posts = []
         user_reposts = []
-    else:
-        posts = user.posts.order_by(Post.created_at.desc()).all()
-        user_reposts = []
-        if user.id:
+        can_view = False
+    elif user.is_private and user != current_user:
+        can_view = current_user.is_authenticated and current_user.is_following(user)
+        if can_view:
+            posts = user.posts.order_by(Post.created_at.desc()).all()
             user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all()
+        else:
+            posts = []
+            user_reposts = []
+    else:
+        can_view = True
+        posts = user.posts.order_by(Post.created_at.desc()).all()
+        user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all()
     
     repost_counts = {}
     for p in posts:
         repost_counts[p.id] = Repost.query.filter_by(post_id=p.id).count() if p.id else 0
     is_following = current_user.is_authenticated and current_user.is_following(user)
     is_blocked = current_user.is_authenticated and current_user.is_blocking(user)
-    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked)
+    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, can_view=can_view)
 
 
 @app.route('/follow/<username>', methods=['POST'])
@@ -738,9 +755,12 @@ def user_profile(username):
 def follow(username):
     user = User.query.filter_by(username=username).first_or_404()
     if user != current_user:
-        current_user.follow(user)
-        db.session.commit()
-        flash(f'Вы подписались на {user.username}')
+        if user.approve_followers:
+            flash(f'Запрос на подписку отправлен {user.username}. Ожидайте одобрения.')
+        else:
+            current_user.follow(user)
+            db.session.commit()
+            flash(f'Вы подписались на {user.username}')
     return redirect(url_for('user_profile', username=user.username))
 
 
@@ -786,10 +806,14 @@ def edit_profile():
         current_user.website = form.website.data
         current_user.occupation = form.occupation.data
         current_user.interests = form.interests.data
+        current_user.is_private = form.is_private.data
+        current_user.hide_followers = form.hide_followers.data
+        current_user.hide_following = form.hide_following.data
+        current_user.approve_followers = form.approve_followers.data
         
         if form.avatar.data:
             file = form.avatar.data
-            filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+            filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             current_user.avatar = filename
         
@@ -810,6 +834,10 @@ def edit_profile():
         form.website.data = current_user.website
         form.occupation.data = current_user.occupation
         form.interests.data = current_user.interests
+        form.is_private.data = current_user.is_private
+        form.hide_followers.data = current_user.hide_followers
+        form.hide_following.data = current_user.hide_following
+        form.approve_followers.data = current_user.approve_followers
         if current_user.birthday:
             form.birthday.data = current_user.birthday.strftime('%d.%m.%Y')
     return render_template('edit_profile.html', form=form)
@@ -817,7 +845,15 @@ def edit_profile():
 
 @app.route('/explore')
 def explore():
-    users = User.query.order_by(User.created_at.desc()).limit(20).all()
+    blocked_ids = []
+    if current_user.is_authenticated:
+        blocked_ids = [u.id for u in current_user.blocked]
+    
+    users = User.query.filter(
+        ~User.id.in_(blocked_ids) if blocked_ids else True,
+        User.id != current_user.id if current_user.is_authenticated else True
+    ).order_by(User.created_at.desc()).limit(20).all()
+    
     return render_template('explore.html', users=users)
 
 

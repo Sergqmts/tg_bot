@@ -43,6 +43,25 @@
                     {{ form.interests(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); min-height: 80px;") }}
                 </div>
                 
+                <h3 style="margin: 20px 0 15px; font-size: 1rem; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">Настройки приватности</h3>
+                
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    {{ form.is_private(style="width: 18px; height: 18px;") }}
+                    <label for="is_private">{{ form.is_private.label.text }}</label>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    {{ form.hide_followers(style="width: 18px; height: 18px;") }}
+                    <label for="hide_followers">{{ form.hide_followers.label.text }}</label>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    {{ form.hide_following(style="width: 18px; height: 18px;") }}
+                    <label for="hide_following">{{ form.hide_following.label.text }}</label>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    {{ form.approve_followers(style="width: 18px; height: 18px;") }}
+                    <label for="approve_followers">{{ form.approve_followers.label.text }}</label>
+                </div>
+                
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     {{ form.submit(class="btn btn-primary") }}
                     <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn btn-secondary">Отмена</a>

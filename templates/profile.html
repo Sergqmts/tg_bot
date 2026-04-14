@@ -21,8 +21,12 @@
                 </div>
                 <div class="profile-stats" style="display: flex; gap: 25px;">
                     <span><strong>{{ user.posts.count() }}</strong> постов</span>
+                    {% if not user.hide_followers %}
                     <span><strong>{{ user.followers.count() }}</strong> подписчиков</span>
+                    {% endif %}
+                    {% if not user.hide_following %}
                     <span><strong>{{ user.followed.count() }}</strong> подписок</span>
+                    {% endif %}
                 </div>
                 {% if user.bio %}
                     <p style="color: var(--text-light); margin-top: 10px;">{{ user.bio }}</p>
@@ -52,6 +56,11 @@
         </div>
     </div>
     
+    {% if not can_view %}
+    <div style="text-align: center; padding: 40px; color: var(--text-light);">
+        <p>Это закрытый профиль. Подпишитесь, чтобы видеть посты.</p>
+    </div>
+    {% else %}
     <!-- Посты в сетке 3 колонки -->
     <h3 style="text-align: center; margin-bottom: 20px; color: var(--text-light);">Посты</h3>
     <div class="posts-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
@@ -84,4 +93,5 @@
             <p style="grid-column: 1/-1; text-align: center; color: var(--text-light); padding: 40px;">Пока нет постов</p>
         {% endfor %}
     </div>
+    {% endif %}
 {% endblock %}
