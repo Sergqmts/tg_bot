@@ -44,6 +44,13 @@
                             <a href="{{ url_for('explore') }}">👥 Люди</a>
                             <a href="{{ url_for('communities') }}">🏠 Сообщества</a>
                             <a href="{{ url_for('photos') }}">📷 Фото</a>
+                            {% set pending_count = current_user.get_pending_followers()|length %}
+                            <a href="{{ url_for('follower_requests') }}">
+                                👤 Заявки на подписку
+                                {% if pending_count > 0 %}
+                                    <span class="unread-badge">{{ pending_count }}</span>
+                                {% endif %}
+                            </a>
                             <a href="{{ url_for('logout') }}">🚪 Выйти</a>
                         </div>
                     </div>

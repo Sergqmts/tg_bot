@@ -182,6 +182,22 @@ def run_migrations():
                 pass
     except Exception as e:
         app.logger.info(f"Post migration: {e}")
+    
+    try:
+        if is_postgres:
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='followers'"))
+            existing = [row[0] for row in result]
+            if 'status' not in existing:
+                db.session.execute(text('ALTER TABLE "followers" ADD COLUMN status VARCHAR(20) DEFAULT \'approved\''))
+                db.session.commit()
+        elif is_sqlite:
+            try:
+                db.session.execute(text("ALTER TABLE followers ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
+                db.session.commit()
+            except:
+                pass
+    except Exception as e:
+        app.logger.info(f"Followers migration: {e}")
 
 
 followers = db.Table('followers',
@@ -261,14 +277,56 @@ class User(UserMixin, db.Model):
 
     def follow(self, user):
         if not self.is_following(user):
-            self.followed.append(user)
+            from sqlalchemy import and_
+            existing = followers.select().where(
+                and_(followers.c.follower_id == self.id, followers.c.followed_id == user.id)
+            ).execute().fetchone()
+            if not existing:
+                stmt = followers.insert().values(
+                    follower_id=self.id,
+                    followed_id=user.id,
+                    status='pending' if user.approve_followers else 'approved'
+                )
+                db.session.execute(stmt)
+                db.session.commit()
 
     def unfollow(self, user):
         if self.is_following(user):
-            self.followed.remove(user)
+            from sqlalchemy import and_
+            stmt = followers.delete().where(
+                and_(followers.c.follower_id == self.id, followers.c.followed_id == user.id)
+            )
+            db.session.execute(stmt)
+            db.session.commit()
+
+    def get_pending_followers(self):
+        from sqlalchemy import and_
+        result = followers.select().where(
+            and_(followers.c.followed_id == self.id, followers.c.status == 'pending')
+        ).execute().fetchall()
+        return [User.query.get(r.follower_id) for r in result]
+
+    def approve_follower(self, user):
+        from sqlalchemy import and_
+        stmt = followers.update().where(
+            and_(followers.c.follower_id == user.id, followers.c.followed_id == self.id)
+        ).values(status='approved')
+        db.session.execute(stmt)
+        db.session.commit()
+
+    def reject_follower(self, user):
+        from sqlalchemy import and_
+        stmt = followers.delete().where(
+            and_(followers.c.follower_id == user.id, followers.c.followed_id == self.id)
+        )
+        db.session.execute(stmt)
+        db.session.commit()
 
     def is_following(self, user):
-        return self.followed.filter(followers.c.followed_id == user.id).first() is not None
+        result = self.followed.filter(followers.c.followed_id == user.id).first()
+        if result and hasattr(result, 'status'):
+            return result.status == 'approved'
+        return result is not None
 
     def block(self, user):
         if not self.is_blocking(user):
@@ -805,6 +863,31 @@ def unblock_user(username):
     db.session.commit()
     flash(f'Вы разблокировали {user.username}')
     return redirect(url_for('user_profile', username=user.username))
+
+
+@app.route('/followers/requests')
+@login_required
+def follower_requests():
+    pending = current_user.get_pending_followers()
+    return render_template('follower_requests.html', pending=pending)
+
+
+@app.route('/followers/approve/<username>', methods=['POST'])
+@login_required
+def approve_follower(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    current_user.approve_follower(user)
+    flash(f'Вы одобрили подписку {user.username}')
+    return redirect(url_for('follower_requests'))
+
+
+@app.route('/followers/reject/<username>', methods=['POST'])
+@login_required
+def reject_follower(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    current_user.reject_follower(user)
+    flash(f'Запрос на подписку от {user.username} отклонён')
+    return redirect(url_for('follower_requests'))
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])

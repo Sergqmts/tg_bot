@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Заявки на подписку - Social{% endblock %}
+{% block content %}
+    <div style="max-width: 600px; margin: 40px auto;">
+        <h2>Заявки на подписку</h2>
+        
+        {% for user in pending %}
+            <div class="card" style="display: flex; align-items: center; padding: 15px; margin-bottom: 10px;">
+                <div class="avatar" style="margin-right: 15px;">{{ user.username[0].upper() }}</div>
+                <div style="flex: 1;">
+                    <a href="{{ url_for('user_profile', username=user.username) }}" class="username" style="font-size: 1.1em;">{{ user.username }}</a>
+                </div>
+                <form method="POST" action="{{ url_for('approve_follower', username=user.username) }}" style="display: inline; margin-right: 10px;">
+                    <button type="submit" class="btn btn-primary">Принять</button>
+                </form>
+                <form method="POST" action="{{ url_for('reject_follower', username=user.username) }}">
+                    <button type="submit" class="btn btn-secondary">Отклонить</button>
+                </form>
+            </div>
+        {% else %}
+            <div class="card" style="text-align: center; color: var(--text-light);">
+                Нет новых заявок на подписку
+            </div>
+        {% endfor %}
+        
+        <div style="margin-top: 20px;">
+            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn btn-secondary">Назад к профилю</a>
+        </div>
+    </div>
+{% endblock %}
