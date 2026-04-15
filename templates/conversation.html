@@ -55,8 +55,9 @@
                             </div>
                         </a>
                         {% endif %}
-                    {% elif msg.body %}
+                    {% elif msg.body or msg.medias.count() > 0 %}
                         <div>{{ msg.body }}</div>
+                        {% if msg.medias.count() > 0 %}
                         <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 100%;">
                         {% for m in msg.medias %}
                             {% if m.media_url %}
@@ -71,6 +72,7 @@
                             {% endif %}
                         {% endfor %}
                         </div>
+                        {% endif %}
                     {% endif %}
                     <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
                 </div>
