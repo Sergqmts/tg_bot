@@ -1290,7 +1290,7 @@ def chat_view(chat_id):
         app.logger.info(f"body: '{body}', media_url: {media_url}, post_id: {post_id}")
         
         has_content = body or media_url or post_id
-        app.logger.info(f"has_content: {has_content}")
+        app.logger.warning(f"DEBUG: has_content check - body={bool(body)}, media_url={bool(media_url)}, post_id={bool(post_id)}, result={has_content}")
         
         if has_content:
             try:
