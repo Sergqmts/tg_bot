@@ -16,7 +16,9 @@
                 {% endif %}
             </div>
             <a href="{{ url_for('messages') }}" class="username">{{ chat.name }}</a>
-            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-secondary" style="margin-left: auto;">👥</a>
+            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-secondary" style="padding: 5px 10px;">👥</a>
+            <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="btn btn-secondary" style="padding: 5px 10px;">⚙️</a>
+            <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="btn btn-primary" style="padding: 5px 10px;">+</a>
         </div>
         
         <div class="chat" id="chat">

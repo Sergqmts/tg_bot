@@ -1356,8 +1356,9 @@ def chat_members(chat_id):
     all_users = User.query.filter(User.id != current_user.id).all()
     current_member_ids = [m.user_id for m in members]
     available_users = [u for u in all_users if u.id not in current_member_ids]
+    current_user_role = member.role
     
-    return render_template('chat_members.html', chat=chat, members=members, available_users=available_users)
+    return render_template('chat_members.html', chat=chat, members=members, available_users=available_users, current_user_role=current_user_role)
 
 
 @app.route('/chat/<int:chat_id>/add_member', methods=['POST'])
