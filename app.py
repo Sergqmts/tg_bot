@@ -1289,7 +1289,10 @@ def chat_view(chat_id):
         
         app.logger.info(f"body: '{body}', media_url: {media_url}, post_id: {post_id}")
         
-        if body or media_url or post_id:
+        has_content = body or media_url or post_id
+        app.logger.info(f"has_content: {has_content}")
+        
+        if has_content:
             try:
                 msg = Message(
                     body=body or '', 
