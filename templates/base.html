@@ -48,8 +48,10 @@
                         </div>
                     </div>
                 {% else %}
+                    {% if request.endpoint not in ['login', 'register'] %}
                     <a href="{{ url_for('login') }}">Войти</a>
                     <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 8px 15px; border-radius: 20px;">Регистрация</a>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
