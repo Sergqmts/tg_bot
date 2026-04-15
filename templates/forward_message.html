@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Переслать сообщение - Social{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 40px auto;">
+    <h3>Переслать сообщение</h3>
+    
+    <div class="post-preview" style="padding: 15px; background: var(--bg); border-radius: 8px; margin-bottom: 20px;">
+        <div class="post-header">
+            <div class="avatar">
+                {% if message.sender.avatar != 'default.png' %}
+                    <img src="{{ url_for('uploaded_file', filename=message.sender.avatar) }}" alt="">
+                {% else %}
+                    {{ message.sender.username[0].upper() }}
+                {% endif %}
+            </div>
+            <div>
+                <span class="username">{{ message.sender.username }}</span>
+                <div class="post-time">{{ message.created_at.strftime('%d.%m %H:%M') }}</div>
+            </div>
+        </div>
+        {% if message.body %}
+            <div class="post-content">{{ message.body[:100] }}{% if message.body|length > 100 %}...{% endif %}</div>
+        {% endif %}
+        {% if message.medias.count() > 0 %}
+            <div style="display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap;">
+                {% for m in message.medias %}
+                    {% if m.media_type == 'video' %}
+                        <div style="width: 60px; height: 60px; background: #333; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white;">▶</div>
+                    {% else %}
+                        <img src="{{ m.media_url }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if message.post_id %}
+            {% set post = Post.query.get(message.post_id) %}
+            {% if post %}
+            <div style="margin-top: 10px; padding: 10px; background: var(--card-bg); border-radius: 4px; font-size: 0.9rem;">
+                Репост: @{{ post.author.username }}
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+    
+    {% if chats %}
+    <hr style="margin: 20px 0;">
+    
+    <h4>В групповой чат</h4>
+    <form method="POST">
+        <input type="hidden" name="action" value="to_chat">
+        <div class="form-group">
+            <label>Выберите чат:</label>
+            <select name="chat_id" required>
+                <option value="">-- Выберите чат --</option>
+                {% for chat in chats %}
+                    <option value="{{ chat.id }}">{{ chat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Переслать</button>
+    </form>
+    {% endif %}
+    
+    <hr style="margin: 20px 0;">
+    
+    <h4>Личное сообщение</h4>
+    <form method="POST">
+        <input type="hidden" name="action" value="to_user">
+        <div class="form-group">
+            <label>Имя пользователя:</label>
+            <input type="text" name="username" placeholder="username" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Отправить</button>
+    </form>
+</div>
+{% endblock %}

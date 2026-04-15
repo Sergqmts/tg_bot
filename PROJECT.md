@@ -34,35 +34,44 @@ python app.py
 5. В Variables добавьте:
    - `DATABASE_URL` = Connection string из PostgreSQL
    - `SECRET_KEY` = любая случайная строка (мин. 30 символов)
+   - `CLOUDINARY_CLOUD_NAME` = ваш cloud name
+   - `CLOUDINARY_API_KEY` = ваш API key
+   - `CLOUDINARY_API_SECRET` = ваш API secret
 6. Deploy происходит автоматически
 
 ## 📁 Структура проекта
 
 ```
 tg_bot/
-├── app.py              # Основное приложение (все маршруты, модели, формы)
+├── app.py              # Основное приложение
 ├── requirements.txt   # Зависимости Python
-├── Procfile           # Для Railway (gunicorn)
-├── README.md          # Документация
-├── vercel.json        # Конфигурация Vercel (опционально)
+├── Procfile           # Для Railway
+├── PROJECT.md         # Документация
+├── vercel.json        # Конфигурация Vercel
+├── migrations/        # Миграции Alembic
 ├── static/
-│   └── uploads/       # Загруженные медиафайлы (стираются при деплое!)
+│   ├── style.css     # Стили (адаптивная верстка)
+│   └── uploads/      # Загруженные медиафайлы
 └── templates/
-    ├── base.html           # Базовый шаблон с навигацией
-    ├── index.html          # Главная страница / лента
+    ├── base.html           # Базовый шаблон
+    ├── index.html          # Лента постов
     ├── login.html          # Вход
     ├── register.html       # Регистрация
     ├── profile.html        # Профиль пользователя
     ├── edit_profile.html   # Редактирование профиля
-    ├── create.html         # Создание поста (отдельная страница)
+    ├── create.html         # Создание поста
     ├── explore.html        # Поиск пользователей
     ├── messages.html       # Список диалогов
-    ├── conversation.html    # Чат
-    ├── communities.html        # Список сообществ
-    ├── community.html          # Страница сообщества
-    ├── create_community.html   # Создание сообщества
-    ├── community_post.html     # Пост в сообществе
-    └── community_members.html  # Участники сообщества
+    ├── conversation.html   # Личный чат
+    ├── chat.html           # Групповой чат
+    ├── chat_members.html  # Участники чата
+    ├── chat_edit.html     # Редактирование чата
+    ├── chat_add_member.html # Добавление участника
+    ├── communities.html    # Список сообществ
+    ├── community.html      # Страница сообщества
+    ├── create_community.html # Создание сообщества
+    ├── community_members.html # Участники сообщества
+    └── forward_post.html   # Пересылка поста
 ```
 
 ## 🗄️ База данных
@@ -71,21 +80,26 @@ tg_bot/
 
 | Модель | Поля |
 |--------|------|
-| **User** | id, username, email, password_hash, bio, avatar, created_at |
-| **Post** | id, body, created_at, user_id, community_id |
-| **Media** | id, filename, media_type (image/video), post_id |
+| **User** | id, username, email, password_hash, bio, avatar, created_at, is_private, hide_followers, hide_following, approve_followers |
+| **Post** | id, body, created_at, user_id, community_id, is_community_post |
+| **Media** | id, filename, cloudinary_url, media_type (image/video), post_id |
 | **Like** | id, user_id, post_id, created_at |
 | **Comment** | id, body, created_at, user_id, post_id |
-| **Message** | id, body, created_at, read, sender_id, recipient_id |
-| **Community** | id, name, slug, description, image, creator_id |
-| **CommunityMember** | id, user_id, community_id, role, created_at |
+| **Repost** | id, user_id, post_id, created_at |
+| **Message** | id, body, created_at, read, sender_id, recipient_id, post_id, chat_id |
+| **MessageMedia** | id, message_id, media_url, media_type |
+| **Chat** | id, name, created_at, creator_id, avatar |
+| **ChatMember** | id, chat_id, user_id, role, joined_at |
+| **Community** | id, name, slug, description, image, creator_id, is_private |
+| **CommunityMember** | id, user_id, community_id, role, status, created_at |
 
 ### Связи
-- User → Post (author) ← Community
-- Post → Media, Like, Comment
-- User ↔ User (followers via followers table)
+- User → Post ← Community
+- Post → Media, Like, Comment, Repost
+- User ↔ User (followers с status: pending/approved)
 - User ↔ Community (via CommunityMember)
-- Message: User ↔ User (sender/recipient)
+- Message: User ↔ User (личные), Chat ↔ Message (групповые)
+- Chat ↔ ChatMember ↔ User
 
 ## 🛣️ Маршруты (Routes)
 
@@ -99,11 +113,13 @@ tg_bot/
 ### Посты
 | URL | Метод | Описание |
 |-----|-------|----------|
-| `/` | GET | Лента постов (все посты) |
+| `/` | GET | Лента (только подписки) |
 | `/create` | GET/POST | Создание поста |
+| `/post/<id>` | GET | Просмотр поста |
 | `/post/<id>/like` | POST | Лайк/убрать лайк |
-| `/post/<id>/comment` | POST | Добавить комментарий |
-| `/comment/<id>/delete` | POST | Удалить комментарий |
+| `/post/<id>/comment` | POST | Комментарий |
+| `/post/<id>/repost` | POST | Репост |
+| `/post/<id>/forward` | GET/POST | Переслать (личный/групповой/профиль) |
 | `/delete/<id>` | POST | Удалить пост |
 
 ### Пользователи
@@ -114,12 +130,25 @@ tg_bot/
 | `/explore` | GET | Поиск пользователей |
 | `/follow/<username>` | POST | Подписаться |
 | `/unfollow/<username>` | POST | Отписаться |
+| `/block/<username>` | POST | Заблокировать |
+| `/unblock/<username>` | POST | Разблокировать |
+| `/followers/requests` | GET | Заявки на подписку |
+| `/followers/approve/<username>` | POST | Одобрить |
+| `/followers/reject/<username>` | POST | Отклонить |
 
 ### Сообщения
 | URL | Метод | Описание |
 |-----|-------|----------|
-| `/messages` | GET | Список диалогов |
-| `/messages/<username>` | GET/POST | Чат |
+| `/messages` | GET | Список диалогов и групп |
+| `/messages/<username>` | GET/POST | Личный чат |
+| `/chat/create` | GET/POST | Создать групповой чат |
+| `/chat/<id>` | GET/POST | Групповой чат |
+| `/chat/<id>/members` | GET | Участники чата |
+| `/chat/<id>/add_member` | GET/POST | Добавить участника |
+| `/chat/<id>/remove_member/<user_id>` | POST | Удалить участника |
+| `/chat/<id>/make_admin/<user_id>` | POST | Назначить админа |
+| `/chat/<id>/edit` | GET/POST | Редактировать чат |
+| `/chat/<id>/leave` | POST | Покинуть чат |
 
 ### Сообщества
 | URL | Метод | Описание |
@@ -133,78 +162,71 @@ tg_bot/
 | `/community/<slug>/members` | GET | Участники |
 | `/community/<slug>/delete` | POST | Удалить сообщество |
 
-## 🧩 Особенности реализации
+### Медиа
+| URL | Метод | Описание |
+|-----|-------|----------|
+| `/photos` | GET | Мои фото |
+| `/uploads/<filename>` | GET | Скачать медиафайл |
 
-### Навигация
-- Иконка профиля слева → переход в профиль
-- Выпадающее меню "Меню" справа → содержит:
-  - Новый пост
-  - Люди
-  - Сообщества
-  - Сообщения (с бейджем непрочитанных)
-  - Выйти
+## 🧩 Реализованные функции
 
-### Комментарии
-- На главной и в сообществах показывается 1 комментарий
-- Кнопка "Показать ещё" раскрывает все комментарии
+### Приватность профиля
+- Закрытый профиль (`is_private`) — посты видят только подписчики
+- Скрыть подписчиков (`hide_followers`)
+- Скрыть подписки (`hide_following`)
+- Одобрение подписчиков (`approve_followers`)
 
-### Загрузка файлов
-- Посты: фото/видео (PNG, JPG, GIF, MP4, WEBM, MOV)
-- Аватар пользователя
-- Обложка сообщества
-- **Важно:** файлы хранятся локально и стираются при деплое на Railway!
-- Для продакшена нужно подключить Cloudinary или S3
+### Блокировка
+- Блокировка пользователей
+- Скрытие постов заблокированных из ленты
+- Запрет отправки сообщений заблокированным
 
-### Безопасность
-- CSRF защита отключена (для упрощения разработки)
-- Пароли хешируются через Werkzeug
-- Сессии через Flask-Login
+### Групповые чаты
+- Создание чата с выбором участников
+- Отправка текстовых сообщений
+- Отправка фото/видео (загружаются в Cloudinary)
+- Репост постов из ленты в чат
+- Управление участниками (добавить/удалить/назначить админа)
+- Редактирование названия и аватара чата
+- Выход из чата
 
-## 📦 Установленные пакеты
+### Адаптивная верстка
+- Desktop (>768px): полная версия
+- Tablet (768px): упрощенная сетка
+- Mobile (480px): 2 колонки постов
+- Адаптивные чаты с клавиатурой
+
+### Сообщества
+- Открытые и закрытые сообщества
+- Заявки в закрытые сообщества
+- Посты от имени сообщества
+- Управление участниками
+
+## 🧰 Технологии
+
+- Flask 3.x
+- Flask-Login (аутентификация)
+- Flask-SQLAlchemy (ORM)
+- Flask-WTF (формы)
+- PostgreSQL (Railway) / SQLite (локально)
+- Cloudinary (хранение медиа)
+- Gunicorn (deploy)
+
+## 🚀 Переменные окружения для Railway
 
 ```
-Flask==3.1.3
-Flask-Login==0.6.3
-Flask-SQLAlchemy==3.1.1
-Flask-WTF==1.2.2
-gunicorn==21.2.0
-SQLAlchemy==2.0.49
-WTForms==3.2.1
-Werkzeug==3.1.8
-psycopg[binary,pool]==3.2.3
+DATABASE_URL=postgresql://...
+SECRET_KEY=your_secret_key
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-## 🐛 Известные ограничения
+## 📝 TODO
 
-1. **Эфемерная файловая система** — загруженные медиа стираются при перезапуске Railway. Решение: подключить облачное хранилище (Cloudinary/S3).
-
-2. **SQLite не работает на Vercel** — для Vercel нужен PostgreSQL.
-
-## 🚀 Деплой
-
-### Railway (рекомендуется)
-
-```bash
-npm i -g railway
-railway login
-railway init
-railway up
-```
-
-### Vercel (альтернатива)
-
-```bash
-npm i -g vercel
-vercel --prod
-```
-Требуется PostgreSQL база данных.
-
-## 📝 TODO для финального релиза
-
-- [ ] Подключить Cloudinary для хранения медиафайлов
-- [ ] Добавить систему уведомлений
-- [ ] Добавить проверку пароля при регистрации
-- [ ] Добавить время "был в сети"
+- [ ] Система уведомлений
+- [ ] Время "был в сети"
+- [ ] Онлайн статус
 
 ## 📄 Лицензия
 

@@ -74,7 +74,10 @@
                         </div>
                         {% endif %}
                     {% endif %}
-                    <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
+                        <a href="{{ url_for('forward_message', message_id=msg.id) }}" style="font-size: 0.8rem; color: var(--text-light);">📤</a>
+                    </div>
                 </div>
             {% else %}
                 <div style="text-align: center; color: var(--text-light); padding: 20px;">

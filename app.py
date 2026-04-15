@@ -1342,6 +1342,101 @@ def leave_chat(chat_id):
     return redirect(url_for('messages'))
 
 
+@app.route('/message/<int:message_id>/forward')
+@login_required
+def forward_message(message_id):
+    message = Message.query.get_or_404(message_id)
+    
+    if message.sender_id != current_user.id and message.recipient_id != current_user.id:
+        if not message.chat_id:
+            flash('Нет доступа к этому сообщению')
+            return redirect(url_for('messages'))
+        member = ChatMember.query.filter_by(chat_id=message.chat_id, user_id=current_user.id).first()
+        if not member:
+            flash('Нет доступа к этому сообщению')
+            return redirect(url_for('messages'))
+    
+    user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
+    chats = [Chat.query.get(cm.chat_id) for cm in user_chats]
+    
+    other_user = None
+    if message.recipient_id and not message.chat_id:
+        other_user = User.query.get(message.recipient_id)
+    
+    return render_template('forward_message.html', message=message, chats=chats, other_user=other_user, Post=Post)
+
+
+@app.route('/message/<int:message_id>/forward', methods=['POST'])
+@login_required
+def forward_message_post(message_id):
+    message = Message.query.get_or_404(message_id)
+    
+    action = request.form.get('action')
+    
+    if action == 'to_chat':
+        chat_id = request.form.get('chat_id')
+        if chat_id:
+            chat = Chat.query.get(int(chat_id))
+            member = ChatMember.query.filter_by(chat_id=chat.id, user_id=current_user.id).first()
+            if member:
+                forward_body = f"Пересылка от {message.sender.username}:\n"
+                if message.body:
+                    forward_body += message.body
+                
+                new_msg = Message(
+                    body=forward_body,
+                    sender_id=current_user.id,
+                    chat_id=chat.id,
+                    post_id=message.post_id
+                )
+                db.session.add(new_msg)
+                db.session.flush()
+                
+                for m in message.medias:
+                    new_media = MessageMedia(
+                        message_id=new_msg.id,
+                        media_url=m.media_url,
+                        media_type=m.media_type
+                    )
+                    db.session.add(new_media)
+                
+                db.session.commit()
+                flash(f'Сообщение переслано в чат {chat.name}')
+                return redirect(url_for('chat_view', chat_id=chat.id))
+    
+    elif action == 'to_user':
+        username = request.form.get('username', '').strip()
+        user = User.query.filter_by(username=username).first()
+        if user:
+            forward_body = f"Пересылка от {message.sender.username}:\n"
+            if message.body:
+                forward_body += message.body
+            
+            new_msg = Message(
+                body=forward_body,
+                sender_id=current_user.id,
+                recipient_id=user.id,
+                post_id=message.post_id
+            )
+            db.session.add(new_msg)
+            db.session.flush()
+            
+            for m in message.medias:
+                new_media = MessageMedia(
+                    message_id=new_msg.id,
+                    media_url=m.media_url,
+                    media_type=m.media_type
+                )
+                db.session.add(new_media)
+            
+            db.session.commit()
+            flash(f'Сообщение переслано пользователю {user.username}')
+            return redirect(url_for('conversation', username=user.username))
+    
+    flash('Ошибка при пересылке')
+    return redirect(url_for('messages'))
+
+
 @app.route('/chat/<int:chat_id>/members')
 @login_required
 def chat_members(chat_id):
