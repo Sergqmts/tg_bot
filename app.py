@@ -1251,6 +1251,7 @@ def chat_view(chat_id):
             if file.filename and file_len > 0 and allowed_file(file.filename):
                 try:
                     media_url = None
+                    media_type = 'image'
                     if cloudinary_configured:
                         app.logger.info("Uploading to cloudinary...")
                         media_url = upload_to_cloudinary(file, folder='messages')
@@ -1258,8 +1259,6 @@ def chat_view(chat_id):
                         if media_url:
                             ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
                             media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                        else:
-                            app.logger.warning("Cloudinary returned empty URL, falling back to local")
                     else:
                         app.logger.warning("Cloudinary not configured, using local storage")
                     
@@ -1302,14 +1301,15 @@ def chat_view(chat_id):
                 )
                 db.session.add(msg)
                 db.session.flush()
-                app.logger.info(f"Message created with id={msg.id}")
+                app.logger.warning(f"Message created with id={msg.id}")
                 
                 if media_url:
+                    app.logger.warning(f"Adding media: url={media_url}, type={media_type}")
                     media = MessageMedia(message_id=msg.id, media_url=media_url, media_type=media_type)
                     db.session.add(media)
-                    app.logger.info(f"Media added: {media_url}")
                 
                 db.session.commit()
+                app.logger.warning(f"Message and media saved successfully!")
             except Exception as e:
                 app.logger.error(f"Chat message error: {e}")
                 db.session.rollback()
