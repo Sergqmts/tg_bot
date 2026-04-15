@@ -1342,6 +1342,122 @@ def leave_chat(chat_id):
     return redirect(url_for('messages'))
 
 
+@app.route('/chat/<int:chat_id>/members')
+@login_required
+def chat_members(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    members = ChatMember.query.filter_by(chat_id=chat_id).all()
+    all_users = User.query.filter(User.id != current_user.id).all()
+    current_member_ids = [m.user_id for m in members]
+    available_users = [u for u in all_users if u.id not in current_member_ids]
+    
+    return render_template('chat_members.html', chat=chat, members=members, available_users=available_users)
+
+
+@app.route('/chat/<int:chat_id>/add_member', methods=['POST'])
+@login_required
+def chat_add_member(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    user_id = request.form.get('user_id')
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            new_member = ChatMember(chat_id=chat_id, user_id=user.id, role='member')
+            db.session.add(new_member)
+            db.session.commit()
+            flash(f'{user.username} добавлен в чат')
+    
+    return redirect(url_for('chat_members', chat_id=chat_id))
+
+
+@app.route('/chat/<int:chat_id>/remove_member/<int:user_id>', methods=['POST'])
+@login_required
+def chat_remove_member(chat_id, user_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member or member.role != 'admin':
+        flash('Только администратор может удалять участников')
+        return redirect(url_for('chat_members', chat_id=chat_id))
+    
+    if user_id == chat.creator_id:
+        flash('Нельзя удалить создателя чата')
+        return redirect(url_for('chat_members', chat_id=chat_id))
+    
+    member_to_remove = ChatMember.query.filter_by(chat_id=chat_id, user_id=user_id).first()
+    if member_to_remove:
+        db.session.delete(member_to_remove)
+        db.session.commit()
+        flash('Участник удален')
+    
+    return redirect(url_for('chat_members', chat_id=chat_id))
+
+
+@app.route('/chat/<int:chat_id>/make_admin/<int:user_id>', methods=['POST'])
+@login_required
+def chat_make_admin(chat_id, user_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member or member.role != 'admin':
+        flash('Только администратор может назначать админов')
+        return redirect(url_for('chat_members', chat_id=chat_id))
+    
+    target_member = ChatMember.query.filter_by(chat_id=chat_id, user_id=user_id).first()
+    if target_member:
+        target_member.role = 'admin'
+        db.session.commit()
+        flash('Участник назначен администратором')
+    
+    return redirect(url_for('chat_members', chat_id=chat_id))
+
+
+@app.route('/chat/<int:chat_id>/edit', methods=['GET', 'POST'])
+@login_required
+def chat_edit(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member or member.role != 'admin':
+        flash('Только администратор может редактировать чат')
+        return redirect(url_for('chat_view', chat_id=chat_id))
+    
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        if name:
+            chat.name = name
+        
+        if 'avatar' in request.files:
+            file = request.files['avatar']
+            if file.filename and allowed_file(file.filename):
+                if cloudinary_configured:
+                    media_url = upload_to_cloudinary(file, folder='chats')
+                    if media_url:
+                        chat.avatar = media_url
+                else:
+                    filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    chat.avatar = filename
+        
+        db.session.commit()
+        flash('Чат обновлен')
+        return redirect(url_for('chat_view', chat_id=chat_id))
+    
+    return render_template('chat_edit.html', chat=chat)
+
+
 @app.route('/communities')
 def communities():
     all_communities = Community.query.order_by(Community.created_at.desc()).all()

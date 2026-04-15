@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Участники чата - Social{% endblock %}
+{% block content %}
+    <div style="max-width: 500px; margin: 40px auto;">
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <a href="{{ url_for('chat_view', chat_id=chat.id) }}" class="btn btn-secondary">←</a>
+            <h2 style="margin-left: 10px;">{{ chat.name }}</h2>
+        </div>
+        
+        {% if current_user.role == 'admin' %}
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>Добавить участника</h3>
+            <form method="POST" action="{{ url_for('chat_add_member', chat_id=chat.id) }}">
+                <div class="form-group">
+                    <select name="user_id" required>
+                        <option value="">-- Выберите пользователя --</option>
+                        {% for user in available_users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+        {% endif %}
+        
+        <h3>Участники ({{ members|length }})</h3>
+        {% for m in members %}
+            <div class="card" style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="avatar">
+                        {% if m.user.avatar != 'default.png' %}
+                            <img src="{{ url_for('uploaded_file', filename=m.user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            {{ m.user.username[0].upper() }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{{ url_for('user_profile', username=m.user.username) }}">{{ m.user.username }}</a>
+                        {% if m.user.id == chat.creator_id %}
+                            <span style="color: var(--primary); font-size: 0.8rem;"> (создатель)</span>
+                        {% elif m.role == 'admin' %}
+                            <span style="color: var(--text-light); font-size: 0.8rem;"> (админ)</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if current_user.role == 'admin' and m.user.id != chat.creator_id and m.user.id != current_user.id %}
+                <div style="display: flex; gap: 5px;">
+                    {% if m.role != 'admin' %}
+                    <form method="POST" action="{{ url_for('chat_make_admin', chat_id=chat.id, user_id=m.user.id) }}">
+                        <button type="submit" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">Назначить админом</button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('chat_remove_member', chat_id=chat.id, user_id=m.user.id) }}">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Удалить из чата?')">Удалить</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+        
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="btn btn-secondary">Редактировать чат</a>
+            {% if chat.creator_id != current_user.id %}
+            <form method="POST" action="{{ url_for('leave_chat', chat_id=chat.id) }}">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Покинуть чат?')">Покинуть</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

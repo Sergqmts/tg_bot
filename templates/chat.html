@@ -4,8 +4,19 @@
     <div class="card chat-card">
         <div class="chat-header">
             <a href="{{ url_for('messages') }}" class="btn btn-secondary">←</a>
-            <div class="avatar" style="margin-right: 10px;">👥</div>
+            <div class="avatar" style="margin-right: 10px;">
+                {% if chat.avatar and chat.avatar != 'chat_default.png' %}
+                    {% if chat.avatar.startswith('http') %}
+                        <img src="{{ chat.avatar }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% endif %}
+                {% else %}
+                    👥
+                {% endif %}
+            </div>
             <a href="{{ url_for('messages') }}" class="username">{{ chat.name }}</a>
+            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-secondary" style="margin-left: auto;">👥</a>
         </div>
         
         <div class="chat" id="chat">
