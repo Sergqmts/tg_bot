@@ -1379,9 +1379,10 @@ def forward_message_post(message_id):
             chat = Chat.query.get(int(chat_id))
             member = ChatMember.query.filter_by(chat_id=chat.id, user_id=current_user.id).first()
             if member:
-                forward_body = f"Пересылка от {message.sender.username}:\n"
                 if message.body:
-                    forward_body += message.body
+                    forward_body = message.body
+                else:
+                    forward_body = None
                 
                 new_msg = Message(
                     body=forward_body,
@@ -1408,9 +1409,10 @@ def forward_message_post(message_id):
         username = request.form.get('username', '').strip()
         user = User.query.filter_by(username=username).first()
         if user:
-            forward_body = f"Пересылка от {message.sender.username}:\n"
             if message.body:
-                forward_body += message.body
+                forward_body = message.body
+            else:
+                forward_body = None
             
             new_msg = Message(
                 body=forward_body,
