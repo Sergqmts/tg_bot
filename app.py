@@ -36,12 +36,16 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov'}
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-cloudinary_configured = os.environ.get('CLOUDINARY_CLOUD_NAME') and os.environ.get('CLOUDINARY_API_KEY')
+cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
+cloud_key = os.environ.get('CLOUDINARY_API_KEY')
+cloud_secret = os.environ.get('CLOUDINARY_API_SECRET')
+cloudinary_configured = cloud_name and cloud_key
+app.logger.info(f"Cloudinary config: cloud_name={cloud_name}, has_key=bool(cloud_key), has_secret=bool(cloud_secret)")
 if cloudinary_configured:
     cloudinary.config(
-        cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-        api_key=os.environ.get('CLOUDINARY_API_KEY'),
-        api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
+        cloud_name=cloud_name,
+        api_key=cloud_key,
+        api_secret=cloud_secret,
         secure=True
     )
 
