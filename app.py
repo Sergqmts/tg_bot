@@ -1196,10 +1196,16 @@ def conversation(username):
                 db.session.rollback()
     
     try:
-        messages = Message.query.filter(
-            ((Message.sender == current_user) & (Message.recipient == other_user)) |
-            ((Message.sender == other_user) & (Message.recipient == current_user))
-        ).order_by(Message.created_at.asc()).all()
+        if other_user.id == current_user.id:
+            messages = Message.query.filter(
+                Message.sender_id == current_user.id,
+                Message.recipient_id == current_user.id
+            ).order_by(Message.created_at.asc()).all()
+        else:
+            messages = Message.query.filter(
+                ((Message.sender == current_user) & (Message.recipient == other_user)) |
+                ((Message.sender == other_user) & (Message.recipient == current_user))
+            ).order_by(Message.created_at.asc()).all()
     except Exception as e:
         app.logger.error(f"Load messages error: {e}")
         messages = []
