@@ -1429,7 +1429,7 @@ def forward_message_post(message_id):
                 )
                 db.session.add(new_media)
             
-db.session.commit()
+            db.session.commit()
             flash(f'Сообщение переслано пользователю {user.username}')
             return redirect(url_for('conversation', username=user.username))
     
