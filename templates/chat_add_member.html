@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Добавить участника - Social{% endblock %}
+{% block content %}
+    <div style="max-width: 500px; margin: 40px auto;">
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-secondary">←</a>
+            <h2 style="margin-left: 10px;">Добавить участника</h2>
+        </div>
+        
+        {% if users %}
+        <div class="card">
+            <form method="POST">
+                <div class="form-group">
+                    <label>Выберите пользователя:</label>
+                    <select name="user_id" required>
+                        <option value="">-- Выберите --</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Добавить</button>
+            </form>
+        </div>
+        {% else %}
+        <div class="card" style="text-align: center; color: var(--text-light);">
+            Нет пользователей для добавления
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}

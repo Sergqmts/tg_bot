@@ -1361,7 +1361,7 @@ def chat_members(chat_id):
     return render_template('chat_members.html', chat=chat, members=members, available_users=available_users, current_user_role=current_user_role)
 
 
-@app.route('/chat/<int:chat_id>/add_member', methods=['POST'])
+@app.route('/chat/<int:chat_id>/add_member', methods=['GET', 'POST'])
 @login_required
 def chat_add_member(chat_id):
     chat = Chat.query.get_or_404(chat_id)
@@ -1371,16 +1371,22 @@ def chat_add_member(chat_id):
         flash('Вы не состоите в этом чате')
         return redirect(url_for('messages'))
     
-    user_id = request.form.get('user_id')
-    if user_id:
-        user = User.query.get(user_id)
-        if user:
-            new_member = ChatMember(chat_id=chat_id, user_id=user.id, role='member')
-            db.session.add(new_member)
-            db.session.commit()
-            flash(f'{user.username} добавлен в чат')
+    if request.method == 'POST':
+        user_id = request.form.get('user_id')
+        if user_id:
+            user = User.query.get(user_id)
+            if user:
+                new_member = ChatMember(chat_id=chat_id, user_id=user.id, role='member')
+                db.session.add(new_member)
+                db.session.commit()
+                flash(f'{user.username} добавлен в чат')
+        return redirect(url_for('chat_members', chat_id=chat_id))
     
-    return redirect(url_for('chat_members', chat_id=chat_id))
+    members = ChatMember.query.filter_by(chat_id=chat_id).all()
+    current_member_ids = [m.user_id for m in members]
+    all_users = User.query.filter(User.id.notin_(current_member_ids)).all()
+    
+    return render_template('chat_add_member.html', chat=chat, users=all_users)
 
 
 @app.route('/chat/<int:chat_id>/remove_member/<int:user_id>', methods=['POST'])
