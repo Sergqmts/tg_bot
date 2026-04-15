@@ -1429,12 +1429,49 @@ def forward_message_post(message_id):
                 )
                 db.session.add(new_media)
             
-            db.session.commit()
+db.session.commit()
             flash(f'Сообщение переслано пользователю {user.username}')
             return redirect(url_for('conversation', username=user.username))
     
     flash('Ошибка при пересылке')
     return redirect(url_for('messages'))
+
+
+@app.route('/message/<int:message_id>/delete', methods=['POST'])
+@login_required
+def delete_message(message_id):
+    message = Message.query.get_or_404(message_id)
+    
+    is_sender = message.sender_id == current_user.id
+    is_recipient = message.recipient_id == current_user.id if message.recipient_id else False
+    
+    member = None
+    if message.chat_id:
+        member = ChatMember.query.filter_by(chat_id=message.chat_id, user_id=current_user.id).first()
+    
+    is_chat_member = member is not None if message.chat_id else False
+    
+    if not (is_sender or is_recipient or is_chat_member):
+        flash('Нет доступа к этому сообщению')
+        return redirect(request.referrer or url_for('messages'))
+    
+    delete_type = request.form.get('delete_type', 'me')
+    
+    if delete_type == 'me':
+        message.body = '[удалено]'
+        message.medias.delete()
+        db.session.commit()
+        flash('Сообщение удалено для вас')
+    elif delete_type == 'all':
+        if is_sender:
+            message.medias.delete()
+            db.session.delete(message)
+            db.session.commit()
+            flash('Сообщение удалено для всех')
+        else:
+            flash('Только автор может удалить сообщение для всех')
+    
+    return redirect(request.referrer or url_for('messages'))
 
 
 @app.route('/chat/<int:chat_id>/members')

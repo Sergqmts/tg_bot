@@ -71,7 +71,11 @@
                         </a>
                         {% endif %}
                     {% elif msg.body or msg.medias.count() > 0 %}
+                        {% if msg.body == '[удалено]' %}
+                        <div style="color: var(--text-light); font-style: italic;">Сообщение удалено</div>
+                        {% else %}
                         <div>{{ msg.body }}</div>
+                        {% endif %}
                         {% if msg.medias.count() > 0 %}
                         <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 100%;">
                             {% for m in msg.medias %}
@@ -91,7 +95,15 @@
                     {% endif %}
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
-                        <a href="{{ url_for('forward_message', message_id=msg.id) }}" style="font-size: 0.8rem; color: var(--text-light);">📤</a>
+                        <div style="display: flex; gap: 5px;">
+                            <a href="{{ url_for('forward_message', message_id=msg.id) }}" style="font-size: 0.8rem; color: var(--text-light);">📤</a>
+                            {% if msg.sender_id == current_user.id %}
+                            <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}" style="display: inline;">
+                                <input type="hidden" name="delete_type" value="all">
+                                <button type="submit" style="background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 0.8rem;" onclick="return confirm('Удалить для всех?')">🗑️</button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             {% else %}
