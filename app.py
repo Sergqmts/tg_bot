@@ -1118,6 +1118,20 @@ def messages():
             })
     
     conversations = sorted(conversations.values(), key=lambda x: x['last'].created_at if x.get('last') else datetime.min, reverse=True)
+    
+    # Добавить себя в список диалогов
+    self_messages = Message.query.filter(
+        Message.sender_id == current_user.id,
+        Message.recipient_id == current_user.id
+    ).order_by(Message.created_at.desc()).first()
+    if self_messages:
+        conversations.insert(0, {
+            'user': current_user,
+            'last': self_messages,
+            'unread': 0,
+            'type': 'self'
+        })
+    
     group_chats = sorted(group_chats, key=lambda x: x['last'].created_at if x.get('last') else datetime.min, reverse=True)
     
     suggested = [u for u in User.query.order_by(User.created_at.desc()).all() 
@@ -1130,9 +1144,10 @@ def messages():
 def conversation(username):
     other_user = User.query.filter_by(username=username).first_or_404()
     
-    if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
-        flash('Вы не можете отправить сообщение этому пользователю')
-        return redirect(url_for('messages'))
+    if username != current_user.username:
+        if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
+            flash('Вы не можете отправить сообщение этому пользователю')
+            return redirect(url_for('messages'))
     
     try:
         Message.query.filter_by(sender=other_user, recipient=current_user, read=False).update({'read': True})
