@@ -302,7 +302,7 @@ class User(UserMixin, db.Model):
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
-    comments = db.relationship('Comment', backref='author', lazy='dynamic')
+    comments = db.relationship('Comment', backref='author', lazy='dynamic', foreign_keys='Comment.user_id')
     
     followed = db.relationship(
         'User', secondary=followers,
@@ -481,7 +481,7 @@ class Post(db.Model):
     community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=True)
     is_community_post = db.Column(db.Boolean, default=False)
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
-    comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
+    comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan', foreign_keys='Comment.post_id')
     media = db.relationship('Media', backref='post', lazy='dynamic', cascade='all, delete-orphan')
 
     def liked_by(self, user):
