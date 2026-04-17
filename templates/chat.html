@@ -100,8 +100,8 @@
                                     <button type="submit" style="background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.9rem;">{{ r }}</button>
                                 </form>
                             {% endfor %}
-                            {% if msg.reactions.count() > 0 %}
-                                <span style="font-size: 0.75rem; color: #666;">{{ msg.reactions.count() }}</span>
+                            {% if msg.reactions|length > 0 %}
+                                <span style="font-size: 0.75rem; color: #666;">{{ msg.reactions|length }}</span>
                             {% endif %}
                         </div>
                         

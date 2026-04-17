@@ -126,8 +126,8 @@
                             <button type="submit" style="background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.9rem;">{{ r }}</button>
                         </form>
                     {% endfor %}
-                    {% if comment.reactions.count() > 0 %}
-                        <span style="font-size: 0.75rem; color: #666; align-self: center;">{{ comment.reactions.count() }}</span>
+                    {% if comment.reactions|length > 0 %}
+                        <span style="font-size: 0.75rem; color: #666; align-self: center;">{{ comment.reactions|length }}</span>
                     {% endif %}
                 </div>
             </div>
