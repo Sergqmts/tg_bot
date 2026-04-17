@@ -78,13 +78,17 @@
     <!-- Форма добавления комментария -->
     {% if current_user.is_authenticated %}
         <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form" enctype="multipart/form-data" style="margin-bottom: 20px;">
-            <input type="text" name="body" placeholder="Добавить комментарий...">
+            <input type="text" name="body" id="commentInput" placeholder="Добавить комментарий...">
+            <input type="hidden" name="reply_to" id="replyToInput">
             <label style="cursor: pointer; font-size: 1.2rem;">📎
                 <input type="file" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.querySelector('.file-name').textContent = this.files[0]?.name || ''">
             </label>
             <span class="file-name" style="font-size: 0.8rem; color: #666;"></span>
             <button type="submit" class="btn btn-primary">Отправить</button>
         </form>
+        <div id="replyIndicator" style="display: none; color: #1da1f2; font-size: 0.8rem; margin-bottom: 5px;">
+            Ответ <span id="replyToUser"></span> <span style="cursor: pointer;" onclick="cancelReply()">✕</span>
+        </div>
     {% endif %}
     
     <!-- Список комментариев -->
@@ -99,7 +103,8 @@
             </div>
             <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                    <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="username">{{ comment.author.username }}</a>
+                    <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="username" onclick="event.stopPropagation();">{{ comment.author.username }}</a>
+                    <span style="cursor: pointer; color: #1da1f2; font-size: 0.8rem;" onclick="replyTo('{{ comment.author.username }}')">↶ Ответить</span>
                     <span class="post-time" style="font-size: 0.8em;">{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
                 </div>
                 <div>{{ comment.body }}</div>
@@ -121,4 +126,19 @@
         <p style="color: #8e8e8e; text-align: center; padding: 20px;">Пока нет комментариев</p>
     {% endfor %}
 </div>
+
+<script>
+function replyTo(username) {
+    document.getElementById('commentInput').value = '@' + username + ' ';
+    document.getElementById('replyToInput').value = username;
+    document.getElementById('replyToUser').textContent = username;
+    document.getElementById('replyIndicator').style.display = 'block';
+    document.getElementById('commentInput').focus();
+}
+
+function cancelReply() {
+    document.getElementById('replyToInput').value = '';
+    document.getElementById('replyIndicator').style.display = 'none';
+}
+</script>
 {% endblock %}
