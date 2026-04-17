@@ -131,15 +131,17 @@
                             {% endfor %}
                         </div>
                     </div>
-                    {% set unique_emojis = [] %}
-                    {% for reaction in comment.reactions %}
-                        {% if reaction.emoji not in unique_emojis %}
-                            {% set _ = unique_emojis.append(reaction.emoji) %}
-                        {% endif %}
-                    {% endfor %}
-                    {% if unique_emojis|length > 0 %}
-                        <span style="font-size: 0.75rem; color: #666;">{{ unique_emojis|join('') }}</span>
-                    {% endif %}
+{% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
+                            {% set count = 0 %}
+                            {% for reaction in comment.reactions %}
+                                {% if reaction.emoji == r %}
+                                    {% set count = count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if count > 0 %}
+                                <span style="font-size: 0.75rem; color: #666;">{{ r }}{{ count }}</span>
+                            {% endif %}
+                        {% endfor %}
                 </div>
             </div>
             {% if current_user.is_authenticated and comment.author == current_user %}
