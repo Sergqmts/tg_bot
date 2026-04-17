@@ -27,7 +27,7 @@
                             <div class="media-slide" data-post="{{ post.id }}" style="display: {% if loop.index == 1 %}block{% else %}none{% endif %}; width: 100%; height: 100%;">
                                 {% if m.cloudinary_url %}
                                     {% if m.media_type == 'video' %}
-                                        <video src="{{ m.cloudinary_url }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                                        <video src="{{ m.cloudinary_url }}" crossorigin="anonymous" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
                                     {% else %}
                                         <img src="{{ m.cloudinary_url }}" alt="Пост" style="width: 100%; height: 100%; object-fit: cover;">
                                     {% endif %}

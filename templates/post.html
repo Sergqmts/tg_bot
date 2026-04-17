@@ -31,7 +31,7 @@
         <div class="post-media">
             {% if m.cloudinary_url %}
                 {% if m.media_type == 'video' %}
-                    <video controls style="max-width: 100%;"><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+                    <video controls crossorigin="anonymous" style="max-width: 100%;"><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
                 {% else %}
                     <img src="{{ m.cloudinary_url }}" alt="Медиа" style="max-width: 100%;">
                 {% endif %}

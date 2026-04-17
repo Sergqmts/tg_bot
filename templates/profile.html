@@ -77,7 +77,7 @@
                 {% if media %}
                     {% if media.cloudinary_url %}
                         {% if media.media_type == 'video' %}
-                            <video src="{{ media.cloudinary_url }}" muted></video>
+                            <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted></video>
                         {% else %}
                             <img src="{{ media.cloudinary_url }}" alt="">
                         {% endif %}

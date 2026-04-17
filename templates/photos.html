@@ -10,7 +10,7 @@
                     <div class="post-card" onclick="openModal('{{ m.cloudinary_url or url_for('uploaded_file', filename=m.filename) }}', '{{ m.media_type }}')">
                         {% if m.cloudinary_url %}
                             {% if m.media_type == 'video' %}
-                                <video src="{{ m.cloudinary_url }}" muted></video>
+                                <video src="{{ m.cloudinary_url }}" crossorigin="anonymous" muted></video>
                             {% else %}
                                 <img src="{{ m.cloudinary_url }}" alt="">
                             {% endif %}
