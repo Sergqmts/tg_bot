@@ -545,6 +545,8 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     
+    author = db.relationship('User', foreign_keys=[user_id])
+    
     
 
 
