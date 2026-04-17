@@ -541,6 +541,8 @@ class Like(db.Model):
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
+    media_url = db.Column(db.String(500))
+    media_type = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
@@ -630,6 +632,7 @@ class PostForm(FlaskForm):
 
 class CommentForm(FlaskForm):
     body = StringField('Комментарий', validators=[DataRequired()])
+    media = FileField('Фото/Видео', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'mov'], 'Только изображения и видео!')])
     submit = SubmitField('Отправить')
 
 
@@ -856,10 +859,31 @@ def add_comment(post_id):
     app.logger.info(f"Adding comment to post {post_id} by user {current_user.id}")
     post = Post.query.get_or_404(post_id)
     body = request.form.get('body', '').strip()
+    media_url = None
+    media_type = None
+    
+    if 'media' in request.files:
+        file = request.files['media']
+        if file.filename and allowed_file(file.filename):
+            try:
+                if cloudinary_configured:
+                    media_url = upload_to_cloudinary(file, folder='comments')
+                    if media_url:
+                        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                else:
+                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    media_url = '/media/' + filename
+                    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+            except Exception as e:
+                app.logger.error(f"Media upload error: {e}")
+    
     app.logger.info(f"Comment body: {body}")
-    if body:
+    if body or media_url:
         try:
-            comment = Comment(body=body, author=current_user, post=post)
+            comment = Comment(body=body or '', author=current_user, post=post, media_url=media_url, media_type=media_type)
             db.session.add(comment)
             db.session.commit()
             app.logger.info(f"Comment added successfully")
