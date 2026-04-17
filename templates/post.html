@@ -131,17 +131,11 @@
                             {% endfor %}
                         </div>
                     </div>
-{% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
-                            {% set count = 0 %}
-                            {% for reaction in comment.reactions %}
-                                {% if reaction.emoji == r %}
-                                    {% set count = count + 1 %}
-                                {% endif %}
-                            {% endfor %}
-                            {% if count > 0 %}
-                                <span style="font-size: 0.75rem; color: #666;">{{ r }}{{ count }}</span>
-                            {% endif %}
-                        {% endfor %}
+                    {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
+                    {% if comment.reactions|selectattr('emoji', 'equalto', r)|list|length > 0 %}
+                        <span style="font-size: 0.75rem; color: #666;">{{ r }}{{ comment.reactions|selectattr('emoji', 'equalto', r)|list|length }}</span>
+                    {% endif %}
+                    {% endfor %}
                 </div>
             </div>
             {% if current_user.is_authenticated and comment.author == current_user %}

@@ -91,14 +91,8 @@
                                 </div>
                             </div>
                             {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
-                                {% set count = 0 %}
-                                {% for reaction in msg.reactions %}
-                                    {% if reaction.emoji == r %}
-                                        {% set count = count + 1 %}
-                                    {% endif %}
-                                {% endfor %}
-                                {% if count > 0 %}
-                                    <span style="font-size: 0.75rem; color: #666;">{{ r }}{{ count }}</span>
+                                {% if msg.reactions|selectattr('emoji', 'equalto', r)|list|length > 0 %}
+                                    <span style="font-size: 0.75rem; color: #666;">{{ r }}{{ msg.reactions|selectattr('emoji', 'equalto', r)|list|length }}</span>
                                 {% endif %}
                             {% endfor %}
                         </div>
