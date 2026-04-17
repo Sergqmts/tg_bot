@@ -582,6 +582,17 @@ class Message(db.Model):
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
     
     medias = db.relationship('MessageMedia', backref='message', lazy='dynamic')
+    
+    
+class MessageReaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    emoji = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', foreign_keys=[user_id])
+    message = db.relationship('Message', backref='reactions')
 
 
 class Chat(db.Model):
@@ -930,6 +941,21 @@ def react_comment(comment_id):
         db.session.delete(existing)
     else:
         reaction = CommentReaction(comment_id=comment_id, user_id=current_user.id, emoji=emoji)
+        db.session.add(reaction)
+    db.session.commit()
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/message/<int:message_id>/react', methods=['POST'])
+@login_required
+def react_message(message_id):
+    emoji = request.form.get('emoji', '👍')
+    message = Message.query.get_or_404(message_id)
+    existing = MessageReaction.query.filter_by(message_id=message_id, user_id=current_user.id, emoji=emoji).first()
+    if existing:
+        db.session.delete(existing)
+    else:
+        reaction = MessageReaction(message_id=message_id, user_id=current_user.id, emoji=emoji)
         db.session.add(reaction)
     db.session.commit()
     return redirect(request.referrer or url_for('index'))
