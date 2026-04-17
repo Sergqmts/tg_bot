@@ -93,13 +93,18 @@
                         </div>
 {% endif %}
                         {% endif %}
-                        <div style="margin-top: 5px;">
-                            {% for r in ['👍', '❤️', '😂', '😮', '😢'] %}
-                                <form method="POST" action="{{ url_for('react_message', message_id=msg.id) }}" style="display: inline;">
-                                    <input type="hidden" name="emoji" value="{{ r }}">
-                                    <button type="submit" style="background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.9rem;">{{ r }}</button>
-                                </form>
-                            {% endfor %}
+                        <div style="margin-top: 5px; display: flex; gap: 5px; align-items: center;">
+                            <div style="position: relative; display: inline-block;">
+                                <button type="button" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'" style="background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.9rem;">＋</button>
+                                <div style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;">
+                                    {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
+                                        <form method="POST" action="{{ url_for('react_message', message_id=msg.id) }}" style="display: inline;">
+                                            <input type="hidden" name="emoji" value="{{ r }}">
+                                            <button type="submit" style="background: none; border: none; cursor: pointer; padding: 3px; font-size: 1.1rem;">{{ r }}</button>
+                                        </form>
+                                    {% endfor %}
+                                </div>
+                            </div>
                             {% if msg.reactions|length > 0 %}
                                 <span style="font-size: 0.75rem; color: #666;">{{ msg.reactions|length }}</span>
                             {% endif %}
