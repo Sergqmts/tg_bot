@@ -119,6 +119,17 @@
                         <img src="{{ comment.media_url }}" alt="" style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 5px; object-fit: cover;">
                     {% endif %}
                 {% endif %}
+                <div style="margin-top: 5px; display: flex; gap: 5px;">
+                    {% for r in ['👍', '❤️', '😂', '😮', '😢'] %}
+                        <form method="POST" action="{{ url_for('react_comment', comment_id=comment.id) }}" style="display: inline;">
+                            <input type="hidden" name="emoji" value="{{ r }}">
+                            <button type="submit" style="background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.9rem;">{{ r }}</button>
+                        </form>
+                    {% endfor %}
+                    {% if comment.reactions.count() > 0 %}
+                        <span style="font-size: 0.75rem; color: #666; align-self: center;">{{ comment.reactions.count() }}</span>
+                    {% endif %}
+                </div>
             </div>
             {% if current_user.is_authenticated and comment.author == current_user %}
                 <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" style="margin-left: 10px;">

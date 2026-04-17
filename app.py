@@ -546,12 +546,21 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     
-    author = db.relationship('User', foreign_keys=[user_id])
+author = db.relationship('User', foreign_keys=[user_id])
     reply_to = db.relationship('Comment', remote_side=[id], backref='replies')
     
     
-
-
+class CommentReaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    emoji = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', foreign_keys=[user_id])
+    comment = db.relationship('Comment', backref='reactions')
+    
+    
 class Repost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -907,6 +916,21 @@ def delete_comment(comment_id):
     if comment.author != current_user:
         abort(403)
     db.session.delete(comment)
+    db.session.commit()
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/comment/<int:comment_id>/react', methods=['POST'])
+@login_required
+def react_comment(comment_id):
+    emoji = request.form.get('emoji', '👍')
+    comment = Comment.query.get_or_404(comment_id)
+    existing = CommentReaction.query.filter_by(comment_id=comment_id, user_id=current_user.id, emoji=emoji).first()
+    if existing:
+        db.session.delete(existing)
+    else:
+        reaction = CommentReaction(comment_id=comment_id, user_id=current_user.id, emoji=emoji)
+        db.session.add(reaction)
     db.session.commit()
     return redirect(request.referrer or url_for('index'))
 
