@@ -32,9 +32,8 @@ else:
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-key-change-in-production-secret-key-fixed'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov'}
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
@@ -89,7 +88,7 @@ def get_cloudinary_url(public_id, resource_type='image'):
             quality='auto',
             fetch_format='auto'
         )
-    return url_for('uploaded_file', filename=public_id)
+    return '/media/' + public_id
 
 
 @login_manager.user_loader
@@ -1174,7 +1173,7 @@ def conversation(username):
                 else:
                     filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    media_url = url_for('uploaded_file', filename=filename)
+                    media_url = '/media/' + filename
                     ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                     media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
                 app.logger.info(f"Media URL: {media_url}, type: {media_type}")
@@ -1297,7 +1296,7 @@ def chat_view(chat_id):
                             app.logger.info(f"Files in upload dir: {list_files[:5]}")
                         except Exception as e:
                             app.logger.error(f"Save error: {e}")
-                        media_url = url_for('uploaded_file', filename=filename)
+                        media_url = '/media/' + filename
                         app.logger.info(f"Generated URL: {media_url}")
                         ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                         media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
@@ -1786,7 +1785,7 @@ def delete_community(slug):
     return redirect(url_for('communities'))
 
 
-@app.route('/uploads/<filename>')
+@app.route('/media/<filename>')
 def uploaded_file(filename):
     app.logger.info(f"Looking for file: {filename}")
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
