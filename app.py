@@ -546,7 +546,7 @@ class Comment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     
-author = db.relationship('User', foreign_keys=[user_id])
+    author = db.relationship('User', foreign_keys=[user_id])
     reply_to = db.relationship('Comment', remote_side=[id], backref='replies')
     
     
