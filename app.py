@@ -541,11 +541,13 @@ class Comment(db.Model):
     body = db.Column(db.Text, nullable=False)
     media_url = db.Column(db.String(500))
     media_type = db.Column(db.String(20))
+    reply_to_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     
     author = db.relationship('User', foreign_keys=[user_id])
+    reply_to = db.relationship('Comment', remote_side=[id], backref='replies')
     
     
 
@@ -861,6 +863,7 @@ def add_comment(post_id):
     app.logger.info(f"Adding comment to post {post_id} by user {current_user.id}")
     post = Post.query.get_or_404(post_id)
     body = request.form.get('body', '').strip()
+    reply_to_comment_id = request.form.get('reply_to_comment_id', type=int)
     media_url = None
     media_type = None
     
@@ -885,7 +888,7 @@ def add_comment(post_id):
     app.logger.info(f"Comment body: {body}")
     if body or media_url:
         try:
-            comment = Comment(body=body or '', author=current_user, post=post, media_url=media_url, media_type=media_type)
+            comment = Comment(body=body or '', author=current_user, post=post, media_url=media_url, media_type=media_type, reply_to_id=reply_to_comment_id)
             db.session.add(comment)
             db.session.commit()
             app.logger.info(f"Comment added successfully")

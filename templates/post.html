@@ -79,7 +79,7 @@
     {% if current_user.is_authenticated %}
         <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form" enctype="multipart/form-data" style="margin-bottom: 20px;">
             <input type="text" name="body" id="commentInput" placeholder="Добавить комментарий...">
-            <input type="hidden" name="reply_to" id="replyToInput">
+            <input type="hidden" name="reply_to_comment_id" id="replyToCommentId" value="">
             <label style="cursor: pointer; font-size: 1.2rem;">📎
                 <input type="file" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.querySelector('.file-name').textContent = this.files[0]?.name || ''">
             </label>
@@ -93,7 +93,8 @@
     
     <!-- Список комментариев -->
     {% for comment in post.comments.order_by('created_at').all() %}
-        <div class="comment" style="padding: 12px 0; border-bottom: 1px solid #eee;">
+        {% set is_reply = comment.reply_to_id is not none %}
+        <div class="comment" style="padding: 12px 0; border-bottom: 1px solid #eee; {% if is_reply %}margin-left: 30px; border-left: 2px solid #1da1f2; padding-left: 10px;{% endif %}">
             <div class="avatar" style="width: 36px; height: 36px; flex-shrink: 0;">
                 {% if comment.author.avatar != 'default.png' %}
                     <img src="{{ url_for('uploaded_file', filename=comment.author.avatar) }}" alt="">
@@ -104,7 +105,10 @@
             <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
                     <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="username" onclick="event.stopPropagation();">{{ comment.author.username }}</a>
-                    <span style="cursor: pointer; color: #1da1f2; font-size: 0.8rem;" onclick="replyTo('{{ comment.author.username }}')">↶ Ответить</span>
+                    {% if is_reply %}
+                        <span style="color: #666; font-size: 0.75rem;">→ @{{ comment.reply_to.author.username }}</span>
+                    {% endif %}
+                    <span style="cursor: pointer; color: #1da1f2; font-size: 0.8rem;" onclick="replyTo('{{ comment.author.username }}', {{ comment.id }})">↶ Ответить</span>
                     <span class="post-time" style="font-size: 0.8em;">{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
                 </div>
                 <div>{{ comment.body }}</div>
@@ -128,16 +132,16 @@
 </div>
 
 <script>
-function replyTo(username) {
+function replyTo(username, commentId) {
     document.getElementById('commentInput').value = '@' + username + ' ';
-    document.getElementById('replyToInput').value = username;
+    document.getElementById('replyToCommentId').value = commentId || '';
     document.getElementById('replyToUser').textContent = username;
     document.getElementById('replyIndicator').style.display = 'block';
     document.getElementById('commentInput').focus();
 }
 
 function cancelReply() {
-    document.getElementById('replyToInput').value = '';
+    document.getElementById('replyToCommentId').value = '';
     document.getElementById('replyIndicator').style.display = 'none';
 }
 </script>
