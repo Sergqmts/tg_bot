@@ -1278,7 +1278,7 @@ def delete(post_id):
     if referer and f'/post/{post_id}' in referer:
         if community_id:
             community = Community.query.get(community_id)
-            return redirect(url_for('view_community', slug=community.slug))
+            return redirect(url_for('community', slug=community.slug))
         author = User.query.get(author_id)
         return redirect(url_for('user_profile', username=author.username))
     return redirect(referer or url_for('index'))
