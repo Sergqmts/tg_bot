@@ -80,6 +80,11 @@
                 {% elif post.body %}
                     <div class="post-text-only" style="font-size: 0.7rem;">{{ post.body[:30] }}...</div>
                 {% endif %}
+                {% if post.author == current_user or current_user.is_admin(community) %}
+                    <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onclick="event.stopPropagation();" onsubmit="return confirm('Удалить пост?')">
+                        <button type="submit" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
+                    </form>
+                {% endif %}
                 <div class="post-overlay">
                     <span>❤️ {{ post.likes.count() }}</span>
                     <span>💬 {{ post.comments.count() }}</span>
