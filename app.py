@@ -328,10 +328,6 @@ class User(UserMixin, db.Model):
     birthday = db.Column(db.Date, nullable=True)
     interests = db.Column(db.Text, nullable=True)
     occupation = db.Column(db.String(100), nullable=True)
-    mood = db.Column(db.String(20), default='neutral')
-    
-    last_active = db.Column(db.DateTime, nullable=True)
-    view_history = db.Column(db.Text, nullable=True)
     
     is_private = db.Column(db.Boolean, default=False)
     hide_followers = db.Column(db.Boolean, default=False)
@@ -777,16 +773,11 @@ def index():
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
     try:
-        current_user.last_active = datetime.utcnow()
-        db.session.commit()
-        
         followed_ids = [u.id for u in current_user.followed]
         blocked_ids = [u.id for u in current_user.blocked]
         member_communities = [cm.community_id for cm in current_user.community_memberships.filter_by(status='approved').all()]
         
         user_interests = set(current_user.interests.lower().split()) if current_user.interests else set()
-        user_mood = current_user.mood if current_user.mood else 'neutral'
-        
         likers = [l.user_id for l in current_user.likes.all()]
         
         all_candidates = Post.query.filter(
@@ -811,18 +802,11 @@ def index():
             if user_interests & post_interests:
                 score += len(user_interests & post_interests) * 10
             
-            if p.likes.count() > 10:
+if p.likes.count() > 10:
                 score += min(p.likes.count() // 2, 30)
             
             if p.comments.count() > 5:
                 score += min(p.comments.count(), 20)
-            
-            if p.author.last_active:
-                hours_ago = (datetime.utcnow() - p.author.last_active).total_seconds() / 3600
-                if hours_ago < 1:
-                    score += 20
-                elif hours_ago < 6:
-                    score += 10
                 
             scored_posts.append((score, p))
         
