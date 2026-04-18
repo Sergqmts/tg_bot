@@ -328,6 +328,10 @@ class User(UserMixin, db.Model):
     birthday = db.Column(db.Date, nullable=True)
     interests = db.Column(db.Text, nullable=True)
     occupation = db.Column(db.String(100), nullable=True)
+    mood = db.Column(db.String(20), default='neutral')
+    
+    last_active = db.Column(db.DateTime, nullable=True)
+    view_history = db.Column(db.Text, nullable=True)
     
     is_private = db.Column(db.Boolean, default=False)
     hide_followers = db.Column(db.Boolean, default=False)
@@ -773,22 +777,61 @@ def index():
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
     try:
+        current_user.last_active = datetime.utcnow()
+        db.session.commit()
+        
         followed_ids = [u.id for u in current_user.followed]
         blocked_ids = [u.id for u in current_user.blocked]
         member_communities = [cm.community_id for cm in current_user.community_memberships.filter_by(status='approved').all()]
         
-        posts = Post.query.filter(
-            db.or_(
-                Post.user_id.in_(followed_ids),
-                Post.community_id.in_(member_communities) if member_communities else False,
-                Post.user_id == current_user.id
-            ),
-            ~Post.user_id.in_(blocked_ids)
-        ).order_by(Post.created_at.desc()).all()
+        user_interests = set(current_user.interests.lower().split()) if current_user.interests else set()
+        user_mood = current_user.mood if current_user.mood else 'neutral'
+        
+        likers = [l.user_id for l in current_user.likes.all()]
+        
+        all_candidates = Post.query.filter(
+            ~Post.user_id.in_(blocked_ids),
+            Post.user_id != current_user.id
+        ).all()
+        
+        scored_posts = []
+        for p in all_candidates:
+            score = 0
+            
+            if p.user_id in followed_ids:
+                score += 50
+            
+            if p.user_id in likers and p.user_id in followed_ids:
+                score += 25
+            
+            if p.community_id in member_communities:
+                score += 40
+            
+            post_interests = set(p.author.interests.lower().split()) if p.author.interests else set()
+            if user_interests & post_interests:
+                score += len(user_interests & post_interests) * 10
+            
+            if p.likes.count() > 10:
+                score += min(p.likes.count() // 2, 30)
+            
+            if p.comments.count() > 5:
+                score += min(p.comments.count(), 20)
+            
+            if p.author.last_active:
+                hours_ago = (datetime.utcnow() - p.author.last_active).total_seconds() / 3600
+                if hours_ago < 1:
+                    score += 20
+                elif hours_ago < 6:
+                    score += 10
+                
+            scored_posts.append((score, p))
+        
+        scored_posts.sort(key=lambda x: x[0], reverse=True)
+        posts = [p for _, p in scored_posts[:100]]
         
         repost_counts = {p.id: Repost.query.filter_by(post_id=p.id).count() for p in posts}
     except Exception as e:
-        app.logger.error(f"DB Error: {e}")
+        app.logger.error(f"Feed Error: {e}")
         posts = []
         repost_counts = {}
     return render_template('index.html', posts=posts, repost_counts=repost_counts)
