@@ -27,7 +27,7 @@ def inject_stories():
             db.session.commit()
             
             followers = current_user.followers.all()
-            following = current_user.following.all()
+            following = current_user.followed.all()
             follower_ids = [f.id for f in followers]
             following_ids = [f.id for f in following]
             user_ids = [current_user.id] + follower_ids + following_ids
@@ -929,7 +929,7 @@ def save_story(story_id):
 def stories_route():
     Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False).delete()
     db.session.commit()
-    user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.following.all()]
+    user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.followed.all()]
     stories_list = Story.query.filter(Story.user_id.in_(user_ids), Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).all()
     return render_template('stories.html', stories=stories_list)
 
