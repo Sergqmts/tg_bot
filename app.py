@@ -1256,6 +1256,8 @@ def view_post(post_id):
 def delete(post_id):
     post = Post.query.get_or_404(post_id)
     community_id = post.community_id
+    author_id = post.user_id
+    
     if post.author != current_user:
         abort(403)
     
@@ -1277,7 +1279,8 @@ def delete(post_id):
         if community_id:
             community = Community.query.get(community_id)
             return redirect(url_for('view_community', slug=community.slug))
-        return redirect(url_for('user_profile', username=current_user.username))
+        author = User.query.get(author_id)
+        return redirect(url_for('user_profile', username=author.username))
     return redirect(referer or url_for('index'))
 
 
