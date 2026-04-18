@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Создать историю - Social{% endblock %}
+{% block content %}
+<a href="{{ url_for('index') }}" class="btn btn-secondary" style="margin-bottom: 20px;">← Назад</a>
+
+<div class="card">
+    <h2>Создать историю</h2>
+    <p style="color: #666; margin-bottom: 20px;">История будет доступна 24 часа</p>
+    
+    <form method="POST" enctype="multipart/form-data">
+        <div style="margin-bottom: 20px;">
+            <label for="media" style="display: block; margin-bottom: 10px;">Фото или видео:</label>
+            <input type="file" id="media" name="media" accept="image/*,video/*" required onchange="previewFile(this)">
+        </div>
+        
+        <div id="preview" style="margin-bottom: 20px; display: none;">
+            <img id="previewImg" style="max-width: 300px; max-height: 300px; border-radius: 8px;">
+            <video id="previewVideo" controls style="max-width: 300px; max-height: 300px; border-radius: 8px; display: none;"></video>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Опубликовать</button>
+    </form>
+</div>
+
+<script>
+function previewFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const preview = document.getElementById('preview');
+    const img = document.getElementById('previewImg');
+    const video = document.getElementById('previewVideo');
+    
+    preview.style.display = 'block';
+    
+    if (file.type.startsWith('image/')) {
+        img.style.display = 'block';
+        video.style.display = 'none';
+        img.src = URL.createObjectURL(file);
+    } else if (file.type.startsWith('video/')) {
+        img.style.display = 'none';
+        video.style.display = 'block';
+        video.src = URL.createObjectURL(file);
+    }
+}
+</script>
+{% endblock %}

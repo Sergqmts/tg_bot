@@ -7,7 +7,7 @@ from wtforms import StringField, TextAreaField, SubmitField, PasswordField, Bool
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import os
 import cloudinary
 import cloudinary.uploader
@@ -471,6 +471,21 @@ class User(UserMixin, db.Model):
         return member and member.role in ('admin', 'creator')
 
 
+class Story(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    media_url = db.Column(db.String(500))
+    media_type = db.Column(db.String(10))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime)
+    is_saved = db.Column(db.Boolean, default=False)
+    
+    user = db.relationship('User', backref='stories')
+    
+    def is_expired(self):
+        return datetime.utcnow() > self.expires_at
+
+
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text)
@@ -813,6 +828,77 @@ def repost(post_id):
         current_user.repost(post)
     db.session.commit()
     return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/story/create', methods=['GET', 'POST'])
+@login_required
+def create_story():
+    if request.method == 'POST':
+        file = request.files.get('media')
+        if file and allowed_file(file.filename):
+            if cloudinary_configured:
+                url = upload_to_cloudinary(file, folder='stories')
+                if url:
+                    ext = file.filename.rsplit('.', 1)[1].lower()
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                    story = Story(
+                        user_id=current_user.id,
+                        media_url=url,
+                        media_type=media_type,
+                        expires_at=datetime.utcnow() + timedelta(hours=24)
+                    )
+                    db.session.add(story)
+                    db.session.commit()
+                    return redirect(url_for('index'))
+            else:
+                filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                ext = filename.rsplit('.', 1)[1].lower()
+                media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                story = Story(
+                    user_id=current_user.id,
+                    media_url=filename,
+                    media_type=media_type,
+                    expires_at=datetime.utcnow() + timedelta(hours=24)
+                )
+                db.session.add(story)
+                db.session.commit()
+                return redirect(url_for('index'))
+        else:
+            flash('Выберите файл')
+            return redirect(request.url)
+    return render_template('create_story.html')
+
+
+@app.route('/story/<int:story_id>/delete', methods=['POST'])
+@login_required
+def delete_story(story_id):
+    story = Story.query.get_or_404(story_id)
+    if story.user_id != current_user.id:
+        abort(403)
+    db.session.delete(story)
+    db.session.commit()
+    flash('История удалена')
+    return redirect(url_for('index'))
+
+
+@app.route('/story/<int:story_id>/save', methods=['POST'])
+@login_required
+def save_story(story_id):
+    story = Story.query.get_or_404(story_id)
+    story.is_saved = not story.is_saved
+    db.session.commit()
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/stories')
+@login_required
+def stories_route():
+    Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False).delete()
+    db.session.commit()
+    user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.following.all()]
+    stories_list = Story.query.filter(Story.user_id.in_(user_ids), Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).all()
+    return render_template('stories.html', stories=stories_list)
 
 
 @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])
