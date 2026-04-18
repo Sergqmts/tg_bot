@@ -1255,6 +1255,7 @@ def view_post(post_id):
 @login_required
 def delete(post_id):
     post = Post.query.get_or_404(post_id)
+    community_id = post.community_id
     if post.author != current_user:
         abort(403)
     
@@ -1273,8 +1274,9 @@ def delete(post_id):
     flash('Пост удалён')
     referer = request.referrer
     if referer and f'/post/{post_id}' in referer:
-        if post.community_id:
-            return redirect(url_for('view_community', slug=post.community.slug))
+        if community_id:
+            community = Community.query.get(community_id)
+            return redirect(url_for('view_community', slug=community.slug))
         return redirect(url_for('user_profile', username=current_user.username))
     return redirect(referer or url_for('index'))
 
