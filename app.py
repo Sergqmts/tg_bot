@@ -1271,7 +1271,12 @@ def delete(post_id):
     db.session.delete(post)
     db.session.commit()
     flash('Пост удалён')
-    return redirect(request.referrer or url_for('index'))
+    referer = request.referrer
+    if referer and f'/post/{post_id}' in referer:
+        if post.community_id:
+            return redirect(url_for('view_community', slug=post.community.slug))
+        return redirect(url_for('user_profile', username=current_user.username))
+    return redirect(referer or url_for('index'))
 
 
 @app.route('/user/<username>')
