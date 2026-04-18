@@ -515,9 +515,31 @@ class Story(db.Model):
     is_saved = db.Column(db.Boolean, default=False)
     
     user = db.relationship('User', backref='stories')
+    reactions = db.relationship('StoryReaction', backref='story', lazy='dynamic', cascade='all, delete-orphan')
+    comments = db.relationship('StoryComment', backref='story', lazy='dynamic', cascade='all, delete-orphan')
     
     def is_expired(self):
         return datetime.utcnow() > self.expires_at
+
+
+class StoryReaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    story_id = db.Column(db.Integer, db.ForeignKey('story.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    emoji = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='story_reactions')
+
+
+class StoryComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    story_id = db.Column(db.Integer, db.ForeignKey('story.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='story_comments')
 
 
 class Post(db.Model):
@@ -972,6 +994,66 @@ def save_story(story_id):
     return redirect(request.referrer or url_for('index'))
 
 
+@app.route('/story/<int:story_id>/react', methods=['POST'])
+@login_required
+def react_story(story_id):
+    story = Story.query.get_or_404(story_id)
+    emoji = request.form.get('emoji')
+    if not emoji:
+        return redirect(request.referrer or url_for('index'))
+    
+    existing = StoryReaction.query.filter_by(story_id=story.id, user_id=current_user.id, emoji=emoji).first()
+    if existing:
+        db.session.delete(existing)
+    else:
+        reaction = StoryReaction(story_id=story.id, user_id=current_user.id, emoji=emoji)
+        db.session.add(reaction)
+    db.session.commit()
+    
+    if story.user_id != current_user.id:
+        existing_chat = Message.query.filter(
+            ((Message.sender_id == current_user.id) & (Message.receiver_id == story.user_id)) |
+            ((Message.sender_id == story.user_id) & (Message.receiver_id == current_user.id))
+        ).order_by(Message.created_at.desc()).first()
+        
+        if existing_chat:
+            msg = Message(sender_id=current_user.id, receiver_id=story.user_id, body=f"Отреагировал на историю: {emoji}")
+            db.session.add(msg)
+            db.session.commit()
+    
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/story/<int:story_id>/comment', methods=['POST'])
+@login_required
+def comment_story(story_id):
+    story = Story.query.get_or_404(story_id)
+    body = request.form.get('body', '').strip()
+    if not body:
+        return redirect(request.referrer or url_for('index'))
+    
+    comment = StoryComment(story_id=story.id, user_id=current_user.id, body=body)
+    db.session.add(comment)
+    db.session.commit()
+    
+    if story.user_id != current_user.id:
+        existing_chat = Message.query.filter(
+            ((Message.sender_id == current_user.id) & (Message.receiver_id == story.user_id)) |
+            ((Message.sender_id == story.user_id) & (Message.receiver_id == current_user.id))
+        ).order_by(Message.created_at.desc()).first()
+        
+        if existing_chat:
+            msg = Message(sender_id=current_user.id, receiver_id=story.user_id, body=f"Прокомментировал историю: {body}")
+            db.session.add(msg)
+            db.session.commit()
+        else:
+            msg = Message(sender_id=current_user.id, receiver_id=story.user_id, body=f"Прокомментировал историю: {body}")
+            db.session.add(msg)
+            db.session.commit()
+    
+    return redirect(request.referrer or url_for('index'))
+
+
 @app.route('/stories')
 @login_required
 def stories_route():
@@ -1000,7 +1082,9 @@ def view_story(story_id):
     story = Story.query.get_or_404(story_id)
     if story.is_expired() and not story.is_saved:
         abort(404)
-    return render_template('view_story.html', story=story)
+    reactions = story.reactions.all()
+    comments = story.comments.order_by(StoryComment.created_at.desc()).all()
+    return render_template('view_story.html', story=story, reactions=reactions, comments=comments)
 
 
 @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])

@@ -27,19 +27,39 @@
         {% if story.media_type == 'video' %}
             <video src="{{ story.media_url }}" autoplay muted loop playsinline class="story-media"></video>
         {% else %}
-            <img src="{{ story.media_url }}" alt="" class="story-media">
+            {% if story.media_url.startswith('http') %}
+                <img src="{{ story.media_url }}" alt="" class="story-media">
+            {% else %}
+                <img src="{{ url_for('uploaded_file', filename=story.media_url) }}" alt="" class="story-media">
+            {% endif %}
         {% endif %}
         
-        <div class="story-actions">
+        <div class="story-input-area">
+            <div class="story-reactions">
+                {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
+                    <form method="POST" action="{{ url_for('react_story', story_id=story.id) }}" style="display:inline;">
+                        <input type="hidden" name="emoji" value="{{ r }}">
+                        <button type="submit" style="background:none;border:none;cursor:pointer;font-size:1.5rem;padding:2px;">{{ r }}</button>
+                    </form>
+                {% endfor %}
+            </div>
+            
+            <form method="POST" action="{{ url_for('comment_story', story_id=story.id) }}" class="story-comment-form">
+                <input type="text" name="body" placeholder="Отправить сообщение..." required>
+                <button type="submit">➤</button>
+            </form>
+            
             {% if current_user.id == story.user_id %}
+            <div class="story-actions">
                 <form method="POST" action="{{ url_for('save_story', story_id=story.id) }}">
                     <button type="submit" class="btn {% if story.is_saved %}saved{% endif %}">
                         {% if story.is_saved %}💾 Сохранено{% else %}💾 Сохранить{% endif %}
                     </button>
                 </form>
                 <form method="POST" action="{{ url_for('delete_story', story_id=story.id) }}" onsubmit="return confirm('Удалить историю?')">
-                    <button type="submit" class="btn btn-danger">🗑️ Удалить</button>
+                    <button type="submit" class="btn btn-danger">🗑️</button>
                 </form>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -60,10 +80,10 @@
 }
 
 .story-container {
-    max-width: 400px;
+    max-width: 420px;
     width: 100%;
     height: 100%;
-    max-height: 800px;
+    max-height: 900px;
     position: relative;
 }
 
@@ -110,6 +130,10 @@
     width: 35px;
     height: 35px;
     border-radius: 50%;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
 }
 
@@ -134,16 +158,67 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+    margin-top: 50px;
+}
+
+.story-input-area {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    color: white;
+}
+
+.story-reactions {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.story-comment-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.story-comment-form input {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+}
+
+.story-comment-form input::placeholder {
+    color: rgba(255,255,255,0.7);
+}
+
+.story-comment-form button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
 }
 
 .story-actions {
-    position: absolute;
-    bottom: 30px;
-    left: 10px;
-    right: 10px;
     display: flex;
+    gap: 10px;
     justify-content: center;
-    gap: 15px;
+}
+
+.story-actions .btn {
+    padding: 8px 15px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+}
+
+.story-actions .btn.saved {
+    background: var(--primary);
 }
 </style>
 {% endblock %}
