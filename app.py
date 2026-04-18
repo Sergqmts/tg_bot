@@ -1271,7 +1271,7 @@ def delete(post_id):
     db.session.delete(post)
     db.session.commit()
     flash('Пост удалён')
-    return redirect(url_for('index'))
+    return redirect(request.referrer or url_for('index'))
 
 
 @app.route('/user/<username>')
