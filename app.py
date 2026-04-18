@@ -1011,15 +1011,9 @@ def react_story(story_id):
     db.session.commit()
     
     if story.user_id != current_user.id:
-        existing_chat = Message.query.filter(
-            ((Message.sender_id == current_user.id) & (Message.receiver_id == story.user_id)) |
-            ((Message.sender_id == story.user_id) & (Message.receiver_id == current_user.id))
-        ).order_by(Message.created_at.desc()).first()
-        
-        if existing_chat:
-            msg = Message(sender_id=current_user.id, receiver_id=story.user_id, body=f"Отреагировал на историю: {emoji}")
-            db.session.add(msg)
-            db.session.commit()
+        msg = Message(sender_id=current_user.id, recipient_id=story.user_id, body=f"Отреагировал на историю: {emoji}")
+        db.session.add(msg)
+        db.session.commit()
     
     return redirect(request.referrer or url_for('index'))
 
@@ -1037,19 +1031,9 @@ def comment_story(story_id):
     db.session.commit()
     
     if story.user_id != current_user.id:
-        existing_chat = Message.query.filter(
-            ((Message.sender_id == current_user.id) & (Message.receiver_id == story.user_id)) |
-            ((Message.sender_id == story.user_id) & (Message.receiver_id == current_user.id))
-        ).order_by(Message.created_at.desc()).first()
-        
-        if existing_chat:
-            msg = Message(sender_id=current_user.id, receiver_id=story.user_id, body=f"Прокомментировал историю: {body}")
-            db.session.add(msg)
-            db.session.commit()
-        else:
-            msg = Message(sender_id=current_user.id, receiver_id=story.user_id, body=f"Прокомментировал историю: {body}")
-            db.session.add(msg)
-            db.session.commit()
+        msg = Message(sender_id=current_user.id, recipient_id=story.user_id, body=f"Прокомментировал историю: {body}")
+        db.session.add(msg)
+        db.session.commit()
     
     return redirect(request.referrer or url_for('index'))
 
