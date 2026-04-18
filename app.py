@@ -802,7 +802,7 @@ def index():
             if user_interests & post_interests:
                 score += len(user_interests & post_interests) * 10
             
-if p.likes.count() > 10:
+            if p.likes.count() > 10:
                 score += min(p.likes.count() // 2, 30)
             
             if p.comments.count() > 5:
