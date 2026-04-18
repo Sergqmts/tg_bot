@@ -99,6 +99,40 @@ body {
     object-fit: cover;
 }
 
+/* Меню профиля */
+.profile-menu {
+    position: relative;
+}
+
+.profile-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 40px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 180px;
+    box-shadow: var(--shadow);
+    z-index: 1000;
+}
+
+.profile-menu:hover .profile-dropdown {
+    display: block;
+}
+
+.profile-dropdown a {
+    display: block;
+    padding: 12px 16px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.profile-dropdown a:hover {
+    background: var(--bg);
+}
+
 /* Меню пользователя */
 .user-menu {
     position: relative;

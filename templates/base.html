@@ -28,13 +28,20 @@
                     </a>
                     
                     <!-- Иконка профиля -->
-                    <a href="{{ url_for('user_profile', username=current_user.username) }}" class="nav-avatar" title="Профиль">
-                        {% if current_user.avatar != 'default.png' %}
-                            <img src="{{ url_for('uploaded_file', filename=current_user.avatar) }}" alt="">
-                        {% else %}
-                            {{ current_user.username[0].upper() }}
-                        {% endif %}
-                    </a>
+                    <div class="profile-menu">
+                        <a href="{{ url_for('user_profile', username=current_user.username) }}" class="nav-avatar" title="Профиль">
+                            {% if current_user.avatar != 'default.png' %}
+                                <img src="{{ url_for('uploaded_file', filename=current_user.avatar) }}" alt="">
+                            {% else %}
+                                {{ current_user.username[0].upper() }}
+                            {% endif %}
+                        </a>
+                        <div class="profile-dropdown">
+                            <a href="{{ url_for('user_profile', username=current_user.username) }}">👤 Профиль</a>
+                            <a href="{{ url_for('create_story') }}">📱 Создать историю</a>
+                            <a href="{{ url_for('edit_profile') }}">✏️ Редактировать</a>
+                        </div>
+                    </div>
                     
                     <!-- Меню пользователя -->
                     <div class="user-menu">
