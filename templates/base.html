@@ -69,6 +69,14 @@
     
     <div class="stories-bar" style="background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 10px 0; margin-top: 60px;">
         <div class="stories-scroll" style="display: flex; gap: 15px; overflow-x: auto; padding: 0 15px; max-width: 600px; margin: 0 auto;">
+            <div style="text-align: center; flex-shrink: 0;">
+                <a href="{{ url_for('create_story') }}" style="text-decoration: none;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ffa500); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                        <span style="color: white; font-size: 2rem;">+</span>
+                    </div>
+                    <span style="font-size: 0.7rem; color: var(--text);">Добавить</span>
+                </a>
+            </div>
             {% if my_story %}
             <div style="text-align: center; flex-shrink: 0;">
                 <a href="{{ url_for('user_stories', username=current_user.username) }}" style="text-decoration: none;">
@@ -83,14 +91,6 @@
                 </a>
             </div>
             {% endif %}
-            <div style="text-align: center; flex-shrink: 0;">
-                <a href="{{ url_for('create_story') }}" style="text-decoration: none;">
-                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ffa500); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                        <span style="color: white; font-size: 2rem;">+</span>
-                    </div>
-                    <span style="font-size: 0.7rem; color: var(--text);">Добавить</span>
-                </a>
-            </div>
             {% for story in top_stories %}
             {% if story and story.user_id != current_user.id %}
             <div style="text-align: center; flex-shrink: 0;">
