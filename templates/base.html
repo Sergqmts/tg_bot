@@ -67,7 +67,7 @@
     <!-- Stories -->
     {% if current_user.is_authenticated %}
     
-    <div class="stories-bar" style="background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 10px 0;">
+    <div class="stories-bar" style="background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 10px 0; margin-top: 50px;">
         <div class="stories-scroll" style="display: flex; gap: 15px; overflow-x: auto; padding: 0 15px; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; flex-shrink: 0;">
                 <a href="{{ url_for('create_story') }}" style="text-decoration: none;">
