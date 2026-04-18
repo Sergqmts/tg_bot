@@ -25,7 +25,13 @@ def inject_stories():
         try:
             Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False).delete()
             db.session.commit()
-            user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.following.all()]
+            
+            followers = current_user.followers.all()
+            following = current_user.following.all()
+            follower_ids = [f.id for f in followers]
+            following_ids = [f.id for f in following]
+            user_ids = [current_user.id] + follower_ids + following_ids
+            
             if user_ids:
                 story_users = db.session.query(Story.user_id).filter(
                     Story.user_id.in_(user_ids),
@@ -33,12 +39,15 @@ def inject_stories():
                 ).group_by(Story.user_id).all()
                 stories_list = []
                 for (uid,) in story_users:
-                    stories_list.append(Story.query.filter(Story.user_id == uid, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).first())
+                    s = Story.query.filter(Story.user_id == uid, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).first()
+                    if s:
+                        stories_list.append(s)
             else:
                 stories_list = []
             my_story = Story.query.filter(Story.user_id == current_user.id, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).first()
             return dict(top_stories=stories_list, my_story=my_story)
-        except:
+        except Exception as e:
+            app.logger.error(f"Stories error: {e}")
             return dict(top_stories=[], my_story=None)
     return dict(top_stories=[], my_story=None)
 
