@@ -14,9 +14,33 @@ import cloudinary.uploader
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-app = Flask(__name__, 
+app = Flask(__name__,
             template_folder=os.path.join(BASE_DIR, 'templates'),
             static_folder=os.path.join(BASE_DIR, 'static'))
+
+
+@app.context_processor
+def inject_stories():
+    if current_user.is_authenticated:
+        try:
+            Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False).delete()
+            db.session.commit()
+            user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.following.all()]
+            if user_ids:
+                story_users = db.session.query(Story.user_id).filter(
+                    Story.user_id.in_(user_ids),
+                    Story.expires_at > datetime.utcnow()
+                ).group_by(Story.user_id).all()
+                stories_list = []
+                for (uid,) in story_users:
+                    stories_list.append(Story.query.filter(Story.user_id == uid, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).first())
+            else:
+                stories_list = []
+            my_story = Story.query.filter(Story.user_id == current_user.id, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).first()
+            return dict(top_stories=stories_list, my_story=my_story)
+        except:
+            return dict(top_stories=[], my_story=None)
+    return dict(top_stories=[], my_story=None)
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
