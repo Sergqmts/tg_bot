@@ -86,7 +86,7 @@
             {% for story in top_stories %}
             {% if story and story.user_id != current_user.id %}
             <div style="text-align: center; flex-shrink: 0;">
-                <a href="{{ url_for('stories_route') }}?user={{ story.user.username }}" style="text-decoration: none;">
+                <a href="{{ url_for('user_stories', username=story.user.username) }}" style="text-decoration: none;">
                     <div class="story-ring" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary); overflow: hidden;">
                         {% if story.user.avatar != 'default.png' %}
                             <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover;">

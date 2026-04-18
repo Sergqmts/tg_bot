@@ -934,6 +934,27 @@ def stories_route():
     return render_template('stories.html', stories=stories_list)
 
 
+@app.route('/stories/user/<username>')
+@login_required
+def user_stories(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    stories = Story.query.filter(Story.user_id == user.id, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).all()
+    if not stories and not Story.query.filter(Story.user_id == user.id, Story.is_saved == True).first():
+        abort(404)
+    saved_stories = Story.query.filter(Story.user_id == user.id, Story.is_saved == True).order_by(Story.created_at.desc()).all()
+    all_stories = stories + saved_stories
+    return render_template('user_stories.html', stories=all_stories, user=user)
+
+
+@app.route('/story/<int:story_id>')
+@login_required
+def view_story(story_id):
+    story = Story.query.get_or_404(story_id)
+    if story.is_expired() and not story.is_saved:
+        abort(404)
+    return render_template('view_story.html', story=story)
+
+
 @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])
 @login_required
 def forward_post(post_id):
