@@ -45,11 +45,12 @@ def inject_stories():
             else:
                 stories_list = []
             my_story = Story.query.filter(Story.user_id == current_user.id, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).first()
-            return dict(top_stories=stories_list, my_story=my_story)
+            has_story = my_story is not None
+            return dict(top_stories=stories_list, my_story=my_story, user_has_story=has_story)
         except Exception as e:
             app.logger.error(f"Stories error: {e}")
-            return dict(top_stories=[], my_story=None)
-    return dict(top_stories=[], my_story=None)
+            return dict(top_stories=[], my_story=None, user_has_story=False)
+    return dict(top_stories=[], my_story=None, user_has_story=False)
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 

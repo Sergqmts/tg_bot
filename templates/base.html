@@ -71,8 +71,10 @@
         <div class="stories-scroll" style="display: flex; gap: 15px; overflow-x: auto; padding: 0 15px; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; flex-shrink: 0;">
                 <a href="{{ url_for('create_story') }}" style="text-decoration: none;">
-                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ffa500); display: flex; align-items: center; justify-content: center; margin: 0 auto; position: relative;">
-                        {% if my_story %}
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ffa500); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                        {% if user_has_story %}
+                            <span style="color: white; font-size: 2rem;">+</span>
+                        {% elif my_story %}
                             {% if current_user.avatar != 'default.png' %}
                                 <img src="{{ url_for('uploaded_file', filename=current_user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                             {% else %}
@@ -82,7 +84,7 @@
                             <span style="color: white; font-size: 2rem;">+</span>
                         {% endif %}
                     </div>
-                    <span style="font-size: 0.7rem; color: var(--text);">{% if my_story %}Ваша{% else %}Добавить{% endif %}</span>
+                    <span style="font-size: 0.7rem; color: var(--text);">{% if user_has_story %}Добавить{% elif my_story %}Ваша{% else %}Добавить{% endif %}</span>
                 </a>
             </div>
             {% for story in top_stories %}
