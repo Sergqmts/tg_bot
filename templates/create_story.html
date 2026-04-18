@@ -7,31 +7,113 @@
     <h2>Создать историю</h2>
     <p style="color: #666; margin-bottom: 20px;">История будет доступна 24 часа</p>
     
-    <form method="POST" enctype="multipart/form-data">
-        <div style="margin-bottom: 20px;">
-            <label for="media" style="display: block; margin-bottom: 10px;">Фото или видео:</label>
-            <input type="file" id="media" name="media" accept="image/*,video/*" required onchange="previewFile(this)">
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button type="button" class="btn btn-primary" onclick="showCamera()">📷 Камера</button>
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Загрузить</button>
+    </div>
+    
+    <div id="cameraSection" style="display: none; margin-bottom: 20px;">
+        <video id="video" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 8px;"></video>
+        <canvas id="canvas" style="display: none;"></canvas>
+        <div style="margin-top: 10px; display: flex; gap: 10px;">
+            <button type="button" id="captureBtn" class="btn" style="background: #ff6b6b; color: white; border: none;">📷 Снять фото</button>
+            <button type="button" id="recordBtn" class="btn" style="background: #ff4757; color: white; border: none;">⏺ Записать видео</button>
         </div>
-        
-        <div id="preview" style="margin-bottom: 20px; display: none;">
-            <img id="previewImg" style="max-width: 300px; max-height: 300px; border-radius: 8px;">
-            <video id="previewVideo" controls style="max-width: 300px; max-height: 300px; border-radius: 8px; display: none;"></video>
-        </div>
-        
-        <button type="submit" class="btn btn-primary">Опубликовать</button>
+    </div>
+    
+    <input type="file" id="fileInput" name="media" accept="image/*,video/*" style="display: none;" onchange="handleFile(this)">
+    
+    <div id="preview" style="margin-bottom: 20px; display: none;">
+        <img id="previewImg" style="max-width: 300px; max-height: 300px; border-radius: 8px;">
+        <video id="previewVideo" controls style="max-width: 300px; max-height: 300px; border-radius: 8px; display: none;"></video>
+    </div>
+    
+    <form method="POST" id="storyForm" enctype="multipart/form-data">
+        <input type="hidden" name="media_data" id="mediaData">
+        <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Опубликовать</button>
     </form>
 </div>
 
 <script>
-function previewFile(input) {
-    const file = input.files[0];
-    if (!file) return;
+let stream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
+
+async function showCamera() {
+    const video = document.getElementById('video');
+    const section = document.getElementById('cameraSection');
     
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        video.srcObject = stream;
+        section.style.display = 'block';
+    } catch (err) {
+        alert('Не удалось получить доступ к камере: ' + err.message);
+    }
+}
+
+document.getElementById('captureBtn').onclick = function() {
+    const canvas = document.getElementById('canvas');
+    const video = document.getElementById('video');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    
+    canvas.toBlob(blob => {
+        const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+        showPreview(file);
+    }, 'image/jpeg');
+};
+
+document.getElementById('recordBtn').onclick = function() {
+    const btn = document.getElementById('recordBtn');
+    
+    if (!isRecording) {
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        
+        mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const file = new File([blob], 'video.webm', { type: 'video/webm' });
+            showPreview(file);
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        btn.textContent = '⏹ Стоп (25 сек)';
+        
+        setTimeout(() => {
+            if (isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.textContent = '⏺ Записать видео';
+            }
+        }, 25000);
+    } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        btn.textContent = '⏺ Записать видео';
+    }
+};
+
+function handleFile(input) {
+    const file = input.files[0];
+    if (file) showPreview(file);
+}
+
+function showPreview(file) {
     const preview = document.getElementById('preview');
     const img = document.getElementById('previewImg');
     const video = document.getElementById('previewVideo');
+    const submitBtn = document.getElementById('submitBtn');
     
     preview.style.display = 'block';
+    submitBtn.disabled = false;
     
     if (file.type.startsWith('image/')) {
         img.style.display = 'block';
@@ -42,6 +124,49 @@ function previewFile(input) {
         video.style.display = 'block';
         video.src = URL.createObjectURL(file);
     }
+    
+    const reader = new FileReader();
+    reader.onload = function() {
+        document.getElementById('mediaData').value = reader.result;
+    };
+    reader.readAsDataURL(file);
 }
+
+document.getElementById('storyForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Загрузка...';
+    
+    const formData = new FormData();
+    const mediaData = document.getElementById('mediaData').value;
+    
+    if (!mediaData) {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files[0]) {
+            formData.append('media', fileInput.files[0]);
+        }
+    } else {
+        formData.append('media_data', mediaData);
+    }
+    
+    try {
+        const response = await fetch('{{ url_for("create_story") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            window.location.href = '{{ url_for("index") }}';
+        } else {
+            alert('Ошибка загрузки');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Опубликовать';
+        }
+    } catch (err) {
+        alert('Ошибка: ' + err.message);
+        submitBtn.disabled = false;
+    }
+};
 </script>
 {% endblock %}

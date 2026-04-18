@@ -867,6 +867,53 @@ def repost(post_id):
 @login_required
 def create_story():
     if request.method == 'POST':
+        media_data = request.form.get('media_data')
+        
+        if media_data:
+            import base64
+            import io
+            from werkzeug.datastructures import FileStorage
+            
+            header, data = media_data.split(',', 1)
+            if 'image/jpeg' in header:
+                ext = 'jpg'
+                media_type = 'image'
+            elif 'video/webm' in header:
+                ext = 'webm'
+                media_type = 'video'
+            else:
+                ext = 'jpg'
+                media_type = 'image'
+            
+            binary = base64.b64decode(data)
+            file = FileStorage(io.BytesIO(binary), filename=f'story.{ext}', content_type=f'image/{ext}' if media_type == 'image' else f'video/{ext}')
+            
+            if cloudinary_configured:
+                url = upload_to_cloudinary(file, folder='stories')
+                if url:
+                    story = Story(
+                        user_id=current_user.id,
+                        media_url=url,
+                        media_type=media_type,
+                        expires_at=datetime.utcnow() + timedelta(hours=24)
+                    )
+                    db.session.add(story)
+                    db.session.commit()
+                    return redirect(url_for('index'))
+            else:
+                filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'wb') as f:
+                    f.write(binary)
+                story = Story(
+                    user_id=current_user.id,
+                    media_url=filename,
+                    media_type=media_type,
+                    expires_at=datetime.utcnow() + timedelta(hours=24)
+                )
+                db.session.add(story)
+                db.session.commit()
+                return redirect(url_for('index'))
+        
         file = request.files.get('media')
         if file and allowed_file(file.filename):
             if cloudinary_configured:
