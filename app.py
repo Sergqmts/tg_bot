@@ -321,7 +321,6 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     bio = db.Column(db.Text)
     avatar = db.Column(db.String(200), default='default.png')
-    avatar_type = db.Column(db.String(10), default='image')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     location = db.Column(db.String(100), nullable=True)
@@ -735,7 +734,7 @@ class CommentForm(FlaskForm):
 class EditProfileForm(FlaskForm):
     username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=3, max=50)])
     bio = StringField('О себе', validators=[Length(max=200)])
-    avatar = FileField('Аватар (фото, гиф или видео)', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm'], 'Только изображения или видео!')])
+    avatar = FileField('Аватар', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm'], 'Только изображения или видео!')])
     location = StringField('Местоположение', validators=[Length(max=100)])
     website = StringField('Веб-сайт', validators=[Length(max=200)])
     birthday = StringField('Дата рождения (ДД.ММ.ГГГГ)')
@@ -1406,19 +1405,15 @@ def edit_profile():
         
         if form.avatar.data:
             file = form.avatar.data
-            ext = file.filename.rsplit('.', 1)[1].lower() if file.filename else 'jpg'
-            avatar_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
             
             if cloudinary_configured:
                 url = upload_to_cloudinary(file, folder='avatars')
                 if url:
                     current_user.avatar = url
-                    current_user.avatar_type = avatar_type
             else:
                 filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 current_user.avatar = filename
-                current_user.avatar_type = avatar_type
         
         if form.birthday.data:
             try:
