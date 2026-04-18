@@ -15,7 +15,8 @@
     <div id="cameraSection" style="display: none; margin-bottom: 20px;">
         <video id="video" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 8px;"></video>
         <canvas id="canvas" style="display: none;"></canvas>
-        <div style="margin-top: 10px; display: flex; gap: 10px;">
+        <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" id="switchCameraBtn" class="btn btn-secondary">🔄 Переключить камеру</button>
             <button type="button" id="captureBtn" class="btn" style="background: #ff6b6b; color: white; border: none;">📷 Снять фото</button>
             <button type="button" id="recordBtn" class="btn" style="background: #ff4757; color: white; border: none;">⏺ Записать видео</button>
         </div>
@@ -39,19 +40,45 @@ let stream = null;
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
+let currentCamera = 'user';
+let videoStream = null;
 
 async function showCamera() {
     const video = document.getElementById('video');
     const section = document.getElementById('cameraSection');
     
     try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        video.srcObject = stream;
+        await startCamera(video);
         section.style.display = 'block';
     } catch (err) {
         alert('Не удалось получить доступ к камере: ' + err.message);
     }
 }
+
+async function startCamera(videoEl) {
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+    }
+    
+    const constraints = {
+        audio: true,
+        video: {
+            facingMode: currentCamera,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        }
+    };
+    
+    videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoEl.srcObject = videoStream;
+    stream = videoStream;
+}
+
+document.getElementById('switchCameraBtn').onclick = async function() {
+    currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+    const video = document.getElementById('video');
+    await startCamera(video);
+};
 
 document.getElementById('captureBtn').onclick = function() {
     const canvas = document.getElementById('canvas');
