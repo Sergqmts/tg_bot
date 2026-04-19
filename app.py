@@ -267,6 +267,15 @@ def run_migrations():
             
             db.session.execute(text('ALTER TABLE message ALTER COLUMN recipient_id DROP NOT NULL'))
             db.session.commit()
+            
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='story'"))
+            story_cols = [row[0] for row in result]
+            if 'is_archived' not in story_cols:
+                db.session.execute(text('ALTER TABLE story ADD COLUMN is_archived BOOLEAN DEFAULT FALSE'))
+                db.session.commit()
+            if 'reposted_at' not in story_cols:
+                db.session.execute(text('ALTER TABLE story ADD COLUMN reposted_at TIMESTAMP'))
+                db.session.commit()
         elif is_sqlite:
             result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='chat'"))
             if not result.fetchone():
@@ -296,6 +305,18 @@ def run_migrations():
                     db.session.commit()
             except Exception as e:
                 app.logger.info(f"Chat ID column add: {e}")
+            
+            try:
+                result = db.session.execute(text("PRAGMA table_info(story)"))
+                story_cols = [row[1] for row in result.fetchall()]
+                if 'is_archived' not in story_cols:
+                    db.session.execute(text("ALTER TABLE story ADD COLUMN is_archived INTEGER DEFAULT 0"))
+                    db.session.commit()
+                if 'reposted_at' not in story_cols:
+                    db.session.execute(text("ALTER TABLE story ADD COLUMN reposted_at TIMESTAMP"))
+                    db.session.commit()
+            except Exception as e:
+                app.logger.info(f"Story columns add: {e}")
     except Exception as e:
         app.logger.info(f"Chat migration: {e}")
 
