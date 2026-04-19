@@ -1010,7 +1010,7 @@ def create():
 def photo_editor():
     if request.method == 'POST':
         return redirect(url_for('create'))
-    return render_template('photo_editor.html', editing=True)
+    return render_template('photo_editor.html', editing=False)
 
 
 @app.route('/photo_transform', methods=['POST'])

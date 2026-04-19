@@ -5,19 +5,16 @@
         <div class="card">
             <h2 style="margin-bottom: 15px;">🎨 Редактор фото</h2>
             
-            {% if not editing %}
-            <div style="margin-bottom: 20px;">
+            <div id="upload-area" style="margin-bottom: 20px;">
                 <label for="photo-input" style="display: block; padding: 40px; border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; color: var(--primary);">
                     📷 Загрузить фото
                 </label>
                 <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="handleFileSelect(this.files[0])">
             </div>
-            {% endif %}
             
-            <div id="editor-area" style="{% if not editing %}display: none;{% endif %}">
-                <div style="position: relative; background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 15px; min-height: 300px; display: flex; align-items: center; justify-content: center;">
-                    <img id="preview-img" style="max-width: 100%; max-height: 400px; display: block;">
-                    <canvas id="preview-canvas" style="display: none;"></canvas>
+            <div id="editor-area" style="display: none;">
+                <div id="preview-container" style="position: relative; background-color: #000; border-radius: 8px; overflow: hidden; margin-bottom: 15px; min-height: 300px; display: flex; align-items: center; justify-content: center; width: 100%;">
+                    <img id="preview-img" src="" alt="Preview" style="max-width: 100%; max-height: 400px; width: auto; height: auto; display: block; object-fit: contain;">
                 </div>
                 
                 <div style="border-bottom: 1px solid var(--border); margin-bottom: 15px;">
@@ -205,14 +202,23 @@
         let textStyle = { bold: false, italic: false, uppercase: false };
         
         function handleFileSelect(file) {
+            console.log('File selected:', file);
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
+                console.log('File loaded');
                 originalData = e.target.result;
-                document.getElementById('preview-img').src = originalData;
-                document.getElementById('editor-area').style.display = 'block';
-                
-                setTimeout(() => generateFilterPreviews(), 100);
+                var img = document.getElementById('preview-img');
+                img.src = originalData;
+                img.onload = function() {
+                    console.log('Image loaded, dimensions:', img.naturalWidth, img.naturalHeight);
+                    document.getElementById('upload-area').style.display = 'none';
+                    document.getElementById('editor-area').style.display = 'block';
+                    setTimeout(() => generateFilterPreviews(), 200);
+                };
+            };
+            reader.onerror = function(e) {
+                console.error('File read error:', e);
             };
             reader.readAsDataURL(file);
         }
