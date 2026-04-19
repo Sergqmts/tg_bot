@@ -17,7 +17,7 @@
                 {% if community.is_private %}<span style="font-size: 0.8rem; background: var(--accent); padding: 2px 8px; border-radius: 10px;">🔒</span>{% endif %}
             </h1>
                 <div style="color: var(--text-light); font-size: 0.9rem;">
-                    {{ community.members.count() }} участников · {{ community.posts.count() }} записей{% if community.events.count() > 0 %} · {{ community.events.count() }} мероприятий{% endif %}
+                    {{ community.members.count() }} участников · {{ community.posts.count() }} записей{% if community.events|length > 0 %} · {{ community.events|length }} мероприятий{% endif %}
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <a href="{{ url_for('community', slug=community.slug) }}" style="padding: 5px 15px; background: var(--primary); color: white; border-radius: 20px; text-decoration: none; font-size: 0.9rem;">Записи</a>
