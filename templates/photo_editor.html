@@ -19,26 +19,20 @@
                 
                 <div style="border-bottom: 1px solid var(--border); margin-bottom: 15px;">
                     <div id="tabs" style="display: flex; gap: 5px; overflow-x: auto; padding-bottom: 0;">
-                        <button type="button" class="tab-btn active" id="tab-tune" onclick="switchTab('tune')">Настройки</button>
-                        <button type="button" class="tab-btn" id="tab-filters" onclick="switchTab('filters')">Фильтры</button>
-                        <button type="button" class="tab-btn" id="tab-text" onclick="switchTab('text')">Текст</button>
-                        <button type="button" class="tab-btn" id="tab-stickers" onclick="switchTab('stickers')">Стикеры</button>
-                        <button type="button" class="tab-btn" id="tab-elements" onclick="switchTab('elements')">Элементы</button>
-                        <button type="button" class="tab-btn" id="tab-crop" onclick="switchTab('crop')">Кадр</button>
+                        <button type="button" class="tab-btn" id="tab-tune" onclick="this.blur();document.getElementById('panel-tune').style.display='block';document.getElementById('panel-filters').style.display='none';document.getElementById('panel-text').style.display='none';document.getElementById('panel-stickers').style.display='none';document.getElementById('panel-elements').style.display='none';document.getElementById('panel-crop').style.display='none';">Настройки</button>
+                        <button type="button" class="tab-btn" id="tab-filters" onclick="this.blur();document.getElementById('panel-tune').style.display='none';document.getElementById('panel-filters').style.display='block';document.getElementById('panel-text').style.display='none';document.getElementById('panel-stickers').style.display='none';document.getElementById('panel-elements').style.display='none';document.getElementById('panel-crop').style.display='none';">Фильтры</button>
+                        <button type="button" class="tab-btn" id="tab-text" onclick="this.blur();document.getElementById('panel-tune').style.display='none';document.getElementById('panel-filters').style.display='none';document.getElementById('panel-text').style.display='block';document.getElementById('panel-stickers').style.display='none';document.getElementById('panel-elements').style.display='none';document.getElementById('panel-crop').style.display='none';">Текст</button>
+                        <button type="button" class="tab-btn" id="tab-stickers" onclick="this.blur();document.getElementById('panel-tune').style.display='none';document.getElementById('panel-filters').style.display='none';document.getElementById('panel-text').style.display='none';document.getElementById('panel-stickers').style.display='block';document.getElementById('panel-elements').style.display='none';document.getElementById('panel-crop').style.display='none';">Стикеры</button>
+                        <button type="button" class="tab-btn" id="tab-elements" onclick="this.blur();document.getElementById('panel-tune').style.display='none';document.getElementById('panel-filters').style.display='none';document.getElementById('panel-text').style.display='none';document.getElementById('panel-stickers').style.display='none';document.getElementById('panel-elements').style.display='block';document.getElementById('panel-crop').style.display='none';">Элементы</button>
+                        <button type="button" class="tab-btn" id="tab-crop" onclick="this.blur();document.getElementById('panel-tune').style.display='none';document.getElementById('panel-filters').style.display='none';document.getElementById('panel-text').style.display='none';document.getElementById('panel-stickers').style.display='none';document.getElementById('panel-elements').style.display='none';document.getElementById('panel-crop').style.display='block';">Кадр</button>
                     </div>
                 </div>
                 
                 <style>
-                    .tab-btn { padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: #8e8e8e; border-bottom: 2px solid transparent; }
+                    .tab-btn { padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: #8e8e8e; border-bottom: 2px solid transparent; flex-shrink: 0; }
                     .tab-btn.active { color: #405de6; border-bottom: 2px solid #405de6; }
                     .panel { display: none; }
                     .panel.active { display: block; }
-                </style>
-                
-                <style>
-                    .panel { display: none; }
-                    .panel.active { display: block; }
-                    .tab-btn { flex-shrink: 0; }
                     .slider-container { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
                     .slider-container label { min-width: 80px; font-size: 0.9rem; }
                     .slider-container input[type="range"] { flex: 1; height: 4px; -webkit-appearance: none; background: var(--border); border-radius: 2px; }
@@ -53,7 +47,7 @@
                     .sticker-item:hover { background: var(--border); }
                 </style>
                 
-                <div id="panel-tune" class="panel active">
+                <div id="panel-tune" class="panel active" style="display: block;">
                     <div class="slider-container">
                         <label>Яркость</label>
                         <input type="range" id="brightness" min="-100" max="100" value="0" oninput="updatePreview()">
@@ -92,7 +86,7 @@
                     <button type="button" class="btn btn-secondary" onclick="resetTune()" style="margin-top: 10px;">Сбросить</button>
                 </div>
                 
-                <div id="panel-filters" class="panel" style="display: none;">
+                <div id="panel-filters" class="panel">
                     <div class="filter-grid">
                         <div class="filter-item active" onclick="applyPreset('none')">
                             <img src="" id="filter-orig">
@@ -133,7 +127,7 @@
                     </div>
                 </div>
                 
-                <div id="panel-text" class="panel" style="display: none;">
+                <div id="panel-text" class="panel">
                     <input type="text" id="overlay-text" placeholder="Введите текст..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px;">
                     <div class="slider-container">
                         <label>Размер</label>
@@ -161,7 +155,7 @@
                     </div>
                 </div>
                 
-                <div id="panel-elements" class="panel" style="display: none;">
+                <div id="panel-elements" class="panel">
                     <p style="margin-bottom: 10px; font-weight: 600;">Элементы на фото</p>
                     <div id="elements-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
                         <p style="color: var(--text-light); font-size: 0.9rem;">Добавьте текст или стикеры</p>
@@ -169,7 +163,7 @@
                     <p style="font-size: 0.8rem; color: var(--text-light);">Нажмите на элемент для редактирования</p>
                 </div>
                 
-                <div id="panel-edit" class="panel" style="display: none;">
+                <div id="panel-edit" class="panel">
                     <p style="margin-bottom: 10px; font-weight: 600;">Редактирование элемента</p>
                     <div class="slider-container">
                         <label>Размер</label>
@@ -182,7 +176,7 @@
                     </div>
                 </div>
                 
-                <div id="panel-stickers" class="panel" style="display: none;">
+                <div id="panel-stickers" class="panel">
                     <div class="sticker-grid">
                         <div class="sticker-item" onclick="addSticker('⭐')">⭐</div>
                         <div class="sticker-item" onclick="addSticker('❤️')">❤️</div>
@@ -203,7 +197,7 @@
                     </div>
                 </div>
                 
-                <div id="panel-crop" class="panel" style="display: none;">
+                <div id="panel-crop" class="panel">
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
                         <button type="button" class="btn btn-secondary" onclick="rotateImage(-90)">↺ Повернуть</button>
                         <button type="button" class="btn btn-secondary" onclick="flipImage('h')">↔ Отзеркалить</button>
@@ -305,13 +299,20 @@
         }
         
         function switchTab(tabName) {
-            deselectElement();
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('panel-' + tabName).classList.add('active');
-            document.getElementById('tab-' + tabName).classList.add('active');
-            if (tabName === 'elements') {
-                updateElementsList();
+            console.log('switchTab:', tabName);
+            try {
+                deselectElement();
+            } catch(e) { console.log('deselectElement error:', e); }
+            try {
+                document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+                document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+                document.getElementById('panel-' + tabName).classList.add('active');
+                document.getElementById('tab-' + tabName).classList.add('active');
+                if (tabName === 'elements') {
+                    updateElementsList();
+                }
+            } catch(e) {
+                console.log('switchTab error:', e);
             }
         }
         
