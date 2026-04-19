@@ -513,6 +513,8 @@ class Story(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime)
     is_saved = db.Column(db.Boolean, default=False)
+    is_archived = db.Column(db.Boolean, default=False)
+    reposted_at = db.Column(db.DateTime)
     
     user = db.relationship('User', backref='stories')
     reactions = db.relationship('StoryReaction', backref='story', lazy='dynamic', cascade='all, delete-orphan')
@@ -1054,6 +1056,21 @@ def save_story(story_id):
     return redirect(request.referrer or url_for('index'))
 
 
+@app.route('/story/<int:story_id>/republish', methods=['POST'])
+@login_required
+def republish_story(story_id):
+    story = Story.query.get_or_404(story_id)
+    if story.user_id != current_user.id:
+        abort(403)
+    
+    story.expires_at = datetime.utcnow() + timedelta(hours=24)
+    story.is_archived = False
+    story.reposted_at = datetime.utcnow()
+    db.session.commit()
+    flash('История опубликована снова')
+    return redirect(url_for('user_stories', username=current_user.username))
+
+
 @app.route('/story/<int:story_id>/react', methods=['POST'])
 @login_required
 def react_story(story_id):
@@ -1101,11 +1118,18 @@ def comment_story(story_id):
 @app.route('/stories')
 @login_required
 def stories_route():
-    Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False).delete()
+    Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False, Story.is_archived == False).update({Story.is_archived: True})
     db.session.commit()
     user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.followed.all()]
     stories_list = Story.query.filter(Story.user_id.in_(user_ids), Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).all()
     return render_template('stories.html', stories=stories_list)
+
+
+@app.route('/stories/archives')
+@login_required
+def stories_archives():
+    archived = Story.query.filter(Story.user_id == current_user.id, Story.is_archived == True).order_by(Story.created_at.desc()).all()
+    return render_template('stories_archives.html', stories=archived)
 
 
 @app.route('/stories/user/<username>')
@@ -1114,7 +1138,8 @@ def user_stories(username):
     user = User.query.filter_by(username=username).first_or_404()
     stories = Story.query.filter(Story.user_id == user.id, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).all()
     if not stories and not Story.query.filter(Story.user_id == user.id, Story.is_saved == True).first():
-        abort(404)
+        if user.id != current_user.id or not Story.query.filter(Story.user_id == user.id, Story.is_archived == True).first():
+            abort(404)
     saved_stories = Story.query.filter(Story.user_id == user.id, Story.is_saved == True).order_by(Story.created_at.desc()).all()
     all_stories = stories + saved_stories
     return render_template('user_stories.html', stories=all_stories, user=user)
@@ -1124,7 +1149,7 @@ def user_stories(username):
 @login_required
 def view_story(story_id):
     story = Story.query.get_or_404(story_id)
-    if story.is_expired() and not story.is_saved:
+    if story.is_expired() and not story.is_saved and not (story.is_archived and story.user_id == current_user.id):
         abort(404)
     reactions = story.reactions.all()
     comments = story.comments.order_by(StoryComment.created_at.desc()).all()

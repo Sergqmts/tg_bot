@@ -27,6 +27,9 @@
                     <span class="username">{{ story.user.username }}</span>
                     <span class="time">{{ story.created_at.strftime('%H:%M') }}</span>
                 </div>
+                {% if story.user_id == current_user.id %}
+                    <a href="{{ url_for('stories_archives') }}" style="color: white; margin-right: 15px;">📁 Архив</a>
+                {% endif %}
                 <a href="{{ url_for('index') }}" class="close-btn">&times;</a>
             </div>
             

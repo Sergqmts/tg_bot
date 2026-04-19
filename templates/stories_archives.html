@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Архив историй - Social{% endblock %}
+{% block content %}
+    <div style="max-width: 500px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Архив историй</h2>
+            <a href="{{ url_for('user_stories', username=current_user.username) }}" class="btn btn-secondary">← Назад</a>
+        </div>
+        
+        <p style="color: var(--text-light); margin-bottom: 20px;">Истории, которым более 24 часов. Вы можете опубликовать их снова.</p>
+        
+        {% if not stories %}
+            <p style="text-align: center; color: var(--text-light); padding: 40px;">
+                Архив пуст
+            </p>
+        {% else %}
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">
+                {% for story in stories %}
+                    <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #000;">
+                        {% if story.media_url.startswith('http') %}
+                            {% if story.media_type == 'video' %}
+                                <video src="{{ story.media_url }}" style="width: 100%; height: 100%; object-fit: cover;" muted></video>
+                            {% else %}
+                                <img src="{{ story.media_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% endif %}
+                        {% else %}
+                            {% if story.media_type == 'video' %}
+                                <video src="{{ url_for('uploaded_file', filename=story.media_url) }}" style="width: 100%; height: 100%; object-fit: cover;" muted></video>
+                            {% else %}
+                                <img src="{{ url_for('uploaded_file', filename=story.media_url) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% endif %}
+                        {% endif %}
+                        
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 20px 5px 5px;">
+                            <span style="color: white; font-size: 0.7rem;">{{ story.created_at.strftime('%d.%m.%Y') }}</span>
+                        </div>
+                        
+                        <form method="POST" action="{{ url_for('republish_story', story_id=story.id) }}" 
+                              style="position: absolute; bottom: 5px; right: 5px;"
+                              onclick="event.stopPropagation()">
+                            <button type="submit" class="btn btn-primary" style="padding: 5px 8px; font-size: 0.8rem;">Повторить</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
