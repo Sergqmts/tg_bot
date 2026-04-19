@@ -17,10 +17,11 @@
                 {% if community.is_private %}<span style="font-size: 0.8rem; background: var(--accent); padding: 2px 8px; border-radius: 10px;">🔒</span>{% endif %}
             </h1>
                 <div style="color: var(--text-light); font-size: 0.9rem;">
-                    {{ community.members.count() }} участников · {{ community.posts.count() }} записей
+                    {{ community.members.count() }} участников · {{ community.posts.count() }} записей{% if community.events.count() > 0 %} · {{ community.events.count() }} мероприятий{% endif %}
                 </div>
-                <div style="color: var(--text-light); font-size: 0.85rem; margin-top: 5px;">
-                    Создал <a href="{{ url_for('user_profile', username=community.creator.username) }}">{{ community.creator.username }}</a>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <a href="{{ url_for('community', slug=community.slug) }}" style="padding: 5px 15px; background: var(--primary); color: white; border-radius: 20px; text-decoration: none; font-size: 0.9rem;">Записи</a>
+                    <a href="{{ url_for('community_events', slug=community.slug) }}" style="padding: 5px 15px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 20px; text-decoration: none; font-size: 0.9rem;">Мероприятия</a>
                 </div>
             </div>
         </div>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ community.name }} - Мероприятия - Social{% endblock %}
+{% block content %}
+<a href="{{ url_for('community', slug=community.slug) }}" class="btn btn-secondary" style="margin-bottom: 20px;">← {{ community.name }}</a>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Мероприятия</h2>
+        {% if is_member %}
+            <a href="{{ url_for('community_events', slug=community.slug) }}?create=1" class="btn btn-primary">+ Создать</a>
+        {% endif %}
+    </div>
+    
+    {% if request.args.get('create') and is_member %}
+    <form method="POST" style="margin-bottom: 30px; padding: 20px; background: var(--bg); border-radius: 8px;">
+        <h3>Создать мероприятие</h3>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px;">Название *</label>
+            <input type="text" name="title" required style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px;">Описание</label>
+            <textarea name="description" rows="3" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;"></textarea>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px;">Дата и время *</label>
+            <input type="datetime-local" name="event_date" required style="padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px;">Место</label>
+            <input type="text" name="location" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;">
+        </div>
+        <button type="submit" class="btn btn-primary">Создать</button>
+    </form>
+    {% endif %}
+    
+    {% if events %}
+        <div style="display: grid; gap: 15px;">
+            {% for event in events %}
+            <div style="border: 1px solid var(--border); border-radius: 8px; padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin: 0 0 5px 0;">{{ event.title }}</h3>
+                        <div style="color: var(--text-light); font-size: 0.9rem;">
+                            📅 {{ event.event_date.strftime('%d.%m.%Y %H:%M') }}
+                            {% if event.location %}
+                                📍 {{ event.location }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('event_rsvp', slug=community.slug, event_id=event.id) }}">
+                        {% set attending = event.is_attending(current_user) %}
+                        <button type="submit" class="btn {% if attending %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 15px;">
+                            {% if attending %}✅ Иду ({{ event.attendee_count() }}){% else %}Участвовать{% endif %}
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% if event.description %}
+                    <p style="margin-top: 10px; color: var(--text);">{{ event.description }}</p>
+                {% endif %}
+                <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                    👥 {{ event.attendee_count() }} участников
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="text-align: center; color: var(--text-light); padding: 40px;">Пока нет мероприятий</p>
+    {% endif %}
+</div>
+{% endblock %}

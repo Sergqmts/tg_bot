@@ -591,6 +591,39 @@ class CommunityMember(db.Model):
     __table_args__ = (db.UniqueConstraint('user_id', 'community_id', name='unique_membership'),)
 
 
+class CommunityEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    event_date = db.Column(db.DateTime, nullable=False)
+    location = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    community = db.relationship('Community', backref='events')
+    creator = db.relationship('User', backref='created_events')
+    attendees = db.relationship('EventAttendee', backref='event', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def attendee_count(self):
+        return self.attendees.filter_by(status='going').count()
+    
+    def is_attending(self, user):
+        return self.attendees.filter_by(user_id=user.id, status='going').first() is not None
+
+
+class EventAttendee(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('community_event.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='going')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='event_attendances')
+    
+    __table_args__ = (db.UniqueConstraint('event_id', 'user_id', name='unique_attendance'),)
+
+
 class Media(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(200), nullable=False)
@@ -2062,6 +2095,64 @@ def join_community(slug):
         else:
             flash(f'Вы вступили в сообщество "{comm.name}"')
     return redirect(url_for('community', slug=slug))
+
+
+@app.route('/community/<slug>/events', methods=['GET', 'POST'])
+@login_required
+def community_events(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    is_member = current_user.is_member(comm)
+    is_admin = current_user.is_admin(comm)
+    
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        event_date = request.form.get('event_date')
+        location = request.form.get('location', '').strip()
+        
+        if title and event_date:
+            try:
+                event_datetime = datetime.strptime(event_date, '%Y-%m-%dT%H:%M')
+                event = CommunityEvent(
+                    community_id=comm.id,
+                    creator_id=current_user.id,
+                    title=title,
+                    description=description,
+                    event_date=event_datetime,
+                    location=location
+                )
+                db.session.add(event)
+                db.session.commit()
+                flash('Мероприятие создано!')
+                return redirect(url_for('community_events', slug=slug))
+            except ValueError:
+                flash('Неверный формат даты')
+        else:
+            flash('Заполните название и дату')
+    
+    events = CommunityEvent.query.filter_by(community_id=comm.id).order_by(CommunityEvent.event_date.asc()).all()
+    return render_template('community_events.html', community=comm, events=events, is_member=is_member, is_admin=is_admin)
+
+
+@app.route('/community/<slug>/event/<int:event_id>/rsvp', methods=['POST'])
+@login_required
+def event_rsvp(slug, event_id):
+    event = CommunityEvent.query.get_or_404(event_id)
+    existing = EventAttendee.query.filter_by(event_id=event.id, user_id=current_user.id).first()
+    
+    if existing:
+        if existing.status == 'going':
+            existing.status = 'maybe'
+        elif existing.status == 'maybe':
+            db.session.delete(existing)
+        else:
+            existing.status = 'going'
+    else:
+        attendee = EventAttendee(event_id=event.id, user_id=current_user.id, status='going')
+        db.session.add(attendee)
+    
+    db.session.commit()
+    return redirect(url_for('community_events', slug=slug))
 
 
 @app.route('/community/<slug>/leave', methods=['POST'])
