@@ -2160,13 +2160,12 @@ def event_rsvp(slug, event_id):
         community = event.community
         event_date = event.event_date.strftime('%d.%m.%Y в %H:%M')
         
-        message_body = f"🎉 Спасибо за регистрацию на мероприятие \"{event.title}\"!\n\n📅 Дата: {event_date}"
+        message_body = f"📢 От сообщества \"{community.name}\"\n\n🎉 Спасибо за регистрацию на мероприятие \"{event.title}\"!\n\n📅 Дата: {event_date}"
         if event.location:
             message_body += f"\n📍 Место: {event.location}"
-        message_body += f"\n👥 Организатор: {community.name}"
         
         msg = Message(
-            sender_id=event.creator_id,
+            sender_id=community.creator_id,
             recipient_id=current_user.id,
             body=message_body
         )
