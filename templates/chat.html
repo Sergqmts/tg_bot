@@ -153,6 +153,24 @@
     <script>
         document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
         
+        // Адаптация для мобильных - поднятие формы над клавиатурой
+        const messageInput = document.querySelector('input[name="body"]');
+        const messageForm = document.querySelector('.message-form');
+        const chatContainer = document.querySelector('.chat');
+        if (messageInput && messageForm) {
+            messageInput.addEventListener('focus', function() {
+                setTimeout(function() {
+                    messageForm.scrollIntoView({behavior: 'smooth', block: 'end'});
+                }, 100);
+            });
+            
+            window.visualViewport.addEventListener('resize', function() {
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            });
+        }
+        
         function openModal(url, type) {
             const modal = document.getElementById('mediaModal');
             const img = document.getElementById('modalImage');

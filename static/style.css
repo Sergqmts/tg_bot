@@ -909,14 +909,42 @@ label {
     border-top: 1px solid var(--border);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
     .chat-card {
-        height: calc(100vh - 70px);
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: auto;
+        max-width: 100%;
         padding: 10px;
+        border-radius: 0;
     }
     
     .chat-header {
-        padding-bottom: 10px;
+        position: sticky;
+        top: 60px;
+        background: var(--card-bg);
+        z-index: 10;
+        padding: 10px;
+        margin: -10px -10px 10px -10px;
+    }
+    
+    .chat-card .chat {
+        flex: 1;
+        min-height: 0;
+        margin-bottom: 0;
+        max-height: none;
+    }
+    
+    .message-form {
+        position: sticky;
+        bottom: 0;
+        background: var(--card-bg);
+        padding: 10px;
+        margin: 0 -10px -10px -10px;
+        border-top: 1px solid var(--border);
     }
     
     .chat-header .btn {

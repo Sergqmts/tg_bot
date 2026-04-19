@@ -215,7 +215,7 @@
                 }, 100);
             });
             
-            window.addEventListener('resize', function() {
+            window.visualViewport.addEventListener('resize', function() {
                 document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
             });
         }
