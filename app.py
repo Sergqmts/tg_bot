@@ -999,6 +999,16 @@ def photo_editor():
     return render_template('photo_editor.html', editing=True)
 
 
+@app.route('/video_editor', methods=['GET', 'POST'])
+@login_required
+def video_editor():
+    if request.method == 'POST':
+        video_url = request.form.get('video_url')
+        if video_url:
+            return redirect(url_for('create') + '?video=' + video_url)
+    return render_template('video_editor.html', editing=True)
+
+
 @app.route('/post/<int:post_id>/repost', methods=['POST'])
 @login_required
 def repost(post_id):

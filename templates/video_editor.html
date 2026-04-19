@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}Видео редактор - Social{% endblock %}
+{% block content %}
+    <div style="max-width: 500px; margin: 0 auto;">
+        <div class="card">
+            <h2 style="margin-bottom: 15px;">Видео редактор</h2>
+            
+            {% if not editing %}
+            <div style="margin-bottom: 20px;">
+                <label for="video-input" style="display: block; padding: 40px; border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; color: var(--primary);">
+                    🎬 Загрузить видео
+                </label>
+                <input type="file" id="video-input" accept="video/*" style="display: none;" onchange="loadVideo(this.files[0])">
+            </div>
+            {% endif %}
+            
+            <div id="editor-area" style="{% if not editing %}display: none;{% endif %}">
+                <div style="position: relative; background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 15px;">
+                    <video id="video-preview" style="max-width: 100%; max-height: 300px; display: block; margin: 0 auto;" controls></video>
+                    <canvas id="video-canvas" style="display: none;"></canvas>
+                    <div id="video-text-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;"></div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="togglePlay()" id="play-btn" style="padding: 10px;">▶</button>
+                    <span id="time-display" style="color: var(--text-light); font-size: 0.9rem;">0:00 / 0:00</span>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
+                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('none')" style="flex-shrink: 0; padding: 8px 12px;">Оригинал</button>
+                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('grayscale(100%)')" style="flex-shrink: 0; padding: 8px 12px;">Ч/Б</button>
+                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('sepia(100%)')" style="flex-shrink: 0; padding: 8px 12px;">Сепия</button>
+                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('contrast(150%)')" style="flex-shrink: 0; padding: 8px 12px;">Контраст</button>
+                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('brightness(130%)')" style="flex-shrink: 0; padding: 8px 12px;">Яркость</button>
+                </div>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="toggleVideoText()" style="padding: 10px;">Текст</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleTrim()" style="padding: 10px;">Обрезать</button>
+                </div>
+                
+                <div id="video-text-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
+                    <input type="text" id="video-text-input" placeholder="Введите текст..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px;">
+                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                        <input type="color" id="video-text-color" value="#ffffff" style="width: 40px; height: 40px; border: none; cursor: pointer;">
+                        <select id="video-text-size" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
+                            <option value="24">Маленький</option>
+                            <option value="36" selected>Обычный</option>
+                            <option value="48">Большой</option>
+                            <option value="64">Огромный</option>
+                        </select>
+                        <select id="video-text-pos" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
+                            <option value="center">По центру</option>
+                            <option value="top">Сверху</option>
+                            <option value="bottom">Снизу</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                        <label style="font-size: 0.85rem;">Начало:</label>
+                        <input type="number" id="video-text-start" value="0" min="0" style="width: 60px; padding: 5px;">
+                        <label style="font-size: 0.85rem;">Конец:</label>
+                        <input type="number" id="video-text-end" value="5" min="1" style="width: 60px; padding: 5px;">
+                        <span style="font-size: 0.85rem;">сек</span>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addVideoText()">Добавить</button>
+                </div>
+                
+                <div id="trim-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
+                    <p style="margin-bottom: 10px;">Обрезать видео (секунды)</p>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div>
+                            <label style="font-size: 0.85rem;">Начало</label>
+                            <input type="number" id="trim-start" value="0" min="0" style="width: 80px; padding: 8px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem;">Конец</label>
+                            <input type="number" id="trim-end" value="10" min="1" style="width: 80px; padding: 8px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-primary" onclick="applyTrim()">Применить</button>
+                        <button type="button" class="btn btn-secondary" onclick="cancelTrim()">Отмена</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-primary" onclick="saveVideo()" style="flex: 1;">Сохранить</button>
+                    <a href="{{ url_for('create') }}" class="btn btn-secondary">Отмена</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let videoEl = null;
+        let currentFilter = 'none';
+        let videoTexts = [];
+        let videoUrl = null;
+        let duration = 0;
+        
+        function loadVideo(file) {
+            if (!file) return;
+            
+            videoUrl = URL.createObjectURL(file);
+            videoEl = document.getElementById('video-preview');
+            videoEl.src = videoUrl;
+            
+            videoEl.onloadedmetadata = function() {
+                duration = videoEl.duration;
+                updateTimeDisplay();
+                document.getElementById('editor-area').style.display = 'block';
+            };
+            
+            videoEl.ontimeupdate = function() {
+                updateTimeDisplay();
+                updateTextOverlay();
+            };
+        }
+        
+        function updateTimeDisplay() {
+            if (!videoEl) return;
+            const current = formatTime(videoEl.currentTime);
+            const total = formatTime(duration);
+            document.getElementById('time-display').textContent = current + ' / ' + total;
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+        
+        function togglePlay() {
+            if (!videoEl) return;
+            if (videoEl.paused) {
+                videoEl.play();
+                document.getElementById('play-btn').textContent = '⏸';
+            } else {
+                videoEl.pause();
+                document.getElementById('play-btn').textContent = '▶';
+            }
+        }
+        
+        function setVideoFilter(filter) {
+            currentFilter = filter;
+            videoEl.style.filter = filter;
+        }
+        
+        function toggleVideoText() {
+            const tool = document.getElementById('video-text-tool');
+            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function addVideoText() {
+            const input = document.getElementById('video-text-input');
+            if (!input.value.trim()) return;
+            
+            videoTexts.push({
+                text: input.value,
+                color: document.getElementById('video-text-color').value,
+                size: parseInt(document.getElementById('video-text-size').value),
+                position: document.getElementById('video-text-pos').value,
+                start: parseFloat(document.getElementById('video-text-start').value),
+                end: parseFloat(document.getElementById('video-text-end').value)
+            });
+            
+            input.value = '';
+            updateTextOverlay();
+        }
+        
+        function updateTextOverlay() {
+            if (!videoEl) return;
+            
+            const overlay = document.getElementById('video-text-overlay');
+            overlay.innerHTML = '';
+            
+            const currentTime = videoEl.currentTime;
+            
+            videoTexts.forEach(t => {
+                if (currentTime >= t.start && currentTime <= t.end) {
+                    const div = document.createElement('div');
+                    div.textContent = t.text;
+                    div.style.cssText = `
+                        position: absolute;
+                        color: ${t.color};
+                        font-size: ${t.size}px;
+                        font-weight: bold;
+                        text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+                        font-family: sans-serif;
+                        ${t.position === 'center' ? 'top: 50%; left: 50%; transform: translate(-50%, -50%);' : ''}
+                        ${t.position === 'top' ? 'top: 10%; left: 50%; transform: translateX(-50%);' : ''}
+                        ${t.position === 'bottom' ? 'bottom: 10%; left: 50%; transform: translateX(-50%);' : ''}
+                    `;
+                    overlay.appendChild(div);
+                }
+            });
+        }
+        
+        function toggleTrim() {
+            const tool = document.getElementById('trim-tool');
+            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
+            
+            if (tool.style.display === 'block') {
+                document.getElementById('trim-end').value = Math.floor(duration);
+            }
+        }
+        
+        function applyTrim() {
+            if (!videoEl) return;
+            
+            const start = parseFloat(document.getElementById('trim-start').value);
+            const end = parseFloat(document.getElementById('trim-end').value);
+            
+            videoEl.currentTime = start;
+            videoEl.onended = function() {
+                videoEl.currentTime = start;
+            };
+            
+            videoEl.addEventListener('timeupdate', function checkTime() {
+                if (videoEl.currentTime >= end) {
+                    videoEl.pause();
+                    videoEl.currentTime = start;
+                    videoEl.removeEventListener('timeupdate', checkTime);
+                }
+            });
+            
+            document.getElementById('trim-tool').style.display = 'none';
+        }
+        
+        function cancelTrim() {
+            document.getElementById('trim-tool').style.display = 'none';
+        }
+        
+        function saveVideo() {
+            videoEl.pause();
+            
+            if (videoTexts.length > 0) {
+                videoEl.addEventListener('timeupdate', updateTextOverlay);
+            }
+            
+            fetch('{{ url_for("create") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'video_url=' + encodeURIComponent(videoUrl)
+            }).then(() => {
+                window.location.href = '{{ url_for("index") }}';
+            });
+        }
+    </script>
+{% endblock %}

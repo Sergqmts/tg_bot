@@ -16,9 +16,10 @@
                 
                 <div class="form-group">
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                        <a href="{{ url_for('photo_editor') }}" class="btn btn-secondary" style="text-decoration: none;">🎨 Редактор фото</a>
+                        <a href="{{ url_for('photo_editor') }}" class="btn btn-secondary" style="text-decoration: none;">🎨 Фото</a>
+                        <a href="{{ url_for('video_editor') }}" class="btn btn-secondary" style="text-decoration: none;">🎬 Видео</a>
                         <label for="media-input" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 16px; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--primary); font-weight: 500;">
-                            📎 Прикрепить файл
+                            📎 Файл
                         </label>
                     </div>
                     <input type="file" id="media-input" name="media" accept="image/*,video/*" multiple style="display: none;" onchange="handleFiles(this.files)">
