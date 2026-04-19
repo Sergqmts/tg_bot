@@ -330,16 +330,20 @@
             const el = document.createElement('div');
             el.className = 'draggable-text';
             el.textContent = finalText;
-            el.style.cssText = `position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: ${document.getElementById('font-family').value}; color: ${document.getElementById('text-color').value}; font-size: ${size}px; font-weight: ${textStyle.bold ? 'bold' : 'normal'}; font-style: ${textStyle.italic ? 'italic' : 'normal'}; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); cursor: move; padding: 5px;`;
-            el.dataset.x = 50;
-            el.dataset.y = 50;
+            el.style.cssText = `position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: ${document.getElementById('font-family').value}; color: ${document.getElementById('text-color').value}; font-size: ${size}px; font-weight: ${textStyle.bold ? 'bold' : 'normal'}; font-style: ${textStyle.italic ? 'italic' : 'normal'}; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); cursor: move; padding: 5px; user-select: none;`;
             
             el.onmousedown = function(e) {
-                draggedElement = el;
-                const rect = el.getBoundingClientRect();
-                dragOffsetX = e.clientX - rect.left;
-                dragOffsetY = e.clientY - rect.top;
                 e.preventDefault();
+                e.stopPropagation();
+                draggedElement = el;
+                el.style.opacity = '0.7';
+            };
+            
+            el.ontouchstart = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                draggedElement = el;
+                el.style.opacity = '0.7';
             };
             
             const overlayContainer = getOverlayContainer();
@@ -353,15 +357,22 @@
             const el = document.createElement('div');
             el.className = 'draggable-sticker';
             el.textContent = emoji;
-            el.dataset.x = 30 + Math.random() * 40;
-            el.style.cssText = `position: absolute; left: ${el.dataset.x}%; top: ${el.dataset.y || 50}%; transform: translate(-50%, -50%); font-size: 36px; cursor: move;`;
+            const randX = 20 + Math.random() * 60;
+            const randY = 20 + Math.random() * 60;
+            el.style.cssText = `position: absolute; left: ${randX}%; top: ${randY}%; transform: translate(-50%, -50%); font-size: 36px; cursor: move; user-select: none;`;
             
             el.onmousedown = function(e) {
-                draggedElement = el;
-                const rect = el.getBoundingClientRect();
-                dragOffsetX = e.clientX - rect.left;
-                dragOffsetY = e.clientY - rect.top;
                 e.preventDefault();
+                e.stopPropagation();
+                draggedElement = el;
+                el.style.opacity = '0.7';
+            };
+            
+            el.ontouchstart = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                draggedElement = el;
+                el.style.opacity = '0.7';
             };
             
             const overlayContainer = getOverlayContainer();
@@ -375,7 +386,7 @@
                 container = document.createElement('div');
                 container.id = 'overlays-container';
                 const previewContainer = document.getElementById('preview-container');
-                container.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;';
+                container.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0;';
                 previewContainer.style.position = 'relative';
                 previewContainer.appendChild(container);
             }
@@ -390,13 +401,42 @@
             let x = ((e.clientX - rect.left) / rect.width * 100);
             let y = ((e.clientY - rect.top) / rect.height * 100);
             
+            x = Math.max(0, Math.min(100, x));
+            y = Math.max(0, Math.min(100, y));
+            
+            draggedElement.style.left = x + '%';
+            draggedElement.style.top = y + '%';
+            draggedElement.style.transform = 'translate(-50%, -50%)';
+        });
+        
+        document.addEventListener('touchmove', function(e) {
+            if (!draggedElement) return;
+            const touch = e.touches[0];
+            const container = document.getElementById('overlays-container');
+            const rect = container.getBoundingClientRect();
+            let x = ((touch.clientX - rect.left) / rect.width * 100);
+            let y = ((touch.clientY - rect.top) / rect.height * 100);
+            
+            x = Math.max(0, Math.min(100, x));
+            y = Math.max(0, Math.min(100, y));
+            
             draggedElement.style.left = x + '%';
             draggedElement.style.top = y + '%';
             draggedElement.style.transform = 'translate(-50%, -50%)';
         });
         
         document.addEventListener('mouseup', function() {
-            draggedElement = null;
+            if (draggedElement) {
+                draggedElement.style.opacity = '1';
+                draggedElement = null;
+            }
+        });
+        
+        document.addEventListener('touchend', function() {
+            if (draggedElement) {
+                draggedElement.style.opacity = '1';
+                draggedElement = null;
+            }
         });
         
         function rotateImage(deg) {
