@@ -490,17 +490,20 @@
             document.getElementById('preview-img').src = originalData;
         }
         
-function showSaveDialog() {
+        function showSaveDialog() {
             const canvas = document.createElement('canvas');
             const img = document.getElementById('preview-img');
             canvas.width = img.naturalWidth;
             canvas.height = img.naturalHeight;
             const ctx = canvas.getContext('2d');
-            
-            ctx.filter = getFilterString(currentFilter);
-            ctx.drawImage(img, 0, 0);
-            
             const overlays = document.getElementById('overlays-container');
+            
+            if (currentFilter && currentFilter !== 'none') {
+                ctx.filter = getFilterString(currentFilter);
+            }
+            ctx.drawImage(img, 0, 0);
+            ctx.filter = 'none';
+            
             if (overlays) {
                 const overlayEls = overlays.querySelectorAll('.draggable-text, .draggable-sticker');
                 overlayEls.forEach(el => {
@@ -541,11 +544,14 @@ function showSaveDialog() {
             canvas.width = img.naturalWidth;
             canvas.height = img.naturalHeight;
             const ctx = canvas.getContext('2d');
-            
-            ctx.filter = getFilterString(currentFilter);
-            ctx.drawImage(img, 0, 0);
-            
             const overlays = document.getElementById('overlays-container');
+            
+            if (currentFilter && currentFilter !== 'none') {
+                ctx.filter = getFilterString(currentFilter);
+            }
+            ctx.drawImage(img, 0, 0);
+            ctx.filter = 'none';
+            
             if (overlays) {
                 const overlayEls = overlays.querySelectorAll('.draggable-text, .draggable-sticker');
                 overlayEls.forEach(el => {
