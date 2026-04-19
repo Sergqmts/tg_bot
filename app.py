@@ -1013,6 +1013,54 @@ def photo_editor():
     return render_template('photo_editor.html', editing=True)
 
 
+@app.route('/photo_transform', methods=['POST'])
+@login_required
+def photo_transform():
+    try:
+        from PIL import Image, ImageEnhance, ImageFilter
+        import io
+        import base64
+        
+        preview_data = request.form.get('preview_data')
+        transform_type = request.form.get('transform_type')
+        transform_value = request.form.get('transform_value')
+        
+        if not preview_data:
+            return '', 400
+        
+        header, data = preview_data.split(',', 1)
+        binary = base64.b64decode(data)
+        
+        img = Image.open(io.BytesIO(binary))
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        if transform_type == 'rotate':
+            angle = int(transform_value) if transform_value else 0
+            img = img.rotate(angle, expand=True)
+        elif transform_type == 'flip':
+            if transform_value == 'h':
+                img = img.transpose(Image.FLIP_LEFT_RIGHT)
+            elif transform_value == 'v':
+                img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        elif transform_type == 'crop':
+            w, h = img.size
+            left = int(w * 0.1)
+            top = int(h * 0.1)
+            right = int(w * 0.9)
+            bottom = int(h * 0.9)
+            img = img.crop((left, top, right, bottom))
+        
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=92)
+        output.seek(0)
+        
+        return output.getvalue(), 200, {'Content-Type': 'image/jpeg'}
+    except Exception as e:
+        app.logger.error(f"Photo transform error: {e}")
+        return str(e), 500
+
+
 @app.route('/video_editor', methods=['GET', 'POST'])
 @login_required
 def video_editor():

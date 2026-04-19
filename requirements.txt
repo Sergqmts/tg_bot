@@ -20,3 +20,4 @@ psycopg[binary,pool]==3.2.3
 tomli==2.4.1
 typing_extensions==4.15.0
 cloudinary==1.41.0
+Pillow==11.1.0

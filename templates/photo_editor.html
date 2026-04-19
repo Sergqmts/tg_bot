@@ -1,82 +1,195 @@
 {% extends "base.html" %}
 {% block title %}Редактор фото - Social{% endblock %}
 {% block content %}
-    <div style="max-width: 500px; margin: 0 auto;">
+    <div style="max-width: 600px; margin: 0 auto;">
         <div class="card">
-            <h2 style="margin-bottom: 15px;">Редактор фото</h2>
+            <h2 style="margin-bottom: 15px;">🎨 Редактор фото</h2>
             
             {% if not editing %}
             <div style="margin-bottom: 20px;">
                 <label for="photo-input" style="display: block; padding: 40px; border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; color: var(--primary);">
                     📷 Загрузить фото
                 </label>
-                <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="loadPhoto(this.files[0])">
+                <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="handleFileSelect(this.files[0])">
             </div>
             {% endif %}
             
             <div id="editor-area" style="{% if not editing %}display: none;{% endif %}">
-                <div style="position: relative; background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 15px;">
-                    <canvas id="photo-canvas" style="max-width: 100%; max-height: 400px; display: block; margin: 0 auto;"></canvas>
+                <div style="position: relative; background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 15px; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                    <img id="preview-img" style="max-width: 100%; max-height: 400px; display: block;">
+                    <canvas id="preview-canvas" style="display: none;"></canvas>
                 </div>
                 
-                <div style="display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
-                    <button type="button" class="btn btn-secondary" onclick="setFilter('none')" style="flex-shrink: 0; padding: 8px 12px;">Оригинал</button>
-                    <button type="button" class="btn btn-secondary" onclick="setFilter('grayscale(100%)')" style="flex-shrink: 0; padding: 8px 12px;">Ч/Б</button>
-                    <button type="button" class="btn btn-secondary" onclick="setFilter('sepia(100%)')" style="flex-shrink: 0; padding: 8px 12px;">Сепия</button>
-                    <button type="button" class="btn btn-secondary" onclick="setFilter('contrast(150%)')" style="flex-shrink: 0; padding: 8px 12px;">Контраст</button>
-                    <button type="button" class="btn btn-secondary" onclick="setFilter('brightness(130%)')" style="flex-shrink: 0; padding: 8px 12px;">Яркость</button>
-                    <button type="button" class="btn btn-secondary" onclick="setFilter('saturate(200%)')" style="flex-shrink: 0; padding: 8px 12px;">Насыщен</button>
-                    <button type="button" class="btn btn-secondary" onclick="setFilter('hue-rotate(90deg)')" style="flex-shrink: 0; padding: 8px 12px;">Сдвиг</button>
+                <div style="border-bottom: 1px solid var(--border); margin-bottom: 15px;">
+                    <div id="tabs" style="display: flex; gap: 5px; overflow-x: auto; padding-bottom: 0;">
+                        <button type="button" class="tab-btn active" onclick="showTab('tune')" data-tab="tune" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--primary); border-bottom: 2px solid var(--primary);">Настройки</button>
+                        <button type="button" class="tab-btn" onclick="showTab('filters')" data-tab="filters" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Фильтры</button>
+                        <button type="button" class="tab-btn" onclick="showTab('text')" data-tab="text" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Текст</button>
+                        <button type="button" class="tab-btn" onclick="showTab('stickers')" data-tab="stickers" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Стикеры</button>
+                        <button type="button" class="tab-btn" onclick="showTab('crop')" data-tab="crop" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Кадр</button>
+                    </div>
                 </div>
                 
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="toggleTextTool()" style="padding: 10px;">Текст</button>
-                    <button type="button" class="btn btn-secondary" onclick="toggleDrawTool()" style="padding: 10px;">Кисть</button>
-                    <button type="button" class="btn btn-secondary" onclick="toggleCropTool()" style="padding: 10px;">Обрезать</button>
-                    <button type="button" class="btn btn-secondary" onclick="rotatePhoto(-90)" style="padding: 10px;">↺</button>
-                    <button type="button" class="btn btn-secondary" onclick="rotatePhoto(90)" style="padding: 10px;">↻</button>
+                <style>
+                    .tab-btn { flex-shrink: 0; }
+                    .slider-container { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+                    .slider-container label { min-width: 80px; font-size: 0.9rem; }
+                    .slider-container input[type="range"] { flex: 1; height: 4px; -webkit-appearance: none; background: var(--border); border-radius: 2px; }
+                    .slider-container input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--primary); border-radius: 50%; cursor: pointer; }
+                    .filter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+                    .filter-item { padding: 10px; border-radius: var(--radius); overflow: hidden; cursor: pointer; text-align: center; border: 2px solid transparent; }
+                    .filter-item.active { border-color: var(--primary); }
+                    .filter-item img { width: 100%; height: 80px; object-fit: cover; border-radius: 4px; }
+                    .filter-item span { display: block; font-size: 0.8rem; margin-top: 5px; }
+                    .sticker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+                    .sticker-item { padding: 15px; font-size: 1.5rem; text-align: center; cursor: pointer; border-radius: var(--radius); background: var(--bg); }
+                    .sticker-item:hover { background: var(--border); }
+                </style>
+                
+                <div id="panel-tune" class="panel">
+                    <div class="slider-container">
+                        <label>Яркость</label>
+                        <input type="range" id="brightness" min="-100" max="100" value="0" oninput="updatePreview()">
+                        <span id="brightness-val">0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label>Контраст</label>
+                        <input type="range" id="contrast" min="-100" max="100" value="0" oninput="updatePreview()">
+                        <span id="contrast-val">0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label>Насыщен</label>
+                        <input type="range" id="saturate" min="-100" max="100" value="0" oninput="updatePreview()">
+                        <span id="saturate-val">0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label>Тени</label>
+                        <input type="range" id="shadows" min="-100" max="100" value="0" oninput="updatePreview()">
+                        <span id="shadows-val">0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label>Свечение</label>
+                        <input type="range" id="highlights" min="-100" max="100" value="0" oninput="updatePreview()">
+                        <span id="highlights-val">0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label>Температура</label>
+                        <input type="range" id="temperature" min="-100" max="100" value="0" oninput="updatePreview()">
+                        <span id="temperature-val">0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label>Зернистость</label>
+                        <input type="range" id="noise" min="0" max="100" value="0" oninput="updatePreview()">
+                        <span id="noise-val">0</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="resetTune()" style="margin-top: 10px;">Сбросить</button>
                 </div>
                 
-                <div id="text-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
-                    <input type="text" id="text-input" placeholder="Введите текст..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px;">
-                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
-                        <input type="color" id="text-color" value="#ffffff" style="width: 40px; height: 40px; border: none; cursor: pointer;">
-                        <select id="text-size" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
-                            <option value="24">Маленький</option>
-                            <option value="36" selected>Обычный</option>
-                            <option value="48">Большой</option>
-                            <option value="64">Огромный</option>
+                <div id="panel-filters" class="panel" style="display: none;">
+                    <div class="filter-grid">
+                        <div class="filter-item active" onclick="applyPreset('none')">
+                            <img src="" id="filter-orig">
+                            <span>Оригинал</span>
+                        </div>
+                        <div class="filter-item" onclick="applyPreset('clarendon')">
+                            <img src="" id="filter-clarendon">
+                            <span>Кларендон</span>
+                        </div>
+                        <div class="filter-item" onclick="applyPreset('gingham')">
+                            <img src="" id="filter-gingham">
+                            <span>Джингам</span>
+                        </div>
+                        <div class="filter-item" onclick="applyPreset('moon')">
+                            <img src="" id="filter-moon">
+                            <span>Луна</span>
+                        </div>
+                        <div class="filter-item" onclick="applyPreset('crema')">
+                            <img src="" id="filter-crema">
+                            <span>Крема</span>
+                        </div>
+                        <div class="filter-item" onclick="applyPreset('ludwig')">
+                            <img src="" id="filter-ludwig">
+                            <span>Людвиг</span>
+                        </div>
+                        <div class="filter-item" onclick="applyPreset('slumber')">
+                            <img src="" id="filter-slumber">
+                            <span>Сламбер</span>
+                        </div>
+                        <div class="filter-item" onclick="applyPreset('reyes')">
+                            <img src="" id="filter-reyes">
+                            <span>Рейес</span>
+                        </div>
+                        <div class="filter-item" onclick="applyPreset('valencia')">
+                            <img src="" id="filter-valencia">
+                            <span>Валенсия</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="panel-text" class="panel" style="display: none;">
+                    <input type="text" id="overlay-text" placeholder="Введите текст..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <select id="font-family" onchange="updateOverlay()" style="padding: 8px;">
+                            <option value="Arial">Arial</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Times New Roman">Times</option>
+                            <option value="Courier New">Courier</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Impact">Impact</option>
                         </select>
-                        <select id="text-bg" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
-                            <option value="none">Без фона</option>
-                            <option value="black" selected>Чёрный</option>
-                            <option value="white">Белый</option>
+                        <input type="color" id="text-color" value="#ffffff" onchange="updateOverlay()">
+                        <select id="text-size" onchange="updateOverlay()" style="padding: 8px;">
+                            <option value="16">Маленький</option>
+                            <option value="24">Обычный</option>
+                            <option value="32">Большой</option>
+                            <option value="48">Огромный</option>
                         </select>
                     </div>
-                    <button type="button" class="btn btn-primary" onclick="addText()">Добавить</button>
-                </div>
-                
-                <div id="draw-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
-                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
-                        <input type="color" id="draw-color" value="#ff0000" style="width: 40px; height: 40px; border: none; cursor: pointer;">
-                        <select id="draw-size" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
-                            <option value="2">Тонкая</option>
-                            <option value="5" selected>Средняя</option>
-                            <option value="10">Толстая</option>
-                        </select>
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                        <button type="button" onclick="setTextStyle('bold')" style="padding: 8px 12px; font-weight: bold;">B</button>
+                        <button type="button" onclick="setTextStyle('italic')" style="padding: 8px 12px; font-style: italic;">I</button>
+                        <button type="button" onclick="setTextStyle('uppercase')" style="padding: 8px 12px;">AA</button>
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="clearDrawings()">Очистить</button>
-                </div>
-                
-                <div id="crop-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
-                    <p style="margin-bottom: 10px;">Перетаскивайте углы для обрезки</p>
                     <div style="display: flex; gap: 10px;">
-                        <button type="button" class="btn btn-primary" onclick="applyCrop()">Применить</button>
-                        <button type="button" class="btn btn-secondary" onclick="cancelCrop()">Отмена</button>
+                        <button type="button" class="btn btn-primary" onclick="addOverlayText()">Добавить</button>
                     </div>
                 </div>
                 
-                <div style="display: flex; gap: 10px;">
+                <div id="panel-stickers" class="panel" style="display: none;">
+                    <div class="sticker-grid">
+                        <div class="sticker-item" onclick="addSticker('⭐')">⭐</div>
+                        <div class="sticker-item" onclick="addSticker('❤️')">❤️</div>
+                        <div class="sticker-item" onclick="addSticker('🔥')">🔥</div>
+                        <div class="sticker-item" onclick="addSticker('💯')">💯</div>
+                        <div class="sticker-item" onclick="addSticker('✨')">✨</div>
+                        <div class="sticker-item" onclick="addSticker('🎉')">🎉</div>
+                        <div class="sticker-item" onclick="addSticker('💪')">💪</div>
+                        <div class="sticker-item" onclick="addSticker('🙌')">🙌</div>
+                        <div class="sticker-item" onclick="addSticker('👀')">👀</div>
+                        <div class="sticker-item" onclick="addSticker('😂')">😂</div>
+                        <div class="sticker-item" onclick="addSticker('😍')">😍</div>
+                        <div class="sticker-item" onclick="addSticker('😎')">😎</div>
+                        <div class="sticker-item" onclick="addSticker('🙈')">🙈</div>
+                        <div class="sticker-item" onclick="addSticker('🎄')">🎄</div>
+                        <div class="sticker-item" onclick="addSticker('🌹')">🌹</div>
+                        <div class="sticker-item" onclick="addSticker('🦋')">🦋</div>
+                    </div>
+                </div>
+                
+                <div id="panel-crop" class="panel" style="display: none;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <button type="button" class="btn btn-secondary" onclick="rotateImage(-90)">↺ Повернуть</button>
+                        <button type="button" class="btn btn-secondary" onclick="flipImage('h')">↔ Отзеркалить</button>
+                        <button type="button" class="btn btn-secondary" onclick="flipImage('v')">↕ Перевернуть</button>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--text-light);">Выберите область для обрезки (перетаскивайте углы)</p>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="button" class="btn btn-primary" onclick="applyServerCrop()">Применить</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetCrop()">Сброс</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button type="button" class="btn btn-primary" onclick="savePhoto()" style="flex: 1;">Сохранить</button>
                     <a href="{{ url_for('create') }}" class="btn btn-secondary">Отмена</a>
                 </div>
@@ -85,204 +198,208 @@
     </div>
     
     <script>
-        let originalImage = null;
+        let originalData = null;
         let currentFilter = 'none';
-        let rotation = 0;
-        let texts = [];
-        let drawings = [];
-        let canvas, ctx;
-        let isDrawing = false;
-        let drawToolActive = false;
+        let overlayText = '';
+        let stickerEmojis = [];
+        let textStyle = { bold: false, italic: false, uppercase: false };
         
-        function loadPhoto(file) {
+        function handleFileSelect(file) {
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    originalImage = img;
-                    initCanvas();
-                    document.getElementById('editor-area').style.display = 'block';
-                };
-                img.src = e.target.result;
+                originalData = e.target.result;
+                document.getElementById('preview-img').src = originalData;
+                document.getElementById('editor-area').style.display = 'block';
+                
+                setTimeout(() => generateFilterPreviews(), 100);
             };
             reader.readAsDataURL(file);
         }
         
-        function initCanvas() {
-            canvas = document.getElementById('photo-canvas');
-            ctx = canvas.getContext('2d');
-            
-            let maxWidth = 400;
-            let scale = maxWidth / originalImage.width;
-            if (scale > 1) scale = 1;
-            
-            canvas.width = originalImage.width * scale;
-            canvas.height = originalImage.height * scale;
-            
-            canvas.style.backgroundColor = '#000';
-            canvas.style.display = 'block';
-            
-            drawImage();
-        }
-        
-        function drawImage() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate(rotation * Math.PI / 180);
-            ctx.translate(-canvas.width / 2, -canvas.height / 2);
-            
-            ctx.filter = currentFilter;
-            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
-            ctx.filter = 'none';
-            
-            ctx.restore();
-            
-            texts.forEach(t => {
-                ctx.font = t.size + 'px sans-serif';
-                ctx.textAlign = 'center';
-                
-                if (t.bg !== 'none') {
-                    const metrics = ctx.measureText(t.text);
-                    const pad = 10;
-                    ctx.fillStyle = t.bg;
-                    ctx.fillRect(t.x - metrics.width/2 - pad, t.y - t.size - pad, metrics.width + pad*2, t.size + pad*2);
-                }
-                
-                ctx.fillStyle = t.color;
-                ctx.fillText(t.text, t.x, t.y);
+        function generateFilterPreviews() {
+            const img = document.getElementById('preview-img');
+            ['clarendon', 'gingham', 'moon', 'crema', 'ludwig', 'slumber', 'reyes', 'valencia'].forEach(f => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 80;
+                canvas.height = 80 * (img.naturalHeight / img.naturalWidth);
+                const ctx = canvas.getContext('2d');
+                ctx.filter = getFilterString(f);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                document.getElementById('filter-' + f).src = canvas.toDataURL();
             });
+            const origCanvas = document.createElement('canvas');
+            origCanvas.width = 80;
+            origCanvas.height = 80 * (img.naturalHeight / img.naturalWidth);
+            const origCtx = origCanvas.getContext('2d');
+            origCtx.drawImage(img, 0, 0, origCanvas.width, origCanvas.height);
+            document.getElementById('filter-orig').src = origCanvas.toDataURL();
         }
         
-        function setFilter(filter) {
-            currentFilter = filter;
-            drawImage();
+        function getFilterString(preset) {
+            const presets = {
+                'none': '',
+                'clarendon': 'contrast(1.2) saturate(1.35)',
+                'gingham': 'brightness(1.05) saturate(0.9)',
+                'moon': 'grayscale(1) contrast(1.1) brightness(1.1)',
+                'crema': 'sepia(0.15) contrast(1.1) brightness(0.9)',
+                'ludwig': 'sepia(0.1) contrast(0.9) brightness(0.95)',
+                'slumber': 'saturate(0.8) brightness(1.05)',
+                'reyes': 'sepia(0.22) contrast(0.85) brightness(1.1) saturate(0.7)',
+                'valencia': 'sepia(0.1) contrast(1.1) brightness(1.05)'
+            };
+            return presets[preset] || '';
         }
         
-        function rotatePhoto(deg) {
-            rotation += deg;
-            if (rotation >= 360) rotation -= 360;
-            if (rotation < 0) rotation += 360;
-            drawImage();
+        function showTab(tabName) {
+            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.style.color = 'var(--text-light)';
+                b.style.borderBottom = 'none';
+            });
+            document.getElementById('panel-' + tabName).style.display = 'block';
+            document.querySelector('[data-tab="' + tabName + '"]').style.color = 'var(--primary)';
+            document.querySelector('[data-tab="' + tabName + '"]').style.borderBottom = '2px solid var(--primary)';
         }
         
-        function toggleTextTool() {
-            const tool = document.getElementById('text-tool');
-            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
-        }
-        
-        function addText() {
-            const input = document.getElementById('text-input');
-            const color = document.getElementById('text-color').value;
-            const size = parseInt(document.getElementById('text-size').value);
-            const bg = document.getElementById('text-bg').value;
+        function updatePreview() {
+            const brightness = document.getElementById('brightness').value;
+            const contrast = document.getElementById('contrast').value;
+            const saturate = document.getElementById('saturate').value;
+            const shadows = document.getElementById('shadows').value;
+            const highlights = document.getElementById('highlights').value;
+            const temperature = document.getElementById('temperature').value;
+            const noise = document.getElementById('noise').value;
             
-            if (!input.value.trim()) return;
-            
-            texts.push({
-                text: input.value,
-                color: color,
-                size: size,
-                bg: bg,
-                x: canvas.width / 2,
-                y: canvas.height / 2
+            ['brightness', 'contrast', 'saturate', 'shadows', 'highlights', 'temperature', 'noise'].forEach(id => {
+                document.getElementById(id + '-val').textContent = document.getElementById(id).value;
             });
             
-            drawImage();
-            input.value = '';
+            const filter = `brightness(${100 + parseInt(brightness)}%) contrast(${100 + parseInt(contrast)}%) saturate(${100 + parseInt(saturate)}%)`;
+            document.getElementById('preview-img').style.filter = filter;
         }
         
-        function toggleDrawTool() {
-            const tool = document.getElementById('draw-tool');
-            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
-            drawToolActive = tool.style.display !== 'none';
-            
-            canvas.style.cursor = drawToolActive ? 'crosshair' : 'default';
-            
-            if (drawToolActive) {
-                canvas.addEventListener('mousedown', startDraw);
-                canvas.addEventListener('mousemove', draw);
-                canvas.addEventListener('mouseup', stopDraw);
-                canvas.addEventListener('mouseout', stopDraw);
-            } else {
-                canvas.removeEventListener('mousedown', startDraw);
-                canvas.removeEventListener('mousemove', draw);
-                canvas.removeEventListener('mouseup', stopDraw);
-                canvas.removeEventListener('mouseout', stopDraw);
+        function resetTune() {
+            ['brightness', 'contrast', 'saturate', 'shadows', 'highlights', 'temperature', 'noise'].forEach(id => {
+                document.getElementById(id).value = 0;
+            });
+            updatePreview();
+        }
+        
+        function applyPreset(name) {
+            currentFilter = name;
+            document.querySelectorAll('.filter-item').forEach(f => f.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById('preview-img').style.filter = getFilterString(name);
+        }
+        
+        function addOverlayText() {
+            const text = document.getElementById('overlay-text').value;
+            if (!text) return;
+            overlayText = text;
+            updateOverlay();
+        }
+        
+        function setTextStyle(style) {
+            if (style === 'bold') textStyle.bold = !textStyle.bold;
+            if (style === 'italic') textStyle.italic = !textStyle.italic;
+            if (style === 'uppercase') textStyle.uppercase = !textStyle.uppercase;
+            updateOverlay();
+        }
+        
+        function updateOverlay() {
+            const container = document.querySelector('#editor-area > div');
+            let overlay = document.getElementById('text-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'text-overlay';
+                overlay.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); pointer-events: none;';
+                container.style.position = 'relative';
+                container.appendChild(overlay);
             }
-        }
-        
-        function startDraw(e) {
-            if (!drawToolActive) return;
-            isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            ctx.beginPath();
-            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-            ctx.strokeStyle = document.getElementById('draw-color').value;
-            ctx.lineWidth = parseInt(document.getElementById('draw-size').value);
-            ctx.lineCap = 'round';
-        }
-        
-        function draw(e) {
-            if (!isDrawing || !drawToolActive) return;
-            const rect = canvas.getBoundingClientRect();
-            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-            ctx.stroke();
-        }
-        
-        function stopDraw() {
-            isDrawing = false;
-        }
-        
-        function clearDrawings() {
-            drawImage();
-        }
-        
-        function toggleCropTool() {
-            const tool = document.getElementById('crop-tool');
-            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
-        }
-        
-        function applyCrop() {
-            // Упрощённая обрезка - центральная часть
-            const cropSize = Math.min(canvas.width, canvas.height) * 0.8;
-            const sx = (canvas.width - cropSize) / 2;
-            const sy = (canvas.height - cropSize) / 2;
             
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = cropSize;
-            tempCanvas.height = cropSize;
-            const tempCtx = tempCanvas.getContext('2d');
+            let text = document.getElementById('overlay-text').value || overlayText;
+            if (textStyle.uppercase) text = text.toUpperCase();
             
-            tempCtx.drawImage(canvas, sx, sy, cropSize, cropSize, 0, 0, cropSize, cropSize);
-            
-            canvas.width = cropSize;
-            canvas.height = cropSize;
-            ctx.drawImage(tempCanvas, 0, 0);
-            
-            document.getElementById('crop-tool').style.display = 'none';
+            overlay.textContent = text;
+            overlay.style.fontFamily = document.getElementById('font-family').value;
+            overlay.style.color = document.getElementById('text-color').value;
+            overlay.style.fontSize = document.getElementById('text-size').value + 'px';
+            overlay.style.fontWeight = textStyle.bold ? 'bold' : 'normal';
+            overlay.style.fontStyle = textStyle.italic ? 'italic' : 'normal';
         }
         
-        function cancelCrop() {
-            document.getElementById('crop-tool').style.display = 'none';
+        function addSticker(emoji) {
+            stickerEmojis.push(emoji);
+            renderStickers();
+        }
+        
+        function renderStickers() {
+            const container = document.querySelector('#editor-area > div');
+            let stickersDiv = document.getElementById('stickers-overlay');
+            if (!stickersDiv) {
+                stickersDiv = document.createElement('div');
+                stickersDiv.id = 'stickers-overlay';
+                stickersDiv.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center;';
+                container.appendChild(stickersDiv);
+            }
+            stickersDiv.innerHTML = stickerEmojis.map((s, i) => `<span style="font-size: ${24 + (i % 3) * 8}px;">${s}</span>`).join('');
+        }
+        
+        function rotateImage(deg) {
+            const filters = getFilterString(currentFilter);
+            applyServerTransform('rotate', deg);
+        }
+        
+        function flipImage(dir) {
+            applyServerTransform('flip', dir);
+        }
+        
+        function applyServerTransform(type, value) {
+            fetch('{{ url_for("photo_transform") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `preview_data=${encodeURIComponent(originalData)}&transform_type=${type}&transform_value=${value}`
+            }).then(r => r.blob()).then(blob => {
+                const url = URL.createObjectURL(blob);
+                document.getElementById('preview-img').src = url;
+                originalData = url;
+            });
+        }
+        
+        function applyServerCrop() {
+            fetch('{{ url_for("photo_transform") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `preview_data=${encodeURIComponent(originalData)}&transform_type=crop&transform_value=`
+            }).then(r => r.blob()).then(blob => {
+                const url = URL.createObjectURL(blob);
+                document.getElementById('preview-img').src = url;
+                originalData = url;
+            });
+        }
+        
+        function resetCrop() {
+            document.getElementById('preview-img').src = originalData;
         }
         
         function savePhoto() {
-            drawImage();
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const canvas = document.createElement('canvas');
+            const img = document.getElementById('preview-img');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.filter = getFilterString(currentFilter);
+            ctx.drawImage(img, 0, 0);
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
             
             fetch('{{ url_for("create") }}', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'media_data=' + encodeURIComponent(dataUrl)
-            }).then(() => {
-                window.location.href = '{{ url_for("index") }}';
-            });
+            }).then(() => window.location.href = '{{ url_for("index") }}');
         }
     </script>
 {% endblock %}
