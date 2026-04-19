@@ -186,9 +186,23 @@
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="button" class="btn btn-primary" onclick="savePhoto()" style="flex: 1;">Сохранить</button>
+                    <button type="button" class="btn btn-primary" onclick="showSaveDialog()" style="flex: 1;">Опубликовать</button>
                     <a href="{{ url_for('create') }}" class="btn btn-secondary">Отмена</a>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="save-dialog" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div class="card" style="max-width: 400px; width: 90%; margin: 20px;">
+            <h3 style="margin-bottom: 15px;">Предпросмотр</h3>
+            <div style="margin-bottom: 15px; border-radius: 8px; overflow: hidden;">
+                <img id="final-preview" style="width: 100%; max-height: 300px; object-fit: contain;">
+            </div>
+            <textarea id="post-caption" placeholder="Подпись..." style="width: 100%; min-height: 80px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 15px; resize: vertical;"></textarea>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-primary" onclick="publishPhoto()" style="flex: 1;">Опубликовать</button>
+                <button type="button" class="btn btn-secondary" onclick="closeSaveDialog()">Назад</button>
             </div>
         </div>
     </div>
@@ -476,7 +490,7 @@
             document.getElementById('preview-img').src = originalData;
         }
         
-        function savePhoto() {
+function showSaveDialog() {
             const canvas = document.createElement('canvas');
             const img = document.getElementById('preview-img');
             canvas.width = img.naturalWidth;
@@ -486,13 +500,90 @@
             ctx.filter = getFilterString(currentFilter);
             ctx.drawImage(img, 0, 0);
             
+            const overlays = document.getElementById('overlays-container');
+            if (overlays) {
+                const overlayEls = overlays.querySelectorAll('.draggable-text, .draggable-sticker');
+                overlayEls.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const containerRect = img.getBoundingClientRect();
+                    const x = (rect.left - containerRect.left) * (canvas.width / containerRect.width);
+                    const y = (rect.top - containerRect.top) * (canvas.height / containerRect.height);
+                    const fontSize = parseInt(el.style.fontSize || '36') * (canvas.width / containerRect.width);
+                    
+                    ctx.font = `${el.style.fontWeight || ''} ${el.style.fontStyle || ''} ${fontSize}px ${el.style.fontFamily || 'Arial'}`;
+                    ctx.fillStyle = el.style.color || '#ffffff';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    if (el.className === 'draggable-text') {
+                        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                        ctx.shadowBlur = 4;
+                        ctx.fillText(el.textContent, x, y);
+                    } else {
+                        ctx.font = fontSize + 'px sans-serif';
+                        ctx.fillText(el.textContent, x, y);
+                    }
+                });
+            }
+            
             const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            document.getElementById('final-preview').src = dataUrl;
+            document.getElementById('save-dialog').style.display = 'flex';
+        }
+        
+        function closeSaveDialog() {
+            document.getElementById('save-dialog').style.display = 'none';
+        }
+        
+        function publishPhoto() {
+            const canvas = document.createElement('canvas');
+            const img = document.getElementById('preview-img');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.filter = getFilterString(currentFilter);
+            ctx.drawImage(img, 0, 0);
+            
+            const overlays = document.getElementById('overlays-container');
+            if (overlays) {
+                const overlayEls = overlays.querySelectorAll('.draggable-text, .draggable-sticker');
+                overlayEls.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const containerRect = img.getBoundingClientRect();
+                    const x = (rect.left - containerRect.left) * (canvas.width / containerRect.width);
+                    const y = (rect.top - containerRect.top) * (canvas.height / containerRect.height);
+                    const fontSize = parseInt(el.style.fontSize || '36') * (canvas.width / containerRect.width);
+                    
+                    ctx.font = `${el.style.fontWeight || ''} ${el.style.fontStyle || ''} ${fontSize}px ${el.style.fontFamily || 'Arial'}`;
+                    ctx.fillStyle = el.style.color || '#ffffff';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    if (el.className === 'draggable-text') {
+                        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                        ctx.shadowBlur = 4;
+                        ctx.fillText(el.textContent, x, y);
+                    } else {
+                        ctx.font = fontSize + 'px sans-serif';
+                        ctx.fillText(el.textContent, x, y);
+                    }
+                });
+            }
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            const caption = document.getElementById('post-caption').value;
+            
+            const formData = new FormData();
+            formData.append('media_data', dataUrl);
+            formData.append('body', caption);
             
             fetch('{{ url_for("create") }}', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'media_data=' + encodeURIComponent(dataUrl)
-            }).then(() => window.location.href = '{{ url_for("index") }}');
+                body: formData
+            }).then(() => {
+                window.location.href = '{{ url_for("index") }}';
+            });
         }
     </script>
 {% endblock %}
