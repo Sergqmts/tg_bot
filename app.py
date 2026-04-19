@@ -1512,6 +1512,74 @@ def photos():
     return render_template('photos.html', user_media=user_media)
 
 
+@app.route('/recommendations')
+@login_required
+def recommendations():
+    blocked_ids = [u.id for u in current_user.blocked]
+    following_ids = [u.id for u in current_user.followed]
+    
+    user_interests = set(current_user.interests.lower().split()) if current_user.interests else set()
+    
+    recommended_users = []
+    for user in User.query.filter(
+        ~User.id.in_(blocked_ids),
+        ~User.id.in_(following_ids),
+        User.id != current_user.id
+    ).limit(50).all():
+        score = 0
+        user_interests_set = set(user.interests.lower().split()) if user.interests else set()
+        common_interests = user_interests & user_interests_set
+        score += len(common_interests) * 10
+        
+        for follower in user.followers.all():
+            if follower.id in following_ids:
+                score += 5
+        
+        if score > 0:
+            recommended_users.append((score, user))
+    
+    recommended_users.sort(key=lambda x: x[0], reverse=True)
+    recommended_users = [u for _, u in recommended_users[:10]]
+    
+    member_communities = [cm.community_id for cm in current_user.community_memberships.filter_by(status='approved').all()]
+    
+    recommended_communities = []
+    for comm in Community.query.filter(
+        ~Community.id.in_(member_communities) if member_communities else True
+    ).limit(30).all():
+        score = 0
+        comm_interests = set(comm.description.lower().split()) if comm.description else set()
+        common = user_interests & comm_interests
+        score += len(common) * 10
+        score += comm.members.count()
+        
+        if score > 0:
+            recommended_communities.append((score, comm))
+    
+    recommended_communities.sort(key=lambda x: x[0], reverse=True)
+    recommended_communities = [c for _, c in recommended_communities[:5]]
+    
+    interest_posts = []
+    if user_interests:
+        for post in Post.query.filter(
+            Post.user_id.notin_(blocked_ids + [current_user.id]),
+            Post.community_id == None
+        ).limit(100).all():
+            if post.body:
+                post_words = set(post.body.lower().split())
+                common = user_interests & post_words
+                if common:
+                    interest_posts.append((len(common), post))
+    
+    interest_posts.sort(key=lambda x: x[0], reverse=True)
+    interest_posts = [p for _, p in interest_posts[:10]]
+    
+    return render_template('recommendations.html', 
+                        recommended_users=recommended_users,
+                        recommended_communities=recommended_communities,
+                        interest_posts=interest_posts)
+
+
 @app.route('/messages')
 @login_required
 def messages():
