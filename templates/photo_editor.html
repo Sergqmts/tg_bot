@@ -125,8 +125,13 @@
                 
                 <div id="panel-text" class="panel" style="display: none;">
                     <input type="text" id="overlay-text" placeholder="Введите текст..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px;">
+                    <div class="slider-container">
+                        <label>Размер</label>
+                        <input type="range" id="text-size-slider" min="12" max="72" value="24" oninput="updateTextPreview()">
+                        <span id="text-size-val">24</span>
+                    </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                        <select id="font-family" onchange="updateOverlay()" style="padding: 8px;">
+                        <select id="font-family" onchange="updateTextPreview()" style="padding: 8px;">
                             <option value="Arial">Arial</option>
                             <option value="Georgia">Georgia</option>
                             <option value="Times New Roman">Times</option>
@@ -134,21 +139,15 @@
                             <option value="Verdana">Verdana</option>
                             <option value="Impact">Impact</option>
                         </select>
-                        <input type="color" id="text-color" value="#ffffff" onchange="updateOverlay()">
-                        <select id="text-size" onchange="updateOverlay()" style="padding: 8px;">
-                            <option value="16">Маленький</option>
-                            <option value="24">Обычный</option>
-                            <option value="32">Большой</option>
-                            <option value="48">Огромный</option>
-                        </select>
+                        <input type="color" id="text-color" value="#ffffff" oninput="updateTextPreview()">
                     </div>
                     <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-                        <button type="button" onclick="setTextStyle('bold')" style="padding: 8px 12px; font-weight: bold;">B</button>
-                        <button type="button" onclick="setTextStyle('italic')" style="padding: 8px 12px; font-style: italic;">I</button>
-                        <button type="button" onclick="setTextStyle('uppercase')" style="padding: 8px 12px;">AA</button>
+                        <button type="button" onclick="toggleTextStyle('bold')" id="btn-bold" style="padding: 8px 12px; font-weight: bold;">B</button>
+                        <button type="button" onclick="toggleTextStyle('italic')" id="btn-italic" style="padding: 8px 12px; font-style: italic;">I</button>
+                        <button type="button" onclick="toggleTextStyle('uppercase')" id="btn-upper" style="padding: 8px 12px;">AA</button>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button type="button" class="btn btn-primary" onclick="addOverlayText()">Добавить</button>
+                        <button type="button" class="btn btn-primary" onclick="addTextOverlay()">Добавить</button>
                     </div>
                 </div>
                 
@@ -197,9 +196,12 @@
     <script>
         let originalData = null;
         let currentFilter = 'none';
-        let overlayText = '';
-        let stickerEmojis = [];
+        let textOverlays = [];
+        let stickerOverlays = [];
         let textStyle = { bold: false, italic: false, uppercase: false };
+        let draggedElement = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
         
         function handleFileSelect(file) {
             console.log('File selected:', file);
@@ -299,58 +301,103 @@
             document.getElementById('preview-img').style.filter = getFilterString(name);
         }
         
-        function addOverlayText() {
-            const text = document.getElementById('overlay-text').value;
-            if (!text) return;
-            overlayText = text;
-            updateOverlay();
+        function updateTextPreview() {
+            const size = document.getElementById('text-size-slider').value;
+            document.getElementById('text-size-val').textContent = size;
         }
         
-        function setTextStyle(style) {
+        function toggleTextStyle(style) {
             if (style === 'bold') textStyle.bold = !textStyle.bold;
             if (style === 'italic') textStyle.italic = !textStyle.italic;
             if (style === 'uppercase') textStyle.uppercase = !textStyle.uppercase;
-            updateOverlay();
+            document.getElementById('btn-bold').style.background = textStyle.bold ? 'var(--primary)' : '';
+            document.getElementById('btn-bold').style.color = textStyle.bold ? 'white' : '';
+            document.getElementById('btn-italic').style.background = textStyle.italic ? 'var(--primary)' : '';
+            document.getElementById('btn-italic').style.color = textStyle.italic ? 'white' : '';
+            document.getElementById('btn-upper').style.background = textStyle.uppercase ? 'var(--primary)' : '';
+            document.getElementById('btn-upper').style.color = textStyle.uppercase ? 'white' : '';
         }
         
-        function updateOverlay() {
-            const container = document.querySelector('#editor-area > div');
-            let overlay = document.getElementById('text-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'text-overlay';
-                overlay.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 32px; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); pointer-events: none;';
-                container.style.position = 'relative';
-                container.appendChild(overlay);
-            }
+        function addTextOverlay() {
+            const text = document.getElementById('overlay-text').value;
+            if (!text) return;
             
-            let text = document.getElementById('overlay-text').value || overlayText;
-            if (textStyle.uppercase) text = text.toUpperCase();
+            let finalText = text;
+            if (textStyle.uppercase) finalText = finalText.toUpperCase();
             
-            overlay.textContent = text;
-            overlay.style.fontFamily = document.getElementById('font-family').value;
-            overlay.style.color = document.getElementById('text-color').value;
-            overlay.style.fontSize = document.getElementById('text-size').value + 'px';
-            overlay.style.fontWeight = textStyle.bold ? 'bold' : 'normal';
-            overlay.style.fontStyle = textStyle.italic ? 'italic' : 'normal';
+            const size = document.getElementById('text-size-slider').value;
+            
+            const el = document.createElement('div');
+            el.className = 'draggable-text';
+            el.textContent = finalText;
+            el.style.cssText = `position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: ${document.getElementById('font-family').value}; color: ${document.getElementById('text-color').value}; font-size: ${size}px; font-weight: ${textStyle.bold ? 'bold' : 'normal'}; font-style: ${textStyle.italic ? 'italic' : 'normal'}; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); cursor: move; padding: 5px;`;
+            el.dataset.x = 50;
+            el.dataset.y = 50;
+            
+            el.onmousedown = function(e) {
+                draggedElement = el;
+                const rect = el.getBoundingClientRect();
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+                e.preventDefault();
+            };
+            
+            const overlayContainer = getOverlayContainer();
+            overlayContainer.appendChild(el);
+            textOverlays.push(el);
+            
+            document.getElementById('overlay-text').value = '';
         }
         
         function addSticker(emoji) {
-            stickerEmojis.push(emoji);
-            renderStickers();
+            const el = document.createElement('div');
+            el.className = 'draggable-sticker';
+            el.textContent = emoji;
+            el.dataset.x = 30 + Math.random() * 40;
+            el.style.cssText = `position: absolute; left: ${el.dataset.x}%; top: ${el.dataset.y || 50}%; transform: translate(-50%, -50%); font-size: 36px; cursor: move;`;
+            
+            el.onmousedown = function(e) {
+                draggedElement = el;
+                const rect = el.getBoundingClientRect();
+                dragOffsetX = e.clientX - rect.left;
+                dragOffsetY = e.clientY - rect.top;
+                e.preventDefault();
+            };
+            
+            const overlayContainer = getOverlayContainer();
+            overlayContainer.appendChild(el);
+            stickerOverlays.push(el);
         }
         
-        function renderStickers() {
-            const container = document.querySelector('#editor-area > div');
-            let stickersDiv = document.getElementById('stickers-overlay');
-            if (!stickersDiv) {
-                stickersDiv = document.createElement('div');
-                stickersDiv.id = 'stickers-overlay';
-                stickersDiv.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center;';
-                container.appendChild(stickersDiv);
+        function getOverlayContainer() {
+            let container = document.getElementById('overlays-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'overlays-container';
+                const previewContainer = document.getElementById('preview-container');
+                container.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;';
+                previewContainer.style.position = 'relative';
+                previewContainer.appendChild(container);
             }
-            stickersDiv.innerHTML = stickerEmojis.map((s, i) => `<span style="font-size: ${24 + (i % 3) * 8}px;">${s}</span>`).join('');
+            return container;
         }
+        
+        document.addEventListener('mousemove', function(e) {
+            if (!draggedElement) return;
+            
+            const container = document.getElementById('overlays-container');
+            const rect = container.getBoundingClientRect();
+            let x = ((e.clientX - rect.left) / rect.width * 100);
+            let y = ((e.clientY - rect.top) / rect.height * 100);
+            
+            draggedElement.style.left = x + '%';
+            draggedElement.style.top = y + '%';
+            draggedElement.style.transform = 'translate(-50%, -50%)';
+        });
+        
+        document.addEventListener('mouseup', function() {
+            draggedElement = null;
+        });
         
         function rotateImage(deg) {
             const filters = getFilterString(currentFilter);
