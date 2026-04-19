@@ -18,7 +18,7 @@
                 {% if current_user.is_authenticated %}
                     <!-- Поиск -->
                     <form method="GET" action="{{ url_for('explore') }}" style="display: flex; align-items: center;">
-                        <input type="text" name="q" placeholder="Поиск..." style="width: 80px; padding: 5px; border: 1px solid var(--border); border-radius: 15px; font-size: 0.8rem;">
+                        <input type="text" name="q" placeholder="@username" style="width: 80px; padding: 5px; border: 1px solid var(--border); border-radius: 15px; font-size: 0.8rem;">
                     </form>
                     
                     <!-- Иконка сообщений -->

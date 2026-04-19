@@ -1490,13 +1490,11 @@ def explore():
         blocked_ids = [u.id for u in current_user.blocked]
     
     if search_query:
+        search_query = search_query.lstrip('@')
         users = User.query.filter(
             ~User.id.in_(blocked_ids) if blocked_ids else True,
             User.id != current_user.id if current_user.is_authenticated else True,
-            db.or_(
-                User.username.ilike(f'%{search_query}%'),
-                User.bio.ilike(f'%{search_query}%') if search_query else True
-            )
+            User.username.ilike(f'%{search_query}%')
         ).order_by(User.created_at.desc()).limit(50).all()
     else:
         users = User.query.filter(

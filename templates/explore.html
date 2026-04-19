@@ -5,7 +5,7 @@
         <h2 style="margin-bottom: 20px;">{% if search_query %}Результаты поиска{% else %}Найти людей{% endif %}</h2>
         
         <form method="GET" action="{{ url_for('explore') }}" style="margin-bottom: 20px; display: flex; gap: 10px;">
-            <input type="text" name="q" placeholder="Поиск по @username или описанию..." value="{{ search_query }}" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 20px;">
+            <input type="text" name="q" placeholder="Поиск по @username..." value="{{ search_query }}" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 20px;">
             <button type="submit" class="btn btn-primary">Найти</button>
         </form>
         
