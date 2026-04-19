@@ -2140,6 +2140,8 @@ def event_rsvp(slug, event_id):
     event = CommunityEvent.query.get_or_404(event_id)
     existing = EventAttendee.query.filter_by(event_id=event.id, user_id=current_user.id).first()
     
+    is_new_attendance = False
+    
     if existing:
         if existing.status == 'going':
             existing.status = 'maybe'
@@ -2150,8 +2152,28 @@ def event_rsvp(slug, event_id):
     else:
         attendee = EventAttendee(event_id=event.id, user_id=current_user.id, status='going')
         db.session.add(attendee)
+        is_new_attendance = True
     
     db.session.commit()
+    
+    if is_new_attendance:
+        community = event.community
+        event_date = event.event_date.strftime('%d.%m.%Y в %H:%M')
+        
+        message_body = f"🎉 Спасибо за регистрацию на мероприятие \"{event.title}\"!\n\n📅 Дата: {event_date}"
+        if event.location:
+            message_body += f"\n📍 Место: {event.location}"
+        message_body += f"\n👥 Организатор: {community.name}"
+        
+        msg = Message(
+            sender_id=event.creator_id,
+            recipient_id=current_user.id,
+            body=message_body
+        )
+        db.session.add(msg)
+        db.session.commit()
+        flash('Вы зарегистрированы! Информация отправлена вам в сообщения.')
+    
     return redirect(url_for('community_events', slug=slug))
 
 
