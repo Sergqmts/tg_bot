@@ -7,8 +7,11 @@
             <form method="POST" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
                 <div class="form-group">
-                    {{ form.username.label }}
-                    {{ form.username(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);") }}
+                    <label>Username (без @)</label>
+                    <div style="display: flex; align-items: center;">
+                        <span style="padding: 10px; border: 1px solid var(--border); border-right: none; border-radius: var(--radius) 0 0 var(--radius); background: var(--bg);">@</span>
+                        {{ form.username(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 0 var(--radius) var(--radius) 0; flex: 1;") }}
+                    </div>
                 </div>
                 <div class="form-group">
                     {{ form.bio.label }}

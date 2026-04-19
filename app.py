@@ -1425,7 +1425,14 @@ def reject_follower(username):
 def edit_profile():
     form = EditProfileForm()
     if form.validate_on_submit():
-        current_user.username = form.username.data
+        new_username = form.username.data.strip().lstrip('@')
+        
+        existing_user = User.query.filter(User.username == new_username, User.id != current_user.id).first()
+        if existing_user:
+            flash('Этот username уже занят другим пользователем')
+            return redirect(url_for('edit_profile'))
+        
+        current_user.username = new_username
         current_user.bio = form.bio.data
         current_user.location = form.location.data
         current_user.website = form.website.data
