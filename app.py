@@ -276,6 +276,20 @@ def run_migrations():
             if 'reposted_at' not in story_cols:
                 db.session.execute(text('ALTER TABLE story ADD COLUMN reposted_at TIMESTAMP'))
                 db.session.commit()
+            
+            try:
+                db.session.execute(text("ALTER TABLE story_reaction DROP CONSTRAINT IF EXISTS story_reaction_story_id_fkey"))
+                db.session.execute(text("ALTER TABLE story_reaction ADD CONSTRAINT story_reaction_story_id_fkey FOREIGN KEY (story_id) REFERENCES story(id) ON DELETE CASCADE"))
+                db.session.commit()
+            except Exception as e:
+                app.logger.info(f"Story reaction FK: {e}")
+            
+            try:
+                db.session.execute(text("ALTER TABLE story_comment DROP CONSTRAINT IF EXISTS story_comment_story_id_fkey"))
+                db.session.execute(text("ALTER TABLE story_comment ADD CONSTRAINT story_comment_story_id_fkey FOREIGN KEY (story_id) REFERENCES story(id) ON DELETE CASCADE"))
+                db.session.commit()
+            except Exception as e:
+                app.logger.info(f"Story comment FK: {e}")
         elif is_sqlite:
             result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='chat'"))
             if not result.fetchone():
@@ -547,7 +561,7 @@ class Story(db.Model):
 
 class StoryReaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    story_id = db.Column(db.Integer, db.ForeignKey('story.id'), nullable=False)
+    story_id = db.Column(db.Integer, db.ForeignKey('story.id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     emoji = db.Column(db.String(10), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -557,7 +571,7 @@ class StoryReaction(db.Model):
 
 class StoryComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    story_id = db.Column(db.Integer, db.ForeignKey('story.id'), nullable=False)
+    story_id = db.Column(db.Integer, db.ForeignKey('story.id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
