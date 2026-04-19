@@ -23,6 +23,7 @@
                         <button type="button" class="tab-btn" onclick="showTab('filters')" data-tab="filters" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Фильтры</button>
                         <button type="button" class="tab-btn" onclick="showTab('text')" data-tab="text" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Текст</button>
                         <button type="button" class="tab-btn" onclick="showTab('stickers')" data-tab="stickers" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Стикеры</button>
+                        <button type="button" class="tab-btn" onclick="showTab('elements')" data-tab="elements" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Элементы</button>
                         <button type="button" class="tab-btn" onclick="showTab('crop')" data-tab="crop" style="padding: 10px 15px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text-light);">Кадр</button>
                     </div>
                 </div>
@@ -127,7 +128,7 @@
                     <input type="text" id="overlay-text" placeholder="Введите текст..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px;">
                     <div class="slider-container">
                         <label>Размер</label>
-                        <input type="range" id="text-size-slider" min="12" max="72" value="24" oninput="updateTextPreview()">
+                        <input type="range" id="text-size-slider" min="12" max="120" value="24" oninput="updateTextPreview()">
                         <span id="text-size-val">24</span>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
@@ -148,6 +149,27 @@
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button type="button" class="btn btn-primary" onclick="addTextOverlay()">Добавить</button>
+                    </div>
+                </div>
+                
+                <div id="panel-elements" class="panel" style="display: none;">
+                    <p style="margin-bottom: 10px; font-weight: 600;">Элементы на фото</p>
+                    <div id="elements-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
+                        <p style="color: var(--text-light); font-size: 0.9rem;">Добавьте текст или стикеры</p>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-light);">Нажмите на элемент для редактирования</p>
+                </div>
+                
+                <div id="panel-edit" class="panel" style="display: none;">
+                    <p style="margin-bottom: 10px; font-weight: 600;">Редактирование элемента</p>
+                    <div class="slider-container">
+                        <label>Размер</label>
+                        <input type="range" id="edit-size-slider" min="12" max="120" value="36" oninput="updateSelectedElement()">
+                        <span id="edit-size-val">36</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-secondary" onclick="deleteSelectedElement()" style="background: #ff4757; color: white;">Удалить</button>
+                        <button type="button" class="btn btn-secondary" onclick="deselectElement()">Отмена</button>
                     </div>
                 </div>
                 
@@ -274,6 +296,11 @@
         }
         
         function showTab(tabName) {
+            if (tabName === 'elements') {
+                showTabElements();
+                return;
+            }
+            deselectElement();
             document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
             document.querySelectorAll('.tab-btn').forEach(b => {
                 b.style.color = 'var(--text-light)';
@@ -332,6 +359,77 @@
             document.getElementById('btn-upper').style.color = textStyle.uppercase ? 'white' : '';
         }
         
+        let selectedElement = null;
+        
+        function selectElement(el) {
+            if (selectedElement) {
+                selectedElement.style.outline = 'none';
+            }
+            selectedElement = el;
+            el.style.outline = '2px dashed var(--primary)';
+            
+            const currentSize = parseInt(el.style.fontSize) || 36;
+            document.getElementById('edit-size-slider').value = currentSize;
+            document.getElementById('edit-size-val').textContent = currentSize;
+            
+            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+            document.getElementById('panel-edit').style.display = 'block';
+        }
+        
+        function updateElementsList() {
+            const list = document.getElementById('elements-list');
+            const overlays = document.getElementById('overlays-container');
+            if (!overlays) {
+                list.innerHTML = '<p style="color: var(--text-light); font-size: 0.9rem;">Добавьте текст или стикеры</p>';
+                return;
+            }
+            const els = overlays.querySelectorAll('.draggable-text, .draggable-sticker');
+            if (els.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-light); font-size: 0.9rem;">Добавьте текст или стикеры</p>';
+                return;
+            }
+            list.innerHTML = Array.from(els).map((el, i) => {
+                const isText = el.className === 'draggable-text';
+                const label = isText ? el.textContent : el.textContent + ' (стикер)';
+                return `<div onclick="selectElement(this)" style="padding: 8px; background: var(--bg); border-radius: 4px; cursor: pointer;">${label}</div>`;
+            }).join('');
+        }
+        
+        function showTabElements() {
+            updateElementsList();
+            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+            document.getElementById('panel-elements').style.display = 'block';
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.style.color = 'var(--text-light)';
+                b.style.borderBottom = 'none';
+            });
+            document.querySelector('[data-tab="elements"]').style.color = 'var(--primary)';
+            document.querySelector('[data-tab="elements"]').style.borderBottom = '2px solid var(--primary)';
+        }
+        
+        function deselectElement() {
+            if (selectedElement) {
+                selectedElement.style.outline = 'none';
+                selectedElement = null;
+            }
+            showTab('tune');
+        }
+        
+        function updateSelectedElement() {
+            if (!selectedElement) return;
+            const size = document.getElementById('edit-size-slider').value;
+            document.getElementById('edit-size-val').textContent = size;
+            selectedElement.style.fontSize = size + 'px';
+        }
+        
+        function deleteSelectedElement() {
+            if (!selectedElement) return;
+            selectedElement.remove();
+            selectedElement = null;
+            updateElementsList();
+            showTab('tune');
+        }
+        
         function addTextOverlay() {
             const text = document.getElementById('overlay-text').value;
             if (!text) return;
@@ -344,13 +442,22 @@
             const el = document.createElement('div');
             el.className = 'draggable-text';
             el.textContent = finalText;
+            el.dataset.isText = 'true';
             el.style.cssText = `position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: ${document.getElementById('font-family').value}; color: ${document.getElementById('text-color').value}; font-size: ${size}px; font-weight: ${textStyle.bold ? 'bold' : 'normal'}; font-style: ${textStyle.italic ? 'italic' : 'normal'}; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); cursor: move; padding: 5px; user-select: none;`;
             
             el.onmousedown = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                el.dataset.dragPending = 'true';
                 draggedElement = el;
                 el.style.opacity = '0.7';
+                setTimeout(() => { el.dataset.dragPending = ''; }, 200);
+            };
+            
+            el.onmouseup = function(e) {
+                if (el.dataset.dragPending === 'true') {
+                    selectElement(el);
+                }
             };
             
             el.ontouchstart = function(e) {
@@ -360,11 +467,16 @@
                 el.style.opacity = '0.7';
             };
             
+            el.ontouchend = function(e) {
+                selectElement(el);
+            };
+            
             const overlayContainer = getOverlayContainer();
             overlayContainer.appendChild(el);
             textOverlays.push(el);
             
             document.getElementById('overlay-text').value = '';
+            updateElementsList();
         }
         
         function addSticker(emoji) {
@@ -378,8 +490,16 @@
             el.onmousedown = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                el.dataset.dragPending = 'true';
                 draggedElement = el;
                 el.style.opacity = '0.7';
+                setTimeout(() => { el.dataset.dragPending = ''; }, 200);
+            };
+            
+            el.onmouseup = function(e) {
+                if (el.dataset.dragPending === 'true') {
+                    selectElement(el);
+                }
             };
             
             el.ontouchstart = function(e) {
@@ -389,9 +509,14 @@
                 el.style.opacity = '0.7';
             };
             
+            el.ontouchend = function(e) {
+                selectElement(el);
+            };
+            
             const overlayContainer = getOverlayContainer();
             overlayContainer.appendChild(el);
             stickerOverlays.push(el);
+            updateElementsList();
         }
         
         function getOverlayContainer() {
