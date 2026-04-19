@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% block title %}Редактор фото - Social{% endblock %}
+{% block content %}
+    <div style="max-width: 500px; margin: 0 auto;">
+        <div class="card">
+            <h2 style="margin-bottom: 15px;">Редактор фото</h2>
+            
+            {% if not editing %}
+            <div style="margin-bottom: 20px;">
+                <label for="photo-input" style="display: block; padding: 40px; border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; color: var(--primary);">
+                    📷 Загрузить фото
+                </label>
+                <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="loadPhoto(this.files[0])">
+            </div>
+            {% endif %}
+            
+            <div id="editor-area" style="{% if not editing %}display: none;{% endif %}">
+                <div style="position: relative; background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 15px;">
+                    <canvas id="photo-canvas" style="max-width: 100%; max-height: 400px; display: block; margin: 0 auto;"></canvas>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
+                    <button type="button" class="btn btn-secondary" onclick="setFilter('none')" style="flex-shrink: 0; padding: 8px 12px;">Оригинал</button>
+                    <button type="button" class="btn btn-secondary" onclick="setFilter('grayscale(100%)')" style="flex-shrink: 0; padding: 8px 12px;">Ч/Б</button>
+                    <button type="button" class="btn btn-secondary" onclick="setFilter('sepia(100%)')" style="flex-shrink: 0; padding: 8px 12px;">Сепия</button>
+                    <button type="button" class="btn btn-secondary" onclick="setFilter('contrast(150%)')" style="flex-shrink: 0; padding: 8px 12px;">Контраст</button>
+                    <button type="button" class="btn btn-secondary" onclick="setFilter('brightness(130%)')" style="flex-shrink: 0; padding: 8px 12px;">Яркость</button>
+                    <button type="button" class="btn btn-secondary" onclick="setFilter('saturate(200%)')" style="flex-shrink: 0; padding: 8px 12px;">Насыщен</button>
+                    <button type="button" class="btn btn-secondary" onclick="setFilter('hue-rotate(90deg)')" style="flex-shrink: 0; padding: 8px 12px;">Сдвиг</button>
+                </div>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="toggleTextTool()" style="padding: 10px;">Текст</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleDrawTool()" style="padding: 10px;">Кисть</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleCropTool()" style="padding: 10px;">Обрезать</button>
+                    <button type="button" class="btn btn-secondary" onclick="rotatePhoto(-90)" style="padding: 10px;">↺</button>
+                    <button type="button" class="btn btn-secondary" onclick="rotatePhoto(90)" style="padding: 10px;">↻</button>
+                </div>
+                
+                <div id="text-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
+                    <input type="text" id="text-input" placeholder="Введите текст..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px;">
+                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                        <input type="color" id="text-color" value="#ffffff" style="width: 40px; height: 40px; border: none; cursor: pointer;">
+                        <select id="text-size" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
+                            <option value="24">Маленький</option>
+                            <option value="36" selected>Обычный</option>
+                            <option value="48">Большой</option>
+                            <option value="64">Огромный</option>
+                        </select>
+                        <select id="text-bg" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
+                            <option value="none">Без фона</option>
+                            <option value="black" selected>Чёрный</option>
+                            <option value="white">Белый</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addText()">Добавить</button>
+                </div>
+                
+                <div id="draw-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
+                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                        <input type="color" id="draw-color" value="#ff0000" style="width: 40px; height: 40px; border: none; cursor: pointer;">
+                        <select id="draw-size" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
+                            <option value="2">Тонкая</option>
+                            <option value="5" selected>Средняя</option>
+                            <option value="10">Толстая</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="clearDrawings()">Очистить</button>
+                </div>
+                
+                <div id="crop-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
+                    <p style="margin-bottom: 10px;">Перетаскивайте углы для обрезки</p>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-primary" onclick="applyCrop()">Применить</button>
+                        <button type="button" class="btn btn-secondary" onclick="cancelCrop()">Отмена</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-primary" onclick="savePhoto()" style="flex: 1;">Сохранить</button>
+                    <a href="{{ url_for('create') }}" class="btn btn-secondary">Отмена</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let originalImage = null;
+        let currentFilter = 'none';
+        let rotation = 0;
+        let texts = [];
+        let drawings = [];
+        let canvas, ctx;
+        let isDrawing = false;
+        let drawToolActive = false;
+        
+        function loadPhoto(file) {
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    originalImage = img;
+                    initCanvas();
+                    document.getElementById('editor-area').style.display = 'block';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function initCanvas() {
+            canvas = document.getElementById('photo-canvas');
+            ctx = canvas.getContext('2d');
+            
+            let maxWidth = 400;
+            let scale = maxWidth / originalImage.width;
+            if (scale > 1) scale = 1;
+            
+            canvas.width = originalImage.width * scale;
+            canvas.height = originalImage.height * scale;
+            
+            drawImage();
+        }
+        
+        function drawImage() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(rotation * Math.PI / 180);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            
+            ctx.filter = currentFilter;
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+            ctx.filter = 'none';
+            
+            ctx.restore();
+            
+            texts.forEach(t => {
+                ctx.font = t.size + 'px sans-serif';
+                ctx.textAlign = 'center';
+                
+                if (t.bg !== 'none') {
+                    const metrics = ctx.measureText(t.text);
+                    const pad = 10;
+                    ctx.fillStyle = t.bg;
+                    ctx.fillRect(t.x - metrics.width/2 - pad, t.y - t.size - pad, metrics.width + pad*2, t.size + pad*2);
+                }
+                
+                ctx.fillStyle = t.color;
+                ctx.fillText(t.text, t.x, t.y);
+            });
+        }
+        
+        function setFilter(filter) {
+            currentFilter = filter;
+            drawImage();
+        }
+        
+        function rotatePhoto(deg) {
+            rotation += deg;
+            if (rotation >= 360) rotation -= 360;
+            if (rotation < 0) rotation += 360;
+            drawImage();
+        }
+        
+        function toggleTextTool() {
+            const tool = document.getElementById('text-tool');
+            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function addText() {
+            const input = document.getElementById('text-input');
+            const color = document.getElementById('text-color').value;
+            const size = parseInt(document.getElementById('text-size').value);
+            const bg = document.getElementById('text-bg').value;
+            
+            if (!input.value.trim()) return;
+            
+            texts.push({
+                text: input.value,
+                color: color,
+                size: size,
+                bg: bg,
+                x: canvas.width / 2,
+                y: canvas.height / 2
+            });
+            
+            drawImage();
+            input.value = '';
+        }
+        
+        function toggleDrawTool() {
+            const tool = document.getElementById('draw-tool');
+            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
+            drawToolActive = tool.style.display !== 'none';
+            
+            canvas.style.cursor = drawToolActive ? 'crosshair' : 'default';
+            
+            if (drawToolActive) {
+                canvas.addEventListener('mousedown', startDraw);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDraw);
+                canvas.addEventListener('mouseout', stopDraw);
+            } else {
+                canvas.removeEventListener('mousedown', startDraw);
+                canvas.removeEventListener('mousemove', draw);
+                canvas.removeEventListener('mouseup', stopDraw);
+                canvas.removeEventListener('mouseout', stopDraw);
+            }
+        }
+        
+        function startDraw(e) {
+            if (!drawToolActive) return;
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.strokeStyle = document.getElementById('draw-color').value;
+            ctx.lineWidth = parseInt(document.getElementById('draw-size').value);
+            ctx.lineCap = 'round';
+        }
+        
+        function draw(e) {
+            if (!isDrawing || !drawToolActive) return;
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke();
+        }
+        
+        function stopDraw() {
+            isDrawing = false;
+        }
+        
+        function clearDrawings() {
+            drawImage();
+        }
+        
+        function toggleCropTool() {
+            const tool = document.getElementById('crop-tool');
+            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function applyCrop() {
+            // Упрощённая обрезка - центральная часть
+            const cropSize = Math.min(canvas.width, canvas.height) * 0.8;
+            const sx = (canvas.width - cropSize) / 2;
+            const sy = (canvas.height - cropSize) / 2;
+            
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = cropSize;
+            tempCanvas.height = cropSize;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCtx.drawImage(canvas, sx, sy, cropSize, cropSize, 0, 0, cropSize, cropSize);
+            
+            canvas.width = cropSize;
+            canvas.height = cropSize;
+            ctx.drawImage(tempCanvas, 0, 0);
+            
+            document.getElementById('crop-tool').style.display = 'none';
+        }
+        
+        function cancelCrop() {
+            document.getElementById('crop-tool').style.display = 'none';
+        }
+        
+        function savePhoto() {
+            drawImage();
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            
+            fetch('{{ url_for("create") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'media_data=' + encodeURIComponent(dataUrl)
+            }).then(() => {
+                window.location.href = '{{ url_for("index") }}';
+            });
+        }
+    </script>
+{% endblock %}

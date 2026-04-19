@@ -920,9 +920,43 @@ def create():
     if request.method == 'POST':
         try:
             body = request.form.get('body', '').strip()
+            media_data = request.form.get('media_data')
+            
             post = Post(body=body, author=current_user)
             db.session.add(post)
             db.session.flush()
+            
+            if media_data:
+                import base64
+                import io
+                from werkzeug.datastructures import FileStorage
+                
+                header, data = media_data.split(',', 1)
+                if 'image/jpeg' in header:
+                    ext = 'jpg'
+                    media_type = 'image'
+                elif 'image/png' in header:
+                    ext = 'png'
+                    media_type = 'image'
+                else:
+                    ext = 'jpg'
+                    media_type = 'image'
+                
+                binary = base64.b64decode(data)
+                file = FileStorage(io.BytesIO(binary), filename=f'photo.{ext}', content_type=f'image/{ext}')
+                
+                if cloudinary_configured:
+                    url = upload_to_cloudinary(file, folder='posts')
+                    if url:
+                        filename = url.split('/')[-1].split('.')[0]
+                        media = Media(filename=filename, cloudinary_url=url, media_type=media_type, post=post)
+                        db.session.add(media)
+                else:
+                    filename = secure_filename(f"{datetime.now().timestamp()}_photo.{ext}")
+                    with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'wb') as f:
+                        f.write(binary)
+                    media = Media(filename=filename, media_type=media_type, post=post)
+                    db.session.add(media)
             
             files = request.files.getlist('media')
             app.logger.info(f"Files count: {len(files)}")
@@ -955,6 +989,14 @@ def create():
             flash(f'Ошибка: {e}')
         return redirect(url_for('index'))
     return render_template('create.html')
+
+
+@app.route('/photo_editor', methods=['GET', 'POST'])
+@login_required
+def photo_editor():
+    if request.method == 'POST':
+        return redirect(url_for('create'))
+    return render_template('photo_editor.html', editing=True)
 
 
 @app.route('/post/<int:post_id>/repost', methods=['POST'])

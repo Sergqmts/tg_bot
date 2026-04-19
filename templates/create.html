@@ -15,9 +15,12 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="media-input" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 16px; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--primary); font-weight: 500;">
-                        📎 Прикрепить файл
-                    </label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <a href="{{ url_for('photo_editor') }}" class="btn btn-secondary" style="text-decoration: none;">🎨 Редактор фото</a>
+                        <label for="media-input" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 16px; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--primary); font-weight: 500;">
+                            📎 Прикрепить файл
+                        </label>
+                    </div>
                     <input type="file" id="media-input" name="media" accept="image/*,video/*" multiple style="display: none;" onchange="handleFiles(this.files)">
                     <small style="color: var(--text-light); display: block; margin-top: 8px; font-size: 0.85rem;">PNG, JPG, GIF, MP4, WEBM, MOV (макс. 50MB)</small>
                 </div>
