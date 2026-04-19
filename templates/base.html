@@ -16,8 +16,10 @@
             <!-- Правая часть - иконки -->
             <div class="header-right">
                 {% if current_user.is_authenticated %}
-                    <!-- Иконка поиска -->
-                    <a href="{{ url_for('explore') }}" title="Поиск">🔍</a>
+                    <!-- Поиск -->
+                    <form method="GET" action="{{ url_for('explore') }}" style="display: flex; align-items: center;">
+                        <input type="text" name="q" placeholder="Поиск..." style="width: 80px; padding: 5px; border: 1px solid var(--border); border-radius: 15px; font-size: 0.8rem;">
+                    </form>
                     
                     <!-- Иконка сообщений -->
                     <a href="{{ url_for('messages') }}" title="Сообщения">

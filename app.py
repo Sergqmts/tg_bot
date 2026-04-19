@@ -1475,17 +1475,29 @@ def edit_profile():
 
 
 @app.route('/explore')
+@app.route('/search')
 def explore():
+    search_query = request.args.get('q', '')
     blocked_ids = []
     if current_user.is_authenticated:
         blocked_ids = [u.id for u in current_user.blocked]
     
-    users = User.query.filter(
-        ~User.id.in_(blocked_ids) if blocked_ids else True,
-        User.id != current_user.id if current_user.is_authenticated else True
-    ).order_by(User.created_at.desc()).limit(20).all()
+    if search_query:
+        users = User.query.filter(
+            ~User.id.in_(blocked_ids) if blocked_ids else True,
+            User.id != current_user.id if current_user.is_authenticated else True,
+            db.or_(
+                User.username.ilike(f'%{search_query}%'),
+                User.bio.ilike(f'%{search_query}%') if search_query else True
+            )
+        ).order_by(User.created_at.desc()).limit(50).all()
+    else:
+        users = User.query.filter(
+            ~User.id.in_(blocked_ids) if blocked_ids else True,
+            User.id != current_user.id if current_user.is_authenticated else True
+        ).order_by(User.created_at.desc()).limit(20).all()
     
-    return render_template('explore.html', users=users)
+    return render_template('explore.html', users=users, search_query=search_query)
 
 
 @app.route('/photos')

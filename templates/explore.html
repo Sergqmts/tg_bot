@@ -1,8 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Найти людей - Social{% endblock %}
+{% block title %}{% if search_query %}Поиск: {{ search_query }}{% else %}Найти людей{% endif %} - Social{% endblock %}
 {% block content %}
     <div style="max-width: 500px; margin: 0 auto;">
-        <h2 style="margin-bottom: 20px;">Найти людей</h2>
+        <h2 style="margin-bottom: 20px;">{% if search_query %}Результаты поиска{% else %}Найти людей{% endif %}</h2>
+        
+        <form method="GET" action="{{ url_for('explore') }}" style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <input type="text" name="q" placeholder="Поиск по @username или описанию..." value="{{ search_query }}" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 20px;">
+            <button type="submit" class="btn btn-primary">Найти</button>
+        </form>
+        
+        {% if search_query and users|length == 0 %}
+            <p style="text-align: center; color: var(--text-light); padding: 20px;">Никого не найдено</p>
+        {% endif %}
         
         {% for user in users %}
             <div class="card user-card">
