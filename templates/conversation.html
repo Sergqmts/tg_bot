@@ -130,11 +130,11 @@
                         </a>
                         {% endif %}
                     {% elif msg.body and msg.body != '[удалено]' %}
-                        {% if msg.body == '🎤' %}
+{% if msg.body == '🎤' %}
+                        {% set voice_media = msg.medias.first() %}
                         <div class="ig-voice-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% endif %}">
-                            <button class="ig-play-btn" onclick="playVoice(this, '{{ msg.medias.first().media_url }}')">▶</button>
+                            <button class="ig-play-btn" onclick="playVoice(this, '{{ voice_media.media_url if voice_media else '' }}')">▶</button>
                             <div class="ig-waveform">
-                                <div class="ig-wave-bar"></div>
                                 <div class="ig-wave-bar"></div>
                                 <div class="ig-wave-bar"></div>
                                 <div class="ig-wave-bar"></div>
@@ -150,9 +150,10 @@
                         <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
                     {% endif %}
                     
-                    {% if msg.medias.all()|length > 0 %}
+                    {% set media_list = msg.medias.all() %}
+                    {% if media_list|length > 0 %}
                     <div class="ig-message-media">
-                        {% for m in msg.medias.all() %}
+                        {% for m in media_list %}
                             {% if m.media_type == 'audio' %}
                             <div class="ig-voice-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% endif %}">
                                 <button class="ig-play-btn" onclick="playVoice(this, '{{ m.media_url }}')">▶</button>
@@ -184,9 +185,10 @@
                         {% endif %}
                     </div>
                     
-                    {% if msg.reactions.all()|length > 0 %}
+                    {% set reactions_list = msg.reactions.all() %}
+                    {% if reactions_list|length > 0 %}
                     <div class="ig-message-reaction-display">
-                        {% for r in msg.reactions.all() %}{{ r.emoji }}{% endfor %}
+                        {% for r in reactions_list %}{{ r.emoji }}{% endfor %}
                     </div>
                     {% endif %}
                 </div>
