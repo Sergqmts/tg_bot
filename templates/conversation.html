@@ -108,9 +108,8 @@
                     <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
                 {% endif %}
                 
-                {% if msg.medias|length > 0 %}
                 <div class="ig-message-media">
-                    {% for m in msg.medias %}
+                    {% for m in msg.medias.all() %}
                         {% if m.media_type == 'video' %}
                             <video src="{{ m.media_url }}" muted></video>
                         {% else %}
@@ -118,7 +117,6 @@
                         {% endif %}
                     {% endfor %}
                 </div>
-                {% endif %}
                 
                 <span class="ig-message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
                 
@@ -132,7 +130,7 @@
                 
                 {% if msg.reactions|length > 0 %}
                 <div class="ig-message-reaction-display">
-                    {% for r in msg.reactions %}{{ r.emoji }}{% endfor %}
+                    {% for r in msg.reactions.all() %}{{ r.emoji }}{% endfor %}
                 </div>
                 {% endif %}
             </div>
