@@ -105,7 +105,7 @@
                     <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
                 {% endif %}
                 
-                {% if msg.medias.count() > 0 %}
+                {% if msg.medias|length > 0 %}
                 <div class="ig-message-media">
                     {% for m in msg.medias %}
                         <img src="{{ m.media_url }}" onclick="openMedia(this.src)">
