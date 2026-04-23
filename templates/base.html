@@ -73,43 +73,39 @@
 
     <!-- Stories -->
     {% if current_user.is_authenticated %}
+    <style>
+    .ig-story-ring { width: 66px; height: 66px; border-radius: 50%; background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); display: flex; align-items: center; justify-content: center; padding: 2px; }
+    .ig-story-ring.viewed { background: #262626; }
+    .ig-story-inner { width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--bg); overflow: hidden; background: #000; }
+    .ig-story-img { width: 100%; height: 100%; object-fit: cover; }
+    .ig-story-add { background: linear-gradient(45deg, #f09433, #bc1888); width: 66px; height: 66px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
+    .ig-story-add::after { content: ''; position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; background: var(--primary); border-radius: 50%; border: 2px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+    </style>
     
-    <div class="stories-bar" style="background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 10px 0; margin-top: 70px; margin-bottom: 0;">
-        <div class="stories-scroll" style="display: flex; gap: 15px; overflow-x: auto; padding: 0 15px; max-width: 600px; margin: 0 auto;">
+    <div class="stories-bar" style="background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 8px 0; margin-top: 60px; margin-bottom: 0;">
+        <div class="stories-scroll" style="display: flex; gap: 12px; overflow-x: auto; padding: 0 15px; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; flex-shrink: 0;">
                 <a href="{{ url_for('create_story') }}" style="text-decoration: none;">
-                    <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ff6b6b, #ffa500); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                        <span style="color: white; font-size: 2rem;">+</span>
+                    <div class="ig-story-add">
+                        <div class="ig-story-inner" style="display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white;">+</div>
                     </div>
-                    <span style="font-size: 0.7rem; color: var(--text);">Добавить</span>
+                    <span style="font-size: 0.65rem; color: var(--text); margin-top: 4px; display: block;">Ваша</span>
                 </a>
             </div>
-            {% if my_story %}
-            <div style="text-align: center; flex-shrink: 0;">
-                <a href="{{ url_for('view_story', story_id=my_story.id) }}" style="text-decoration: none;">
-                    <div style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary); overflow: hidden;">
-                        {% if current_user.avatar != 'default.png' %}
-                            <img src="{{ url_for('uploaded_file', filename=current_user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover;">
-                        {% else %}
-                            <div style="width: 100%; height: 100%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: white;">{{ current_user.username[0].upper() }}</div>
-                        {% endif %}
-                    </div>
-                    <span style="font-size: 0.7rem; color: var(--text);">Ваша</span>
-                </a>
-            </div>
-            {% endif %}
             {% for story in top_stories %}
             {% if story and story.user_id != current_user.id %}
             <div style="text-align: center; flex-shrink: 0;">
                 <a href="{{ url_for('view_story', story_id=story.id) }}" style="text-decoration: none;">
-                    <div class="story-ring" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary); overflow: hidden;">
-                        {% if story.user.avatar != 'default.png' %}
-                            <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover;">
-                        {% else %}
-                            <div style="width: 100%; height: 100%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: white;">{{ story.user.username[0].upper() }}</div>
-                        {% endif %}
+                    <div class="ig-story-ring {% if story.viewed %}viewed{% endif %}">
+                        <div class="ig-story-inner">
+                            {% if story.user.avatar != 'default.png' %}
+                                <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" class="ig-story-img">
+                            {% else %}
+                                <div style="width: 100%; height: 100%; background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; font-weight: 600;">{{ story.user.username[0].upper() }}</div>
+                            {% endif %}
+                        </div>
                     </div>
-                    <span style="font-size: 0.7rem; color: var(--text);">{{ story.user.username[:8] }}</span>
+                    <span style="font-size: 0.65rem; color: var(--text); margin-top: 4px; display: block;">{{ story.user.username[:8] }}</span>
                 </a>
             </div>
             {% endif %}

@@ -1311,11 +1311,13 @@ def view_story(story_id):
         abort(404)
     reactions = story.reactions.all()
     comments = story.comments.order_by(StoryComment.created_at.desc()).all()
-    all_stories = Story.query.filter(
+    user_stories = Story.query.filter(
         Story.user_id == story.user_id,
         Story.expires_at > datetime.utcnow()
     ).order_by(Story.created_at.desc()).all()
-    return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories)
+    all_stories = [{'id': s.id} for s in user_stories]
+    current_index = next((i for i, s in enumerate(user_stories) if s.id == story.id), 0)
+    return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories, current_index=current_index)
 
 
 @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])

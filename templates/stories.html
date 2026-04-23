@@ -1,54 +1,172 @@
-{% extends "base.html" %}
-{% block title %}Истории - Social{% endblock %}
-{% block content %}
-<style>
-.stories-ring {
-    width: 76px;
-    height: 76px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 3px;
-}
-.stories-ring-inner {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 3px solid var(--bg);
-    overflow: hidden;
-}
-</style>
-
-<div style="display: flex; gap: 15px; overflow-x: auto; padding: 15px 0; border-bottom: 1px solid var(--border);">
-    <div style="text-align: center; flex-shrink: 0;">
-        <a href="{{ url_for('create_story') }}" style="text-decoration: none;">
-            <div class="stories-ring">
-                <div class="stories-ring-inner" style="background: linear-gradient(135deg, #ff6b6b, #ffa500); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white;">+</div>
-            </div>
-            <span style="font-size: 0.75rem; color: var(--text);">Ваша история</span>
-        </a>
-    </div>
-    {% for story in stories %}
-    <div style="text-align: center; flex-shrink: 0;">
-        <a href="{{ url_for('stories_route') }}?user={{ story.user_id }}" style="text-decoration: none;">
-            <div class="stories-ring">
-                <div class="stories-ring-inner">
-                    {% if story.user.avatar != 'default.png' %}
-                        <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover;">
-                    {% else %}
-                        <div style="width: 100%; height: 100%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white;">{{ story.user.username[0].upper() }}</div>
-                    {% endif %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Истории - Social</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --ig-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg, #000); color: var(--text, #fff); }
+        
+        .ig-stories-page {
+            padding: 70px 0 20px;
+        }
+        
+        .ig-stories-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border, #262626);
+            display: flex;
+            justify-content: center;
+        }
+        
+        .ig-stories-scroll {
+            display: flex;
+            gap: 14px;
+            overflow-x: auto;
+            padding: 12px 16px;
+            max-width: 480px;
+            margin: 0 auto;
+            scrollbar-width: none;
+        }
+        
+        .ig-stories-scroll::-webkit-scrollbar { display: none; }
+        
+        .ig-story-item {
+            flex-shrink: 0;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .ig-story-ring {
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            background: var(--ig-gradient);
+            padding: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+        
+        .ig-story-ring.viewed {
+            background: #262626;
+        }
+        
+        .ig-story-ring-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--bg, #000);
+            overflow: hidden;
+            background: #262626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .ig-story-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .ig-story-username {
+            font-size: 11px;
+            color: var(--text, #fff);
+            max-width: 70px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .ig-story-add-btn {
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            background: var(--ig-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 6px;
+        }
+        
+        .ig-story-add-btn::after {
+            content: '+';
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 22px;
+            height: 22px;
+            background: #0095f6;
+            border-radius: 50%;
+            border: 3px solid var(--bg, #000);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .ig-story-initials {
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .ig-empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light, #888);
+        }
+        
+        .ig-empty-state p {
+            font-size: 14px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ig-stories-page">
+        <div class="ig-stories-header">
+            <div class="ig-stories-scroll">
+                <div class="ig-story-item" onclick="window.location.href='{{ url_for('create_story') }}'">
+                    <div class="ig-story-add-btn">
+                        <div class="ig-story-ring-inner" style="background: #262626;">
+                            <span style="font-size: 28px; color: #fff;">+</span>
+                        </div>
+                    </div>
+                    <span class="ig-story-username">Ваша история</span>
                 </div>
+                
+                {% for story in stories %}
+                <div class="ig-story-item" onclick="window.location.href='{{ url_for('view_story', story_id=story.id) }}'">
+                    <div class="ig-story-ring {% if story.viewed %}viewed{% endif %}">
+                        <div class="ig-story-ring-inner">
+                            {% if story.user.avatar != 'default.png' %}
+                                <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" class="ig-story-img">
+                            {% else %}
+                                <span class="ig-story-initials">{{ story.user.username[0].upper() }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="ig-story-username">{{ story.user.username }}</span>
+                </div>
+                {% endfor %}
             </div>
-            <span style="font-size: 0.75rem; color: var(--text);">{{ story.user.username }}</span>
-        </a>
+        </div>
+        
+        {% if not stories %}
+        <div class="ig-empty-state">
+            <div style="font-size: 48px; margin-bottom: 16px;">📷</div>
+            <h3>Нет историй</h3>
+            <p>Подпишитесь на людей, чтобы видеть их истории</p>
+            <a href="{{ url_for('explore') }}" style="display: inline-block; margin-top: 16px; padding: 10px 20px; background: #0095f6; color: #fff; text-decoration: none; border-radius: 8px;">Найти друзей</a>
+        </div>
+        {% endif %}
     </div>
-    {% endfor %}
-</div>
-
-<div style="text-align: center; padding: 50px; color: var(--text-light);">
-    Нажмите на историю для просмотра
-</div>
-{% endblock %}
+</body>
+</html>
