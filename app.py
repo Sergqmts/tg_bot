@@ -728,7 +728,7 @@ class Message(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
     
-medias = db.relationship('MessageMedia', backref='message', lazy='dynamic')
+    medias = db.relationship('MessageMedia', backref='message')
 
 
 class MessageReaction(db.Model):

@@ -130,32 +130,13 @@
                         </a>
                         {% endif %}
                     {% elif msg.body and msg.body != '[удалено]' %}
-{% if msg.body == '🎤' %}
-                        {% set voice_media = msg.medias.first() %}
-                        {% if voice_media %}
-                        <div class="ig-voice-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% endif %}">
-                            <button class="ig-play-btn" onclick="playVoice(this, '{{ voice_media.media_url }}')">▶</button>
-                            <div class="ig-waveform">
-                                <div class="ig-wave-bar"></div>
-                                <div class="ig-wave-bar"></div>
-                                <div class="ig-wave-bar"></div>
-                                <div class="ig-wave-bar"></div>
-                                <div class="ig-wave-bar"></div>
-                            </div>
-                            <span class="ig-voice-duration">0:15</span>
-                        </div>
-                        {% endif %}
-                        {% else %}
-                        <span>{{ msg.body }}</span>
-                        {% endif %}
-                    {% elif msg.body == '[удалено]' %}
+{% elif msg.body and msg.body != '[удалено]' %}
+                    <span>{{ msg.body }}</span>
+                {% elif msg.body == '[удалено]' %}
                         <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
                     {% endif %}
                     
-                    {% set media_list = msg.medias.all() %}
-                    {% if media_list|length > 0 %}
-                    <div class="ig-message-media">
-                        {% for m in media_list %}
+                    {% for m in msg.medias %}
                             {% if m.media_type == 'audio' %}
                             <div class="ig-voice-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% endif %}">
                                 <button class="ig-play-btn" onclick="playVoice(this, '{{ m.media_url }}')">▶</button>
@@ -174,8 +155,6 @@
                                 <img src="{{ m.media_url }}" onclick="openMedia(this.src)">
                             {% endif %}
                         {% endfor %}
-                    </div>
-                    {% endif %}
                     
                     <span class="ig-message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
                     

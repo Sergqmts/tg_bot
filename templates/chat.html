@@ -125,7 +125,7 @@
                 {% endif %}
                 
                 <div class="ig-message-media">
-                    {% for m in msg.medias.all() %}
+                    {% for m in msg.medias %}
                         {% if m.media_type == 'audio' %}
                         <div class="ig-voice-message">
                             <button class="ig-play-btn" onclick="playVoice(this, '{{ m.media_url }}')">▶</button>
