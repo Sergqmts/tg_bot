@@ -53,17 +53,10 @@
         @keyframes wave { from { height: 6px; } to { height: 16px; } }
         .ig-voice-duration { font-size: 12px; font-weight: 500; }
         
-        .ig-message-media { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
-        .ig-message-media img { max-width: 200px; max-height: 200px; border-radius: 12px; cursor: pointer; object-fit: cover; }
-        .ig-message-media video { max-width: 200px; max-height: 200px; border-radius: 12px; }
-        
-        .ig-input-area { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-        .ig-input-wrap { flex: 1; display: flex; align-items: center; background: var(--surface); border-radius: 22px; padding: 8px 16px; }
-        .ig-message-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none; min-width: 0; }
-        .ig-message-input::placeholder { color: #888; }
-        .ig-input-actions { display: flex; gap: 12px; }
-        .ig-input-btn { background: none; border: none; font-size: 22px; cursor: pointer; }
-        .ig-send-btn { background: var(--primary); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ig-message-media { margin-top: 6px; }
+        .ig-media-container { margin-top: 4px; }
+        .ig-media-container img { max-width: 200px; max-height: 200px; border-radius: 12px; object-fit: cover; cursor: pointer; }
+        .ig-media-container video { max-width: 200px; max-height: 200px; border-radius: 12px; }
         
         .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
         .ig-modal.show { display: flex; }
@@ -120,6 +113,10 @@
                         <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
                     {% endif %}
                     
+                    <span class="ig-message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
+                </div>
+                
+                <div class="ig-media-container">
                     {% for m in msg.medias %}
                         {% if m.media_type == 'audio' %}
                         <div class="ig-voice-message">
@@ -138,8 +135,6 @@
                             <img src="{{ m.media_url }}" onclick="openMedia(this.src)">
                         {% endif %}
                     {% endfor %}
-                    
-                    <span class="ig-message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
                 </div>
             </div>
             {% else %}

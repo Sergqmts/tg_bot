@@ -50,7 +50,6 @@
         .ig-input-area { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
         .ig-input-wrap { flex: 1; display: flex; align-items: center; background: var(--surface); border-radius: 22px; padding: 8px 16px; }
         .ig-message-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none; }
-        .ig-message-input::placeholder { color: #888; }
         .ig-input-btn { background: none; border: none; font-size: 22px; cursor: pointer; }
         .ig-voice-message { display: flex; align-items: center; gap: 10px; min-width: 160px; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 24px; }
         .ig-play-btn { width: 28px; height: 28px; border-radius: 50%; background: var(--text); color: var(--bg); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; }
@@ -59,6 +58,10 @@
         .ig-wave-bar:nth-child(odd) { animation-delay: 0.1s; }
         @keyframes wave { from { height: 6px; } to { height: 16px; } }
         .ig-voice-duration { font-size: 11px; font-weight: 500; }
+        
+        .ig-message-media { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+        .ig-message-media img { max-width: 200px; max-height: 200px; border-radius: 12px; object-fit: cover; cursor: pointer; }
+        .ig-message-media video { max-width: 200px; max-height: 200px; border-radius: 12px; }
         
         .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
         .ig-modal.show { display: flex; }
