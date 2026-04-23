@@ -348,6 +348,11 @@ blocked = db.Table('blocked',
     db.Column('created_at', db.DateTime, default=datetime.utcnow)
 )
 
+story_hidden = db.Table('story_hidden',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('story_id', db.Integer, db.ForeignKey('story.id'), primary_key=True)
+)
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -554,6 +559,7 @@ class Story(db.Model):
     user = db.relationship('User', backref='stories')
     reactions = db.relationship('StoryReaction', backref='story', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('StoryComment', backref='story', lazy='dynamic', cascade='all, delete-orphan')
+    hidden_for = db.relationship('User', secondary=story_hidden, lazy='dynamic')
     
     def is_expired(self):
         return datetime.utcnow() > self.expires_at
@@ -1256,7 +1262,12 @@ def stories_route():
     Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False, Story.is_archived == False).update({Story.is_archived: True})
     db.session.commit()
     user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.followed.all()]
-    stories_list = Story.query.filter(Story.user_id.in_(user_ids), Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).all()
+    blocked_ids = [b.blocked_id for b in current_user.blocked.all()]
+    exclude_ids = list(set(user_ids + blocked_ids))
+    stories_list = Story.query.filter(
+        Story.user_id.in_(exclude_ids),
+        Story.expires_at > datetime.utcnow()
+    ).order_by(Story.created_at.desc()).all()
     return render_template('stories.html', stories=stories_list)
 
 
@@ -1280,6 +1291,18 @@ def user_stories(username):
     return render_template('user_stories.html', stories=all_stories, user=user)
 
 
+@app.route('/stories/hide/<username>', methods=['POST'])
+@login_required
+def hide_story(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    for story in Story.query.filter(Story.user_id == user.id, Story.expires_at > datetime.utcnow()).all():
+        if current_user not in story.hidden_for:
+            story.hidden_for.append(current_user)
+    db.session.commit()
+    flash('Истории пользователя скрыты')
+    return redirect(url_for('index'))
+
+
 @app.route('/story/<int:story_id>')
 @login_required
 def view_story(story_id):
@@ -1288,7 +1311,11 @@ def view_story(story_id):
         abort(404)
     reactions = story.reactions.all()
     comments = story.comments.order_by(StoryComment.created_at.desc()).all()
-    return render_template('view_story.html', story=story, reactions=reactions, comments=comments)
+    all_stories = Story.query.filter(
+        Story.user_id == story.user_id,
+        Story.expires_at > datetime.utcnow()
+    ).order_by(Story.created_at.desc()).all()
+    return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories)
 
 
 @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])

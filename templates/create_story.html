@@ -1,38 +1,285 @@
 {% extends "base.html" %}
 {% block title %}Создать историю - Social{% endblock %}
 {% block content %}
-<a href="{{ url_for('index') }}" class="btn btn-secondary" style="margin-bottom: 20px;">← Назад</a>
+<style>
+.story-creator {
+    max-width: 420px;
+    margin: 0 auto;
+    position: relative;
+}
+.story-preview-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9/16;
+    max-height: 70vh;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.story-preview-container img, .story-preview-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.story-canvas-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+.story-editor-tools {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(0,0,0,0.9);
+    border-radius: 8px;
+    margin-top: 10px;
+    justify-content: center;
+}
+.story-editor-tools button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.story-editor-tools button:hover, .story-editor-tools button.active {
+    background: rgba(255,255,255,0.2);
+}
+.story-text-editor {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    text-align: center;
+    display: none;
+}
+.story-text-input {
+    width: 100%;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    border-radius: 8px;
+    padding: 15px;
+    color: white;
+    font-size: 1.5rem;
+    text-align: center;
+    outline: none;
+}
+.story-color-palette {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.story-color-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+}
+.story-font-options {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.story-font-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+.story-stickers-panel {
+    position: absolute;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.9);
+    padding: 15px;
+    border-radius: 8px;
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.story-sticker-item {
+    display: inline-block;
+    padding: 8px 15px;
+    margin: 5px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 15px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+.story-draw-panel {
+    position: absolute;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.9);
+    padding: 15px;
+    border-radius: 8px;
+    display: none;
+}
+.story-brush-sizes {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+.story-brush-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    border: none;
+    cursor: pointer;
+}
+.story-filters-panel {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+.story-filter-btn {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+.story-filter-btn.active {
+    border-color: white;
+}
+.story-filter-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+</style>
 
-<div class="card">
-    <h2>Создать историю</h2>
-    <p style="color: #666; margin-bottom: 20px;">История будет доступна 24 часа</p>
+<div class="story-creator">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary" style="margin-bottom: 20px;">← Назад</a>
     
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button type="button" class="btn btn-primary" onclick="showCamera()">📷 Камера</button>
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Загрузить</button>
-    </div>
-    
-    <div id="cameraSection" style="display: none; margin-bottom: 20px;">
-        <video id="video" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 8px;"></video>
-        <canvas id="canvas" style="display: none;"></canvas>
-        <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
-            <button type="button" id="switchCameraBtn" class="btn btn-secondary">🔄 Переключить камеру</button>
-            <button type="button" id="captureBtn" class="btn" style="background: #ff6b6b; color: white; border: none;">📷 Снять фото</button>
-            <button type="button" id="recordBtn" class="btn" style="background: #ff4757; color: white; border: none;">⏺ Записать видео</button>
+    <div class="card">
+        <h2>Создать историю</h2>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button type="button" class="btn btn-primary" onclick="showCamera()">📷 Камера</button>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">📁 Галерея</button>
         </div>
+        
+        <div id="cameraSection" style="display: none; margin-bottom: 15px;">
+            <video id="video" autoplay playsinline style="width: 100%; border-radius: 8px;"></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+            <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" id="switchCameraBtn" class="btn btn-secondary">🔄</button>
+                <button type="button" id="captureBtn" class="btn" style="background: #ff6b6b; color: white;">📷</button>
+                <button type="button" id="recordBtn" class="btn" style="background: #ff4757; color: white;">⏺</button>
+            </div>
+        </div>
+        
+        <input type="file" id="fileInput" name="media" accept="image/*,video/*" style="display: none;" onchange="handleFile(this)">
+        
+        <div id="preview" class="story-preview-container" style="display: none;">
+            <img id="previewImg" style="display: none;">
+            <video id="previewVideo" controls style="display: none;"></video>
+            <canvas id="storyCanvas" class="story-canvas-layer"></canvas>
+            
+            <div class="story-filters-panel" id="filtersPanel" style="display: none;">
+                <button class="story-filter-btn active" onclick="applyFilter('none')"><span>Оригинал</span></button>
+                <button class="story-filter-btn" onclick="applyFilter('grayscale(100%)')"><span style="filter: grayscale(100%); display: block;">Ч/Б</span></button>
+                <button class="story-filter-btn" onclick="applyFilter('sepia(100%)')"><span style="filter: sepia(100%); display: block;">Сепия</span></button>
+                <button class="story-filter-btn" onclick="applyFilter('contrast(150%)')"><span style="filter: contrast(150%); display: block;">Контраст</span></button>
+                <button class="story-filter-btn" onclick="applyFilter('brightness(130%)')"><span style="filter: brightness(130%); display: block;">Светло</span></button>
+                <button class="story-filter-btn" onclick="applyFilter('saturate(200%)')"><span style="filter: saturate(200%); display: block;">Ярко</span></button>
+                <button class="story-filter-btn" onclick="applyFilter('hue-rotate(90deg)')"><span style="filter: hue-rotate(90deg); display: block;">Тёплый</span></button>
+                <button class="story-filter-btn" onclick="applyFilter('blur(2px)')"><span style="filter: blur(2px); display: block;">Блюр</span></button>
+            </div>
+        </div>
+        
+        <div class="story-editor-tools" id="editorTools" style="display: none;">
+            <button onclick="toggleTextEditor()" title="Текст">Aa</button>
+            <button onclick="toggleDrawPanel()" title="Кисть">✏️</button>
+            <button onclick="toggleStickersPanel()" title="Стикеры">🏷️</button>
+            <button onclick="toggleFiltersPanel()" title="Филь��ры">🔳</button>
+            <button onclick="triggerFileInput()" title="Галерея">📁</button>
+        </div>
+        
+        <div class="story-text-editor" id="textEditor">
+            <input type="text" class="story-text-input" id="textInput" placeholder="Введите текст...">
+            <div class="story-font-options">
+                <button class="story-font-btn" onclick="setTextFont('sans-serif')">Обычный</button>
+                <button class="story-font-btn" onclick="setTextFont('cursive')">Курсив</button>
+                <button class="story-font-btn" onclick="setTextFont('monospace')">Моно</button>
+                <button class="story-font-btn" onclick="setTextFont('fantasy')">Арт</button>
+            </div>
+            <div class="story-color-palette">
+                <button class="story-color-btn" style="background: white;" onclick="setTextColor('white')"></button>
+                <button class="story-color-btn" style="background: black;" onclick="setTextColor('black')"></button>
+                <button class="story-color-btn" style="background: #ff6b6b;" onclick="setTextColor('#ff6b6b')"></button>
+                <button class="story-color-btn" style="background: #4ecdc4;" onclick="setTextColor('#4ecdc4')"></button>
+                <button class="story-color-btn" style="background: #45b7d1;" onclick="setTextColor('#45b7d1')"></button>
+                <button class="story-color-btn" style="background: #96ceb4;" onclick="setTextColor('#96ceb4')"></button>
+                <button class="story-color-btn" style="background: #ffeaa7;" onclick="setTextColor('#ffeaa7')"></button>
+                <button class="story-color-btn" style="background: #a29bfe;" onclick="setTextColor('#a29bfe')"></button>
+            </div>
+        </div>
+        
+        <div class="story-draw-panel" id="drawPanel">
+            <div class="story-brush-sizes">
+                <button class="story-brush-btn" style="transform: scale(0.5);" onclick="setBrushSize(2)"></button>
+                <button class="story-brush-btn" style="transform: scale(1);" onclick="setBrushSize(5)"></button>
+                <button class="story-brush-btn" style="transform: scale(1.5);" onclick="setBrushSize(10)"></button>
+                <button class="story-brush-btn" style="transform: scale(2);" onclick="setBrushSize(20)"></button>
+            </div>
+            <div class="story-color-palette">
+                <button class="story-color-btn" style="background: white;" onclick="setDrawColor('white')"></button>
+                <button class="story-color-btn" style="background: black;" onclick="setDrawColor('black')"></button>
+                <button class="story-color-btn" style="background: #ff6b6b;" onclick="setDrawColor('#ff6b6b')"></button>
+                <button class="story-color-btn" style="background: #ffd93d;" onclick="setDrawColor('#ffd93d')"></button>
+                <button class="story-color-btn" style="background: #6bcb77;" onclick="setDrawColor('#6bcb77')"></button>
+                <button class="story-color-btn" style="background: #4d96ff;" onclick="setDrawColor('#4d96ff')"></button>
+                <button class="story-color-btn" style="background: #a29bfe;" onclick="setDrawColor('#a29bfe')"></button>
+            </div>
+        </div>
+        
+        <div class="story-stickers-panel" id="stickersPanel">
+            <span class="story-sticker-item" onclick="addSticker('❤️')">❤️</span>
+            <span class="story-sticker-item" onclick="addSticker('🔥')">🔥</span>
+            <span class="story-sticker-item" onclick="addSticker('✨')">✨</span>
+            <span class="story-sticker-item" onclick="addSticker('🎉')">🎉</span>
+            <span class="story-sticker-item" onclick="addSticker('👍')">👍</span>
+            <span class="story-sticker-item" onclick="addSticker('😎')">😎</span>
+            <span class="story-sticker-item" onclick="addSticker('🎂')">🎂</span>
+            <span class="story-sticker-item" onclick="addSticker('🎁')">🎁</span>
+            <span class="story-sticker-item" onclick="addSticker('🌟')">🌟</span>
+            <span class="story-sticker-item" onclick="addSticker('💫')">💫</span>
+            <span class="story-sticker-item" onclick="addSticker('⏰')">⏰</span>
+            <span class="story-sticker-item" onclick="addSticker('📍')">📍</span>
+            <span class="story-sticker-item" onclick="addSticker('@username')">@</span>
+            <span class="story-sticker-item" onclick="addSticker('#hashtag')">#</span>
+        </div>
+        
+        <form method="POST" id="storyForm" enctype="multipart/form-data" style="margin-top: 15px;">
+            <input type="hidden" name="media_data" id="mediaData">
+            <input type="hidden" name="caption" id="captionData">
+            <button type="submit" id="submitBtn" class="btn btn-primary" disabled style="width: 100%;">Опубликовать</button>
+        </form>
     </div>
-    
-    <input type="file" id="fileInput" name="media" accept="image/*,video/*" style="display: none;" onchange="handleFile(this)">
-    
-    <div id="preview" style="margin-bottom: 20px; display: none;">
-        <img id="previewImg" style="max-width: 300px; max-height: 300px; border-radius: 8px;">
-        <video id="previewVideo" controls style="max-width: 300px; max-height: 300px; border-radius: 8px; display: none;"></video>
-    </div>
-    
-    <form method="POST" id="storyForm" enctype="multipart/form-data">
-        <input type="hidden" name="media_data" id="mediaData">
-        <button type="submit" id="submitBtn" class="btn btn-primary" disabled>Опубликовать</button>
-    </form>
 </div>
 
 <script>
@@ -42,33 +289,29 @@ let recordedChunks = [];
 let isRecording = false;
 let currentCamera = 'user';
 let videoStream = null;
+let currentFilter = 'none';
+let isDrawing = false;
+let brushSize = 5;
+let brushColor = 'white';
+let currentFont = 'sans-serif';
+let currentTextColor = 'white';
+let ctx = null;
+let canvasEl = null;
 
 async function showCamera() {
     const video = document.getElementById('video');
     const section = document.getElementById('cameraSection');
-    
     try {
         await startCamera(video);
         section.style.display = 'block';
     } catch (err) {
-        alert('Не удалось получить доступ к камере: ' + err.message);
+        alert('Ошибка камеры: ' + err.message);
     }
 }
 
 async function startCamera(videoEl) {
-    if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-    }
-    
-    const constraints = {
-        audio: true,
-        video: {
-            facingMode: currentCamera,
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        }
-    };
-    
+    if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+    const constraints = { audio: true, video: { facingMode: currentCamera, width: { ideal: 1080 }, height: { ideal: 1920 } } };
     videoStream = await navigator.mediaDevices.getUserMedia(constraints);
     videoEl.srcObject = videoStream;
     stream = videoStream;
@@ -76,8 +319,7 @@ async function startCamera(videoEl) {
 
 document.getElementById('switchCameraBtn').onclick = async function() {
     currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-    const video = document.getElementById('video');
-    await startCamera(video);
+    await startCamera(document.getElementById('video'));
 };
 
 document.getElementById('captureBtn').onclick = function() {
@@ -86,60 +328,43 @@ document.getElementById('captureBtn').onclick = function() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    
-    canvas.toBlob(blob => {
-        const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
-        showPreview(file);
-    }, 'image/jpeg');
+    canvas.toBlob(blob => showPreview(new File([blob], 'photo.jpg', { type: 'image/jpeg' })), 'image/jpeg');
 };
 
 document.getElementById('recordBtn').onclick = function() {
     const btn = document.getElementById('recordBtn');
-    
     if (!isRecording) {
         recordedChunks = [];
         mediaRecorder = new MediaRecorder(stream);
-        
-        mediaRecorder.ondataavailable = e => {
-            if (e.data.size > 0) recordedChunks.push(e.data);
-        };
-        
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
         mediaRecorder.onstop = () => {
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const file = new File([blob], 'video.webm', { type: 'video/webm' });
-            showPreview(file);
+            showPreview(new File([blob], 'video.webm', { type: 'video/webm' }));
         };
-        
         mediaRecorder.start();
         isRecording = true;
-        btn.textContent = '⏹ Стоп (25 сек)';
-        
-        setTimeout(() => {
-            if (isRecording) {
-                mediaRecorder.stop();
-                isRecording = false;
-                btn.textContent = '⏺ Записать видео';
-            }
-        }, 25000);
+        btn.textContent = '⏹';
+        setTimeout(() => { if (isRecording) { mediaRecorder.stop(); isRecording = false; btn.textContent = '⏺'; } }, 25000);
     } else {
         mediaRecorder.stop();
         isRecording = false;
-        btn.textContent = '⏺ Записать видео';
+        btn.textContent = '⏺';
     }
 };
 
-function handleFile(input) {
-    const file = input.files[0];
-    if (file) showPreview(file);
-}
+function handleFile(input) { if (input.files[0]) showPreview(input.files[0]); }
+
+function triggerFileInput() { document.getElementById('fileInput').click(); }
 
 function showPreview(file) {
     const preview = document.getElementById('preview');
     const img = document.getElementById('previewImg');
     const video = document.getElementById('previewVideo');
     const submitBtn = document.getElementById('submitBtn');
+    const editorTools = document.getElementById('editorTools');
     
     preview.style.display = 'block';
+    editorTools.style.display = 'flex';
     submitBtn.disabled = false;
     
     if (file.type.startsWith('image/')) {
@@ -153,10 +378,108 @@ function showPreview(file) {
     }
     
     const reader = new FileReader();
-    reader.onload = function() {
-        document.getElementById('mediaData').value = reader.result;
-    };
+    reader.onload = function() { document.getElementById('mediaData').value = reader.result; };
     reader.readAsDataURL(file);
+}
+
+function toggleTextEditor() {
+    const panel = document.getElementById('textEditor');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('drawPanel').style.display = 'none';
+    document.getElementById('stickersPanel').style.display = 'none';
+}
+
+function toggleDrawPanel() {
+    const panel = document.getElementById('drawPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('textEditor').style.display = 'none';
+    document.getElementById('stickersPanel').style.display = 'none';
+    initCanvas();
+}
+
+function toggleStickersPanel() {
+    const panel = document.getElementById('stickersPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('textEditor').style.display = 'none';
+    document.getElementById('drawPanel').style.display = 'none';
+}
+
+function toggleFiltersPanel() {
+    const panel = document.getElementById('filtersPanel');
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+}
+
+function applyFilter(filter) {
+    currentFilter = filter;
+    const img = document.getElementById('previewImg');
+    img.style.filter = filter;
+    document.querySelectorAll('.story-filter-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.story-filter-btn').classList.add('active');
+}
+
+function setTextFont(font) { currentFont = font; updateTextPreview(); }
+function setTextColor(color) { currentTextColor = color; updateTextPreview(); }
+
+function updateTextPreview() {
+    const input = document.getElementById('textInput');
+    input.style.fontFamily = currentFont;
+    input.style.color = currentTextColor;
+}
+
+function setBrushSize(size) { brushSize = size; }
+function setDrawColor(color) { brushColor = color; }
+
+function initCanvas() {
+    canvasEl = document.getElementById('storyCanvas');
+    const img = document.getElementById('previewImg');
+    canvasEl.width = img.clientWidth;
+    canvasEl.height = img.clientHeight;
+    ctx = canvasEl.getContext('2d');
+    
+    canvasEl.onmousedown = startDrawing;
+    canvasEl.onmousemove = draw;
+    canvasEl.onmouseup = stopDrawing;
+    canvasEl.onmouseleave = stopDrawing;
+    canvasEl.ontouchstart = startDrawing;
+    canvasEl.ontouchmove = draw;
+    canvasEl.ontouchend = stopDrawing;
+}
+
+function startDrawing(e) {
+    e.preventDefault();
+    isDrawing = true;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+}
+
+function stopDrawing() { isDrawing = false; }
+
+function getPos(e) {
+    const rect = canvasEl.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return { x: x / rect.width * canvasEl.width, y: y / rect.height * canvasEl.height };
+}
+
+function addSticker(text) {
+    const canvas = document.getElementById('storyCanvas');
+    const context = canvas.getContext('2d');
+    context.font = '30px sans-serif';
+    context.fillStyle = 'white';
+    context.fillText(text, 20, 50);
+    document.getElementById('stickersPanel').style.display = 'none';
 }
 
 document.getElementById('storyForm').onsubmit = async function(e) {
@@ -166,34 +489,14 @@ document.getElementById('storyForm').onsubmit = async function(e) {
     submitBtn.textContent = 'Загрузка...';
     
     const formData = new FormData();
-    const mediaData = document.getElementById('mediaData').value;
-    
-    if (!mediaData) {
-        const fileInput = document.getElementById('fileInput');
-        if (fileInput.files[0]) {
-            formData.append('media', fileInput.files[0]);
-        }
-    } else {
-        formData.append('media_data', mediaData);
-    }
+    formData.append('media_data', document.getElementById('mediaData').value);
+    formData.append('caption', document.getElementById('captionData').value);
     
     try {
-        const response = await fetch('{{ url_for("create_story") }}', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (response.ok) {
-            window.location.href = '{{ url_for("index") }}';
-        } else {
-            alert('Ошибка загрузки');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Опубликовать';
-        }
-    } catch (err) {
-        alert('Ошибка: ' + err.message);
-        submitBtn.disabled = false;
-    }
+        const response = await fetch('{{ url_for("create_story") }}', { method: 'POST', body: formData });
+        if (response.ok) window.location.href = '{{ url_for("index") }}';
+        else { alert('Ошибка'); submitBtn.disabled = false; submitBtn.textContent = 'Опубликовать'; }
+    } catch (err) { alert('Ошибка: ' + err.message); submitBtn.disabled = false; }
 };
 </script>
 {% endblock %}
