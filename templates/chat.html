@@ -1,199 +1,162 @@
-{% extends "base.html" %}
-{% block title %}{{ chat.name }} - Social{% endblock %}
-{% block content %}
-    <div class="card chat-card">
-        <div class="chat-header">
-            <a href="{{ url_for('messages') }}" class="btn btn-secondary">←</a>
-            <div class="avatar" style="margin-right: 10px;">
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ chat.name }} - Social</title>
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
+    <style>
+        :root { --bg: #000; --text: #fff; --surface: #262626; --border: #262626; --primary: #0095f6; }
+        .light-mode { --bg: #fff; --text: #000; --surface: #f0f0f0; --border: #dbdbdb; --primary: #0095f6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        
+        .ig-chat-view { display: flex; flex-direction: column; height: 100vh; max-width: 935px; margin: 0 auto; }
+        
+        .ig-chat-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .ig-back-btn { background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; }
+        
+        .ig-group-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); display: flex; align-items: center; justify-content: center; }
+        .ig-group-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .ig-group-info { flex: 1; }
+        .ig-group-name { font-size: 16px; font-weight: 600; }
+        .ig-group-count { font-size: 12px; color: #888; }
+        
+        .ig-header-actions { display: flex; gap: 16px; }
+        .ig-header-btn { background: none; border: none; font-size: 22px; color: var(--text); cursor: pointer; }
+        
+        .ig-messages-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+        
+        .ig-sender-name { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 2px; }
+        
+        .ig-message { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word; }
+        .ig-message.sent { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+        .ig-message.received { align-self: flex-start; background: var(--surface); color: var(--text); border-bottom-left-radius: 4px; }
+        .ig-message-time { font-size: 10px; opacity: 0.7; margin-left: 8px; }
+        
+        .ig-message-media { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+        .ig-message-media img { max-width: 180px; max-height: 180px; border-radius: 12px; cursor: pointer; }
+        
+        .ig-message-reactions { display: flex; gap: 4px; position: absolute; bottom: -12px; right: 8px; background: var(--bg); border-radius: 12px; padding: 2px 4px; opacity: 0; transition: opacity 0.2s; }
+        .ig-message:hover .ig-message-reactions { opacity: 1; }
+        
+        .ig-input-area { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .ig-input-wrap { flex: 1; display: flex; align-items: center; background: var(--surface); border-radius: 22px; padding: 8px 16px; }
+        .ig-message-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none; }
+        .ig-message-input::placeholder { color: #888; }
+        .ig-input-btn { background: none; border: none; font-size: 22px; cursor: pointer; }
+        .ig-send-btn { background: var(--primary); color: #fff; border: none; padding: 0; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
+        
+        .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+        .ig-modal.show { display: flex; }
+        .ig-modal img { max-width: 90%; max-height: 90%; object-fit: contain; }
+    </style>
+</head>
+<body>
+    <div class="ig-chat-view">
+        <div class="ig-chat-header">
+            <button class="ig-back-btn" onclick="window.location.href='{{ url_for('messages') }}'">←</button>
+            <div class="ig-group-avatar">
                 {% if chat.avatar and chat.avatar != 'chat_default.png' %}
                     {% if chat.avatar.startswith('http') %}
-                        <img src="{{ chat.avatar }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img src="{{ chat.avatar }}">
                     {% else %}
-                        <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                        <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}">
                     {% endif %}
                 {% else %}
-                    👥
+                    <span style="font-size: 20px;">👥</span>
                 {% endif %}
             </div>
-            <a href="{{ url_for('messages') }}" class="username">{{ chat.name }}</a>
-            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-secondary" style="padding: 5px 10px;">👥</a>
-            <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="btn btn-secondary" style="padding: 5px 10px;">⚙️</a>
-            <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="btn btn-primary" style="padding: 5px 10px;">+</a>
+            <div class="ig-group-info">
+                <div class="ig-group-name">{{ chat.name }}</div>
+                <div class="ig-group-count">{{ chat.members.count() }} участников</div>
+            </div>
+            <div class="ig-header-actions">
+                <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="ig-header-btn">👥</a>
+                <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="ig-header-btn">➕</a>
+                <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="ig-header-btn">⚙️</a>
+            </div>
         </div>
         
-        <div class="chat" id="chat">
+        <div class="ig-messages-area" id="messagesArea">
             {% for msg in messages %}
-                <div class="chat-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
-                    {% if msg.sender_id != current_user.id %}
-                        <div style="font-size: 0.75rem; color: var(--primary); font-weight: 600; margin-bottom: 3px;">
-                            {{ msg.sender.username }}
-                        </div>
+            <div class="ig-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+                {% if msg.sender_id != current_user.id %}
+                    <div class="ig-sender-name">{{ msg.sender.username }}</div>
+                {% endif %}
+                
+                {% if msg.post_id %}
+                    {% set post = Post.query.get(msg.post_id) %}
+                    {% if post %}
+                    <a href="{{ url_for('view_post', post_id=post.id) }}" style="display: block; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-top: 4px; text-decoration: none; color: var(--text);">
+                        <div style="font-weight: 600; font-size: 13px;">{{ post.author.username }}</div>
+                        <div style="font-size: 13px;">{{ post.body[:50] if post.body else '📷' }}...</div>
+                    </a>
                     {% endif %}
-                    
-                    {% if msg.post_id %}
-                        {% set post = Post.query.get(msg.post_id) %}
-                        {% if post %}
-                        <a href="{{ url_for('view_post', post_id=post.id) }}" style="text-decoration: none; color: inherit;">
-                            <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); max-width: 250px;">
-                                <div style="padding: 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border);">
-                                    <div class="avatar" style="width: 24px; height: 24px; font-size: 0.7rem;">
-                                        {% if post.author.avatar != 'default.png' %}
-                                            <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
-                                        {% else %}
-                                            {{ post.author.username[0].upper() }}
-                                        {% endif %}
-                                    </div>
-                                    <span style="font-size: 0.85rem; font-weight: 600;">{{ post.author.username }}</span>
-                                </div>
-                                {% if post.media.count() > 0 %}
-                                    {% set media = post.media.first() %}
-                                    <div style="aspect-ratio: 1;">
-                                        {% if media.cloudinary_url %}
-                                            {% if media.media_type == 'video' %}
-                                                <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-                                            {% else %}
-                                                <img src="{{ media.cloudinary_url }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                                            {% endif %}
-                                        {% else %}
-                                            {% if media.media_type == 'video' %}
-                                                <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-                                            {% else %}
-                                                <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                {% elif post.body %}
-                                    <div style="padding: 15px; color: var(--text); font-size: 0.9rem;">
-                                        {{ post.body[:80] }}{% if post.body|length > 80 %}...{% endif %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </a>
-                        {% endif %}
-                    {% elif msg.body or msg.medias.count() > 0 %}
-                        {% if msg.body == '[удалено]' %}
-                        <div style="color: var(--text-light); font-style: italic;">Сообщение удалено</div>
-                        {% else %}
-                        <div>{{ msg.body }}</div>
-                        {% endif %}
-                        {% if msg.medias.count() > 0 %}
-                        <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 100%;">
-                            {% for m in msg.medias %}
-                                {% if m.media_url %}
-                                    {% if m.media_type == 'video' %}
-                                        <div onclick="openModal('{{ m.media_url }}', 'video')" style="cursor: pointer; width: 120px; height: 120px; border-radius: 8px; overflow: hidden; position: relative;">
-                                            <video src="{{ m.media_url }}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: cover;"></video>
-                                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 2rem;">▶</div>
-                                        </div>
-                                    {% elif m.media_type == 'audio' %}
-                                        <audio src="{{ m.media_url }}" controls style="height: 40px;"></audio>
-                                    {% else %}
-                                        <img src="{{ m.media_url }}" alt="" onclick="openModal('{{ m.media_url }}', 'image')" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;">
-                                    {% endif %}
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-{% endif %}
-                        {% endif %}
-                        <div style="margin-top: 5px; display: flex; gap: 5px; align-items: center;">
-                            <div style="position: relative; display: inline-block;">
-                                <button type="button" onclick="var g=this.nextElementSibling; g.style.display=g.style.display==='none'?'grid':'none'" style="background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.9rem;">＋</button>
-                                <div style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100; grid-template-columns: repeat(4, 1fr); gap: 3px;">
-                                    {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
-                                        <form method="POST" action="{{ url_for('react_message', message_id=msg.id) }}" style="display: inline;">
-                                            <input type="hidden" name="emoji" value="{{ r }}">
-                                            <button type="submit" style="background: none; border: none; cursor: pointer; padding: 3px; font-size: 1.1rem;">{{ r }}</button>
-                                        </form>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
-                                {% if msg.reactions|selectattr('emoji', 'equalto', r)|list|length > 0 %}
-                                    <span style="font-size: 0.75rem; color: #666;">{{ r }}{{ msg.reactions|selectattr('emoji', 'equalto', r)|list|length }}</span>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
-                        <div style="display: flex; gap: 5px;">
-                            <a href="{{ url_for('forward_message', message_id=msg.id) }}" style="font-size: 0.8rem; color: var(--text-light);">📤</a>
-                            {% if msg.sender_id == current_user.id %}
-                            <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}" style="display: inline;">
-                                <input type="hidden" name="delete_type" value="all">
-                                <button type="submit" style="background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 0.8rem;" onclick="return confirm('Удалить для всех?')">🗑️</button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    </div>
+                {% elif msg.body and msg.body != '[удалено]' %}
+                    <span>{{ msg.body }}</span>
+                {% elif msg.body == '[удалено]' %}
+                    <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
+                {% endif %}
+                
+                {% if msg.medias.count() > 0 %}
+                <div class="ig-message-media">
+                    {% for m in msg.medias %}
+                        <img src="{{ m.media_url }}" onclick="openMedia(this.src)">
+                    {% endfor %}
                 </div>
+                {% endif %}
+                
+                <span class="ig-message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
+                
+                <div class="ig-message-reactions">
+                    <button class="ig-input-btn" style="font-size: 14px;" onclick="forwardMsg({{ msg.id }})">📤</button>
+                </div>
+            </div>
             {% else %}
-                <div style="text-align: center; color: var(--text-light); padding: 20px;">
-                    Пока нет сообщений
-                </div>
+            <div style="text-align: center; opacity: 0.5; padding: 40px;">
+                Начните общение в группе
+            </div>
             {% endfor %}
         </div>
         
-        <form class="message-form" method="POST" action="" enctype="multipart/form-data" id="messageForm">
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <label for="file-input" style="cursor: pointer; font-size: 1.5rem; color: var(--primary);">📎</label>
-                <input type="file" id="file-input" name="media" accept="image/*,video/*" style="display: none;" onchange="document.getElementById('messageForm').submit()">
-                <input type="text" name="body" placeholder="Напишите сообщение..." style="flex: 1;">
-                <button type="submit" class="btn btn-primary">Отправить</button>
+        <form method="POST" action="" enctype="multipart/form-data" class="ig-input-area" id="messageForm">
+            <button type="button" class="ig-input-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+            <input type="file" id="fileInput" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.submit()">
+            <div class="ig-input-wrap">
+                <input type="text" name="body" class="ig-message-input" placeholder="Сообщение..." id="msgInput">
             </div>
+            <button type="submit" class="ig-send-btn">➤</button>
         </form>
     </div>
     
-    <div id="mediaModal" class="modal" onclick="closeModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center;">
-        <span onclick="closeModal()" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 2rem; cursor: pointer;">&times;</span>
-        <img id="modalImage" style="max-width: 90%; max-height: 90%; object-fit: contain;">
-        <video id="modalVideo" controls style="max-width: 90%; max-height: 90%;"></video>
+    <div class="ig-modal" id="mediaModal" onclick="this.classList.remove('show')">
+        <img id="modalImg">
     </div>
     
     <script>
-        document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
-        
-        // Адаптация для мобильных - поднятие формы над клавиатурой
-        const messageInput = document.querySelector('input[name="body"]');
-        const messageForm = document.querySelector('.message-form');
-        const chatContainer = document.querySelector('.chat');
-        if (messageInput && messageForm) {
-            messageInput.addEventListener('focus', function() {
-                setTimeout(function() {
-                    messageForm.scrollIntoView({behavior: 'smooth', block: 'end'});
-                }, 100);
-            });
-            
-            window.visualViewport.addEventListener('resize', function() {
-                if (chatContainer) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
-            });
+        function openMedia(src) {
+            document.getElementById('modalImg').src = src;
+            document.getElementById('mediaModal').classList.add('show');
         }
         
-        function openModal(url, type) {
-            const modal = document.getElementById('mediaModal');
-            const img = document.getElementById('modalImage');
-            const video = document.getElementById('modalVideo');
-            
-            if (type === 'video') {
-                img.style.display = 'none';
-                video.style.display = 'block';
-                video.src = url;
-            } else {
-                img.style.display = 'block';
-                video.style.display = 'none';
-                img.src = url;
+        function forwardMsg(msgId) {
+            window.location.href = '/message/' + msgId + '/forward';
+        }
+        
+        document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
+        
+        document.getElementById('msgInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                document.getElementById('messageForm').submit();
             }
-            modal.style.display = 'flex';
-        }
-        
-        function closeModal() {
-            const modal = document.getElementById('mediaModal');
-            const video = document.getElementById('modalVideo');
-            video.pause();
-            video.src = '';
-            modal.style.display = 'none';
-        }
+        });
     </script>
-{% endblock %}
+</body>
+</html>

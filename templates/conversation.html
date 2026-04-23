@@ -1,306 +1,232 @@
-{% extends "base.html" %}
-{% block title %}{{ other_user.username }} - Сообщения - Social{% endblock %}
-{% block content %}
-    <div class="card chat-card">
-        <div class="chat-header">
-            <a href="{{ url_for('messages') }}" class="btn btn-secondary">←</a>
-            <div class="avatar" style="margin-right: 10px;">{{ other_user.username[0].upper() }}</div>
-            <a href="{{ url_for('user_profile', username=other_user.username) }}" class="username">{{ other_user.username }}</a>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ other_user.username }} - Social</title>
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
+    <style>
+        :root { --bg: #000; --text: #fff; --surface: #262626; --border: #262626; --primary: #0095f6; }
+        .light-mode { --bg: #fff; --text: #000; --surface: #f0f0f0; --border: #dbdbdb; --primary: #0095f6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        
+        .ig-chat-view { display: flex; flex-direction: column; height: 100vh; max-width: 935px; margin: 0 auto; }
+        
+        .ig-chat-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .ig-back-btn { background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; }
+        .ig-user-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .ig-avatar-sm { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #f09433, #bc1888); }
+        .ig-avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
+        .ig-avatar-sm .initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; }
+        .ig-user-name { font-size: 16px; font-weight: 600; }
+        .ig-online { font-size: 12px; color: #888; }
+        .ig-header-actions { display: flex; gap: 16px; }
+        .ig-header-btn { background: none; border: none; font-size: 22px; color: var(--text); cursor: pointer; }
+        
+        .ig-messages-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .ig-message { max-width: 75%; padding: 12px 16px; border-radius: 22px; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word; }
+        .ig-message.sent { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+        .ig-message.received { align-self: flex-start; background: var(--surface); color: var(--text); border-bottom-left-radius: 4px; }
+        .ig-message-time { font-size: 10px; opacity: 0.7; margin-left: 8px; }
+        
+        .ig-message-media { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+        .ig-message-media img { max-width: 200px; max-height: 200px; border-radius: 12px; cursor: pointer; }
+        .ig-message-media video { max-width: 200px; max-height: 200px; border-radius: 12px; }
+        
+        .ig-message-reactions { display: flex; gap: 4px; position: absolute; bottom: -12px; right: 8px; background: var(--bg); border-radius: 12px; padding: 2px 4px; opacity: 0; transition: opacity 0.2s; }
+        .ig-message:hover .ig-message-reactions { opacity: 1; }
+        .ig-reaction-btn { background: none; border: none; font-size: 14px; cursor: pointer; }
+        
+        .ig-message-reaction-display { display: flex; gap: 4px; margin-top: 4px; font-size: 12px; }
+        
+        .ig-forward-link { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin-top: 4px; text-decoration: none; color: var(--text); }
+        
+        .ig-input-area { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .ig-input-wrap { flex: 1; display: flex; align-items: center; background: var(--surface); border-radius: 22px; padding: 8px 16px; }
+        .ig-message-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none; }
+        .ig-message-input::placeholder { color: #888; }
+        .ig-input-actions { display: flex; gap: 12px; }
+        .ig-input-btn { background: none; border: none; font-size: 22px; cursor: pointer; }
+        
+        .ig-send-btn { background: var(--primary); color: #fff; border: none; padding: 0; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        .ig-emoji-picker { position: fixed; bottom: 70px; left: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: none; grid-template-columns: repeat(6, 1fr); gap: 8px; z-index: 100; }
+        .ig-emoji-picker.show { display: grid; }
+        .ig-emoji-btn { background: none; border: none; font-size: 22px; cursor: pointer; }
+        
+        .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+        .ig-modal.show { display: flex; }
+        .ig-modal img, .ig-modal video { max-width: 90%; max-height: 90%; object-fit: contain; }
+        .ig-modal-close { position: absolute; top: 16px; right: 16px; color: #fff; font-size: 32px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="ig-chat-view">
+        <div class="ig-chat-header">
+            <button class="ig-back-btn" onclick="window.location.href='{{ url_for('messages') }}'">←</button>
+            <a href="{{ url_for('user_profile', username=other_user.username) }}" class="ig-user-info">
+                <div class="ig-avatar-sm">
+                    {% if other_user.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=other_user.avatar) }}">
+                    {% else %}
+                        <div class="initials">{{ other_user.username[0].upper() }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="ig-user-name">{{ other_user.username }}</div>
+                    <div class="ig-online">Активен(а)</div>
+                </div>
+            </a>
+            <div class="ig-header-actions">
+                <button class="ig-header-btn">📞</button>
+                <button class="ig-header-btn">🎥</button>
+                <button class="ig-header-btn">⋮</button>
+            </div>
         </div>
         
-        <div class="chat" id="chat">
+        <div class="ig-messages-area" id="messagesArea">
             {% for msg in messages %}
-                <div class="chat-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
-                    {% if msg.post_id %}
-                        {% set post = Post.query.get(msg.post_id) %}
-                        {% if post %}
-                        <a href="{{ url_for('view_post', post_id=post.id) }}" style="text-decoration: none; color: inherit;">
-                            <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); max-width: 250px;">
-                                <div style="padding: 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border);">
-                                    <div class="avatar" style="width: 24px; height: 24px; font-size: 0.7rem;">
-                                        {% if post.author.avatar != 'default.png' %}
-                                            <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
-                                        {% else %}
-                                            {{ post.author.username[0].upper() }}
-                                        {% endif %}
-                                    </div>
-                                    <span style="font-size: 0.85rem; font-weight: 600;">{{ post.author.username }}</span>
-                                </div>
-                                {% if post.media.count() > 0 %}
-                                    {% set media = post.media.first() %}
-                                    <div style="aspect-ratio: 1;">
-                                        {% if media.cloudinary_url %}
-                                            {% if media.media_type == 'video' %}
-                                                <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-                                            {% else %}
-                                                <img src="{{ media.cloudinary_url }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                                            {% endif %}
-                                        {% else %}
-                                            {% if media.media_type == 'video' %}
-                                                <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-                                            {% else %}
-                                                <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                {% elif post.body %}
-                                    <div style="padding: 15px; color: var(--text); font-size: 0.9rem;">
-                                        {{ post.body[:80] }}{% if post.body|length > 80 %}...{% endif %}
-                                    </div>
-                                {% endif %}
-                                <div style="padding: 8px; display: flex; gap: 15px; font-size: 0.8rem; color: var(--text-light);">
-                                    <span>❤️ {{ post.likes.count() }}</span>
-                                    <span>💬 {{ post.comments.count() }}</span>
-                                </div>
-                            </div>
-                        </a>
-                        {% endif %}
-                    {% elif msg.body or msg.medias.count() > 0 %}
-                        {% if msg.body == '[удалено]' %}
-                        <div style="color: var(--text-light); font-style: italic;">Сообщение удалено</div>
+            <div class="ig-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}" data-id="{{ msg.id }}">
+                {% if msg.post_id %}
+                    {% set post = Post.query.get(msg.post_id) %}
+                    {% if post %}
+                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="ig-forward-link">
+                        <div style="font-size: 12px; font-weight: 600;">Пост: {{ post.author.username }}</div>
+                        {% if post.body %}<div style="font-size: 13px;">{{ post.body[:50] }}...</div>{% endif %}
+                    </a>
+                    {% endif %}
+                {% elif msg.body and msg.body != '[удалено]' %}
+                    <span>{{ msg.body }}</span>
+                {% elif msg.body == '[удалено]' %}
+                    <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
+                {% endif %}
+                
+                {% if msg.medias.count() > 0 %}
+                <div class="ig-message-media">
+                    {% for m in msg.medias %}
+                        {% if m.media_type == 'video' %}
+                            <video src="{{ m.media_url }}" muted></video>
                         {% else %}
-                        <div>{{ msg.body }}</div>
+                            <img src="{{ m.media_url }}" onclick="openMedia(this.src, 'image')">
                         {% endif %}
-                        {% if msg.medias.count() > 0 %}
-                        <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; max-width: 100%;">
-                        {% for m in msg.medias %}
-                            {% if m.media_url %}
-                                {% if m.media_type == 'video' %}
-                                    <div onclick="openModal('{{ m.media_url }}', 'video')" style="cursor: pointer; width: 120px; height: 120px; border-radius: 8px; overflow: hidden;">
-                                        <video src="{{ m.media_url }}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: cover;"></video>
-                                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 2rem;">▶</div>
-                                    </div>
-                                {% elif m.media_type == 'audio' %}
-                                    <audio src="{{ m.media_url }}" controls style="height: 40px;"></audio>
-                                {% else %}
-                                    <img src="{{ m.media_url }}" alt="" onclick="openModal('{{ m.media_url }}', 'image')" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer;">
-                                {% endif %}
-                            {% endif %}
-                        {% endfor %}
-                        </div>
-{% endif %}
-                        {% endif %}
-                        <div style="margin-top: 5px; display: flex; gap: 5px; align-items: center;">
-                            <div style="position: relative; display: inline-block;">
-                                <button type="button" onclick="var g=this.nextElementSibling; g.style.display=g.style.display==='none'?'grid':'none'" style="background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.9rem;">＋</button>
-                                <div style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100; grid-template-columns: repeat(4, 1fr); gap: 3px;">
-                                    {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
-                                        <form method="POST" action="{{ url_for('react_message', message_id=msg.id) }}" style="display: inline;">
-                                            <input type="hidden" name="emoji" value="{{ r }}">
-                                            <button type="submit" style="background: none; border: none; cursor: pointer; padding: 3px; font-size: 1.1rem;">{{ r }}</button>
-                                        </form>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
-                                {% if msg.reactions|selectattr('emoji', 'equalto', r)|list|length > 0 %}
-                                    <span style="font-size: 0.75rem; color: #666;">{{ r }}{{ msg.reactions|selectattr('emoji', 'equalto', r)|list|length }}</span>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="chat-time">{{ msg.created_at.strftime('%d.%m %H:%M') }}</div>
-                        <div style="display: flex; gap: 5px;">
-                            <a href="{{ url_for('forward_message', message_id=msg.id) }}" style="font-size: 0.8rem; color: var(--text-light);">📤</a>
-                            {% if msg.sender_id == current_user.id %}
-                            <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}" style="display: inline;">
-                                <input type="hidden" name="delete_type" value="all">
-                                <button type="submit" style="background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 0.8rem;" onclick="return confirm('Удалить для всех?')">🗑️</button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
+                {% endif %}
+                
+                <span class="ig-message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
+                
+                <div class="ig-message-reactions">
+                    <button class="ig-reaction-btn" onclick="showEmojiPicker({{ msg.id }})">😀</button>
+                    <button class="ig-reaction-btn" onclick="forwardMsg({{ msg.id }})">📤</button>
+                    {% if msg.sender_id == current_user.id %}
+                    <button class="ig-reaction-btn" onclick="deleteMsg({{ msg.id }})">🗑️</button>
+                    {% endif %}
+                </div>
+                
+                {% if msg.reactions.count() > 0 %}
+                <div class="ig-message-reaction-display">
+                    {% for r in msg.reactions %}{{ r.emoji }}{% endfor %}
+                </div>
+                {% endif %}
+            </div>
             {% else %}
-                <div style="text-align: center; color: var(--text-light); padding: 20px;">
-                    Начните общение с {{ other_user.username }}
-                </div>
+            <div style="text-align: center; opacity: 0.5; padding: 40px;">
+                Отправьте сообщение, чтобы начать общение
+            </div>
             {% endfor %}
         </div>
         
-        <form class="message-form" method="POST" action="" enctype="multipart/form-data">
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <label for="file-input" style="cursor: pointer; font-size: 1.5rem; color: var(--primary);">📎</label>
-                <input type="file" id="file-input" name="media" accept="image/*,video/*,audio/*" style="display: none;" onchange="this.form.submit()">
-                <button type="button" onclick="toggleVoice()" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">🎤</button>
-                <button type="button" onclick="toggleStickers()" style="background: none; border: none; cursor: pointer; font-size: 1.5rem;">😀</button>
-                <input type="text" name="body" placeholder="Напишите сообщение..." style="flex: 1;">
-                <button type="submit" class="btn btn-primary">Отправить</button>
+        <div class="ig-emoji-picker" id="emojiPicker">
+            {% for e in ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥', '❤️‍🔥', '💯', '👏', '😎'] %}
+            <button class="ig-emoji-btn" onclick="reactToMessage('{{ e }}')">{{ e }}</button>
+            {% endfor %}
+        </div>
+        
+        <form method="POST" action="" enctype="multipart/form-data" class="ig-input-area" id="messageForm">
+            <div class="ig-input-actions">
+                <button type="button" class="ig-input-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+                <input type="file" id="fileInput" name="media" accept="image/*,video/*,audio/*" style="display: none;" onchange="this.form.submit()">
+                <button type="button" class="ig-input-btn" onclick="toggleEmojiPicker()">😀</button>
             </div>
-            <div id="voiceRecorder" style="display: none; padding: 10px; background: var(--bg); border-radius: 25px; margin-top: 5px; align-items: center; gap: 10px;">
-                <div id="recordIndicator" style="display: none; align-items: center; gap: 8px;">
-                    <span style="width: 10px; height: 10px; background: #ff4757; border-radius: 50%; animation: pulse 1s infinite;"></span>
-                    <span id="recordStatus" style="color: #ff4757; font-size: 0.9rem;">0:00</span>
-                </div>
-                <button type="button" id="recordBtn" onclick="startRecording()" style="background: #ff4757; color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-                </button>
-                <button type="button" id="stopBtn" onclick="stopRecording()" style="display: none; background: #2ed573; color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; align-items: center; justify-content: center;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><rect x="6" y="6" width="12" height="12"/></svg>
-                </button>
-                <button type="button" id="playBtn" onclick="playRecording()" style="display: none; background: var(--primary); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; align-items: center; justify-content: center;">
-                    <svg id="playIcon" width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
-                </button>
-                <button type="button" id="sendBtn" onclick="sendRecording()" style="display: none; background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9rem;">Отправить</button>
+            <div class="ig-input-wrap">
+                <input type="text" name="body" class="ig-message-input" placeholder="Сообщение..." id="msgInput">
             </div>
-            <style>
-                @keyframes pulse {
-                    0% { opacity: 1; transform: scale(1); }
-                    50% { opacity: 0.5; transform: scale(1.2); }
-                    100% { opacity: 1; transform: scale(1); }
-                }
-            </style>
-            <div id="stickerPicker" style="display: none; position: absolute; bottom: 60px; left: 10px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; max-width: 300px; max-height: 200px; overflow-y: auto;">
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
-                    <button type="button" onclick="sendSticker('😀')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">😀</button>
-                    <button type="button" onclick="sendSticker('😂')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">😂</button>
-                    <button type="button" onclick="sendSticker('😍')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">😍</button>
-                    <button type="button" onclick="sendSticker('🥰')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">🥰</button>
-                    <button type="button" onclick="sendSticker('😎')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">😎</button>
-                    <button type="button" onclick="sendSticker('🤔')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">🤔</button>
-                    <button type="button" onclick="sendSticker('😴')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">😴</button>
-                    <button type="button" onclick="sendSticker('🤯')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">🤯</button>
-                    <button type="button" onclick="sendSticker('😭')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">😭</button>
-                    <button type="button" onclick="sendSticker('🥺')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">🥺</button>
-                    <button type="button" onclick="sendSticker('😡')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">😡</button>
-                    <button type="button" onclick="sendSticker('👍')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">👍</button>
-                </div>
-            </div>
+            <button type="submit" class="ig-send-btn">➤</button>
         </form>
     </div>
     
-    <!-- Модальное окно для просмотра -->
-    <div id="mediaModal" class="modal" onclick="closeModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center;">
-        <span onclick="closeModal()" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 2rem; cursor: pointer;">&times;</span>
-        <img id="modalImage" style="max-width: 90%; max-height: 90%; object-fit: contain;">
-        <video id="modalVideo" controls style="max-width: 90%; max-height: 90%;"></video>
+    <div class="ig-modal" id="mediaModal" onclick="closeMedia()">
+        <span class="ig-modal-close">&times;</span>
+        <img id="modalImg">
     </div>
     
     <script>
-        function openModal(url, type) {
-            const modal = document.getElementById('mediaModal');
-            const img = document.getElementById('modalImage');
-            const video = document.getElementById('modalVideo');
-            
-            if (type === 'video') {
-                img.style.display = 'none';
-                video.style.display = 'block';
-                video.src = url;
-            } else {
-                img.style.display = 'block';
-                video.style.display = 'none';
-                img.src = url;
-            }
-            modal.style.display = 'flex';
+        let selectedMsgId = null;
+        
+        function toggleEmojiPicker() {
+            document.getElementById('emojiPicker').classList.toggle('show');
         }
         
-        function closeModal() {
-            const modal = document.getElementById('mediaModal');
-            const video = document.getElementById('modalVideo');
-            video.pause();
-            video.src = '';
-            modal.style.display = 'none';
+        function showEmojiPicker(msgId) {
+            selectedMsgId = msgId;
+            const picker = document.getElementById('emojiPicker');
+            picker.classList.toggle('show');
+            picker.style.left = '16px';
         }
         
-        document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
-        
-        // Адаптация для мобильных - поднятие формы над клавиатурой
-        const messageInput = document.querySelector('input[name="body"]');
-        const messageForm = document.querySelector('.message-form');
-        if (messageInput && messageForm) {
-            messageInput.addEventListener('focus', function() {
-                setTimeout(function() {
-                    messageForm.scrollIntoView({behavior: 'smooth', block: 'end'});
-                }, 100);
-            });
-            
-            window.visualViewport.addEventListener('resize', function() {
-                document.querySelector('.chat').scrollTop = document.querySelector('.chat').scrollHeight;
-            });
-        }
-        
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let audioBlob = null;
-        let recordTimer = null;
-        let recordSeconds = 0;
-        
-        function toggleVoice() {
-            document.getElementById('voiceRecorder').style.display = document.getElementById('voiceRecorder').style.display === 'none' ? 'flex' : 'none';
-            document.getElementById('stickerPicker').style.display = 'none';
-            document.getElementById('voiceRecorder').style.flexDirection = 'row';
-        }
-        
-        function toggleStickers() {
-            document.getElementById('stickerPicker').style.display = document.getElementById('stickerPicker').style.display === 'none' ? 'grid' : 'none';
-            document.getElementById('voiceRecorder').style.display = 'none';
-        }
-        
-        async function startRecording() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                recordSeconds = 0;
-                
-                mediaRecorder.ondataavailable = e => {
-                    if (e.data.size > 0) audioChunks.push(e.data);
-                };
-                
-                mediaRecorder.onstop = () => {
-                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    document.getElementById('recordIndicator').style.display = 'none';
-                    document.getElementById('stopBtn').style.display = 'none';
-                    document.getElementById('playBtn').style.display = 'flex';
-                    document.getElementById('sendBtn').style.display = 'inline-block';
-                };
-                
-                mediaRecorder.start();
-                document.getElementById('recordBtn').style.display = 'none';
-                document.getElementById('recordIndicator').style.display = 'flex';
-                
-                recordTimer = setInterval(() => {
-                    recordSeconds++;
-                    document.getElementById('recordStatus').textContent = Math.floor(recordSeconds / 60) + ':' + (recordSeconds % 60).toString().padStart(2, '0');
-                }, 1000);
-            } catch (err) {
-                alert('Ошибка доступа к микрофону: ' + err.message);
-            }
-        }
-        
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-                clearInterval(recordTimer);
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            }
-        }
-        
-        function playRecording() {
-            if (audioBlob) {
-                const audio = new Audio(URL.createObjectURL(audioBlob));
-                audio.play();
-            }
-        }
-        
-        function sendRecording() {
-            if (audioBlob) {
-                const formData = new FormData();
-                formData.append('media', audioBlob, 'voice.webm');
-                formData.append('body', '🎤');
-                
-                fetch(window.location.href, {
+        function reactToMessage(emoji) {
+            if (selectedMsgId) {
+                fetch('/message/' + selectedMsgId + '/react', {
                     method: 'POST',
-                    body: formData
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'emoji=' + encodeURIComponent(emoji)
                 }).then(() => window.location.reload());
             }
         }
         
-        function sendSticker(emoji) {
-            const input = document.querySelector('input[name="body"]');
-            input.value = emoji;
-            document.querySelector('.message-form').submit();
+        function forwardMsg(msgId) {
+            window.location.href = '/message/' + msgId + '/forward';
         }
+        
+        function deleteMsg(msgId) {
+            if (confirm('Удалить сообщение?')) {
+                fetch('/message/' + msgId + '/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'delete_type=all'
+                }).then(() => window.location.reload());
+            }
+        }
+        
+        function openMedia(src, type) {
+            document.getElementById('modalImg').src = src;
+            document.getElementById('mediaModal').classList.add('show');
+        }
+        
+        function closeMedia() {
+            document.getElementById('mediaModal').classList.remove('show');
+        }
+        
+        document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
+        
+        document.getElementById('msgInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                document.getElementById('messageForm').submit();
+            }
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.getElementById('emojiPicker').classList.remove('show');
+            }
+        });
     </script>
-{% endblock %}
+</body>
+</html>

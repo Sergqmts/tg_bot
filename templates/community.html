@@ -1,73 +1,143 @@
-{% extends "base.html" %}
-{% block title %}{{ community.name }} - Сообщество{% endblock %}
-{% block content %}
-    <!-- Заголовок сообщества -->
-    <div style="max-width: 600px; margin: 0 auto 30px; padding: 20px 0; border-bottom: 1px solid var(--border);">
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div class="avatar" style="width: 80px; height: 80px; font-size: 2rem;">
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ community.name }} - Social</title>
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
+    <style>
+        :root { --bg: #000; --text: #fff; --surface: #262626; --border: #262626; --card-bg: #121212; }
+        .light-mode { --bg: #fff; --text: #000; --surface: #f0f0f0; --border: #dbdbdb; --card-bg: #fff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+        
+        .ig-page { max-width: 935px; margin: 0 auto; padding: 60px 20px 20px; }
+        
+        .ig-header { display: flex; align-items: center; gap: 28px; padding: 24px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+        .ig-avatar-lg { width: 150px; height: 150px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+        .light-mode .ig-avatar-lg { border: 3px solid var(--bg); }
+        .ig-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+        .ig-avatar-lg .initials { width: 100%; height: 100%; background: linear-gradient(45deg, #f09433, #bc1888); display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 600; color: #fff; }
+        
+        .ig-info { flex: 1; }
+        .ig-name-row { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+        .ig-name { font-size: 28px; font-weight: 400; }
+        .ig-private-badge { background: #0095f6; color: #fff; padding: 3px 12px; border-radius: 4px; font-size: 14px; font-weight: 600; }
+        
+        .ig-stats { display: flex; gap: 40px; margin-bottom: 20px; }
+        .ig-stat-num { font-weight: 600; }
+        .ig-stat-label { color: var(--text); font-weight: 400; }
+        
+        .ig-bio { margin-bottom: 24px; max-width: 400px; }
+        
+        .ig-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+        
+        .ig-btn { padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        .ig-btn-primary { background: #0095f6; color: #fff; }
+        .ig-btn-secondary { background: var(--surface); color: var(--text); }
+        .ig-btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        
+        .ig-tabs { display: flex; justify-content: center; gap: 60px; border-top: 1px solid var(--border); margin-bottom: 24px; }
+        .ig-tab { padding: 16px 0; color: var(--text); text-decoration: none; font-size: 12px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; border-top: 1px solid transparent; margin-top: -1px; cursor: pointer; }
+        .ig-tab.active { border-top-color: var(--text); }
+        
+        .ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+        .ig-grid-item { aspect-ratio: 1; overflow: hidden; cursor: pointer; position: relative; background: var(--surface); }
+        .ig-grid-item img, .ig-grid-item video { width: 100%; height: 100%; object-fit: cover; }
+        .ig-grid-item:hover .ig-overlay { opacity: 1; }
+        .ig-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; gap: 16px; opacity: 0; transition: opacity 0.2s; }
+        .ig-overlay span { color: #fff; font-weight: 600; font-size: 16px; }
+        
+        .ig-empty { grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text); }
+        
+        @media (max-width: 640px) {
+            .ig-header { flex-direction: column; text-align: center; }
+            .ig-name-row { justify-content: center; }
+            .ig-stats { justify-content: center; }
+            .ig-bio { text-align: center; margin-left: auto; margin-right: auto; }
+            .ig-actions { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ig-page">
+        <div class="ig-header">
+            <div class="ig-avatar-lg">
                 {% if community.image != 'community_default.png' %}
-                    <img src="{{ url_for('uploaded_file', filename=community.image) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+                    <img src="{{ url_for('uploaded_file', filename=community.image) }}">
                 {% else %}
-                    {{ community.name[0].upper() }}
+                    <div class="initials">{{ community.name[0].upper() }}</div>
                 {% endif %}
             </div>
-            <div style="flex: 1;">
-                <h1 style="font-size: 1.5rem; margin-bottom: 5px;">
-                {{ community.name }}
-                {% if community.is_private %}<span style="font-size: 0.8rem; background: var(--accent); padding: 2px 8px; border-radius: 10px;">🔒</span>{% endif %}
-            </h1>
-                <div style="color: var(--text-light); font-size: 0.9rem;">
-                    {{ community.members.count() }} участников · {{ community.posts.count() }} записей{% if community.events|length > 0 %} · {{ community.events|length }} мероприятий{% endif %}
+            
+            <div class="ig-info">
+                <div class="ig-name-row">
+                    <h1 class="ig-name">{{ community.name }}</h1>
+                    {% if community.is_private %}
+                        <span class="ig-private-badge">🔒 Приватное</span>
+                    {% endif %}
+                    {% if community.creator_id == current_user.id %}
+                        <a href="{{ url_for('community_edit', slug=community.slug) }}" class="ig-btn ig-btn-outline">✏️ Редактировать</a>
+                    {% endif %}
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <a href="{{ url_for('community', slug=community.slug) }}" style="padding: 5px 15px; background: var(--primary); color: white; border-radius: 20px; text-decoration: none; font-size: 0.9rem;">Записи</a>
-                    <a href="{{ url_for('community_events', slug=community.slug) }}" style="padding: 5px 15px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 20px; text-decoration: none; font-size: 0.9rem;">Мероприятия</a>
+                
+                <div class="ig-stats">
+                    <span><span class="ig-stat-num">{{ community.members.count() }}</span> <span class="ig-stat-label">участников</span></span>
+                    <span><span class="ig-stat-num">{{ community.posts.count() }}</span> <span class="ig-stat-label">публикаций</span></span>
+                </div>
+                
+                {% if community.description %}
+                    <div class="ig-bio">{{ community.description }}</div>
+                {% endif %}
+                
+                <div class="ig-actions">
+                    {% if current_user.is_authenticated %}
+                        {% if is_member %}
+                            <form method="POST" action="{{ url_for('leave_community', slug=community.slug) }}">
+                                <button type="submit" class="ig-btn ig-btn-secondary">Покинуть</button>
+                            </form>
+                        {% elif current_user.is_pending(community) %}
+                            <span class="ig-btn ig-btn-secondary" style="opacity: 0.7;">⏳ Заявка отправлена</span>
+                        {% else %}
+                            <form method="POST" action="{{ url_for('join_community', slug=community.slug) }}">
+                                <button type="submit" class="ig-btn ig-btn-primary">
+                                    {% if community.is_private %}📩 Подать заявку{% else %}Подписаться{% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                    <a href="{{ url_for('community_members', slug=community.slug) }}" class="ig-btn ig-btn-outline">👥 Участники</a>
                 </div>
             </div>
         </div>
         
-        {% if community.description %}
-            <p style="margin-top: 15px; color: var(--text);">{{ community.description }}</p>
+        <div class="ig-tabs">
+            <a href="{{ url_for('community', slug=community.slug) }}" class="ig-tab active">Публикации</a>
+            <a href="{{ url_for('community_events', slug=community.slug) }}" class="ig-tab">Мероприятия</a>
+            {% if is_admin %}
+                <a href="{{ url_for('community_requests', slug=community.slug) }}" class="ig-tab">Заявки</a>
+            {% endif %}
+        </div>
+        
+        {% if community.creator_id == current_user.id %}
+            <div style="margin-bottom: 20px;">
+                <a href="{{ url_for('community_post', slug=community.slug) }}" class="ig-btn ig-btn-primary" style="width: 100%; justify-content: center;">📝 Написать от сообщества</a>
+            </div>
         {% endif %}
         
-        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-            {% if current_user.is_authenticated %}
-                {% if is_member %}
-                    <form method="POST" action="{{ url_for('leave_community', slug=community.slug) }}">
-                        <button type="submit" class="btn btn-secondary">Покинуть</button>
-                    </form>
-                {% elif current_user.is_pending(community) %}
-                    <span class="btn btn-secondary" style="opacity: 0.7;">Заявка на рассмотрении</span>
-                {% else %}
-                    <form method="POST" action="{{ url_for('join_community', slug=community.slug) }}">
-                        <button type="submit" class="btn btn-primary">
-                            {% if community.is_private %}Подать заявку{% else %}Вступить{% endif %}
-                        </button>
-                    </form>
-                {% endif %}
-            {% endif %}
-            <a href="{{ url_for('community_members', slug=community.slug) }}" class="btn btn-secondary">Участники</a>
-            {% if is_admin and community.is_private %}
-                <a href="{{ url_for('community_requests', slug=community.slug) }}" class="btn btn-secondary">Заявки</a>
-            {% endif %}
-        </div>
-    </div>
-    
-    {% if current_user.is_authenticated and community.creator_id == current_user.id %}
-        <div style="max-width: 600px; margin: 0 auto 30px;">
-            <a href="{{ url_for('community_post', slug=community.slug) }}" class="btn btn-primary" style="width: 100%;">Написать от имени сообщества</a>
-        </div>
-    {% endif %}
-    
-    <!-- Посты в сетке 3 колонки -->
-    <div class="posts-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
-        {% for post in posts %}
-            <div class="post-card" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
+        <div class="ig-grid">
+            {% for post in posts %}
+            <div class="ig-grid-item" onclick="window.location.href='{{ url_for('view_post', post_id=post.id) }}'">
                 {% set media = post.media.first() %}
                 {% if media %}
                     {% if media.cloudinary_url %}
                         {% if media.media_type == 'video' %}
-                            <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted></video>
+                            <video src="{{ media.cloudinary_url }}" muted></video>
                         {% else %}
                             <img src="{{ media.cloudinary_url }}" alt="">
                         {% endif %}
@@ -79,20 +149,20 @@
                         {% endif %}
                     {% endif %}
                 {% elif post.body %}
-                    <div class="post-text-only" style="font-size: 0.7rem;">{{ post.body[:30] }}...</div>
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center; font-size: 12px;">{{ post.body[:50] }}...</div>
                 {% endif %}
-                {% if post.author == current_user or current_user.is_admin(community) %}
-                    <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onclick="event.stopPropagation();" onsubmit="return confirm('Удалить пост?')">
-                        <button type="submit" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
-                    </form>
-                {% endif %}
-                <div class="post-overlay">
+                <div class="ig-overlay">
                     <span>❤️ {{ post.likes.count() }}</span>
                     <span>💬 {{ post.comments.count() }}</span>
                 </div>
             </div>
-        {% else %}
-            <p style="grid-column: 1/-1; text-align: center; color: var(--text-light); padding: 40px;">Пока нет записей</p>
-        {% endfor %}
+            {% else %}
+            <div class="ig-empty">
+                <p style="font-size: 16px; margin-bottom: 8px;">Пока нет публикаций</p>
+                <p style="color: #888;">Станьте первым, кто опубликует что-то в этом сообществе</p>
+            </div>
+            {% endfor %}
+        </div>
     </div>
-{% endblock %}
+</body>
+</html>
