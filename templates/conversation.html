@@ -132,8 +132,9 @@
                     {% elif msg.body and msg.body != '[удалено]' %}
 {% if msg.body == '🎤' %}
                         {% set voice_media = msg.medias.first() %}
+                        {% if voice_media %}
                         <div class="ig-voice-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% endif %}">
-                            <button class="ig-play-btn" onclick="playVoice(this, '{{ voice_media.media_url if voice_media else '' }}')">▶</button>
+                            <button class="ig-play-btn" onclick="playVoice(this, '{{ voice_media.media_url }}')">▶</button>
                             <div class="ig-waveform">
                                 <div class="ig-wave-bar"></div>
                                 <div class="ig-wave-bar"></div>
@@ -143,6 +144,7 @@
                             </div>
                             <span class="ig-voice-duration">0:15</span>
                         </div>
+                        {% endif %}
                         {% else %}
                         <span>{{ msg.body }}</span>
                         {% endif %}
@@ -184,13 +186,6 @@
                         <button class="ig-reaction-btn" onclick="deleteMsg({{ msg.id }})">🗑️</button>
                         {% endif %}
                     </div>
-                    
-                    {% set reactions_list = msg.reactions.all() %}
-                    {% if reactions_list|length > 0 %}
-                    <div class="ig-message-reaction-display">
-                        {% for r in reactions_list %}{{ r.emoji }}{% endfor %}
-                    </div>
-                    {% endif %}
                 </div>
             </div>
             {% else %}

@@ -728,10 +728,9 @@ class Message(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
     
-    medias = db.relationship('MessageMedia', backref='message', lazy='dynamic')
-    reactions = db.relationship('MessageReaction', backref='message', lazy='dynamic', cascade='all, delete-orphan')
-    
-    
+medias = db.relationship('MessageMedia', backref='message', lazy='dynamic')
+
+
 class MessageReaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
@@ -740,7 +739,6 @@ class MessageReaction(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     user = db.relationship('User', foreign_keys=[user_id])
-    message = db.relationship('Message', backref='reactions')
 
 
 class Chat(db.Model):
