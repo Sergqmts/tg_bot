@@ -51,7 +51,13 @@
         .ig-message-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none; }
         .ig-message-input::placeholder { color: #888; }
         .ig-input-btn { background: none; border: none; font-size: 22px; cursor: pointer; }
-        .ig-send-btn { background: var(--primary); color: #fff; border: none; padding: 0; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
+        .ig-voice-message { display: flex; align-items: center; gap: 10px; min-width: 160px; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 24px; }
+        .ig-play-btn { width: 28px; height: 28px; border-radius: 50%; background: var(--text); color: var(--bg); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+        .ig-waveform { flex: 1; height: 20px; display: flex; align-items: center; gap: 2px; }
+        .ig-wave-bar { width: 2px; background: currentColor; border-radius: 2px; animation: wave 0.5s ease-in-out infinite alternate; }
+        .ig-wave-bar:nth-child(odd) { animation-delay: 0.1s; }
+        @keyframes wave { from { height: 6px; } to { height: 16px; } }
+        .ig-voice-duration { font-size: 11px; font-weight: 500; }
         
         .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
         .ig-modal.show { display: flex; }
@@ -100,14 +106,39 @@
                     </a>
                     {% endif %}
                 {% elif msg.body and msg.body != '[удалено]' %}
+                    {% if msg.body == '🎤' %}
+                    <div class="ig-voice-message">
+                        <button class="ig-play-btn" onclick="playVoice(this, '{{ msg.medias.first().media_url }}')">▶</button>
+                        <div class="ig-waveform">
+                            <div class="ig-wave-bar"></div>
+                            <div class="ig-wave-bar"></div>
+                            <div class="ig-wave-bar"></div>
+                            <div class="ig-wave-bar"></div>
+                        </div>
+                        <span class="ig-voice-duration">0:15</span>
+                    </div>
+                    {% else %}
                     <span>{{ msg.body }}</span>
+                    {% endif %}
                 {% elif msg.body == '[удалено]' %}
                     <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
                 {% endif %}
                 
                 <div class="ig-message-media">
                     {% for m in msg.medias.all() %}
+                        {% if m.media_type == 'audio' %}
+                        <div class="ig-voice-message">
+                            <button class="ig-play-btn" onclick="playVoice(this, '{{ m.media_url }}')">▶</button>
+                            <div class="ig-waveform">
+                                <div class="ig-wave-bar"></div>
+                                <div class="ig-wave-bar"></div>
+                                <div class="ig-wave-bar"></div>
+                            </div>
+                            <span class="ig-voice-duration">0:15</span>
+                        </div>
+                        {% else %}
                         <img src="{{ m.media_url }}" onclick="openMedia(this.src)">
+                        {% endif %}
                     {% endfor %}
                 </div>
                 
@@ -126,7 +157,7 @@
         
         <form method="POST" action="" enctype="multipart/form-data" class="ig-input-area" id="messageForm">
             <button type="button" class="ig-input-btn" onclick="document.getElementById('fileInput').click()">📎</button>
-            <input type="file" id="fileInput" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.submit()">
+            <input type="file" id="fileInput" name="media" accept="image/*,video/*,audio/*" style="display: none;" onchange="this.form.submit()">
             <div class="ig-input-wrap">
                 <input type="text" name="body" class="ig-message-input" placeholder="Сообщение..." id="msgInput">
             </div>
@@ -146,6 +177,18 @@
         
         function forwardMsg(msgId) {
             window.location.href = '/message/' + msgId + '/forward';
+        }
+        
+        function playVoice(btn, url) {
+            const audio = new Audio(url);
+            if (btn.textContent === '▶') {
+                audio.play();
+                btn.textContent = '⏸';
+                audio.onended = () => btn.textContent = '▶';
+            } else {
+                audio.pause();
+                btn.textContent = '▶';
+            }
         }
         
         document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
