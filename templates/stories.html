@@ -4,10 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Истории - Social</title>
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
     <style>
+        :root {
+            --bg: #000;
+            --text: #fff;
+            --border: #262626;
+        }
+        .light-mode {
+            --bg: #fff;
+            --text: #000;
+            --border: #dbdbdb;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root { --ig-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg, #000); color: var(--text, #fff); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
         
         .ig-stories-page {
             padding: 70px 0 20px;
@@ -15,7 +31,7 @@
         
         .ig-stories-header {
             padding: 12px 16px;
-            border-bottom: 1px solid var(--border, #262626);
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: center;
         }
@@ -53,18 +69,20 @@
         .ig-story-ring.viewed {
             background: #262626;
         }
+        .light-mode .ig-story-ring.viewed { background: #dbdbdb; }
         
         .ig-story-ring-inner {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            border: 2px solid var(--bg, #000);
+            border: 2px solid var(--bg);
             overflow: hidden;
             background: #262626;
             display: flex;
             align-items: center;
             justify-content: center;
         }
+        .light-mode .ig-story-ring-inner { background: #efefef; }
         
         .ig-story-img {
             width: 100%;
@@ -74,7 +92,7 @@
         
         .ig-story-username {
             font-size: 11px;
-            color: var(--text, #fff);
+            color: var(--text);
             max-width: 70px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -102,7 +120,7 @@
             height: 22px;
             background: #0095f6;
             border-radius: 50%;
-            border: 3px solid var(--bg, #000);
+            border: 3px solid var(--bg);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -120,7 +138,7 @@
         .ig-empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: var(--text-light, #888);
+            color: #888;
         }
         
         .ig-empty-state p {

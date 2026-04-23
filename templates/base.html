@@ -16,6 +16,9 @@
             <!-- Правая часть - иконки -->
             <div class="header-right">
                 {% if current_user.is_authenticated %}
+                    <!-- Переключатель темы -->
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Сменить тему">🌙</button>
+                    
                     <!-- Поиск -->
                     <form method="GET" action="{{ url_for('explore') }}" style="display: flex; align-items: center;">
                         <input type="text" name="q" placeholder="@username" style="width: 80px; padding: 5px; border: 1px solid var(--border); border-radius: 15px; font-size: 0.8rem;">
@@ -73,23 +76,43 @@
 
     <!-- Stories -->
     {% if current_user.is_authenticated %}
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            document.documentElement.classList.add('light-mode');
+        }
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('light-mode')) {
+                html.classList.remove('light-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.classList.add('light-mode');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+    </script>
     <style>
+    :root { --stories-bg: #000; --stories-text: #fff; --stories-ring-inner: #262626; }
+    .light-mode { --stories-bg: #fff; --stories-text: #000; --stories-ring-inner: #efefef; }
     .ig-story-ring { width: 66px; height: 66px; border-radius: 50%; background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); display: flex; align-items: center; justify-content: center; padding: 2px; }
     .ig-story-ring.viewed { background: #262626; }
-    .ig-story-inner { width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--bg); overflow: hidden; background: #000; }
+    .light-mode .ig-story-ring.viewed { background: #dbdbdb; }
+    .ig-story-ring-inner { width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--stories-bg); overflow: hidden; background: var(--stories-ring-inner); }
     .ig-story-img { width: 100%; height: 100%; object-fit: cover; }
     .ig-story-add { background: linear-gradient(45deg, #f09433, #bc1888); width: 66px; height: 66px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
-    .ig-story-add::after { content: ''; position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; background: var(--primary); border-radius: 50%; border: 2px solid var(--bg); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+    .ig-story-add::after { content: ''; position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; background: #0095f6; border-radius: 50%; border: 2px solid var(--stories-bg); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+    .theme-toggle { background: none; border: none; color: var(--text); cursor: pointer; font-size: 1.2rem; padding: 5px; }
     </style>
     
-    <div class="stories-bar" style="background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 8px 0; margin-top: 60px; margin-bottom: 0;">
+    <div class="stories-bar" style="background: var(--stories-bg); border-bottom: 1px solid var(--border, #262626); padding: 8px 0; margin-top: 60px; margin-bottom: 0;">
         <div class="stories-scroll" style="display: flex; gap: 12px; overflow-x: auto; padding: 0 15px; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; flex-shrink: 0;">
                 <a href="{{ url_for('create_story') }}" style="text-decoration: none;">
                     <div class="ig-story-add">
-                        <div class="ig-story-inner" style="display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white;">+</div>
+                        <div class="ig-story-ring-inner" style="display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white;">+</div>
                     </div>
-                    <span style="font-size: 0.65rem; color: var(--text); margin-top: 4px; display: block;">Ваша</span>
+                    <span style="font-size: 0.65rem; color: var(--stories-text); margin-top: 4px; display: block;">Ваша</span>
                 </a>
             </div>
             {% for story in top_stories %}
@@ -97,7 +120,7 @@
             <div style="text-align: center; flex-shrink: 0;">
                 <a href="{{ url_for('view_story', story_id=story.id) }}" style="text-decoration: none;">
                     <div class="ig-story-ring {% if story.viewed %}viewed{% endif %}">
-                        <div class="ig-story-inner">
+                        <div class="ig-story-ring-inner">
                             {% if story.user.avatar != 'default.png' %}
                                 <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" class="ig-story-img">
                             {% else %}
@@ -105,7 +128,7 @@
                             {% endif %}
                         </div>
                     </div>
-                    <span style="font-size: 0.65rem; color: var(--text); margin-top: 4px; display: block;">{{ story.user.username[:8] }}</span>
+                    <span style="font-size: 0.65rem; color: var(--stories-text); margin-top: 4px; display: block;">{{ story.user.username[:8] }}</span>
                 </a>
             </div>
             {% endif %}
