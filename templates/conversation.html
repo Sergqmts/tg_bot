@@ -150,7 +150,7 @@
                         <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
                     {% endif %}
                     
-                    {% if msg.medias|length > 0 %}
+                    {% if msg.medias.all()|length > 0 %}
                     <div class="ig-message-media">
                         {% for m in msg.medias.all() %}
                             {% if m.media_type == 'audio' %}
@@ -184,7 +184,7 @@
                         {% endif %}
                     </div>
                     
-                    {% if msg.reactions|length > 0 %}
+                    {% if msg.reactions.all()|length > 0 %}
                     <div class="ig-message-reaction-display">
                         {% for r in msg.reactions.all() %}{{ r.emoji }}{% endfor %}
                     </div>
