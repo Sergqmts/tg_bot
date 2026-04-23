@@ -14,67 +14,58 @@
         :root { --bg: #000; --text: #fff; --surface: #262626; --border: #262626; --primary: #0095f6; }
         .light-mode { --bg: #fff; --text: #000; --surface: #f0f0f0; --border: #dbdbdb; --primary: #0095f6; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
         
         .ig-chat-view { display: flex; flex-direction: column; height: 100vh; max-width: 935px; margin: 0 auto; }
         
         .ig-chat-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
         .ig-back-btn { background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; }
         .ig-logo { font-size: 20px; font-weight: 700; color: var(--primary); text-decoration: none; }
-        .ig-user-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .ig-user-info { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
         .ig-avatar-sm { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #f09433, #bc1888); flex-shrink: 0; }
         .ig-avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
         .ig-avatar-sm .initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
-        .ig-user-name { font-size: 15px; font-weight: 600; }
-        .ig-online { font-size: 11px; color: #888; }
-        .ig-header-actions { display: flex; gap: 16px; }
-        .ig-header-btn { background: none; border: none; font-size: 20px; color: var(--text); cursor: pointer; }
         
-        .ig-messages-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+        .ig-messages-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
         
-        .ig-message-row { display: flex; align-items: flex-end; gap: 6px; max-width: 85%; }
+        .ig-message-row { display: flex; align-items: flex-end; gap: 8px; max-width: 80%; }
         .ig-message-row.sent { align-self: flex-end; flex-direction: row-reverse; }
         .ig-message-row.received { align-self: flex-start; }
         
-        .ig-msg-avatar { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #f09433, #bc1888); flex-shrink: 0; align-self: flex-end; }
+        .ig-msg-avatar { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #f09433, #bc1888); flex-shrink: 0; }
         .ig-msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .ig-msg-avatar .initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #fff; }
         
-        .ig-message { max-width: 100%; padding: 10px 14px; border-radius: 20px; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word; }
+        .ig-message { max-width: 100%; padding: 10px 14px; border-radius: 20px; font-size: 14px; line-height: 1.4; }
         .ig-message.sent { background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
         .ig-message.received { background: var(--surface); color: var(--text); border-bottom-left-radius: 4px; }
-        .ig-message-time { font-size: 10px; opacity: 0.7; margin-left: 8px; display: block; text-align: right; }
+        .ig-message-time { font-size: 10px; opacity: 0.7; margin-left: 8px; }
         
-        .ig-voice-message { display: flex; align-items: center; gap: 10px; min-width: 160px; padding: 8px 12px; background: rgba(255,255,255,0.1); border-radius: 24px; }
-        .ig-play-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--text); color: var(--bg); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        .ig-waveform { flex: 1; height: 20px; display: flex; align-items: center; gap: 2px; }
-        .ig-wave-bar { width: 3px; background: currentColor; border-radius: 2px; animation: wave 0.5s ease-in-out infinite alternate; }
-        .ig-wave-bar:nth-child(odd) { animation-delay: 0.1s; }
-        @keyframes wave { from { height: 6px; } to { height: 16px; } }
-        .ig-voice-duration { font-size: 12px; font-weight: 500; }
+        .ig-media-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .ig-media-row img { max-width: 200px; max-height: 200px; border-radius: 12px; object-fit: cover; cursor: pointer; }
+        .ig-media-row video { max-width: 200px; max-height: 200px; border-radius: 12px; }
         
-.ig-message-media { margin-top: 6px; }
-        .ig-media-container { margin-top: 4px; }
-        .ig-media-container img { max-width: 200px; max-height: 200px; border-radius: 12px; object-fit: cover; cursor: pointer; }
-        .ig-media-container video { max-width: 200px; max-height: 200px; border-radius: 12px; }
+        .ig-voice-msg { display: flex; align-items: center; gap: 10px; min-width: 160px; padding: 8px 12px; background: rgba(255,255,255,0.15); border-radius: 24px; margin-top: 6px; }
+        .ig-voice-msg.sent { background: rgba(255,255,255,0.25); }
+        .ig-play-btn { width: 32px; height: 32px; border-radius: 50%; background: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
         
-        .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
-        .ig-modal.show { display: flex; }
-        .ig-modal img { max-width: 90%; max-height: 90%; object-fit: contain; }
+        .ig-input-area { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
+        .ig-input-wrap { flex: 1; display: flex; align-items: center; background: var(--surface); border-radius: 22px; padding: 8px 16px; }
+        .ig-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none; }
+        .ig-input::placeholder { color: #888; }
+        .ig-send-btn { background: var(--primary); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
         
-        @media (max-width: 480px) {
-            .ig-message-row { max-width: 90%; }
-            .ig-message-media img, .ig-message-media video { max-width: 150px; max-height: 150px; }
-            .ig-input-wrap { max-width: calc(100% - 60px); }
-        }
+        .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; }
+        .ig-modal.show { display: flex; align-items: center; justify-content: center; }
+        .ig-modal img { max-width: 90%; max-height: 90%; }
     </style>
 </head>
 <body>
     <div class="ig-chat-view">
         <div class="ig-chat-header">
-            <button class="ig-back-btn" onclick="window.location.href='{{ url_for('messages') }}'">←</button>
+            <button class="ig-back-btn" onclick="location.href='{{ url_for('messages') }}'">←</button>
             <a href="{{ url_for('index') }}" class="ig-logo">Social</a>
-            <a href="{{ url_for('user_profile', username=other_user.username) }}" class="ig-user-info" style="flex: 1; justify-content: flex-end;">
+            <a href="{{ url_for('user_profile', username=other_user.username) }}" class="ig-user-info">
                 <div class="ig-avatar-sm">
                     {% if other_user.avatar != 'default.png' %}
                         <img src="{{ url_for('uploaded_file', filename=other_user.avatar) }}">
@@ -87,7 +78,7 @@
         
         <div class="ig-messages-area" id="messagesArea">
             {% for msg in messages %}
-            <div class="ig-message-row {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+            <div class="ig-message-row {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
                 {% if msg.sender_id != current_user.id %}
                 <div class="ig-msg-avatar">
                     {% if msg.sender.avatar != 'default.png' %}
@@ -98,60 +89,51 @@
                 </div>
                 {% endif %}
                 
-                <div class="ig-message {% if current_user.is_authenticated and msg.sender_id == current_user.id %}sent{% else %}received{% endif %}" data-id="{{ msg.id }}">
+                <div class="ig-message {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
                     {% if msg.post_id %}
                         {% set post = Post.query.get(msg.post_id) %}
                         {% if post %}
-                        <a href="{{ url_for('view_post', post_id=post.id) }}" style="display: block; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin-bottom: 4px; text-decoration: none; color: var(--text);">
-                            <div style="font-size: 12px; font-weight: 600;">Пост: {{ post.author.username }}</div>
-                            {% if post.body %}<div style="font-size: 12px;">{{ post.body[:40] }}...</div>{% endif %}
+                        <a href="{{ url_for('view_post', post_id=post.id) }}" style="display:block;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:4px;text-decoration:none;color:var(--text);">
+                            <div style="font-size:12px;font-weight:600;">{{ post.author.username }}</div>
+                            {% if post.body %}<div style="font-size:12px;">{{ post.body[:30] }}...</div>{% endif %}
                         </a>
                         {% endif %}
                     {% elif msg.body and msg.body != '[удалено]' %}
-                        <span>{{ msg.body }}</span>
+                        {{ msg.body }}
                     {% elif msg.body == '[удалено]' %}
-                        <span style="font-style: italic; opacity: 0.6;">Сообщение удалено</span>
+                        <i style="opacity:0.6;">Сообщение удалено</i>
+                    {% endif %}
+                    
+                    {% if msg.medias %}
+                    <div class="ig-media-row">
+                        {% for m in msg.medias %}
+                            {% if m.media_type == 'audio' %}
+                            <div class="ig-voice-msg {% if msg.sender_id == current_user.id %}sent{% endif %}">
+                                <button class="ig-play-btn" onclick="playVoice('{{ m.media_url }}')">▶</button>
+                                <span>0:15</span>
+                            </div>
+                            {% elif m.media_type == 'video' %}
+                                <video src="{{ m.media_url }}" muted></video>
+                            {% else %}
+                                <img src="{{ m.media_url }}" onclick="openModal(this.src)">
+                            {% endif %}
+                        {% endfor %}
+                    </div>
                     {% endif %}
                     
                     <span class="ig-message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
                 </div>
-                
-                <div class="ig-media-container">
-                    {% for m in msg.medias %}
-                        {% if m.media_type == 'audio' %}
-                        <div class="ig-voice-message">
-                            <button class="ig-play-btn" onclick="playVoice(this, '{{ m.media_url }}')">▶</button>
-                            <div class="ig-waveform">
-                                <div class="ig-wave-bar"></div>
-                                <div class="ig-wave-bar"></div>
-                                <div class="ig-wave-bar"></div>
-                                <div class="ig-wave-bar"></div>
-                            </div>
-                            <span class="ig-voice-duration">0:15</span>
-                        </div>
-                        {% elif m.media_type == 'video' %}
-                            <video src="{{ m.media_url }}" muted></video>
-                        {% else %}
-                            <img src="{{ m.media_url }}" onclick="openMedia(this.src)">
-                        {% endif %}
-                    {% endfor %}
-                </div>
             </div>
             {% else %}
-            <div style="text-align: center; opacity: 0.5; padding: 40px;">
-                Отправьте сообщение, чтобы начать общение
-            </div>
+            <div style="text-align:center;opacity:0.5;padding:40px;">Нет сообщений</div>
             {% endfor %}
         </div>
         
-        <form method="POST" action="" enctype="multipart/form-data" class="ig-input-area" id="messageForm">
-            <div class="ig-input-actions">
-                <button type="button" class="ig-input-btn" onclick="document.getElementById('fileInput').click()">📎</button>
-                <input type="file" id="fileInput" name="media" accept="image/*,video/*,audio/*" style="display: none;" onchange="this.form.submit()">
-                <button type="button" class="ig-input-btn" onclick="document.getElementById('msgInput').focus()">😊</button>
-            </div>
+        <form method="POST" enctype="multipart/form-data" class="ig-input-area">
+            <button type="button" onclick="document.getElementById('fileInput').click()" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
+            <input type="file" id="fileInput" name="media" accept="image/*,video/*,audio/*" style="display:none" onchange="this.form.submit()">
             <div class="ig-input-wrap">
-                <input type="text" name="body" class="ig-message-input" placeholder="Сообщение..." id="msgInput">
+                <input type="text" name="body" class="ig-input" placeholder="Сообщение..." id="msgInput">
             </div>
             <button type="submit" class="ig-send-btn">➤</button>
         </form>
@@ -162,28 +144,20 @@
     </div>
     
     <script>
-        function openMedia(src) {
+        function openModal(src) {
             document.getElementById('modalImg').src = src;
             document.getElementById('mediaModal').classList.add('show');
         }
         
-        function playVoice(btn, url) {
-            const audio = new Audio(url);
-            if (btn.textContent === '▶') {
-                audio.play();
-                btn.textContent = '⏸';
-                audio.onended = () => btn.textContent = '▶';
-            } else {
-                audio.pause();
-                btn.textContent = '▶';
-            }
+        function playVoice(url) {
+            new Audio(url).play();
         }
         
         document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
         
         document.getElementById('msgInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value.trim()) {
-                document.getElementById('messageForm').submit();
+                this.form.submit();
             }
         });
     </script>

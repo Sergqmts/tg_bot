@@ -18,12 +18,15 @@
         
         .ig-messages { max-width: 935px; margin: 0 auto; padding: 60px 20px 20px; }
         
-        .ig-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .ig-header h1 { font-size: 24px; font-weight: 500; }
+        .ig-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .ig-header h1 { font-size: 24px; font-weight: 500; flex: 1; }
+        .ig-back-btn { background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; text-decoration: none; }
         
         .ig-new-chat-btn { background: var(--primary); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; }
         
-        .ig-search-box { background: var(--surface); border: none; border-radius: 8px; padding: 12px 16px; color: var(--text); width: 100%; margin-bottom: 20px; font-size: 14px; }
+        .ig-search-box { background: var(--surface); border: none; border-radius: 8px; padding: 12px 16px; padding-left: 44px; color: var(--text); width: 100%; margin-bottom: 20px; font-size: 14px; }
+        .ig-search-wrap { position: relative; margin-bottom: 20px; }
+        .ig-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #888; font-size: 16px; }
         
         .ig-chat-list { display: flex; flex-direction: column; }
         
@@ -60,11 +63,15 @@
 <body>
     <div class="ig-messages">
         <div class="ig-header">
+            <a href="{{ url_for('index') }}" class="ig-back-btn">←</a>
             <h1>Сообщения</h1>
-            <a href="{{ url_for('create_chat') }}" class="ig-new-chat-btn">✏️ Новый чат</a>
+            <a href="{{ url_for('create_chat') }}" class="ig-new-chat-btn">✏️</a>
         </div>
         
-        <input type="text" class="ig-search-box" placeholder="Поиск...">
+        <div class="ig-search-wrap">
+            <span class="ig-search-icon">🔍</span>
+            <input type="text" class="ig-search-box" placeholder="Поиск...">
+        </div>
         
         {% if suggested_users %}
         <div class="ig-suggested">
