@@ -1101,18 +1101,23 @@ def create_story():
             from werkzeug.datastructures import FileStorage
             
             header, data = media_data.split(',', 1)
-            if 'image/jpeg' in header:
+            if 'image/jpeg' in header or 'image/png' in header or 'image/jpg' in header:
                 ext = 'jpg'
                 media_type = 'image'
-            elif 'video/webm' in header:
-                ext = 'webm'
+            elif 'video/mp4' in header or 'video/webm' in header or 'video/quicktime' in header:
+                ext = 'mp4'
                 media_type = 'video'
             else:
                 ext = 'jpg'
                 media_type = 'image'
             
-            binary = base64.b64decode(data)
-            file = FileStorage(io.BytesIO(binary), filename=f'story.{ext}', content_type=f'image/{ext}' if media_type == 'image' else f'video/{ext}')
+            try:
+                binary = base64.b64decode(data)
+            except:
+                return 'Invalid base64 data', 400
+            
+            filename = f'story_{datetime.now().timestamp()}.{ext}'
+            file = FileStorage(io.BytesIO(binary), filename=filename, content_type=f'image/{ext}' if media_type == 'image' else f'video/{ext}')
             
             if cloudinary_configured:
                 url = upload_to_cloudinary(file, folder='stories')
@@ -1127,12 +1132,13 @@ def create_story():
                     db.session.commit()
                     return redirect(url_for('index'))
             else:
-                filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
-                with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'wb') as f:
+                filename_save = secure_filename(filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename_save)
+                with open(filepath, 'wb') as f:
                     f.write(binary)
                 story = Story(
                     user_id=current_user.id,
-                    media_url=filename,
+                    media_url=filename_save,
                     media_type=media_type,
                     expires_at=datetime.utcnow() + timedelta(hours=24)
                 )
@@ -1170,9 +1176,7 @@ def create_story():
                 db.session.add(story)
                 db.session.commit()
                 return redirect(url_for('index'))
-        else:
-            flash('Выберите файл')
-            return redirect(request.url)
+    
     return render_template('create_story.html')
 
 

@@ -11,317 +11,41 @@
         }
     </script>
     <style>
-        :root {
-            --bg: #000;
-            --text: #fff;
-            --surface: #262626;
-            --border: #262626;
-        }
-        .light-mode {
-            --bg: #fff;
-            --text: #000;
-            --surface: #f0f0f0;
-            --border: #dbdbdb;
-        }
+        :root { --bg: #000; --text: #fff; --surface: #262626; --border: #262626; }
+        .light-mode { --bg: #fff; --text: #000; --surface: #f0f0f0; --border: #dbdbdb; }
         :root { --ig-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
         
-        .ig-create-container {
-            max-width: 420px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
-            background: var(--bg);
-        }
+        .ig-create-container { max-width: 420px; margin: 0 auto; padding: 20px; background: var(--bg); }
+        .ig-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+        .ig-header h1 { font-size: 20px; font-weight: 600; }
+        .ig-header a { color: #0095f6; font-size: 14px; font-weight: 600; text-decoration: none; }
         
-        .ig-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 20px;
-        }
+        .ig-source-btns { display: flex; gap: 12px; margin-bottom: 16px; }
+        .ig-source-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 24px; background: var(--surface); border: none; border-radius: 8px; color: var(--text); font-size: 14px; cursor: pointer; }
         
-        .ig-header h1 {
-            font-size: 20px;
-            font-weight: 600;
-        }
-        
-        .ig-header a {
-            color: #0095f6;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        
-        .ig-source-btns {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        
-        .ig-source-btn {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 24px;
-            background: var(--surface);
-            border: none;
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 14px;
-            cursor: pointer;
-        }
-        
-        .ig-camera-section {
-            display: none;
-            margin-bottom: 16px;
-        }
-        
+        .ig-camera-section { display: none; margin-bottom: 16px; }
         .ig-camera-section.active { display: block; }
+        .ig-video-preview { width: 100%; aspect-ratio: 9/16; max-height: 60vh; border-radius: 8px; object-fit: cover; background: var(--surface); }
         
-        .ig-video-preview {
-            width: 100%;
-            aspect-ratio: 9/16;
-            max-height: 60vh;
-            border-radius: 8px;
-            object-fit: cover;
-            background: var(--surface);
-        }
-        
-        .ig-camera-controls {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-top: 12px;
-        }
-        
-        .ig-cam-btn {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 2px solid var(--text);
-            background: none;
-            color: var(--text);
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
+        .ig-camera-controls { display: flex; justify-content: center; gap: 16px; margin-top: 12px; }
+        .ig-cam-btn { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--text); background: none; color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .ig-cam-btn.flip { transform: scaleX(-1); }
         .ig-cam-btn.record { background: #ff3b30; border-color: #ff3b30; }
         
-        .ig-preview-container {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 9/16;
-            max-height: 60vh;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 16px;
-            display: none;
-        }
-        
+        .ig-preview-container { position: relative; width: 100%; aspect-ratio: 9/16; max-height: 60vh; border-radius: 8px; overflow: hidden; margin-bottom: 16px; display: none; }
         .ig-preview-container.active { display: block; }
+        .ig-preview-img, .ig-preview-video { width: 100%; height: 100%; object-fit: contain; background: var(--surface); }
         
-        .ig-preview-img, .ig-preview-video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: var(--surface);
-        }
-        
-        .ig-editor-tools {
-            display: none;
-            justify-content: center;
-            gap: 24px;
-            padding: 16px;
-            background: var(--surface);
-            border-radius: 8px;
-            margin-bottom: 16px;
-        }
-        
-        .ig-editor-tools.active { display: flex; }
-        
-        .ig-tool-btn {
-            background: none;
-            border: none;
-            color: var(--text);
-            font-size: 22px;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        
-        .ig-tool-btn:hover, .ig-tool-btn.active { opacity: 1; }
-        
-        .ig-panels {
-            display: none;
-        }
-        
-        .ig-panels.active { display: block; }
-        
-        .ig-text-panel {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            text-align: center;
-            display: none;
-        }
-        
-        .ig-text-panel.active { display: block; }
-        
-        .ig-text-input {
-            width: 100%;
-            padding: 16px;
-            background: var(--surface);
-            border: none;
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 24px;
-            text-align: center;
-            outline: none;
-        }
-        
-        .ig-font-options {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .ig-font-btn {
-            padding: 8px 16px;
-            background: var(--surface);
-            border: none;
-            border-radius: 20px;
-            color: var(--text);
-            font-size: 12px;
-            cursor: pointer;
-        }
-        
-        .ig-color-palette {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 12px;
-            flex-wrap: wrap;
-        }
-        
-        .ig-color-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-        
-        .ig-color-btn.selected { border-color: var(--text); }
-        
-        .ig-draw-panel {
-            padding: 16px;
-            background: var(--surface);
-            border-radius: 8px;
-            display: none;
-        }
-        
-        .ig-draw-panel.active { display: block; }
-        
-        .ig-brush-sizes {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-bottom: 12px;
-        }
-        
-        .ig-brush-btn {
-            border-radius: 50%;
-            background: var(--text);
-            border: none;
-            cursor: pointer;
-        }
-        
-        .ig-stickers-panel {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            padding: 16px;
-            background: var(--surface);
-            border-radius: 8px;
-        }
-        
-        .ig-sticker-item {
-            padding: 12px;
-            background: var(--bg);
-            border-radius: 8px;
-            text-align: center;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        
-        .ig-filters-panel {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 12px 0;
-        }
-        
-        .ig-filter-btn {
-            flex-shrink: 0;
-            width: 56px;
-            height: 56px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-        
-        .ig-filter-btn.active { border-color: #0095f6; }
-        
-        .ig-filter-preview {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .ig-submit-btn {
-            width: 100%;
-            padding: 14px;
-            background: #0095f6;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            display: none;
-        }
-        
+        .ig-submit-btn { width: 100%; padding: 14px; background: #0095f6; border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: none; margin-top: 16px; }
         .ig-submit-btn.active { display: block; }
+        .ig-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        .ig-submit-btn:disabled { opacity: 0.5; }
-        
-        .ig-timer-btn {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            padding: 8px 12px;
-            background: var(--surface);
-            border: none;
-            border-radius: 4px;
-            color: var(--text);
-            font-size: 12px;
-            cursor: pointer;
-        }
+        .ig-filters-panel { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; display: none; }
+        .ig-filters-panel.active { display: flex; }
+        .ig-filter-btn { flex-shrink: 0; width: 56px; height: 56px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; cursor: pointer; }
+        .ig-filter-btn.active { border-color: #0095f6; }
     </style>
 </head>
 <body>
@@ -343,7 +67,6 @@
         
         <div class="ig-camera-section" id="cameraSection">
             <video id="video" class="ig-video-preview" autoplay playsinline muted></video>
-            <button class="ig-timer-btn" onclick="toggleTimer()">⏱️ {{ timer_seconds }}с</button>
             <div class="ig-camera-controls">
                 <button class="ig-cam-btn flip" onclick="flipCamera()" title="Переключить">🔄</button>
                 <button class="ig-cam-btn" onclick="capturePhoto()" title="Снять">⚪</button>
@@ -364,83 +87,14 @@
                 <button class="ig-filter-btn" onclick="applyFilter('saturate(200%)')"><span style="filter:saturate(2);display:block;height:32px;"></span></button>
                 <button class="ig-filter-btn" onclick="applyFilter('hue-rotate(90deg)')"><span style="filter:hue-rotate(90deg);display:block;height:32px;background:#809080;"></span></button>
                 <button class="ig-filter-btn" onclick="applyFilter('brightness(130%)')"><span style="filter:brightness(1.3);display:block;height:32px;"></span></button>
-                <button class="ig-filter-btn" onclick="applyFilter('contrast(150%)')"><span style="filter:contrast(1.5);display:block;height:32px;"></span></button>
-                <button class="ig-filter-btn" onclick="applyFilter('blur(3px)')"><span style="filter:blur(3px);display:block;height:32px;background:#888;"></span></button>
             </div>
-        </div>
-        
-        <div class="ig-editor-tools" id="editorTools">
-            <button class="ig-tool-btn" onclick="toggleTextPanel()" title="Текст">Aa</button>
-            <button class="ig-tool-btn" onclick="toggleDrawPanel()" title="Рисовать">✏️</button>
-            <button class="ig-tool-btn" onclick="toggleStickersPanel()" title="Стикеры">🏷️</button>
-            <button class="ig-tool-btn" onclick="toggleFiltersPanel()" title="Фильтры">🔳</button>
-        </div>
-        
-        <div class="ig-panels" id="textPanel">
-            <div class="ig-text-panel">
-                <input type="text" class="ig-text-input" id="textInput" placeholder="Введите текст..." oninput="updateText()">
-                <div class="ig-font-options">
-                    <button class="ig-font-btn" onclick="setFont('Arial')">Arial</button>
-                    <button class="ig-font-btn" onclick="setFont('cursive')">Курсив</button>
-                    <button class="ig-font-btn" onclick="setFont('fantasy')">Арт</button>
-                    <button class="ig-font-btn" onclick="setFont('monospace')">Код</button>
-                </div>
-                <div class="ig-color-palette">
-                    <button class="ig-color-btn" style="background:#fff;opacity:1" onclick="setTextColor('#fff')"></button>
-                    <button class="ig-color-btn" style="background:#000;" onclick="setTextColor('#000')"></button>
-                    <button class="ig-color-btn" style="background:#ff3b30;" onclick="setTextColor('#ff3b30')"></button>
-                    <button class="ig-color-btn" style="background:#ff9500;" onclick="setTextColor('#ff9500')"></button>
-                    <button class="ig-color-btn" style="background:#ffcc00;" onclick="setTextColor('#ffcc00')"></button>
-                    <button class="ig-color-btn" style="background:#4cd964;" onclick="setTextColor('#4cd964')"></button>
-                    <button class="ig-color-btn" style="background:#5ac8fa;" onclick="setTextColor('#5ac8fa')"></button>
-                    <button class="ig-color-btn" style="background:#af52de;" onclick="setTextColor('#af52de')"></button>
-                    <button class="ig-color-btn" style="background:#ff2d55;" onclick="setTextColor('#ff2d55')"></button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="ig-panels ig-draw-panel" id="drawPanel">
-            <div class="ig-brush-sizes">
-                <button class="ig-brush-btn" style="width:8px;height:8px;" onclick="setBrush(4)"></button>
-                <button class="ig-brush-btn" style="width:14px;height:14px;" onclick="setBrush(7)"></button>
-                <button class="ig-brush-btn" style="width:20px;height:20px;" onclick="setBrush(10)"></button>
-                <button class="ig-brush-btn" style="width:28px;height:28px;" onclick="setBrush(14)"></button>
-            </div>
-            <div class="ig-color-palette">
-                <button class="ig-color-btn selected" style="background:#fff;" onclick="setDrawColor('#fff')"></button>
-                <button class="ig-color-btn" style="background:#000;" onclick="setDrawColor('#000')"></button>
-                <button class="ig-color-btn" style="background:#ff3b30;" onclick="setDrawColor('#ff3b30')"></button>
-                <button class="ig-color-btn" style="background:#ff9500;" onclick="setDrawColor('#ff9500')"></button>
-                <button class="ig-color-btn" style="background:#ffcc00;" onclick="setDrawColor('#ffcc00')"></button>
-                <button class="ig-color-btn" style="background:#4cd964;" onclick="setDrawColor('#4cd964')"></button>
-                <button class="ig-color-btn" style="background:#5ac8fa;" onclick="setDrawColor('#5ac8fa')"></button>
-                <button class="ig-color-btn" style="background:#af52de;" onclick="setDrawColor('#af52de')"></button>
-            </div>
-        </div>
-        
-        <div class="ig-stickers-panel" id="stickersPanel">
-            <div class="ig-sticker-item" onclick="addSticker('❤️')">❤️</div>
-            <div class="ig-sticker-item" onclick="addSticker('🔥')">🔥</div>
-            <div class="ig-sticker-item" onclick="addSticker('✨')">✨</div>
-            <div class="ig-sticker-item" onclick="addSticker('🎉')">🎉</div>
-            <div class="ig-sticker-item" onclick="addSticker('👍')">👍</div>
-            <div class="ig-sticker-item" onclick="addSticker('😎')">😎</div>
-            <div class="ig-sticker-item" onclick="addSticker('🎂')">🎂</div>
-            <div class="ig-sticker-item" onclick="addSticker('🎁')">🎁</div>
-            <div class="ig-sticker-item" onclick="addSticker('🌟')">🌟</div>
-            <div class="ig-sticker-item" onclick="addSticker('💫')">💫</div>
-            <div class="ig-sticker-item" onclick="addSticker('⏰')">⏰</div>
-            <div class="ig-sticker-item" onclick="addSticker('📍')">📍</div>
         </div>
         
         <form method="POST" id="storyForm" enctype="multipart/form-data">
             <input type="hidden" name="media_data" id="mediaData">
-            <input type="hidden" name="caption" id="captionData">
             <button type="submit" class="ig-submit-btn" id="submitBtn" disabled>Опубликовать</button>
         </form>
     </div>
-    
-    <canvas id="canvas" style="display: none;"></canvas>
     
     <script>
         let stream = null;
@@ -448,13 +102,6 @@
         let recordedChunks = [];
         let isRecording = false;
         let currentCamera = 'user';
-        let timer_seconds = 10;
-        let timer_interval = null;
-        let currentFilter = 'none';
-        let currentFont = 'Arial';
-        let currentTextColor = '#fff';
-        let currentDrawColor = '#fff';
-        let currentBrushSize = 7;
         
         async function openCamera() {
             try {
@@ -479,13 +126,16 @@
         function capturePhoto() {
             const video = document.getElementById('video');
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 1080;
-            canvas.height = video.videoHeight || 1920;
-            canvas.getContext('2d').drawImage(video, 0, 0);
+            const w = video.videoWidth || 1080;
+            const h = video.videoHeight || 1920;
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, w, h);
             canvas.toBlob(blob => {
                 const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
                 showPreview(file);
-            }, 'image/jpeg');
+            }, 'image/jpeg', 0.95);
         }
         
         function toggleRecord() {
@@ -501,18 +151,12 @@
                 mediaRecorder.start();
                 isRecording = true;
                 btn.textContent = '⏹';
-                setTimeout(() => { if (isRecording) { mediaRecorder.stop(); isRecording = false; btn.textContent = '⏺'; } }, timer_seconds * 1000);
+                setTimeout(() => { if (isRecording) { mediaRecorder.stop(); isRecording = false; btn.textContent = '⏺'; } }, 15000);
             } else {
                 mediaRecorder.stop();
                 isRecording = false;
                 btn.textContent = '⏺';
             }
-        }
-        
-        function toggleTimer() {
-            const times = [3, 5, 10, 15];
-            timer_seconds = times[(times.indexOf(timer_seconds) + 1) % times.length];
-            document.querySelector('.ig-timer-btn').textContent = '⏱️ ' + timer_seconds + 'с';
         }
         
         function handleFile(input) {
@@ -524,23 +168,23 @@
             const container = document.getElementById('previewContainer');
             const img = document.getElementById('previewImg');
             const video = document.getElementById('previewVideo');
-            const tools = document.getElementById('editorTools');
             const submitBtn = document.getElementById('submitBtn');
+            const filtersPanel = document.getElementById('filtersPanel');
             
             container.classList.add('active');
-            tools.classList.add('active');
-            submitBtn.classList.add('active');
-            submitBtn.disabled = false;
-            
             if (file.type.startsWith('image/')) {
+                filtersPanel.classList.add('active');
                 img.style.display = 'block';
                 video.style.display = 'none';
                 img.src = URL.createObjectURL(file);
             } else {
+                filtersPanel.classList.remove('active');
                 img.style.display = 'none';
                 video.style.display = 'block';
                 video.src = URL.createObjectURL(file);
             }
+            submitBtn.classList.add('active');
+            submitBtn.disabled = false;
             
             const reader = new FileReader();
             reader.onload = () => { document.getElementById('mediaData').value = reader.result; };
@@ -548,61 +192,9 @@
         }
         
         function applyFilter(filter) {
-            currentFilter = filter;
             document.getElementById('previewImg').style.filter = filter;
             document.querySelectorAll('.ig-filter-btn').forEach(b => b.classList.remove('active'));
             event.target.closest('.ig-filter-btn').classList.add('active');
-        }
-        
-        function toggleTextPanel() {
-            const panel = document.getElementById('textPanel');
-            panel.classList.toggle('active');
-            document.getElementById('drawPanel').classList.remove('active');
-            document.getElementById('stickersPanel').style.display = 'none';
-            document.getElementById('filtersPanel').style.display = 'none';
-            document.querySelector('.ig-text-panel').style.display = panel.classList.contains('active') ? 'block' : 'none';
-        }
-        
-        function toggleDrawPanel() {
-            const panel = document.getElementById('drawPanel');
-            panel.classList.toggle('active');
-            document.getElementById('textPanel').classList.remove('active');
-            document.getElementById('stickersPanel').style.display = 'none';
-            document.getElementById('filtersPanel').style.display = 'none';
-        }
-        
-        function toggleStickersPanel() {
-            const panel = document.getElementById('stickersPanel');
-            panel.style.display = panel.style.display === 'grid' ? 'none' : 'grid';
-            document.getElementById('textPanel').classList.remove('active');
-            document.getElementById('drawPanel').classList.remove('active');
-            document.getElementById('filtersPanel').style.display = 'none';
-        }
-        
-        function toggleFiltersPanel() {
-            const panel = document.getElementById('filtersPanel');
-            panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
-        }
-        
-        function setFont(font) { currentFont = font; updateText(); }
-        function setTextColor(color) { currentTextColor = color; updateText(); }
-        
-        function updateText() {
-            const input = document.getElementById('textInput');
-            if (input.value) {
-                input.style.fontFamily = currentFont;
-                input.style.color = currentTextColor;
-                input.style.textShadow = currentTextColor === '#000' ? '0 0 0 #fff' : '0 0 0 #000';
-            }
-        }
-        
-        function setBrush(size) { currentBrushSize = size; }
-        function setDrawColor(color) { currentDrawColor = color; }
-        
-        function addSticker(text) {
-            const img = document.getElementById('previewImg');
-            img.style.position = 'relative';
-            document.getElementById('stickersPanel').style.display = 'none';
         }
         
         document.getElementById('storyForm').onsubmit = async function(e) {
@@ -617,7 +209,7 @@
             try {
                 const resp = await fetch('{{ url_for("create_story") }}', { method: 'POST', body: formData });
                 if (resp.ok) window.location.href = '{{ url_for("index") }}';
-                else { alert('Ошибка'); btn.disabled = false; }
+                else { alert('Ошибка'); btn.disabled = false; btn.textContent = 'Опубликовать'; }
             } catch (err) { alert(err.message); btn.disabled = false; }
         };
     </script>
