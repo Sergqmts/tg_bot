@@ -2615,8 +2615,9 @@ def community(slug):
     comm = Community.query.filter_by(slug=slug).first_or_404()
     is_member = current_user.is_authenticated and current_user.is_member(comm)
     is_admin = current_user.is_authenticated and current_user.is_admin(comm)
+    is_pending = current_user.is_authenticated and current_user.is_pending(comm)
     posts = comm.posts.order_by(Post.created_at.desc()).all()
-    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin)
+    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin, is_pending=is_pending)
 
 
 @app.route('/community/<slug>/join', methods=['POST'])
