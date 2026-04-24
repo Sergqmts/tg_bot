@@ -1481,7 +1481,7 @@ img, video {
 /* FAB Create Button */
 .fab-create {
     position: fixed;
-    bottom: 170px;
+    bottom: 85px;
     right: 20px;
     width: 56px;
     height: 56px;
@@ -1507,6 +1507,6 @@ img, video {
 
 @media (min-width: 768px) {
     .fab-create {
-        bottom: 30px;
+        bottom: 170px;
     }
 }
