@@ -1507,6 +1507,6 @@ img, video {
 
 @media (min-width: 768px) {
     .fab-create {
-        bottom: 170px;
+        bottom: 80px;
     }
 }
