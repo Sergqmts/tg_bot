@@ -79,11 +79,13 @@
                 <a href="{{ url_for('repost', post_id=post.id) }}" style="display:block;padding:10px 16px;color:var(--text);">Репост себе</a>
                 <a href="{{ url_for('forward_post', post_id=post.id) }}" style="display:block;padding:10px 16px;color:var(--text);">Поделиться</a>
             </div>
-            <button class="action-btn save-btn" onclick="toggleSave({{ post.id }})">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-            </button>
+            <form method="POST" action="{{ url_for('save_post', post_id=post.id) }}" style="display:inline;">
+                <button type="submit" class="action-btn save-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </button>
+            </form>
         </div>
 
         <div class="post-likes">
@@ -134,10 +136,6 @@ function changeMedia(event, postId, mediaCount, direction) {
 
 function toggleLike(postId) {
     fetch(`/like_post/${postId}`, { method: 'POST' }).then(() => window.location.reload());
-}
-
-function toggleSave(postId) {
-    fetch(`/save_post/${postId}`, { method: 'POST' }).then(() => window.location.reload());
 }
 
 function showShareMenu(postId) {
