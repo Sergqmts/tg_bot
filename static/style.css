@@ -335,12 +335,19 @@ img, video {
     padding-top: 50px;
 }
 
+.main-content.community-page {
+    padding-top: 75px;
+}
+
 @media (min-width: 768px) {
     .main-content {
         padding-top: 80px;
     }
     .main-content.no-stories {
         padding-top: 50px;
+    }
+    .main-content.community-page {
+        padding-top: 75px;
     }
 }
 

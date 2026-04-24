@@ -37,7 +37,7 @@
     <main>
     {% endif %}
 
-    <main class="main-content {% if request.endpoint != 'index' %}no-stories{% endif %}">
+    <main class="main-content {% if request.endpoint == 'index' %}{% elif request.endpoint and 'community' in request.endpoint %}community-page{% else %}no-stories{% endif %}">
         {% with messages = get_flashed_messages() %}
         {% for message in messages %}
         <div class="flash-message">{{ message }}</div>
