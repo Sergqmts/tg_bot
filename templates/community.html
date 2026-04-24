@@ -38,6 +38,9 @@
                             <button type="submit" class="btn btn-primary">Вступить</button>
                         </form>
                         {% endif %}
+                        {% if is_member %}
+                        <a href="{{ url_for('community_post', slug=community.slug) }}" class="btn btn-primary">Написать</a>
+                        {% endif %}
                         {% if community.creator_id == current_user.id %}
                         <a href="{{ url_for('communities') }}" class="btn btn-outline">Управление</a>
                         {% endif %}
@@ -56,46 +59,83 @@
     </div>
     
     {% if is_member or not community.is_private %}
-    <div class="posts-grid">
+    <div class="feed">
         {% for post in posts %}
-        <a href="{{ url_for('view_post', post_id=post.id) }}" class="grid-item">
-            {% set media = post.media.first() %}
-            {% if media %}
-                {% if media.cloudinary_url %}
-                    {% if media.media_type == 'video' %}
-                    <video src="{{ media.cloudinary_url }}" muted></video>
-                    {% elif media.media_type == 'audio' %}
-                    <div class="grid-audio-preview">🎵</div>
+        <article class="post-card">
+            <div class="post-header">
+                <a href="{{ url_for('community', slug=community.slug) }}" class="post-avatar">
+                    {% if community.image and community.image != 'community_default.png' %}
+                    <img src="{{ url_for('uploaded_file', filename=community.image) }}" alt="">
                     {% else %}
-                    <img src="{{ media.cloudinary_url }}" alt="">
+                    <div class="avatar-placeholder">{{ community.name[0].upper() }}</div>
                     {% endif %}
-                {% else %}
-                    {% if media.media_type == 'video' %}
-                    <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
-                    {% elif media.media_type == 'audio' %}
-                    <div class="grid-audio-preview">🎵</div>
-                    {% else %}
-                    <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
-                    {% endif %}
-                {% endif %}
-            {% elif post.body %}
-            <div class="text-post-preview">{{ post.body[:50] }}</div>
-            {% endif %}
-            {% if post.media.count() > 1 %}
-            <div class="multi-indicator">⋮</div>
-            {% endif %}
-            <div class="grid-overlay">
-                <span>❤️ {{ post.likes.count() }}</span>
-                <span>💬 {{ post.comments.count() }}</span>
+                </a>
+                <a href="{{ url_for('community', slug=community.slug) }}" class="post-author">{{ community.name }}</a>
+                <span class="post-time">{{ post.created_at.strftime('%d.%m.%Y') }}</span>
             </div>
-        </a>
+            
+            {% set media_list = post.media.all() %}
+            {% set media_count = media_list|length %}
+            {% if media_count > 0 %}
+            <div class="post-media" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
+                {% for m in media_list %}
+                <div class="media-slide" data-post="{{ post.id }}" style="display: {% if loop.index == 1 %}block{% else %}none{% endif %};">
+                    {% if m.cloudinary_url %}
+                    {% if m.media_type == 'video' %}
+                    <video src="{{ m.cloudinary_url }}" crossorigin="anonymous" muted playsinline></video>
+                    {% elif m.media_type == 'audio' %}
+                    <div class="audio-player">
+                        <audio src="{{ m.cloudinary_url }}" controls></audio>
+                    </div>
+                    {% else %}
+                    <img src="{{ m.cloudinary_url }}" alt="Пост">
+                    {% endif %}
+                    {% else %}
+                    {% if m.media_type == 'video' %}
+                    <video src="{{ url_for('uploaded_file', filename=m.filename) }}" muted playsinline></video>
+                    {% elif m.media_type == 'audio' %}
+                    <div class="audio-player">
+                        <audio src="{{ url_for('uploaded_file', filename=m.filename) }}" controls></audio>
+                    </div>
+                    {% else %}
+                    <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Пост">
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
+                {% if media_count > 1 %}
+                <div class="gallery-nav">
+                    <button class="gallery-arrow" onclick="changeMedia(event, {{ post.id }}, {{ media_count }}, 'prev')">‹</button>
+                    <button class="gallery-arrow" onclick="changeMedia(event, {{ post.id }}, {{ media_count }}, 'next')">›</button>
+                </div>
+                <div class="gallery-dots">
+                    {% for i in range(media_count) %}
+                    <span class="dot {% if loop.index == 1 %}active{% endif %}"></span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% elif post.body %}
+            <div class="post-text" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
+                {{ post.body[:200] }}{% if post.body|length > 200 %}...{% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="post-actions">
+                <a href="{{ url_for('view_post', post_id=post.id) }}" class="action-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </a>
+            </div>
+            
+            <div class="post-likes">
+                <strong>{{ post.likes.count() }}</strong> отметок "Нравится"
+            </div>
+        </article>
         {% endfor %}
     </div>
-    {% if is_member %}
-    <div style="padding: 20px;">
-        <a href="{{ url_for('community_post', slug=community.slug) }}" class="btn btn-primary" style="width: 100%;">📝 Написать от сообщества</a>
-    </div>
-    {% endif %}
     {% else %}
     <div class="empty-state">
         <div class="empty-icon">🔒</div>
