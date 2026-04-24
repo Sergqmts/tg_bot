@@ -763,7 +763,7 @@ class PostTag(db.Model):
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=False)
 
 
-class Media(db.Model):
+class CommentMedia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
     media_url = db.Column(db.String(500))
