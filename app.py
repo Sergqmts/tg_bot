@@ -746,6 +746,8 @@ class SavedPost(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    post = db.relationship('Post', foreign_keys=[post_id])
 
 
 class Tag(db.Model):
