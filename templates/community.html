@@ -81,9 +81,9 @@
                     {% if community.is_private %}
                         <span class="ig-private-badge">🔒 Приватное</span>
                     {% endif %}
-                    {% if community.creator_id == current_user.id %}
-                        <a href="{{ url_for('community_edit', slug=community.slug) }}" class="ig-btn ig-btn-outline">✏️ Редактировать</a>
-                    {% endif %}
+{% if community.creator_id == current_user.id %}
+                        <a href="{{ url_for('communities') }}" class="ig-btn ig-btn-outline">✏️ Управление</a>
+                        {% endif %}
                 </div>
                 
                 <div class="ig-stats">
