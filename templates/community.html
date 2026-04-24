@@ -1,46 +1,21 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ community.name }} - Social</title>
-    <script>
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
-            document.documentElement.classList.add('light-mode');
-        }
-    </script>
-    <style>
-        :root { --bg: #000; --text: #fff; --surface: #262626; --border: #262626; --card-bg: #121212; }
-        .light-mode { --bg: #fff; --text: #000; --surface: #f0f0f0; --border: #dbdbdb; --card-bg: #fff; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
-        
-        .ig-page { max-width: 935px; margin: 0 auto; padding: 60px 20px 20px; }
-        
-        .ig-header { display: flex; align-items: center; gap: 28px; padding: 24px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-        .ig-avatar-lg { width: 150px; height: 150px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
-        .light-mode .ig-avatar-lg { border: 3px solid var(--bg); }
-        .ig-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
-        .ig-avatar-lg .initials { width: 100%; height: 100%; background: linear-gradient(45deg, #f09433, #bc1888); display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 600; color: #fff; }
-        
-        .ig-info { flex: 1; }
-        .ig-name-row { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-        .ig-name { font-size: 28px; font-weight: 400; }
-        .ig-private-badge { background: #0095f6; color: #fff; padding: 3px 12px; border-radius: 4px; font-size: 14px; font-weight: 600; }
-        
-        .ig-stats { display: flex; gap: 40px; margin-bottom: 20px; }
-        .ig-stat-num { font-weight: 600; }
-        .ig-stat-label { color: var(--text); font-weight: 400; }
-        
-        .ig-bio { margin-bottom: 24px; max-width: 400px; }
-        
-        .ig-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-        
-        .ig-btn { padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-        .ig-btn-primary { background: #0095f6; color: #fff; }
-        .ig-btn-secondary { background: var(--surface); color: var(--text); }
-        .ig-btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.ig-btn-primary { background: var(--primary); color: #fff; }
+.ig-btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.ig-btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.ig-page { max-width: 935px; margin: 0 auto; padding: 60px 20px 20px; }
+.ig-header { display: flex; align-items: center; gap: 28px; padding: 24px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.ig-avatar-lg { width: 150px; height: 150px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+.ig-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+.ig-info { flex: 1; }
+.ig-name-row { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+.ig-name { font-size: 28px; font-weight: 400; }
+.ig-private-badge { background: var(--primary); color: #fff; padding: 3px 12px; border-radius: 4px; font-size: 14px; font-weight: 600; }
+.ig-stats { display: flex; gap: 40px; margin-bottom: 20px; }
+.ig-stat-num { font-weight: 600; }
+</style>
         
         .ig-tabs { display: flex; justify-content: center; gap: 60px; border-top: 1px solid var(--border); margin-bottom: 24px; }
         .ig-tab { padding: 16px 0; color: var(--text); text-decoration: none; font-size: 12px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; border-top: 1px solid transparent; margin-top: -1px; cursor: pointer; }
@@ -168,5 +143,4 @@
             {% endfor %}
         </div>
     </div>
-</body>
-</html>
+{% endblock %}
