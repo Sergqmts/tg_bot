@@ -2,7 +2,7 @@
 
 :root {
     --primary: #E4405F;
-    --primary-gradient: linear-gradient(135deg, #E4405F 0%, #F77737 100%);
+    --primary-gradient: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%);
     --bg: #0A0A0A;
     --surface: #1A1A1A;
     --surface-elevated: #242424;
