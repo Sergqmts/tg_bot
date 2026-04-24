@@ -2734,24 +2734,37 @@ def leave_community(slug):
 @login_required
 def community_post(slug):
     comm = Community.query.filter_by(slug=slug).first_or_404()
-    if comm.creator_id != current_user.id:
+    if not current_user.is_admin(comm):
         flash('Только создатель может публиковать записи')
         return redirect(url_for('community', slug=slug))
     
     form = CommunityPostForm()
     if form.validate_on_submit():
-        post = Post(body=form.body.data, author=current_user, community=comm, is_community_post=True)
+        post = Post(body=form.body.data or '', author=current_user, community=comm, is_community_post=True)
         db.session.add(post)
         db.session.flush()
         
-        if form.media.data:
-            file = form.media.data
-            filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            ext = filename.rsplit('.', 1)[1].lower()
-            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-            media = Media(filename=filename, media_type=media_type, post=post)
-            db.session.add(media)
+        files = request.files.getlist('media')
+        for file in files:
+            if file.filename and allowed_file(file.filename):
+                try:
+                    if cloudinary_configured:
+                        url = upload_to_cloudinary(file, folder='posts')
+                        if url:
+                            filename = url.split('/')[-1].split('.')[0]
+                            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'audio' if ext in {'mp3', 'wav', 'ogg'} else 'image'
+                            media = Media(filename=filename, cloudinary_url=url, media_type=media_type, post=post)
+                            db.session.add(media)
+                    else:
+                        filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'audio' if ext in {'mp3', 'wav', 'ogg'} else 'image'
+                        media = Media(filename=filename, media_type=media_type, post=post)
+                        db.session.add(media)
+                except Exception as e:
+                    app.logger.error(f"Media upload error: {e}")
         
         db.session.commit()
         flash('Запись опубликована!')
