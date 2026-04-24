@@ -54,11 +54,18 @@
         .ig-voice-msg.sent { background: rgba(255,255,255,0.25); }
         .ig-play-btn { width: 32px; height: 32px; border-radius: 50%; background: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
         
-        .ig-input-area { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
+.ig-input-area { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
         .ig-input-wrap { flex: 1; display: flex; align-items: center; background: var(--surface); border-radius: 22px; padding: 8px 16px; }
         .ig-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none; }
         .ig-input::placeholder { color: #888; }
-        .ig-send-btn { background: var(--primary); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
+        .ig-send-btn { background: var(--primary); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        .ig-attach-menu { display: none; position: absolute; bottom: 70px; left: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 100; }
+        .ig-attach-menu.show { display: block; }
+        .ig-attach-option { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; font-size: 14px; color: var(--text); }
+        .ig-attach-option:hover { background: var(--border); }
+        .ig-attach-option input { display: none; }
+        .ig-attach-icon { font-size: 18px; width: 24px; text-align: center; }
         
         .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; }
         .ig-modal.show { display: flex; align-items: center; justify-content: center; }
@@ -135,14 +142,48 @@
         </div>
         
         <form method="POST" enctype="multipart/form-data" class="ig-input-area">
-            <button type="button" onclick="document.getElementById('fileInput').click()" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
-            <input type="file" id="fileInput" name="media" accept="image/*,video/*,audio/*" style="display:none" onchange="this.form.submit()">
+            <div style="position: relative;">
+                <button type="button" onclick="toggleAttachMenu()" style="background:none;border:none;font-size:20px;cursor:pointer;">📎</button>
+                <div class="ig-attach-menu" id="attachMenu">
+                    <label class="ig-attach-option">
+                        <input type="file" id="cameraInput" name="media" accept="image/*,video/*" capture="environment" onchange="this.form.submit()">
+                        <span class="ig-attach-icon">📷</span>
+                        <span>Сделать фото/видео</span>
+                    </label>
+                    <label class="ig-attach-option">
+                        <input type="file" id="fileInput" name="media" accept="image/*,video/*,audio/*" onchange="this.form.submit()">
+                        <span class="ig-attach-icon">🖼️</span>
+                        <span>Прикрепить фото/видео</span>
+                    </label>
+                    <label class="ig-attach-option">
+                        <input type="file" id="docInput" name="media" onchange="this.form.submit()">
+                        <span class="ig-attach-icon">📄</span>
+                        <span>Прикрепить файл</span>
+                    </label>
+                    <label class="ig-attach-option ig-share-contact">
+                        <input type="file" id="contactInput" name="contact" accept=".vcf" onchange="this.form.submit()">
+                        <span class="ig-attach-icon">👤</span>
+                        <span>Поделиться контактом</span>
+                    </label>
+                </div>
+            </div>
             <div class="ig-input-wrap">
                 <input type="text" name="body" class="ig-input" placeholder="Сообщение..." id="msgInput">
             </div>
             <button type="submit" class="ig-send-btn">➤</button>
         </form>
     </div>
+    
+    <script>
+    function toggleAttachMenu() {
+        document.getElementById('attachMenu').classList.toggle('show');
+    }
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.ig-attach-menu') && !e.target.closest('button[onclick="toggleAttachMenu()"]')) {
+            document.getElementById('attachMenu').classList.remove('show');
+        }
+    });
+    </script>
     
     <div class="ig-modal" id="mediaModal" onclick="this.classList.remove('show')">
         <img id="modalImg">
