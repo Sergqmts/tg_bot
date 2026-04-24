@@ -3,7 +3,7 @@
 {% block content %}
 <div class="feed">
     {% for post in posts %}
-    <article class="post-card">
+    <article class="post-card" style="position: relative;">
         <div class="post-header">
             <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-avatar">
                 {% if post.author.avatar != 'default.png' %}
@@ -70,11 +70,15 @@
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
             </a>
-            <button class="action-btn share-btn" onclick="sharePost({{ post.id }})">
+            <button class="action-btn share-btn" onclick="showShareMenu({{ post.id }})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                 </svg>
             </button>
+            <div class="share-menu" id="shareMenu{{ post.id }}" style="display:none;position:absolute;bottom:50px;right:10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 0;z-index:100;">
+                <a href="{{ url_for('repost', post_id=post.id) }}" style="display:block;padding:10px 16px;color:var(--text);">Репост себе</a>
+                <a href="{{ url_for('forward_post', post_id=post.id) }}" style="display:block;padding:10px 16px;color:var(--text);">Поделиться</a>
+            </div>
             <button class="action-btn save-btn" onclick="toggleSave({{ post.id }})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
@@ -136,9 +140,16 @@ function toggleSave(postId) {
     fetch(`/save_post/${postId}`, { method: 'POST' }).then(() => window.location.reload());
 }
 
-function sharePost(postId) {
-    navigator.clipboard.writeText(window.location.origin + '/post/' + postId);
-    alert('Ссылка скопирована!');
+function showShareMenu(postId) {
+    var menu = document.getElementById('shareMenu' + postId);
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
 }
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('.share-menu').forEach(function(menu) {
+        if (!menu.contains(e.target) && !e.target.closest('.share-btn')) {
+            menu.style.display = 'none';
+        }
+    });
+});
 </script>
 {% endblock %}
