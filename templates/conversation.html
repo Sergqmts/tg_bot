@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ other_user.username }} - Social</title>
+    <title>{{ other_user.username }} - Social</title>
     <script>
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
@@ -14,48 +14,54 @@
         :root { --bg: #000; --text: #fff; --surface: #262626; --border: #262626; --primary: #0095f6; }
         .light-mode { --bg: #fff; --text: #000; --surface: #f0f0f0; --border: #dbdbdb; --primary: #0095f6; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
         
-.ig-chat-view { display: flex; flex-direction: column; height: 100vh; max-width: 935px; margin: 0 auto; }
-
+        .ig-chat-view { display: flex; flex-direction: column; height: 100vh; max-width: 935px; margin: 0 auto; }
+        
         .ig-chat-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
         .ig-back-btn { background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; }
-        .ig-user-info { flex: 1; display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text); }
-        
-        .ig-avatar-sm { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); }
+        .ig-logo { font-size: 20px; font-weight: 700; color: var(--primary); text-decoration: none; }
+        .ig-user-info { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-start; }
+        .ig-user-name { font-size: 16px; font-weight: 600; color: var(--text); }
+        .ig-avatar-sm { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #f09433, #bc1888); flex-shrink: 0; }
         .ig-avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
         .ig-avatar-sm .initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
         
-        .ig-user-name { font-size: 16px; font-weight: 600; }
-
-        .ig-header-btn { background: none; border: none; font-size: 22px; color: var(--text); cursor: pointer; }
-
-        .ig-messages-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 4px; }
-
-        .ig-message-row { display: flex; align-items: flex-end; gap: 8px; }
-        .ig-message-row.sent { align-self: flex-end; }
+        .ig-messages-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .ig-message-row { display: flex; align-items: flex-end; gap: 8px; max-width: 80%; }
+        .ig-message-row.sent { align-self: flex-end; flex-direction: row-reverse; }
         .ig-message-row.received { align-self: flex-start; }
         
-        .ig-msg-avatar { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); flex-shrink: 0; }
+        .ig-message-row { display: flex; align-items: flex-end; gap: 8px; max-width: 80%; }
+        .ig-message-row.sent { align-self: flex-end; flex-direction: row-reverse; }
+        .ig-message-row.received { align-self: flex-start; }
+        
+        .ig-msg-avatar { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; background: linear-gradient(45deg, #f09433, #bc1888); flex-shrink: 0; }
         .ig-msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .ig-msg-avatar .initials { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #fff; }
-
-        .ig-message { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word; }
-        .ig-message.sent { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
-        .ig-message.received { align-self: flex-start; background: var(--surface); color: var(--text); border-bottom-left-radius: 4px; }
-
+        
+        .ig-message { max-width: 100%; padding: 10px 14px; border-radius: 20px; font-size: 14px; line-height: 1.4; }
+        .ig-message.sent { background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+        .ig-message.received { background: var(--surface); color: var(--text); border-bottom-left-radius: 4px; }
         .ig-message-time { font-size: 10px; opacity: 0.7; margin-left: 8px; }
-
-        .ig-message-media { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
-        .ig-message-media img { max-width: 180px; max-height: 180px; border-radius: 12px; cursor: pointer; }
-
-        .ig-input-area { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        
+        .ig-media-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .ig-media-row img { max-width: 200px; max-height: 200px; border-radius: 12px; object-fit: cover; cursor: pointer; }
+        .ig-media-row video { max-width: 200px; max-height: 200px; border-radius: 12px; }
+        
+        .ig-voice-msg { display: flex; align-items: center; gap: 10px; min-width: 160px; padding: 8px 12px; background: rgba(255,255,255,0.15); border-radius: 24px; margin-top: 6px; }
+        .ig-voice-msg.sent { background: rgba(255,255,255,0.25); }
+        .ig-play-btn { width: 32px; height: 32px; border-radius: 50%; background: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        
+        .ig-input-area { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
         .ig-input-wrap { flex: 1; display: flex; align-items: center; background: var(--surface); border-radius: 22px; padding: 8px 16px; }
         .ig-input { flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none; }
-        .ig-send-btn { background: none; border: none; font-size: 22px; color: var(--primary); cursor: pointer; }
-
-        .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
-        .ig-modal.show { display: flex; }
+        .ig-input::placeholder { color: #888; }
+        .ig-send-btn { background: var(--primary); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; }
+        
+        .ig-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; }
+        .ig-modal.show { display: flex; align-items: center; justify-content: center; }
         .ig-modal img { max-width: 90%; max-height: 90%; }
     </style>
 </head>
@@ -72,9 +78,6 @@
                     {% endif %}
                 </div>
                 <span class="ig-user-name">{{ other_user.username }}</span>
-            </a>
-            <!-- .ig-header-btn removed - no forward_message route -->
-        </div>
             </a>
         </div>
         
