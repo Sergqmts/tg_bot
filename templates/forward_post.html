@@ -1,66 +1,69 @@
 {% extends "base.html" %}
-{% block title %}Переслать пост - Social{% endblock %}
+{% block title %}Поделиться постом - Social{% endblock %}
 {% block content %}
-<div class="card" style="max-width: 500px; margin: 40px auto;">
-    <h3>Переслать пост</h3>
+<div class="forward-page">
+    <a href="{{ url_for('index') }}" class="back-btn" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);margin-bottom:16px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Назад
+    </a>
     
-    <div class="post-preview" style="padding: 15px; background: var(--bg); border-radius: 8px; margin-bottom: 20px;">
-        <div class="post-header">
-            <div class="avatar">
-                {% if post.author.avatar != 'default.png' %}
-                    <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
-                {% else %}
-                    {{ post.author.username[0].upper() }}
-                {% endif %}
+    <div class="forward-card">
+        <h2 class="forward-title">Поделиться постом</h2>
+        
+        <div class="post-preview">
+            <div class="post-author-preview">
+                <div class="post-avatar-preview">
+                    {% if post.author.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}">
+                    {% else %}
+                        <div class="avatar-placeholder-preview">{{ post.author.username[0].upper() }}</div>
+                    {% endif %}
+                </div>
+                <span class="post-username-preview">{{ post.author.username }}</span>
             </div>
-            <div>
-                <a href="{{ url_for('user_profile', username=post.author.username) }}" class="username">{{ post.author.username }}</a>
-            </div>
+            {% if post.body %}
+            <div class="post-text-preview">{{ post.body[:100] }}{% if post.body|length > 100 %}...{% endif %}</div>
+            {% endif %}
         </div>
-        {% if post.body %}
-            <div class="post-content">{{ post.body[:100] }}{% if post.body|length > 100 %}...{% endif %}</div>
+        
+        <form method="POST" class="forward-form">
+            <input type="hidden" name="action" value="to_profile">
+            <button type="submit" class="btn btn-primary btn-full">Добавить в мой профиль</button>
+        </form>
+        
+        {% if chats %}
+        <div class="forward-section">
+            <h3 class="section-title">В групповой чат</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="to_chat">
+                <div class="form-group">
+                    <select name="chat_id" class="form-select" required>
+                        <option value="">Выберите чат</option>
+                        {% for chat in chats %}
+                            <option value="{{ chat.id }}">{{ chat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-outline btn-full">Отправить</button>
+            </form>
+        </div>
         {% endif %}
+        
+        <div class="forward-section">
+            <h3 class="section-title">В личные сообщения</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="to_message">
+                <div class="form-group">
+                    <select name="username" class="form-select" required>
+                        <option value="">Выберите получателя</option>
+                        {% for user in users %}
+                            <option value="{{ user.username }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-outline btn-full">Отправить</button>
+            </form>
+        </div>
     </div>
-    
-    <form method="POST">
-        <input type="hidden" name="action" value="to_profile">
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">Добавить в мой профиль</button>
-    </form>
-    
-    {% if chats %}
-    <hr style="margin: 20px 0;">
-    
-    <h4>Отправить в групповой чат</h4>
-    <form method="POST">
-        <input type="hidden" name="action" value="to_chat">
-        <div class="form-group">
-            <label>Выберите чат:</label>
-            <select name="chat_id" required>
-                <option value="">-- Выберите чат --</option>
-                {% for chat in chats %}
-                    <option value="{{ chat.id }}">{{ chat.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Отправить</button>
-    </form>
-    {% endif %}
-    
-    <hr style="margin: 20px 0;">
-    
-    <h4>Отправить в личные сообщения</h4>
-    <form method="POST">
-        <input type="hidden" name="action" value="to_message">
-        <div class="form-group">
-            <label>Выберите получателя:</label>
-            <select name="username" required>
-                <option value="">-- Выберите пользователя --</option>
-                {% for user in users %}
-                    <option value="{{ user.username }}">{{ user.username }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Отправить</button>
-    </form>
 </div>
 {% endblock %}
