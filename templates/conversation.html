@@ -1,26 +1,24 @@
 {% extends "base.html" %}
 {% block title %}{{ other_user.username }} - Social{% endblock %}
 {% block content %}
-<div class="profile" style="max-width: 100%; height: 100vh; display: flex; flex-direction: column;">
-    <div class="profile-header" style="padding: 12px 16px; flex-shrink: 0;">
-        <div class="profile-info" style="padding: 0;">
-            <a href="{{ url_for('messages') }}" class="btn btn-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-            </a>
-            <a href="{{ url_for('user_profile', username=other_user.username) }}" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text);">
-                <div class="avatar-placeholder" style="width: 40px; height: 40px; font-size: 16px;">
-                    {% if other_user.avatar != 'default.png' %}
-                    <img src="{{ url_for('uploaded_file', filename=other_user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                    {% else %}
-                    {{ other_user.username[0].upper() }}
-                    {% endif %}
-                </div>
-                <span style="font-weight: 600;">{{ other_user.username }}</span>
-            </a>
-        </div>
+<div class="chat-container">
+    <div class="chat-header">
+        <a href="{{ url_for('messages') }}" class="btn btn-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </a>
+        <a href="{{ url_for('user_profile', username=other_user.username) }}" class="chat-userInfo">
+            <div class="chat-avatar">
+                {% if other_user.avatar != 'default.png' %}
+                <img src="{{ url_for('uploaded_file', filename=other_user.avatar) }}" alt="">
+                {% else %}
+                <div class="avatar-placeholder">{{ other_user.username[0].upper() }}</div>
+                {% endif %}
+            </div>
+            <span>{{ other_user.username }}</span>
+        </a>
     </div>
     
-    <div class="messages-area" id="messagesArea" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+    <div class="chat-messages" id="messagesArea">
         {% for msg in messages %}
         <div class="message-row {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
             {% if msg.sender_id != current_user.id %}
@@ -37,7 +35,7 @@
                 {% if msg.post_id %}
                 {% set post = Post.query.get(msg.post_id) %}
                 {% if post %}
-                <a href="{{ url_for('view_post', post_id=post.id) }}" style="display: block; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin-bottom: 4px; text-decoration: none; color: var(--text);">
+                <a href="{{ url_for('view_post', post_id=post.id) }}" class="message-post">
                     <div style="font-size: 12px; font-weight: 600;">{{ post.author.username }}</div>
                     <div style="font-size: 13px;">{{ post.body[:30] }}...</div>
                 </a>
@@ -67,7 +65,7 @@
         {% endfor %}
     </div>
     
-    <div class="input-area">
+    <div class="chat-input-area">
         <button class="attach-btn" onclick="toggleAttachMenu()">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
         </button>
@@ -87,8 +85,8 @@
             </label>
         </div>
         
-        <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="input-form" style="flex: 1; display: flex; align-items: center; background: var(--surface); border-radius: 22px; padding: 8px 16px;">
-            <input type="text" name="body" placeholder="Сообщение..." class="message-input" style="flex: 1; background: none; border: none; color: var(--text); font-size: 14px; outline: none;">
+        <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form">
+            <input type="text" name="body" placeholder="Сообщение..." class="message-input">
             <button type="submit" class="send-btn">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15-2-15 2z"/></svg>
             </button>
@@ -102,171 +100,89 @@
 </div>
 
 <style>
-.messages-area {
-    max-width: 935px;
-    margin: 0 auto;
-    width: 100%;
-}
-.message-row {
+.chat-container {
     display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    max-width: 80%;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
 }
-.message-row.sent {
-    align-self: flex-end;
-    flex-direction: row-reverse;
-}
-.message-row.received {
-    align-self: flex-start;
-}
-.message-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: linear-gradient(45deg, #f09433, #bc1888);
-}
-.message-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.message-bubble {
-    max-width: 100%;
-    padding: 10px 14px;
-    border-radius: 20px;
-    font-size: 14px;
-    line-height: 1.4;
-    position: relative;
-}
-.message-row.sent .message-bubble {
-    background: var(--primary);
-    color: #fff;
-    border-bottom-right-radius: 4px;
-}
-.message-row.received .message-bubble {
-    background: var(--surface);
-    color: var(--text);
-    border-bottom-left-radius: 4px;
-}
-.message-time {
-    font-size: 10px;
-    opacity: 0.7;
-    margin-top: 4px;
-    text-align: right;
-}
-.voice-message {
+.chat-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-width: 160px;
-    padding: 8px 12px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 24px;
-    margin-top: 6px;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
 }
-.voice-message.sent {
-    background: rgba(255,255,255,0.25);
+.chat-userInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--text);
+    flex: 1;
 }
-.play-btn {
-    width: 32px;
-    height: 32px;
+.chat-avatar {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: #fff;
-    border: none;
-    cursor: pointer;
+    overflow: hidden;
+    background: linear-gradient(45deg, #f09433, #bc1888);
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.input-area {
+.chat-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.chat-avatar .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+}
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.chat-input-area {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
     border-top: 1px solid var(--border);
     background: var(--bg);
-    position: relative;
+    flex-shrink: 0;
 }
-.attach-btn {
+.chat-form {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border-radius: 22px;
+    padding: 8px 16px;
+}
+.message-input {
+    flex: 1;
     background: none;
     border: none;
-    cursor: pointer;
-    padding: 8px;
-}
-.attach-btn svg {
-    width: 24px;
-    height: 24px;
-    fill: var(--text);
-}
-.attach-menu {
-    display: none;
-    position: absolute;
-    bottom: 70px;
-    left: 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 8px 0;
-    z-index: 100;
-}
-.attach-menu.show {
-    display: block;
-}
-.attach-option {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    cursor: pointer;
-    font-size: 14px;
     color: var(--text);
+    font-size: 14px;
+    outline: none;
 }
-.attach-option:hover {
-    background: var(--border);
-}
-.send-btn {
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-}
-.send-btn svg {
-    width: 20px;
-    height: 20px;
-}
-.modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.9);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-}
-.modal.show {
-    display: flex;
-}
-.modal img {
-    max-width: 90%;
-    max-height: 90%;
-}
-.modal-close {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    font-size: 30px;
-    color: #fff;
-    cursor: pointer;
+.message-input::placeholder {
+    color: var(--text-muted);
 }
 </style>
 
