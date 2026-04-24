@@ -24,7 +24,7 @@ app = Flask(__name__,
 @app.context_processor
 def inject_stories():
     if current_user.is_authenticated:
-try:
+        try:
             followers = current_user.followers.all()
             following = current_user.followed.all()
             follower_ids = [f.id for f in followers]
@@ -49,7 +49,6 @@ try:
         except Exception as e:
             app.logger.error(f"Stories error: {e}")
             return dict(top_stories=[], my_story=None, user_has_story=False)
-    return dict(top_stories=[], my_story=None, user_has_story=False)
     return dict(top_stories=[], my_story=None, user_has_story=False)
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
