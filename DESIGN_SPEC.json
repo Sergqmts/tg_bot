@@ -1,0 +1,183 @@
+{
+  "name": "Social Network Design Spec",
+  "version": "2.0",
+  "description": "Instagram-inspired design with modern upgrades",
+  
+  "color_palette": {
+    "primary": {
+      "brand": "#E4405F",
+      "description": "Brand accent - Instagram pink-red gradient start"
+    },
+    "background": {
+      "light": "#FAFAFA",
+      "dark": "#0A0A0A"
+    },
+    "surface": {
+      "light": "#FFFFFF",
+      "dark": "#1A1A1A"
+    },
+    "text": {
+      "primary": {"light": "#262626", "dark": "#FAFAFA"},
+      "secondary": {"light": "#8E8E8E", "dark": "#A8A8A8"}
+    },
+    "border": {
+      "light": "#DBDBDB",
+      "dark": "#2F2F2F"
+    },
+    "stories": {
+      "gradient": "linear-gradient(45deg, #F09433 0%, #E6683C 25%, #DC2743 50%, #CC2366 75%, #BC1888 100%)",
+      "viewed_dark": "#262626",
+      "viewed_light": "#DBDBDB"
+    },
+    "accent_upgrades": {
+      "soft_pink": "#FFE4E8",
+      "soft_purple": "#F0E6FF",
+      "soft_blue": "#E6F4FF",
+      "glow": "rgba(228, 64, 95, 0.15)"
+    }
+  },
+
+  "typography": {
+    "primary_font": "-apple-system, BlinkMacSystemFont, 'SF Pro Display', -v-v-m-system, sans-serif",
+    "logo_font": "'Playfair Display', serif",
+    "sizes": {
+      "logo": "1.6rem",
+      "heading_1": "1.4rem",
+      "heading_2": "1.2rem",
+      "body": "0.95rem",
+      "small": "0.8rem",
+      "tiny": "0.7rem"
+    },
+    "weights": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    }
+  },
+
+  "layout": {
+    "max_content_width": "470px",
+    "header_height": "60px",
+    "bottom_nav_height": "50px",
+    "story_bar_height": "90px",
+    "spacing": {
+      "xs": "4px",
+      "sm": "8px",
+      "md": "12px",
+      "lg": "16px",
+      "xl": "24px"
+    },
+    "border_radius": {
+      "sm": "4px",
+      "md": "8px",
+      "lg": "12px",
+      "xl": "16px",
+      "full": "50%"
+    }
+  },
+
+  "components": {
+    "bottom_navigation": {
+      "icons": ["home", "search", "plus", "heart", "profile"],
+      "style": "rounded_outline",
+      "size": "24px"
+    },
+    "action_buttons": {
+      "like": {"type": "heart_outline", "anim": "scale_pulse"},
+      "comment": {"type": "bubble_outline"},
+      "share": {"type": "paper_plane"},
+      "save": {"type": "bookmark_outline", "anim": "fill_slide"}
+    },
+    "post_card": {
+      "header": {"avatar_size": "32px", "username_bold": true},
+      "media": {"aspect_ratio": "1:1 or 4:5", "radius": "8px"},
+      "actions": {"icon_size": "24px", "gap": "16px"}
+    },
+    "story_ring": {
+      "size": "66px",
+      "stroke": "2px",
+      "gradient": true
+    }
+  },
+
+  "icons": {
+    "style": "outlined_rounded",
+    "source": "inline_svg",
+    "list": {
+      "home": "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z",
+      "search": "M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 .57-2.59c0-3.58-2.91-6.5-6.5-6.5S2.5 5.64 2.5 9.25c0 3.58 2.91 6.5 6.5 6.5 1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C4.01 14.5 1.5 11.95 1.5 9.25S4.01 4 6.75 4 12 6.55 12 9.25 9.49 14.5 6.75 14.5z",
+      "plus": "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
+      "heart": "M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.76-7.9 10.05z",
+      "bookmark": "M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z",
+      "comment": "M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18z",
+      "send": "M2.01 21L23 12 2.01 3 2 10l15-2-15-2z",
+      "menu": "M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z",
+      "settings": "M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z",
+      "user": "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+    }
+  },
+
+  "animations": {
+    "fade_in": {
+      "name": "fadeIn",
+      "duration": "0.3s",
+      "easing": "ease-out"
+    },
+    "slide_up": {
+      "name": "slideUp",
+      "duration": "0.4s",
+      "easing": "cubic-bezier(0.16, 1, 0.3, 1)"
+    },
+    "scale_pulse": {
+      "name": "scalePulse",
+      "duration": "0.2s",
+      "keyframes": "0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); }"
+    },
+    "heart_beat": {
+      "name": "heartBeat",
+      "duration": "0.15s",
+      "keyframes": "0% { transform: scale(1); } 25% { transform: scale(1.2); } 50% { transform: scale(0.95); } 75% { transform: scale(1.1); } 100% { transform: scale(1); }"
+    },
+    "stagger_delay": {
+      "base": "0.05s",
+      "max_items": "10"
+    }
+  },
+
+  "design_upgrades": {
+    "soft_buttons": {
+      "description": "Rounded pill-shaped buttons instead of sharp rectangles",
+      "style": "border-radius: 24px; padding: 10px 24px; border: none;"
+    },
+    "gradient_accents": {
+      "description": "Use soft gradient backgrounds for special elements",
+      "examples": ["like button active", "verified badge", "highlights"]
+    },
+    "glassmorphism": {
+      "description": "Subtle blur effects on overlays",
+      "style": "backdrop-filter: blur(10px); background: rgba(255,255,255,0.8);"
+    },
+    "micro_interactions": {
+      "description": "Delightful hover and tap feedback",
+      "elements": ["buttons", "cards", "icons"]
+    },
+    "refined_icons": {
+      "description": "Lighter stroke weight, more whitespace"
+    },
+    "custom_fonts": {
+      "logo": "Playfair Display",
+      "body": "DM Sans"
+    }
+  },
+
+  "mobile_layout": {
+    "breakpoint": "768px",
+    "structure": {
+      "top_bar": "fixed, 60px height",
+      "stories": "horizontal scroll, 90px height",
+      "content": "scrollable, max-width 470px centered",
+      "bottom_nav": "fixed, 50px height, 5 icons"
+    }
+  }
+}

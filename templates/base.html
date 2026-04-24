@@ -3,146 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Social Network{% endblock %}</title>
+    <title>{% block title %}TeleGold{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Верхняя навигационная панель -->
-    <header class="header">
-        <div class="header-inner">
-            <!-- Логотип слева -->
-            <a href="{{ url_for('index') }}" class="logo">Social</a>
-            
-            <!-- Правая часть - иконки -->
-            <div class="header-right">
-                {% if current_user.is_authenticated %}
-                    <!-- Переключатель темы -->
-                    <button class="theme-toggle" onclick="toggleTheme()" title="Сменить тему">🌙</button>
-                    
-                    <!-- Поиск -->
-                    <form method="GET" action="{{ url_for('explore') }}" style="display: flex; align-items: center;">
-                        <input type="text" name="q" placeholder="@username" style="width: 80px; padding: 5px; border: 1px solid var(--border); border-radius: 15px; font-size: 0.8rem;">
-                    </form>
-                    
-                    <!-- Иконка сообщений -->
-                    <a href="{{ url_for('messages') }}" title="Сообщения">
-                        💬
-                        {% if current_user.unread_messages() > 0 %}
-                            <span class="unread-badge">{{ current_user.unread_messages() }}</span>
-                        {% endif %}
-                    </a>
-                    
-                    <!-- Иконка профиля -->
-                    <div class="profile-menu">
-                        <a href="{{ url_for('user_profile', username=current_user.username) }}" class="nav-avatar" title="Профиль" style="border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                            {% if current_user.avatar != 'default.png' %}
-                                {% if current_user.avatar.endswith('.mp4') or current_user.avatar.endswith('.webm') or current_user.avatar.endswith('.mov') %}
-                                    <video src="{{ current_user.avatar if current_user.avatar.startswith('http') else url_for('uploaded_file', filename=current_user.avatar) }}" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>
-                                {% else %}
-                                    <img src="{{ current_user.avatar if current_user.avatar.startswith('http') else url_for('uploaded_file', filename=current_user.avatar) }}" alt="" style="width:100%;height:100%;object-fit:cover;">
-                                {% endif %}
-                            {% else %}
-                                {{ current_user.username[0].upper() }}
-                            {% endif %}
-                        </a>
-                        <div class="profile-dropdown">
-                            <a href="{{ url_for('user_profile', username=current_user.username) }}">👤 Профиль</a>
-                            <a href="{{ url_for('create_story') }}">📱 Создать историю</a>
-                            <a href="{{ url_for('stories_archives') }}">📁 Архив историй</a>
-                            <a href="{{ url_for('edit_profile') }}">✏️ Редактировать</a>
-                        </div>
-                    </div>
-                    
-                    <!-- Меню пользователя -->
-                    <div class="user-menu">
-                        <button class="menu-toggle">☰</button>
-                        <div class="dropdown-menu">
-                            <a href="{{ url_for('create') }}">📝 Новый пост</a>
-                            <a href="{{ url_for('saved_posts') }}">📌 Сохранённые</a>
-                            <a href="{{ url_for('explore_tags') }}"># Теги</a>
-                            <a href="{{ url_for('explore') }}">👥 Люди</a>
-                            <a href="{{ url_for('communities') }}">🏠 Сообщества</a>
-                            <a href="{{ url_for('photos') }}">📷 Фото</a>
-                            <a href="{{ url_for('logout') }}">🚪 Выйти</a>
-                        </div>
-                    </div>
-                {% else %}
-                    {% if request.endpoint not in ['login', 'register'] %}
-                    <a href="{{ url_for('login') }}">Войти</a>
-                    <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 8px 15px; border-radius: 20px;">Регистрация</a>
-                    {% endif %}
-                {% endif %}
-            </div>
+    <header class="top-bar">
+        <a href="{{ url_for('index') }}" class="logo">TeleGold</a>
+        <div class="top-bar-actions">
+            {% if current_user.is_authenticated %}
+            <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Сменить тему">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </button>
+            <form method="GET" action="{{ url_for('explore') }}" class="search-form">
+                <input type="text" name="q" placeholder="Поиск" class="search-input">
+            </form>
+            {% endif %}
         </div>
     </header>
 
-    <!-- Stories -->
     {% if current_user.is_authenticated %}
     <script>
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
-            document.documentElement.classList.add('light-mode');
-        }
-        function toggleTheme() {
-            const html = document.documentElement;
-            if (html.classList.contains('light-mode')) {
-                html.classList.remove('light-mode');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                html.classList.add('light-mode');
-                localStorage.setItem('theme', 'light');
-            }
-        }
-        function toggleReactions() {
-            const menu = document.getElementById('reactionsMenu');
-            if (menu) menu.classList.toggle('show');
-        }
-        document.addEventListener('click', function(e) {
-            const dropdown = document.querySelector('.reactions-dropdown');
-            const menu = document.getElementById('reactionsMenu');
-            if (dropdown && menu && !dropdown.contains(e.target)) {
-                menu.classList.remove('show');
-            }
-        });
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+        document.documentElement.classList.add('light-mode');
+    }
+    function toggleTheme() {
+        document.documentElement.classList.toggle('light-mode');
+        localStorage.setItem('theme', document.documentElement.classList.contains('light-mode') ? 'light' : 'dark');
+    }
     </script>
-    <style>
-    :root { --stories-bg: #000; --stories-text: #fff; --stories-ring-inner: #262626; }
-    .light-mode { --stories-bg: #fff; --stories-text: #000; --stories-ring-inner: #efefef; }
-    .ig-story-ring { width: 66px; height: 66px; border-radius: 50%; background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); display: flex; align-items: center; justify-content: center; padding: 2px; }
-    .ig-story-ring.viewed { background: #262626; }
-    .light-mode .ig-story-ring.viewed { background: #dbdbdb; }
-    .ig-story-ring-inner { width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--stories-bg); overflow: hidden; background: var(--stories-ring-inner); }
-    .ig-story-img { width: 100%; height: 100%; object-fit: cover; }
-    .ig-story-add { background: linear-gradient(45deg, #f09433, #bc1888); width: 66px; height: 66px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
-    .ig-story-add::after { content: ''; position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; background: #0095f6; border-radius: 50%; border: 2px solid var(--stories-bg); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
-    .theme-toggle { background: none; border: none; color: var(--text); cursor: pointer; font-size: 1.2rem; padding: 5px; }
-    </style>
-    
-    <div class="stories-bar" style="background: var(--stories-bg); border-bottom: 1px solid var(--border, #262626); padding: 8px 0; margin-top: 60px; margin-bottom: 0;">
-        <div class="stories-scroll" style="display: flex; gap: 12px; overflow-x: auto; padding: 0 15px; max-width: 600px; margin: 0 auto;">
-            <div style="text-align: center; flex-shrink: 0;">
-                <a href="{{ url_for('create_story') }}" style="text-decoration: none;">
-                    <div class="ig-story-add">
-                        <div class="ig-story-ring-inner" style="display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white;">+</div>
+
+    <div class="stories-bar">
+        <div class="stories-scroll">
+            <div class="story-item">
+                <a href="{{ url_for('create_story') }}" class="story-ring-add">
+                    <div class="story-ring-inner">
+                        <span class="plus-icon">+</span>
                     </div>
-                    <span style="font-size: 0.65rem; color: var(--stories-text); margin-top: 4px; display: block;">Ваша</span>
                 </a>
+                <span class="story-username">Ваша</span>
             </div>
             {% for story in top_stories %}
             {% if story and story.user_id != current_user.id %}
-            <div style="text-align: center; flex-shrink: 0;">
-                <a href="{{ url_for('view_story', story_id=story.id) }}" style="text-decoration: none;">
-                    <div class="ig-story-ring {% if story.viewed %}viewed{% endif %}">
-                        <div class="ig-story-ring-inner">
-                            {% if story.user.avatar != 'default.png' %}
-                                <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" class="ig-story-img">
-                            {% else %}
-                                <div style="width: 100%; height: 100%; background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; font-weight: 600;">{{ story.user.username[0].upper() }}</div>
-                            {% endif %}
-                        </div>
+            <div class="story-item">
+                <a href="{{ url_for('view_story', story_id=story.id) }}" class="story-ring {% if story.viewed %}viewed{% endif %}">
+                    <div class="story-ring-inner">
+                        {% if story.user.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" class="story-avatar-img">
+                        {% else %}
+                        <div class="story-avatar-placeholder">{{ story.user.username[0].upper() }}</div>
+                        {% endif %}
                     </div>
-                    <span style="font-size: 0.65rem; color: var(--stories-text); margin-top: 4px; display: block;">{{ story.user.username[:8] }}</span>
                 </a>
+                <span class="story-username">{{ story.user.username[:8] }}</span>
             </div>
             {% endif %}
             {% endfor %}
@@ -150,14 +64,46 @@
     </div>
     {% endif %}
 
-    <!-- Основной контент -->
     <main class="main-content">
         {% with messages = get_flashed_messages() %}
-            {% for message in messages %}
-                <div class="flash">{{ message }}</div>
-            {% endfor %}
+        {% for message in messages %}
+        <div class="flash-message">{{ message }}</div>
+        {% endfor %}
         {% endwith %}
         {% block content %}{% endblock %}
     </main>
+
+    {% if current_user.is_authenticated %}
+    <nav class="bottom-nav">
+        <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </a>
+        <a href="{{ url_for('explore') }}" class="nav-item {% if request.endpoint == 'explore' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </a>
+        <a href="{{ url_for('create') }}" class="nav-item {% if request.endpoint == 'create' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2"/></svg>
+        </a>
+        <a href="{{ url_for('saved_posts') }}" class="nav-item {% if request.endpoint == 'saved_posts' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </a>
+        <a href="{{ url_for('user_profile', username=current_user.username) }}" class="nav-item-profile {% if request.endpoint == 'user_profile' %}active{% endif %}">
+            <div class="nav-avatar{% if current_user.avatar != 'default.png' %} has-img{% endif %}">
+                {% if current_user.avatar != 'default.png' %}
+                <img src="{{ url_for('uploaded_file', filename=current_user.avatar) }}">
+                {% else %}
+                {{ current_user.username[0].upper() }}
+                {% endif %}
+            </div>
+        </a>
+    </nav>
+    {% endif %}
+
+    {% if not current_user.is_authenticated and request.endpoint not in ['login', 'register'] %}
+    <div class="auth-bar">
+        <a href="{{ url_for('login') }}" class="btn btn-outline">Войти</a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Регистрация</a>
+    </div>
+    {% endif %}
 </body>
 </html>

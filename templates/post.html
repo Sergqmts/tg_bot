@@ -1,189 +1,142 @@
 {% extends "base.html" %}
-{% block title %}Пост - Social{% endblock %}
+{% block title %}Пост - TeleGold{% endblock %}
 {% block content %}
-<!-- Кнопка назад -->
-<a href="{{ url_for('index') }}" class="btn btn-secondary" style="margin-bottom: 20px;">← Назад</a>
+<div class="post-page">
+    <a href="{{ url_for('index') }}" class="back-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
 
-<!-- Полный пост -->
-<div class="card">
-    <!-- Автор поста -->
-    <div class="post-header">
-        <div class="avatar">
-            {% if post.author.avatar != 'default.png' %}
+    <article class="post-card" style="margin-top: 0;">
+        <div class="post-header">
+            <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-avatar">
+                {% if post.author.avatar != 'default.png' %}
                 <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
-            {% else %}
-                {{ post.author.username[0].upper() }}
-            {% endif %}
+                {% else %}
+                <div class="post-avatar-placeholder">{{ post.author.username[0].upper() }}</div>
+                {% endif %}
+            </a>
+            <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author">{{ post.author.username }}</a>
+            <span class="post-time">{{ post.created_at.strftime('%d %b %Y') }}</span>
+            <button class="post-more">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            </button>
         </div>
-        <div>
-            <a href="{{ url_for('user_profile', username=post.author.username) }}" class="username">{{ post.author.username }}</a>
-            <div class="post-time">{{ post.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
-        </div>
-    </div>
-    
-    <!-- Текст поста -->
-    {% if post.body %}
-        <div class="post-content" style="font-size: 1.1rem; margin: 15px 0;">{{ post.body }}</div>
-    {% endif %}
-    
-    <!-- Медиа -->
-    {% for m in post.media %}
-        <div class="post-media">
+
+        {% if post.body %}
+        <div class="post-body">{{ post.body }}</div>
+        {% endif %}
+
+        {% for m in post.media %}
+        <div class="post-media-full">
             {% if m.cloudinary_url %}
                 {% if m.media_type == 'video' %}
-                    <video controls crossorigin="anonymous" style="max-width: 100%;"><source src="{{ m.cloudinary_url }}" type="video/mp4"></video>
+                <video controls crossorigin="anonymous" src="{{ m.cloudinary_url }}"></video>
                 {% else %}
-                    <img src="{{ m.cloudinary_url }}" alt="Медиа" style="max-width: 100%;">
+                <img src="{{ m.cloudinary_url }}" alt="Медиа">
                 {% endif %}
             {% else %}
                 {% if m.media_type == 'video' %}
-                    <video controls style="max-width: 100%;"><source src="{{ url_for('uploaded_file', filename=m.filename) }}" type="video/mp4"></video>
+                <video controls src="{{ url_for('uploaded_file', filename=m.filename) }}"></video>
                 {% else %}
-                    <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа" style="max-width: 100%;">
+                <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
                 {% endif %}
             {% endif %}
         </div>
-    {% endfor %}
-    
-    <!-- Действия -->
-    <div class="post-actions">
-        {% if current_user.is_authenticated %}
-        <div class="reactions-dropdown">
-            <button type="button" class="btn btn-like" onclick="toggleReactions()">
-                <span class="current-reaction">{% if user_reaction %}{{ user_reaction.emoji }}{% else %}❤️{% endif %}</span>
-                {{ post.reactions.count() }}
-            </button>
-            <div class="reactions-menu" id="reactionsMenu">
-                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" name="emoji" value="❤️" class="reaction-btn">❤️</button>
-                </form>
-                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" name="emoji" value="😂" class="reaction-btn">😂</button>
-                </form>
-                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" name="emoji" value="😢" class="reaction-btn">😢</button>
-                </form>
-                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" name="emoji" value="😮" class="reaction-btn">😮</button>
-                </form>
-                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
-                    <button type="submit" name="emoji" value="😍" class="reaction-btn">😍</button>
-                </form>
+        {% endfor %}
+
+        <div class="post-actions">
+            {% if current_user.is_authenticated %}
+            <div class="reaction-wrapper">
+                <button type="button" class="action-btn like-btn" onclick="showReactions({{ post.id }})">
+                    <svg viewBox="0 0 24 24" fill="{% if user_reaction %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                </button>
+                <span class="reaction-count">{{ post.reactions.count() }}</span>
             </div>
-        </div>
-        <form method="POST" action="{{ url_for('repost', post_id=post.id) }}" style="display:inline;">
-            <button type="submit" class="btn btn-like {% if post.reposted_by(current_user) %}reposted{% endif %}">
-                🔄 {{ repost_count }}
-            </button>
-        </form>
-        <form method="POST" action="{{ url_for('save_post', post_id=post.id) }}" style="display:inline;">
-            <button type="submit" class="btn btn-like {% if post.saved_by.filter_by(user_id=current_user.id).first() %}saved{% endif %}">
-                📌
-            </button>
-        </form>
-        <a href="{{ url_for('forward_post', post_id=post.id) }}" class="btn btn-like">📤</a>
+            <form method="POST" action="{{ url_for('repost', post_id=post.id) }}">
+                <button type="submit" class="action-btn {% if post.reposted_by(current_user) %}active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 21l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                </button>
+            </form>
+            <form method="POST" action="{{ url_for('save_post', post_id=post.id) }}">
+                <button type="submit" class="action-btn {% if post.saved_by.filter_by(user_id=current_user.id).first() %}active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="{% if post.saved_by.filter_by(user_id=current_user.id).first() %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </button>
+            </form>
             {% if post.author == current_user %}
-            <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить пост?')" style="display:inline; margin-left: auto;">
-                <button type="submit" class="btn btn-danger">🗑️</button>
+            <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить?')" style="margin-left: auto;">
+                <button type="submit" class="action-btn danger">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
             </form>
             {% endif %}
-        {% else %}
-        <span class="btn btn-like">❤️ {{ post.likes.count() }}</span>
-        <span class="btn btn-like">🔄 {{ repost_count }}</span>
-        {% endif %}
-    </div>
-</div>
-
-<!-- Комментарии -->
-<div class="card">
-    <h3 style="margin-bottom: 15px;">Комментарии ({{ post.comments.count() }})</h3>
-    
-    <!-- Форма добавления комментария -->
-    {% if current_user.is_authenticated %}
-        <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form" enctype="multipart/form-data" style="margin-bottom: 20px;">
-            <input type="text" name="body" id="commentInput" placeholder="Добавить комментарий...">
-            <input type="hidden" name="reply_to_comment_id" id="replyToCommentId" value="">
-            <label style="cursor: pointer; font-size: 1.2rem;">📎
-                <input type="file" name="media" accept="image/*,video/*" style="display: none;" onchange="this.form.querySelector('.file-name').textContent = this.files[0]?.name || ''">
-            </label>
-            <span class="file-name" style="font-size: 0.8rem; color: #666;"></span>
-            <button type="submit" class="btn btn-primary">Отправить</button>
-        </form>
-        <div id="replyIndicator" style="display: none; color: #1da1f2; font-size: 0.8rem; margin-bottom: 5px;">
-            Ответ <span id="replyToUser"></span> <span style="cursor: pointer;" onclick="cancelReply()">✕</span>
-        </div>
-    {% endif %}
-    
-    <!-- Список комментариев -->
-    {% for comment in post.comments.order_by('created_at').all() %}
-        {% set is_reply = comment.reply_to_id is not none %}
-        <div class="comment" style="padding: 12px 0; border-bottom: 1px solid #eee; {% if is_reply %}margin-left: 30px; border-left: 2px solid #1da1f2; padding-left: 10px;{% endif %}">
-            <div class="avatar" style="width: 36px; height: 36px; flex-shrink: 0;">
-                {% if comment.author.avatar != 'default.png' %}
-                    <img src="{{ url_for('uploaded_file', filename=comment.author.avatar) }}" alt="">
-                {% else %}
-                    {{ comment.author.username[0].upper() }}
-                {% endif %}
-            </div>
-            <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                    <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="username" onclick="event.stopPropagation();">{{ comment.author.username }}</a>
-                    {% if is_reply %}
-                        <span style="color: #666; font-size: 0.75rem;">→ @{{ comment.reply_to.author.username }}</span>
-                    {% endif %}
-                    <span style="cursor: pointer; color: #1da1f2; font-size: 0.8rem;" onclick="replyTo('{{ comment.author.username }}', {{ comment.id }})">↶ Ответить</span>
-                    <span class="post-time" style="font-size: 0.8em;">{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
-                <div>{{ comment.body }}</div>
-                {% if comment.media_url %}
-                    {% if comment.media_type == 'video' %}
-                        <video src="{{ comment.media_url }}" controls style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 5px;"></video>
-                    {% else %}
-                        <img src="{{ comment.media_url }}" alt="" style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 5px; object-fit: cover;">
-                    {% endif %}
-                {% endif %}
-                <div style="margin-top: 5px; display: flex; gap: 5px; align-items: center;">
-                    <div style="position: relative; display: inline-block;">
-                        <button type="button" onclick="var g=this.nextElementSibling; g.style.display=g.style.display==='none'?'grid':'none'" style="background: none; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.9rem;">＋</button>
-                        <div class="emoji-grid" style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 100; grid-template-columns: repeat(4, 1fr); gap: 3px;">
-                            {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
-                                <form method="POST" action="{{ url_for('react_comment', comment_id=comment.id) }}" style="display: inline;">
-                                    <input type="hidden" name="emoji" value="{{ r }}">
-                                    <button type="submit" style="background: none; border: none; cursor: pointer; padding: 3px; font-size: 1.1rem;">{{ r }}</button>
-                                </form>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% for r in ['👍', '❤️', '😂', '😮', '😢', '😡', '👎', '🎉', '🔥', '❤️‍🔥', '💯', '👏'] %}
-                    {% if comment.reactions|selectattr('emoji', 'equalto', r)|list|length > 0 %}
-                        <span style="font-size: 0.75rem; color: #666;">{{ r }}{{ comment.reactions|selectattr('emoji', 'equalto', r)|list|length }}</span>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            {% if current_user.is_authenticated and comment.author == current_user %}
-                <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" style="margin-left: 10px;">
-                    <button type="submit" class="btn btn-like" style="color: #ff4444;">✕</button>
-                </form>
+            {% else %}
+            <span class="reaction-count">❤️ {{ post.likes.count() }}</span>
             {% endif %}
         </div>
-    {% else %}
-        <p style="color: #8e8e8e; text-align: center; padding: 20px;">Пока нет комментариев</p>
-    {% endfor %}
+    </article>
+
+    <section class="comments-section">
+        <h3 class="comments-title">Комментарии ({{ post.comments.count() }})</h3>
+
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form" enctype="multipart/form-data">
+            <input type="text" name="body" class="comment-input" placeholder="Добавить комментарий...">
+            <input type="hidden" name="reply_to_comment_id" id="replyToCommentId" value="">
+            <button type="submit" class="btn btn-primary btn-small">Отправить</button>
+        </form>
+        <div id="replyIndicator" class="reply-indicator" style="display: none;">
+            Ответ <span id="replyToUser"></span>
+            <button type="button" onclick="cancelReply()">×</button>
+        </div>
+        {% endif %}
+
+        {% for comment in post.comments.order_by('created_at').all() %}
+        <div class="comment-item">
+            <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="comment-avatar">
+                {% if comment.author.avatar != 'default.png' %}
+                <img src="{{ url_for('uploaded_file', filename=comment.author.avatar) }}" alt="">
+                {% else %}
+                <div class="comment-avatar-placeholder">{{ comment.author.username[0].upper() }}</div>
+                {% endif %}
+            </a>
+            <div class="comment-body">
+                <div class="comment-header">
+                    <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="comment-author">{{ comment.author.username }}</a>
+                    <span class="comment-time">{{ comment.created_at.strftime('%d %b') }}</span>
+                </div>
+                <div class="comment-text">{{ comment.body }}</div>
+                {% if current_user.is_authenticated %}
+                <div class="comment-actions">
+                    <button type="button" class="reply-btn" onclick="replyTo('{{ comment.author.username }}', {{ comment.id }})">Ответить</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <p class="no-comments">Пока нет комментариев</p>
+        {% endfor %}
+    </section>
 </div>
 
 <script>
 function replyTo(username, commentId) {
     document.getElementById('commentInput').value = '@' + username + ' ';
-    document.getElementById('replyToCommentId').value = commentId || '';
+    document.getElementById('replyToCommentId').value = commentId;
     document.getElementById('replyToUser').textContent = username;
-    document.getElementById('replyIndicator').style.display = 'block';
-    document.getElementById('commentInput').focus();
+    document.getElementById('replyIndicator').style.display = 'flex';
 }
 
 function cancelReply() {
     document.getElementById('replyToCommentId').value = '';
     document.getElementById('replyIndicator').style.display = 'none';
+}
+
+function showReactions(postId) {
+    alert('Выберите реакцию');
 }
 </script>
 {% endblock %}

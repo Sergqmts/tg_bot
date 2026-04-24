@@ -1,25 +1,26 @@
 {% extends "base.html" %}
-{% block title %}{{ user.username }} - Social{% endblock %}
+{% block title %}{{ user.username }} - TeleGold{% endblock %}
 {% block content %}
-    <!-- Профиль -->
+<div class="profile">
     <div class="profile-header">
-        <div class="profile-info" style="max-width: 600px; margin: 0 auto; width: 100%; padding: 0 10px;">
-            <div class="profile-avatar">
-                {% if user.avatar %}
-                    {% if user.avatar != 'default.png' %}
-                    <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                    {% else %}
-                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--primary); color: #fff; font-size: 2.5rem;">{{ user.username[0].upper() }}</div>
-                    {% endif %}
+        <div class="profile-info">
+            <div class="profile-avatar-large">
+                {% if user.avatar and user.avatar != 'default.png' %}
+                <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="">
                 {% else %}
-                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--primary); color: #fff; font-size: 2.5rem;">{{ user.username[0].upper() }}</div>
+                <div class="avatar-placeholder-large">{{ user.username[0].upper() }}</div>
                 {% endif %}
             </div>
-            <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px; flex-wrap: wrap;">
-                    <h1 style="font-size: 1.5rem; font-weight: 600;">{{ user.username }}</h1>
+            <div class="profile-details">
+                <div class="profile-title">
+                    <h1 class="profile-username">{{ user.username }}</h1>
+                    {% if user.is_verified %}
+                    <span class="verified-badge">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    </span>
+                    {% endif %}
                 </div>
-                <div class="profile-stats" style="gap: 15px;">
+                <div class="profile-stats">
                     <span><strong>{{ user.posts.count() }}</strong> постов</span>
                     {% if not user.hide_followers %}
                     <span><strong>{{ user.followers.count() }}</strong> подписчиков</span>
@@ -29,32 +30,32 @@
                     {% endif %}
                 </div>
                 {% if user.bio %}
-                    <p style="color: var(--text-light); margin-top: 10px;">{{ user.bio }}</p>
+                <p class="profile-bio">{{ user.bio }}</p>
                 {% endif %}
-                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="profile-actions">
                     {% if current_user.is_authenticated %}
                         {% if user.id != current_user.id %}
                             {% if is_blocked %}
                             <form method="POST" action="{{ url_for('unblock_user', username=user.username) }}">
-                                <button type="submit" class="btn btn-secondary">Разблокировать</button>
+                                <button type="submit" class="btn btn-outline">Разблокировать</button>
                             </form>
                             {% elif is_pending %}
                             <form method="POST" action="{{ url_for('unfollow', username=user.username) }}">
-                                <button type="submit" class="btn btn-secondary">Отменить заявку</button>
+                                <button type="submit" class="btn btn-outline">Отменить заявку</button>
                             </form>
                             {% else %}
                             <form method="POST" action="{{ url_for('follow', username=user.username) }}">
                                 <button type="submit" class="btn btn-primary">Подписаться</button>
                             </form>
-                            <a href="{{ url_for('conversation', username=user.username) }}" class="btn btn-secondary">Написать</a>
-                            <form method="POST" action="{{ url_for('block_user', username=user.username) }}" style="display: inline;">
-                                <button type="submit" class="btn btn-danger" onclick="return confirm('Заблокировать пользователя?')">Заблокировать</button>
+                            <a href="{{ url_for('conversation', username=user.username) }}" class="btn btn-outline">Написать</a>
+                            <form method="POST" action="{{ url_for('block_user', username=user.username) }}">
+                                <button type="submit" class="btn btn-icon" onclick="return confirm('Заблокировать?')">⋮</button>
                             </form>
                             {% endif %}
                         {% elif user.id == current_user.id %}
-                        <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Редактировать</a>
+                        <a href="{{ url_for('edit_profile') }}" class="btn btn-outline">Редактировать</a>
                         {% if pending_count > 0 %}
-                            <a href="{{ url_for('follower_requests') }}" class="btn btn-primary">Заявки ({{ pending_count }})</a>
+                        <a href="{{ url_for('follower_requests') }}" class="btn btn-primary">Заявки ({{ pending_count }})</a>
                         {% endif %}
                         {% endif %}
                     {% endif %}
@@ -64,46 +65,57 @@
     </div>
     
     {% if not can_view %}
-    <div style="text-align: center; padding: 40px; color: var(--text-light);">
-        <p>Это закрытый профиль. Подпишитесь, чтобы видеть посты.</p>
+    <div class="empty-state">
+        <div class="empty-icon">🔒</div>
+        <h3 class="empty-title">Закрытый профиль</h3>
+        <p class="empty-text">Подпишитесь, чтобы видеть посты</p>
     </div>
     {% else %}
-    <!-- Посты в сетке 3 колонки -->
-    <h3 style="text-align: center; margin-bottom: 20px; color: var(--text-light);">Посты</h3>
-    <div class="posts-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+    <div class="profile-tabs">
+        <button class="tab active">Посты</button>
+        <button class="tab">Сохранённые</button>
+    </div>
+    <div class="posts-grid">
         {% for post in posts %}
-            <div class="post-card" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
-                {% set media = post.media.first() %}
-                {% if media %}
-                    {% if media.cloudinary_url %}
-                        {% if media.media_type == 'video' %}
-                            <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted></video>
-                        {% else %}
-                            <img src="{{ media.cloudinary_url }}" alt="">
-                        {% endif %}
+        <a href="{{ url_for('view_post', post_id=post.id) }}" class="grid-item">
+            {% set media = post.media.first() %}
+            {% if media %}
+                {% if media.cloudinary_url %}
+                    {% if media.media_type == 'video' %}
+                    <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted></video>
                     {% else %}
-                        {% if media.media_type == 'video' %}
-                            <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
-                        {% else %}
-                            <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
-                        {% endif %}
+                    <img src="{{ media.cloudinary_url }}" alt="">
                     {% endif %}
-                {% elif post.body %}
-                    <div class="post-text-only" style="font-size: 0.7rem;">{{ post.body[:30] }}...</div>
+                {% else %}
+                    {% if media.media_type == 'video' %}
+                    <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
+                    {% else %}
+                    <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
+                    {% endif %}
                 {% endif %}
-                {% if post.author == current_user %}
-                    <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onclick="event.stopPropagation();" onsubmit="return confirm('Удалить пост?')">
-                        <button type="submit" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;">×</button>
-                    </form>
-                {% endif %}
-                <div class="post-overlay">
-                    <span>❤️ {{ post.likes.count() }}</span>
-                    <span>💬 {{ post.comments.count() }}</span>
-                </div>
+            {% elif post.body %}
+            <div class="text-post-preview">{{ post.body[:50] }}</div>
+            {% endif %}
+            {% if post.media.count() > 1 %}
+            <div class="multi-indicator">⋮</div>
+            {% endif %}
+            <div class="grid-overlay">
+                <span>❤️ {{ post.likes.count() }}</span>
+                <span>💬 {{ post.comments.count() }}</span>
             </div>
+            {% if post.author == current_user %}
+            <form method="POST" action="{{ url_for('delete', post_id=post.id)" onsubmit="event.preventDefault(); confirm('Удалить?') && this.submit()">
+                <button type="submit" class="delete-btn">×</button>
+            </form>
+            {% endif %}
+        </a>
         {% else %}
-            <p style="grid-column: 1/-1; text-align: center; color: var(--text-light); padding: 40px;">Пока нет постов</p>
+        <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-icon">📷</div>
+            <h3 class="empty-title">Нет постов</h3>
+        </div>
         {% endfor %}
     </div>
     {% endif %}
+</div>
 {% endblock %}

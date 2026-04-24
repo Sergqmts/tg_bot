@@ -1,42 +1,41 @@
 {% extends "base.html" %}
-{% block title %}Регистрация - Social{% endblock %}
+{% block title %}Регистрация - TeleGold{% endblock %}
 {% block content %}
-    <div class="card" style="max-width: 400px; margin: 40px auto;">
-        <h2 style="text-align: center; margin-bottom: 20px;">Регистрация</h2>
-        <form method="POST">
+<div class="auth-page">
+    <div class="auth-card">
+        <h1 class="auth-logo">TeleGold</h1>
+        <h2 class="auth-title">Регистрация</h2>
+        <p class="auth-subtitle">Зарегистрируйтесь, чтобы делиться photos с друзьями</p>
+        <form method="POST" class="auth-form">
             {{ form.hidden_tag() }}
             <div class="form-group">
-                {{ form.username.label }}
-                {{ form.username() }}
+                {{ form.username(class="form-input", placeholder="Имя пользователя") }}
                 {% for error in form.username.errors %}
-                    <div class="error">{{ error }}</div>
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
             <div class="form-group">
-                {{ form.email.label }}
-                {{ form.email() }}
+                {{ form.email(class="form-input", placeholder="Эл. почта") }}
                 {% for error in form.email.errors %}
-                    <div class="error">{{ error }}</div>
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
             <div class="form-group">
-                {{ form.password.label }}
-                {{ form.password() }}
+                {{ form.password(class="form-input", placeholder="Пароль") }}
                 {% for error in form.password.errors %}
-                    <div class="error">{{ error }}</div>
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
             <div class="form-group">
-                {{ form.confirm.label }}
-                {{ form.confirm() }}
+                {{ form.confirm(class="form-input", placeholder="Повторите пароль") }}
                 {% for error in form.confirm.errors %}
-                    <div class="error">{{ error }}</div>
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
-            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+            {{ form.submit(class="btn btn-primary btn-full") }}
+            <p class="terms">Регистрируясь, вы соглашаетесь с нашими условиями</p>
         </form>
-        <p style="text-align: center; margin-top: 15px; color: #65676b;">
-            Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a>
-        </p>
+        <p class="auth-link">Уже есть аккаунт? <a href="{{ url_for('login') }}">Войдите</a></p>
     </div>
+</div>
 {% endblock %}
