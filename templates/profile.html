@@ -104,7 +104,7 @@
                 <span>💬 {{ post.comments.count() }}</span>
             </div>
             {% if post.author == current_user %}
-            <form method="POST" action="{{ url_for('delete', post_id=post.id)" onsubmit="event.preventDefault(); confirm('Удалить?') && this.submit()">
+            <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="event.preventDefault(); confirm('Удалить?') && this.submit()">
                 <button type="submit" class="delete-btn">×</button>
             </form>
             {% endif %}
