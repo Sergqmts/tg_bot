@@ -746,8 +746,6 @@ class SavedPost(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    post = db.relationship('Post', foreign_keys=[post_id])
 
 
 class Tag(db.Model):
@@ -1227,7 +1225,7 @@ def react_post(post_id):
 @login_required
 def saved_posts():
     saved = SavedPost.query.filter_by(user_id=current_user.id).order_by(SavedPost.created_at.desc()).all()
-    posts = [s.post for s in saved if s.post]
+    posts = [Post.query.get(s.post_id) for s in saved if s.post_id]
     return render_template('saved.html', posts=posts)
 
 

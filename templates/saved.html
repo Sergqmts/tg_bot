@@ -1,32 +1,43 @@
 {% extends "base.html" %}
 {% block title %}Сохранённые - Social{% endblock %}
 {% block content %}
-    <div style="max-width: 935px; margin: 0 auto; padding-top: 60px;">
-        <h2 style="margin-bottom: 20px;">Сохранённые публикации</h2>
-        
-        {% if posts %}
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;">
-                {% for post in posts %}
-                    <a href="{{ url_for('view_post', post_id=post.id) }}" style="aspect-ratio: 1; position: relative; display: block; background: var(--bg);">
-                        {% if post.media.first() %}
-                            {% if post.media.first().media_type == 'video' %}
-                                <video src="{{ post.media.first().media_url }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-                                <span style="position: absolute; bottom: 10px; right: 10px; color: #fff;">▶</span>
-                            {% else %}
-                                <img src="{{ post.media.first().media_url }}" style="width: 100%; height: 100%; object-fit: cover;">
-                            {% endif %}
-                        {% else %}
-                            <div style="padding: 20px; text-align: center; color: var(--text-light);">{{ post.body[:50] }}...</div>
-                        {% endif %}
-                    </a>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div style="text-align: center; padding: 60px; color: var(--text-light);">
-                <p style="font-size: 24px; margin-bottom: 10px;">📌</p>
-                <p>Нет сохранённых публикаций</p>
-                <p style="font-size: 14px;">Сохраняйте публикации, чтобы посмотреть их позже</p>
-            </div>
-        {% endif %}
+<div class="saved-page">
+    <h2 class="saved-title">Сохранённые публикации</h2>
+    
+    {% if posts %}
+    <div class="posts-grid">
+        {% for post in posts %}
+        <a href="{{ url_for('view_post', post_id=post.id) }}" class="grid-item">
+            {% set media = post.media.first() %}
+            {% if media %}
+                {% if media.cloudinary_url %}
+                    {% if media.media_type == 'video' %}
+                        <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted></video>
+                    {% else %}
+                        <img src="{{ media.cloudinary_url }}" alt="">
+                    {% endif %}
+                {% else %}
+                    {% if media.media_type == 'video' %}
+                        <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
+                    {% else %}
+                        <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
+                    {% endif %}
+                {% endif %}
+            {% elif post.body %}
+            <div class="text-post-preview">{{ post.body[:50] }}</div>
+            {% endif %}
+            {% if post.media.count() > 1 %}
+            <div class="multi-indicator">⋮</div>
+            {% endif %}
+        </a>
+        {% endfor %}
     </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📌</div>
+        <h3 class="empty-title">Нет сохранённых публикаций</h3>
+        <p class="empty-text">Сохраняйте публикации, чтобы посмотреть их позже</p>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
