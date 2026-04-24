@@ -772,7 +772,6 @@ class Comment(db.Model):
     reply_to_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
     
     author = db.relationship('User', foreign_keys=[user_id])
-    post = db.relationship('Post', foreign_keys=[post_id])
     reply_to = db.relationship('Comment', remote_side=[id], backref='replies')
 
 
