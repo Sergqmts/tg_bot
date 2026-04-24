@@ -66,7 +66,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-key-change-in-pr
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov'}
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'pdf', 'doc', 'docx', 'txt'}
 
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
@@ -1080,20 +1080,24 @@ def create():
             for file in files:
                 app.logger.info(f"Processing file: {file.filename}")
                 if file.filename and allowed_file(file.filename):
+                    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                    if ext in {'mp4', 'webm', 'mov'}:
+                        media_type = 'video'
+                    elif ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'}:
+                        media_type = 'audio'
+                    else:
+                        media_type = 'image'
+                    
                     if cloudinary_configured:
                         url = upload_to_cloudinary(file, folder='posts')
                         if url:
                             filename = url.split('/')[-1].split('.')[0]
-                            ext = file.filename.rsplit('.', 1)[1].lower()
-                            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
                             media = Media(filename=filename, cloudinary_url=url, media_type=media_type, post=post)
                             db.session.add(media)
                     else:
                         filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                         app.logger.info(f"Saving file: {filename}")
                         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                        ext = filename.rsplit('.', 1)[1].lower()
-                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
                         media = Media(filename=filename, media_type=media_type, post=post)
                         db.session.add(media)
             

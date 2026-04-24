@@ -31,12 +31,20 @@
             {% if m.cloudinary_url %}
                 {% if m.media_type == 'video' %}
                 <video controls crossorigin="anonymous" src="{{ m.cloudinary_url }}"></video>
+                {% elif m.media_type == 'audio' %}
+                <div class="audio-player-full">
+                    <audio controls src="{{ m.cloudinary_url }}"></audio>
+                </div>
                 {% else %}
                 <img src="{{ m.cloudinary_url }}" alt="Медиа">
                 {% endif %}
             {% else %}
                 {% if m.media_type == 'video' %}
                 <video controls src="{{ url_for('uploaded_file', filename=m.filename) }}"></video>
+                {% elif m.media_type == 'audio' %}
+                <div class="audio-player-full">
+                    <audio controls src="{{ url_for('uploaded_file', filename=m.filename) }}"></audio>
+                </div>
                 {% else %}
                 <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Медиа">
                 {% endif %}

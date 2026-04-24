@@ -321,6 +321,10 @@
             
             {% if story.media_type == 'video' %}
                 <video src="{{ story.media_url }}" id="storyVideo" class="ig-story-media" autoplay muted playsinline></video>
+            {% elif story.media_type == 'audio' %}
+                <div class="ig-story-media" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <audio src="{{ story.media_url }}" controls style="max-width: 90%;"></audio>
+                </div>
             {% else %}
                 {% if story.media_url.startswith('http') %}
                     <img src="{{ story.media_url }}" class="ig-story-media">

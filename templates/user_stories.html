@@ -36,12 +36,20 @@
             {% if story.media_url.startswith('http') %}
                 {% if story.media_type == 'video' %}
                     <video src="{{ story.media_url }}" class="story-content" autoplay muted playsinline></video>
+                {% elif story.media_type == 'audio' %}
+                    <div class="story-content" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <audio src="{{ story.media_url }}" controls style="max-width: 90%;"></audio>
+                    </div>
                 {% else %}
                     <img src="{{ story.media_url }}" class="story-content">
                 {% endif %}
             {% else %}
                 {% if story.media_type == 'video' %}
                     <video src="{{ url_for('uploaded_file', filename=story.media_url) }}" class="story-content" autoplay muted playsinline></video>
+                {% elif story.media_type == 'audio' %}
+                    <div class="story-content" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <audio src="{{ url_for('uploaded_file', filename=story.media_url) }}" controls style="max-width: 90%;"></audio>
+                    </div>
                 {% else %}
                     <img src="{{ url_for('uploaded_file', filename=story.media_url) }}" class="story-content">
                 {% endif %}

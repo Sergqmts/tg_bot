@@ -30,11 +30,14 @@
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;">
             {% for post in posts %}
                 <a href="{{ url_for('view_post', post_id=post.id) }}" style="aspect-ratio: 1; position: relative; display: block; background: var(--surface);">
-                    {% if post.media.first() %}
-                        {% if post.media.first().media_type == 'video' %}
-                            <video src="{{ post.media.first().media_url or url_for('uploaded_file', filename=post.media.first().filename) }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    {% set first_media = post.media.first() %}
+                    {% if first_media %}
+                        {% if first_media.media_type == 'video' %}
+                            <video src="{{ first_media.cloudinary_url or url_for('uploaded_file', filename=first_media.filename) }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        {% elif first_media.media_type == 'audio' %}
+                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 2rem;">🎵</div>
                         {% else %}
-                            <img src="{{ post.media.first().cloudinary_url or url_for('uploaded_file', filename=post.media.first().filename) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="{{ first_media.cloudinary_url or url_for('uploaded_file', filename=first_media.filename) }}" style="width: 100%; height: 100%; object-fit: cover;">
                         {% endif %}
                     {% else %}
                         <div style="padding: 20px; text-align: center; color: var(--text-light);">{{ post.body[:30] }}...</div>

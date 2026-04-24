@@ -18,7 +18,7 @@
                     <svg class="attach-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
                     Прикрепить
                 </label>
-                <input type="file" id="media-input" name="media" accept="image/*,video/*" multiple style="display: none;" onchange="handleFiles(this.files)">
+                <input type="file" id="media-input" name="media" accept="image/*,video/*,audio/*,application/*,.pdf,.doc,.docx,.txt" multiple style="display: none;" onchange="handleFiles(this.files)">
             </div>
             
             <div class="form-actions">
@@ -68,6 +68,10 @@
                     reader.readAsDataURL(file);
                 } else if (file.type.startsWith('video/')) {
                     div.innerHTML = '<div class="video-preview">▶</div>';
+                } else if (file.type.startsWith('audio/')) {
+                    div.innerHTML = '<div class="audio-preview"><span class="audio-icon">🎵</span><span class="audio-name">' + file.name + '</span></div>';
+                } else {
+                    div.innerHTML = '<div class="doc-preview"><span class="doc-icon">📄</span><span class="doc-name">' + file.name.substring(0, 10) + '...</span></div>';
                 }
                 
                 const removeBtn = document.createElement('button');

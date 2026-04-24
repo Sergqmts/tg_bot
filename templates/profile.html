@@ -83,12 +83,16 @@
                 {% if media.cloudinary_url %}
                     {% if media.media_type == 'video' %}
                     <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted></video>
+                    {% elif media.media_type == 'audio' %}
+                    <div class="grid-audio-preview">🎵</div>
                     {% else %}
                     <img src="{{ media.cloudinary_url }}" alt="">
                     {% endif %}
                 {% else %}
                     {% if media.media_type == 'video' %}
                     <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
+                    {% elif media.media_type == 'audio' %}
+                    <div class="grid-audio-preview">🎵</div>
                     {% else %}
                     <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
                     {% endif %}
