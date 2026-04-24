@@ -763,6 +763,19 @@ class PostTag(db.Model):
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=False)
 
 
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    reply_to_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
+    
+    author = db.relationship('User', foreign_keys=[user_id])
+    post = db.relationship('Post', foreign_keys=[post_id])
+    reply_to = db.relationship('Comment', remote_side=[id], backref='replies')
+
+
 class CommentMedia(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
