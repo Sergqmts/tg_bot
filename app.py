@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from flask_socketio import SocketIO, emit, join_room, leave_room, request
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from wtforms import StringField, TextAreaField, SubmitField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -97,8 +97,9 @@ active_users = {}  # user_id -> sid
 
 @socketio.on('connect')
 def handle_connect():
+    from flask import request as flask_request
     if current_user.is_authenticated:
-        active_users[current_user.id] = request.sid
+        active_users[current_user.id] = flask_request.sid
         emit('user_online', {'user_id': current_user.id}, broadcast=True)
 
 @socketio.on('disconnect')
