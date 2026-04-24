@@ -3,11 +3,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
+from flask_socketio import SocketIO, emit, join_room, leave_room, request
 from wtforms import StringField, TextAreaField, SubmitField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, date, timedelta
+from socket import gethostname, gethostbyname
 import os
 import cloudinary
 import cloudinary.uploader
@@ -89,6 +91,37 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите для доступа'
 
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+
+active_users = {}  # user_id -> sid
+
+@socketio.on('connect')
+def handle_connect():
+    if current_user.is_authenticated:
+        active_users[current_user.id] = request.sid
+        emit('user_online', {'user_id': current_user.id}, broadcast=True)
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    if current_user.is_authenticated and current_user.id in active_users:
+        del active_users[current_user.id]
+        emit('user_offline', {'user_id': current_user.id}, broadcast=True)
+
+@socketio.on('send_message')
+def handle_message(data):
+    if current_user.is_authenticated:
+        recipient_id = data.get('recipient_id')
+        chat_id = data.get('chat_id')
+        message_body = data.get('body', '')
+        
+        emit('new_message', {
+            'sender_id': current_user.id,
+            'sender_username': current_user.username,
+            'body': message_body,
+            'chat_id': chat_id,
+            'timestamp': datetime.utcnow().isoformat()
+        }, room=f'user_{recipient_id}')
+
 # csrf = CSRFProtect(app)
 
 
@@ -157,6 +190,12 @@ def run_migrations():
                 if col not in existing:
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
+            
+            phone_cols = [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT FALSE'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]
+            for col, typ in phone_cols:
+                if col not in existing:
+                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
+                    db.session.commit()
         elif is_sqlite:
             for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
                 try:
@@ -165,6 +204,12 @@ def run_migrations():
                 except:
                     pass
             for col, typ in [('is_private', 'BOOLEAN DEFAULT 0'), ('hide_followers', 'BOOLEAN DEFAULT 0'), ('hide_following', 'BOOLEAN DEFAULT 0'), ('approve_followers', 'BOOLEAN DEFAULT 0')]:
+                try:
+                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
+                    db.session.commit()
+                except:
+                    pass
+            for col, typ in [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT 0'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]:
                 try:
                     db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
                     db.session.commit()
@@ -373,6 +418,11 @@ class User(UserMixin, db.Model):
     hide_followers = db.Column(db.Boolean, default=False)
     hide_following = db.Column(db.Boolean, default=False)
     approve_followers = db.Column(db.Boolean, default=False)
+    
+    phone = db.Column(db.String(20), nullable=True)
+    phone_verified = db.Column(db.Boolean, default=False)
+    phone_otp = db.Column(db.String(6), nullable=True)
+    phone_otp_expires = db.Column(db.DateTime, nullable=True)
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
@@ -595,6 +645,8 @@ class Post(db.Model):
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     media = db.relationship('Media', backref='post', lazy='dynamic', cascade='all, delete-orphan')
+    reactions = db.relationship('Reaction', backref='post', lazy='dynamic', cascade='all, delete-orphan')
+    saved_by = db.relationship('SavedPost', backref='post', lazy='dynamic', cascade='all, delete-orphan')
 
     def liked_by(self, user):
         return self.likes.filter_by(user_id=user.id).first() is not None
@@ -683,7 +735,34 @@ class Like(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-class Comment(db.Model):
+class Reaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    emoji = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class SavedPost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class PostTag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=False)
+
+
+class Media(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
     media_url = db.Column(db.String(500))
@@ -815,6 +894,7 @@ class EditProfileForm(FlaskForm):
     birthday = StringField('Дата рождения (ДД.ММ.ГГГГ)')
     interests = TextAreaField('Интересы', validators=[Length(max=500)])
     occupation = StringField('Род деятельности', validators=[Length(max=100)])
+    phone = StringField('Номер телефона', validators=[Length(max=20)])
     is_private = BooleanField('Закрытый профиль')
     hide_followers = BooleanField('Скрыть подписчиков')
     hide_following = BooleanField('Скрыть подписки')
@@ -944,6 +1024,17 @@ def create():
             post = Post(body=body, author=current_user)
             db.session.add(post)
             db.session.flush()
+            
+            import re
+            hashtags = re.findall(r'#(\w+)', body)
+            for tag_name in set(hashtags):
+                tag = Tag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    db.session.add(tag)
+                    db.session.flush()
+                post_tag = PostTag(post_id=post.id, tag_id=tag.id)
+                db.session.add(post_tag)
             
             if media_data:
                 import base64
@@ -1086,6 +1177,63 @@ def repost(post_id):
         current_user.repost(post)
     db.session.commit()
     return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/post/<int:post_id>/save', methods=['POST'])
+@login_required
+def save_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    saved = SavedPost.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+    if saved:
+        db.session.delete(saved)
+        flash('Пост удалён из сохранённых')
+    else:
+        saved = SavedPost(user_id=current_user.id, post_id=post_id)
+        db.session.add(saved)
+        flash('Пост сохранён')
+    db.session.commit()
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/post/<int:post_id>/react', methods=['POST'])
+@login_required
+def react_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    emoji = request.form.get('emoji', '❤️')
+    
+    existing = Reaction.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+    if existing:
+        if existing.emoji == emoji:
+            db.session.delete(existing)
+        else:
+            existing.emoji = emoji
+    else:
+        reaction = Reaction(user_id=current_user.id, post_id=post_id, emoji=emoji)
+        db.session.add(reaction)
+    db.session.commit()
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/saved')
+@login_required
+def saved_posts():
+    saved = SavedPost.query.filter_by(user_id=current_user.id).order_by(SavedPost.created_at.desc()).all()
+    posts = [s.post for s in saved if s.post]
+    return render_template('saved.html', posts=posts)
+
+
+@app.route('/explore_tags')
+def explore_tags():
+    tags = Tag.query.order_by(Tag.created_at.desc()).limit(50).all()
+    return render_template('explore_tags.html', tags=tags)
+
+
+@app.route('/tag/<name>')
+def tag_posts(name):
+    tag = Tag.query.filter_by(name=name.lstrip('#')).first_or_404()
+    post_tags = PostTag.query.filter_by(tag_id=tag.id).order_by(PostTag.id.desc()).all()
+    posts = [pt.post for pt in post_tags if pt.post]
+    return render_template('tag_posts.html', tag=tag, posts=posts)
 
 
 @app.route('/story/create', methods=['GET', 'POST'])
@@ -1473,7 +1621,10 @@ def react_message(message_id):
 def view_post(post_id):
     post = Post.query.get_or_404(post_id)
     repost_count = Repost.query.filter_by(post_id=post.id).count()
-    return render_template('post.html', post=post, repost_count=repost_count)
+    user_reaction = None
+    if current_user.is_authenticated:
+        user_reaction = Reaction.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+    return render_template('post.html', post=post, repost_count=repost_count, user_reaction=user_reaction)
 
 
 @app.route('/delete/<int:post_id>', methods=['POST'])
@@ -1647,12 +1798,25 @@ def edit_profile():
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 current_user.avatar = filename
         
-        if form.birthday.data:
+if form.birthday.data:
             try:
                 current_user.birthday = datetime.strptime(form.birthday.data, '%d.%m.%Y').date()
             except ValueError:
                 flash('Неверный формат даты. Используйте ДД.ММ.ГГГГГ')
                 return render_template('edit_profile.html', form=form)
+        
+        if form.phone.data:
+            phone = ''.join(c for c in form.phone.data if c.isdigit())
+            if phone and phone != (current_user.phone or '').replace('+', '').replace(' ', '').replace('-', ''):
+                if len(phone) >= 10:
+                    import random
+                    otp = str(random.randint(100000, 999999))
+                    current_user.phone_otp = otp
+                    current_user.phone_otp_expires = datetime.utcnow() + timedelta(minutes=5)
+                    current_user.phone = phone
+                    flash(f'Код подтверждения отправлен на {phone}. Введите код на странице подтверждения.')
+                else:
+                    flash('Номер телефона слишком короткий')
         
         db.session.commit()
         flash('Профиль обновлён')
@@ -1668,33 +1832,84 @@ def edit_profile():
         form.hide_followers.data = current_user.hide_followers
         form.hide_following.data = current_user.hide_following
         form.approve_followers.data = current_user.approve_followers
+        form.phone.data = current_user.phone
         if current_user.birthday:
             form.birthday.data = current_user.birthday.strftime('%d.%m.%Y')
     return render_template('edit_profile.html', form=form)
+
+
+@app.route('/verify_phone', methods=['GET', 'POST'])
+@login_required
+def verify_phone():
+    if request.method == 'POST':
+        otp = request.form.get('otp', '')
+        if current_user.phone_otp and current_user.phone_otp == otp:
+            if current_user.phone_otp_expires and current_user.phone_otp_expires > datetime.utcnow():
+                current_user.phone_verified = True
+                current_user.phone_otp = None
+                current_user.phone_otp_expires = None
+                db.session.commit()
+                flash('Номер телефона подтверждён!')
+            else:
+                flash('Код истёк. Запросите новый код.')
+        else:
+            flash('Неверный код')
+        return redirect(url_for('verify_phone'))
+    
+    if current_user.phone and not current_user.phone_verified:
+        import random
+        otp = str(random.randint(100000, 999999))
+        current_user.phone_otp = otp
+        current_user.phone_otp_expires = datetime.utcnow() + timedelta(minutes=5)
+        db.session.commit()
+        flash(f'Код {otp} отправлен (демо-режим: код показан в flash-сообщении)')
+    
+    return render_template('verify_phone.html')
 
 
 @app.route('/explore')
 @app.route('/search')
 def explore():
     search_query = request.args.get('q', '')
+    search_type = request.args.get('type', 'users')  # users, tags, posts
     blocked_ids = []
     if current_user.is_authenticated:
         blocked_ids = [u.id for u in current_user.blocked]
     
-    if search_query:
-        search_query = search_query.lstrip('@')
-        users = User.query.filter(
-            ~User.id.in_(blocked_ids) if blocked_ids else True,
-            User.id != current_user.id if current_user.is_authenticated else True,
-            User.username.ilike(f'%{search_query}%')
-        ).order_by(User.created_at.desc()).limit(50).all()
+    if search_query.lstrip('#'):
+        if search_type == 'tags':
+            tags = Tag.query.filter(
+                Tag.name.ilike(f'%{search_query.lstrip("#")}%')
+            ).order_by(Tag.created_at.desc()).limit(50).all()
+            posts = []
+            users = []
+        else:
+            tags = Tag.query.filter(
+                Tag.name.ilike(f'%{search_query.lstrip("#")}%')
+            ).order_by(Tag.created_at.desc()).limit(20).all()
+            
+            if search_type == 'posts':
+                posts = Post.query.filter(
+                    Post.user_id.notin_(blocked_ids) if blocked_ids else True,
+                    Post.body.ilike(f'%#{search_query.lstrip("#")}%')
+                ).order_by(Post.created_at.desc()).limit(50).all()
+                users = []
+            else:
+                users = User.query.filter(
+                    ~User.id.in_(blocked_ids) if blocked_ids else True,
+                    User.id != current_user.id if current_user.is_authenticated else True,
+                    User.username.ilike(f'%{search_query.lstrip('@')}%')
+                ).order_by(User.created_at.desc()).limit(50).all()
+                posts = []
     else:
         users = User.query.filter(
             ~User.id.in_(blocked_ids) if blocked_ids else True,
             User.id != current_user.id if current_user.is_authenticated else True
         ).order_by(User.created_at.desc()).limit(20).all()
+        tags = []
+        posts = []
     
-    return render_template('explore.html', users=users, search_query=search_query)
+    return render_template('explore.html', users=users, tags=tags, posts=posts, search_query=search_query, search_type=search_type)
 
 
 @app.route('/photos')
@@ -1766,10 +1981,34 @@ def recommendations():
     interest_posts.sort(key=lambda x: x[0], reverse=True)
     interest_posts = [p for _, p in interest_posts[:10]]
     
+    saved_posts_user_ids = [s.post.user_id for s in SavedPost.query.filter(
+        SavedPost.user_id != current_user.id
+    ).all() if s.post]
+    from collections import Counter
+    user_counter = Counter(saved_posts_user_ids)
+    similar_users = [User.query.get(uid) for uid, _ in user_counter.most_common(5) if uid not in blocked_ids and uid != current_user.id]
+    
+    saved_tags = [pt.tag.name for s in SavedPost.query.filter_by(user_id=current_user.id).all() if s.post]
+    tag_post_scores = []
+    for post in Post.query.filter(
+        Post.user_id.notin_(blocked_ids + [current_user.id])
+    ).limit(100).all():
+        if post.body:
+            post_tags = set(re.findall(r'#(\w+)', post.body.lower()))
+            saved_tags_set = set(saved_tags)
+            common = post_tags & saved_tags_set
+            if common:
+                tag_post_scores.append((len(common), post))
+    
+    tag_post_scores.sort(key=lambda x: x[0], reverse=True)
+    posts_from_saved_tags = [p for _, p in tag_post_scores[:10]]
+    
     return render_template('recommendations.html', 
                         recommended_users=recommended_users,
                         recommended_communities=recommended_communities,
-                        interest_posts=interest_posts)
+                        interest_posts=interest_posts,
+                        similar_users=similar_users,
+                        posts_from_saved_tags=posts_from_saved_tags)
 
 
 @app.route('/messages')
@@ -2606,4 +2845,4 @@ with app.app_context():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True, port=5000, host='0.0.0.0')

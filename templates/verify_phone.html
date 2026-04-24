@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Подтверждение телефона - Social{% endblock %}
+{% block content %}
+    <div style="max-width: 400px; margin: 60px auto;">
+        <div class="card" style="text-align: center;">
+            <h2>Подтверждение телефона</h2>
+            <p style="color: var(--text-light); margin: 20px 0;">
+                Введите 6-значный код, отправленный на номер<br>
+                <strong>{{ current_user.phone }}</strong>
+            </p>
+            <form method="POST">
+                <div class="form-group">
+                    <input type="text" name="otp" required maxlength="6" pattern="[0-9]{6}"
+                           style="width: 150px; padding: 12px; font-size: 24px; text-align: center; letter-spacing: 8px;"
+                           placeholder="000000">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+                    Подтвердить
+                </button>
+            </form>
+            <a href="{{ url_for('edit_profile') }}" style="display: block; margin-top: 20px; color: var(--text-light);">
+                ← Назад к профилю
+            </a>
+        </div>
+    </div>
+{% endblock %}

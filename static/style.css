@@ -834,6 +834,48 @@ label {
     color: #ed4956;
 }
 
+.reactions-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.reactions-menu {
+    display: none;
+    position: absolute;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 8px;
+    z-index: 100;
+    bottom: 100%;
+    left: 0;
+    gap: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.reactions-menu.show {
+    display: flex;
+}
+
+.reaction-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.reaction-btn:hover {
+    transform: scale(1.2);
+    background: #f0f0f0;
+}
+
+.btn-like.saved {
+    color: #f59e0b;
+}
+
 .btn-danger {
     background: #ff4444;
     color: #fff;

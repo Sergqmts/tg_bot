@@ -48,20 +48,43 @@
     <!-- Действия -->
     <div class="post-actions">
         {% if current_user.is_authenticated %}
-        <form method="POST" action="{{ url_for('like', post_id=post.id) }}" style="display:inline;">
-            <button type="submit" class="btn btn-like {% if post.liked_by(current_user) %}liked{% endif %}">
-                ❤️ {{ post.likes.count() }}
+        <div class="reactions-dropdown">
+            <button type="button" class="btn btn-like" onclick="toggleReactions()">
+                <span class="current-reaction">{% if user_reaction %}{{ user_reaction.emoji }}{% else %}❤️{% endif %}</span>
+                {{ post.reactions.count() }}
             </button>
-        </form>
+            <div class="reactions-menu" id="reactionsMenu">
+                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" name="emoji" value="❤️" class="reaction-btn">❤️</button>
+                </form>
+                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" name="emoji" value="😂" class="reaction-btn">😂</button>
+                </form>
+                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" name="emoji" value="😢" class="reaction-btn">😢</button>
+                </form>
+                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" name="emoji" value="😮" class="reaction-btn">😮</button>
+                </form>
+                <form method="POST" action="{{ url_for('react_post', post_id=post.id) }}" style="display:inline;">
+                    <button type="submit" name="emoji" value="😍" class="reaction-btn">😍</button>
+                </form>
+            </div>
+        </div>
         <form method="POST" action="{{ url_for('repost', post_id=post.id) }}" style="display:inline;">
             <button type="submit" class="btn btn-like {% if post.reposted_by(current_user) %}reposted{% endif %}">
                 🔄 {{ repost_count }}
             </button>
         </form>
-        <a href="{{ url_for('forward_post', post_id=post.id) }}" class="btn btn-like">📤 Поделиться</a>
+        <form method="POST" action="{{ url_for('save_post', post_id=post.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-like {% if post.saved_by.filter_by(user_id=current_user.id).first() %}saved{% endif %}">
+                📌
+            </button>
+        </form>
+        <a href="{{ url_for('forward_post', post_id=post.id) }}" class="btn btn-like">📤</a>
             {% if post.author == current_user %}
             <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="return confirm('Удалить пост?')" style="display:inline; margin-left: auto;">
-                <button type="submit" class="btn btn-danger">Удалить</button>
+                <button type="submit" class="btn btn-danger">🗑️</button>
             </form>
             {% endif %}
         {% else %}

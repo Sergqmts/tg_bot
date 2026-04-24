@@ -23,7 +23,18 @@
                     <small style="color: var(--text-light);">JPG, PNG, GIF (макс. 5MB)</small>
                 </div>
                 
-                <h3 style="margin: 20px 0 15px; font-size: 1rem; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">Дополнительная информация</h3>
+                <h3 style="margin: 20px 0 15px; font-size: 1rem; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">Контактная информация</h3>
+                
+                <div class="form-group">
+                    {{ form.phone.label }}
+                    {{ form.phone(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);") }}
+                    {% if current_user.phone_verified %}
+                        <span style="color: #22c55e; font-size: 12px;">✓ Номер подтверждён</span>
+                    {% elif current_user.phone %}
+                        <span style="color: #f59e0b; font-size: 12px;">Ожидает подтверждения</span>
+                        <a href="{{ url_for('verify_phone') }}" style="margin-left: 10px;">Подтвердить</a>
+                    {% endif %}
+                </div>
                 
                 <div class="form-group">
                     {{ form.location.label }}

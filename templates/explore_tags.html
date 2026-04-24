@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Теги - Social{% endblock %}
+{% block content %}
+    <div style="max-width: 935px; margin: 0 auto; padding-top: 60px;">
+        <h2 style="margin-bottom: 20px;">Популярные теги</h2>
+        
+        {% if tags %}
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                {% for tag in tags %}
+                    <a href="{{ url_for('tag_posts', name=tag.name) }}" style="display: inline-block; padding: 8px 16px; background: var(--surface); border-radius: 20px; color: var(--text); text-decoration: none;">
+                        #{{ tag.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 60px; color: var(--text-light);">
+                <p>Пока нет тегов</p>
+                <p style="font-size: 14px;">Используйте #хештеги в публикациях</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

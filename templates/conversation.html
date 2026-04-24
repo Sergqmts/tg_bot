@@ -143,21 +143,52 @@
         <img id="modalImg">
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
     <script>
-        function openModal(src) {
-            document.getElementById('modalImg').src = src;
-            document.getElementById('mediaModal').classList.add('show');
-        }
+        const socket = io();
         
-        function playVoice(url) {
-            new Audio(url).play();
+        socket.on('connect', function() {
+            console.log('Connected to socket');
+        });
+        
+        socket.on('new_message', function(data) {
+            if (data.sender_id == {{ other_user.id }} || data.chat_id == {{ chat_id or 'null' }}) {
+                location.reload();
+            }
+        });
+        
+        socket.on('user_online', function(data) {
+            const onlineEl = document.getElementById('onlineStatus');
+            if (onlineEl && data.user_id == {{ other_user.id }}) {
+                onlineEl.textContent = 'онлайн';
+            }
+        });
+        
+        socket.on('user_offline', function(data) {
+            const onlineEl = document.getElementById('onlineStatus');
+            if (onlineEl && data.user_id == {{ other_user.id }}) {
+                onlineEl.textContent = 'был(а) в сети';
+            }
+        });
+        
+        function sendMessageViaSocket() {
+            const input = document.getElementById('msgInput');
+            if (input.value.trim()) {
+                socket.emit('send_message', {
+                    recipient_id: {{ other_user.id }},
+                    chat_id: {{ chat_id or 'null' }},
+                    body: input.value
+                });
+                input.value = '';
+            }
         }
         
         document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
         
         document.getElementById('msgInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value.trim()) {
-                this.form.submit();
+                // Try socket first, fallback to form submit
+                sendMessageViaSocket();
             }
         });
     </script>

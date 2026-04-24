@@ -58,6 +58,8 @@
                         <button class="menu-toggle">☰</button>
                         <div class="dropdown-menu">
                             <a href="{{ url_for('create') }}">📝 Новый пост</a>
+                            <a href="{{ url_for('saved_posts') }}">📌 Сохранённые</a>
+                            <a href="{{ url_for('explore_tags') }}"># Теги</a>
                             <a href="{{ url_for('explore') }}">👥 Люди</a>
                             <a href="{{ url_for('communities') }}">🏠 Сообщества</a>
                             <a href="{{ url_for('photos') }}">📷 Фото</a>
@@ -91,6 +93,17 @@
                 localStorage.setItem('theme', 'light');
             }
         }
+        function toggleReactions() {
+            const menu = document.getElementById('reactionsMenu');
+            if (menu) menu.classList.toggle('show');
+        }
+        document.addEventListener('click', function(e) {
+            const dropdown = document.querySelector('.reactions-dropdown');
+            const menu = document.getElementById('reactionsMenu');
+            if (dropdown && menu && !dropdown.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
     </script>
     <style>
     :root { --stories-bg: #000; --stories-text: #fff; --stories-ring-inner: #262626; }
