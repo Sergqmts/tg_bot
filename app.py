@@ -772,7 +772,6 @@ class Comment(db.Model):
     reply_to_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
     
     author = db.relationship('User', foreign_keys=[user_id])
-    reply_to = db.relationship('Comment', remote_side=[id], backref='replies')
 
 
 class CommentMedia(db.Model):
@@ -786,7 +785,6 @@ class CommentMedia(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     
     author = db.relationship('User', foreign_keys=[user_id])
-    reply_to = db.relationship('Comment', remote_side=[id], backref='replies')
     
     
 class CommentReaction(db.Model):
@@ -797,7 +795,6 @@ class CommentReaction(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     user = db.relationship('User', foreign_keys=[user_id])
-    comment = db.relationship('Comment', backref='reactions')
     
     
 class Repost(db.Model):
