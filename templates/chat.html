@@ -72,21 +72,33 @@
     <div class="ig-chat-view">
         <div class="ig-chat-header">
             <button class="ig-back-btn" onclick="window.location.href='{{ url_for('messages') }}'">←</button>
-            <a href="{{ url_for('index') }}" class="ig-logo">Social</a>
             <div class="ig-group-avatar">
-                {% if chat.avatar and chat.avatar != 'chat_default.png' %}
+                {% if chat.type != 'direct' and chat.avatar and chat.avatar != 'chat_default.png' %}
                     {% if chat.avatar.startswith('http') %}
                         <img src="{{ chat.avatar }}">
                     {% else %}
                         <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}">
                     {% endif %}
                 {% else %}
-                    <span style="font-size: 20px;">👥</span>
+                    <span style="font-size: 20px;">
+                    {% if chat.type == 'direct' %}
+                        {% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username[0].upper() }}{% endif %}{% endfor %}
+                    {% else %}👥{% endif %}
+                    </span>
                 {% endif %}
             </div>
             <div class="ig-group-info">
-                <div class="ig-group-name">{{ chat.name }}</div>
-                <div class="ig-group-count">{{ chat.members.count() }} участников</div>
+                <div class="ig-group-name">
+                {% if chat.type == 'direct' %}
+                    {% for member in chat.members %}
+                        {% if member.id != current_user.id %}{{ member.username }}{% endif %}
+                    {% endfor %}
+                {% else %}
+                    {{ chat.name }}
+                {% endif %}
+                </div>
+<div class="ig-group-count">
+                {% if chat.type != 'direct' %}{{ chat.members.count() }} участников{% else %}Личный{% endif %}
             </div>
             <div class="ig-header-actions">
                 <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="ig-header-btn">👥</a>
