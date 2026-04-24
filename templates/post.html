@@ -6,7 +6,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </a>
 
-    <article class="post-card" style="margin-top: 0;">
+    <article class="post-card" style="margin-top: 0; position: relative;">
         <div class="post-header">
             <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-avatar">
                 {% if post.author.avatar != 'default.png' %}
@@ -54,11 +54,13 @@
                 </button>
                 <span class="reaction-count">{{ post.reactions.count() }}</span>
             </div>
-            <form method="POST" action="{{ url_for('repost', post_id=post.id) }}">
-                <button type="submit" class="action-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 21l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                </button>
-            </form>
+            <button type="button" class="action-btn" onclick="showRepostMenu({{ post.id }})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 21l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            </button>
+            <div class="repost-menu" id="repostMenu{{ post.id }}" style="display:none;position:absolute;bottom:50px;left:10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 0;z-index:100;">
+                <a href="{{ url_for('repost', post_id=post.id) }}" style="display:block;padding:10px 16px;color:var(--text);">Репост себе</a>
+                <a href="{{ url_for('forward_post', post_id=post.id) }}" style="display:block;padding:10px 16px;color:var(--text);">Поделиться</a>
+            </div>
             <form method="POST" action="{{ url_for('save_post', post_id=post.id) }}">
                 <button type="submit" class="action-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -123,20 +125,19 @@
 </div>
 
 <script>
-function replyTo(username, commentId) {
-    document.getElementById('commentInput').value = '@' + username + ' ';
-    document.getElementById('replyToCommentId').value = commentId;
-    document.getElementById('replyToUser').textContent = username;
-    document.getElementById('replyIndicator').style.display = 'flex';
-}
-
-function cancelReply() {
-    document.getElementById('replyToCommentId').value = '';
-    document.getElementById('replyIndicator').style.display = 'none';
-}
-
 function showReactions(postId) {
     alert('Выберите реакцию');
 }
+function showRepostMenu(postId) {
+    var menu = document.getElementById('repostMenu' + postId);
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('.repost-menu').forEach(function(menu) {
+        if (!menu.contains(e.target) && !e.target.closest('[onclick^="showRepostMenu"]')) {
+            menu.style.display = 'none';
+        }
+    });
+});
 </script>
 {% endblock %}
