@@ -54,14 +54,14 @@
 
         <div class="post-actions">
             {% if current_user.is_authenticated %}
-            <div class="reaction-wrapper">
-                <button type="button" class="action-btn like-btn" onclick="showReactions({{ post.id }})">
+            <form method="POST" action="{{ url_for('like', post_id=post.id) }}">
+                <button type="submit" class="action-btn like-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                     </svg>
                 </button>
-                <span class="reaction-count">{{ post.reactions.count() }}</span>
-            </div>
+            </form>
+            <span class="reaction-count">{{ post.likes.count() }} отметок "Нравится"</span>
             <button type="button" class="action-btn" onclick="showRepostMenu({{ post.id }})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 21l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             </button>
