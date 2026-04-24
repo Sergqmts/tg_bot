@@ -1516,13 +1516,15 @@ def forward_post(post_id):
             if post.body:
                 message_body += f":\n\n{post.body}"
             msg = Message(body=message_body, sender_id=current_user.id, recipient_id=user.id, post_id=post.id)
+            db.session.add(msg)
             db.session.commit()
             flash(f'Пост отправлен пользователю {user.username}')
-            return redirect(url_for('index'))
+            return redirect(url_for('conversation', username=user.username))
         else:
             flash('Пользователь не найден')
     
-    users = User.query.filter(User.id != current_user.id).all()
+    blocked_ids = [u.id for u in current_user.blocked]
+    users = User.query.filter(User.id != current_user.id, ~User.id.in_(blocked_ids)).all()
     user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
     chats = [Chat.query.get(cm.chat_id) for cm in user_chats]
     return render_template('forward_post.html', post=post, users=users, chats=chats)
