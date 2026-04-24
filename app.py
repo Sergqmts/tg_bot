@@ -1798,7 +1798,7 @@ def edit_profile():
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 current_user.avatar = filename
         
-if form.birthday.data:
+        if form.birthday.data:
             try:
                 current_user.birthday = datetime.strptime(form.birthday.data, '%d.%m.%Y').date()
             except ValueError:
@@ -1898,7 +1898,7 @@ def explore():
                 users = User.query.filter(
                     ~User.id.in_(blocked_ids) if blocked_ids else True,
                     User.id != current_user.id if current_user.is_authenticated else True,
-                    User.username.ilike(f'%{search_query.lstrip('@')}%')
+                    User.username.ilike(f'%{search_query.lstrip("@")}%')
                 ).order_by(User.created_at.desc()).limit(50).all()
                 posts = []
     else:
