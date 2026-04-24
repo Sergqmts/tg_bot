@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ chat.name }} - Social</title>
+    <title>{% if chat.type == 'direct' %}{% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}{% else %}{{ chat.name }}{% endif %} - Social</title>
     <script>
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
