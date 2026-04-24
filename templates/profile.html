@@ -73,7 +73,7 @@
     {% else %}
     <div class="profile-tabs">
         <button class="tab active">Посты</button>
-        <button class="tab">Сохранённые</button>
+        <a href="{{ url_for('saved_posts') }}" class="tab">Сохранённые</a>
     </div>
     <div class="posts-grid">
         {% for post in posts %}
@@ -116,6 +116,5 @@
         </div>
         {% endfor %}
     </div>
-    {% endif %}
 </div>
 {% endblock %}
