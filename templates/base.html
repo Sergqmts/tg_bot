@@ -81,8 +81,8 @@
         <a href="{{ url_for('explore') }}" class="nav-item {% if request.endpoint == 'explore' %}active{% endif %}">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         </a>
-        <a href="{{ url_for('create') }}" class="nav-item {% if request.endpoint == 'create' %}active{% endif %}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2"/></svg>
+        <a href="{{ url_for('messages') }}" class="nav-item {% if request.endpoint == 'messages' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </a>
         <a href="{{ url_for('saved_posts') }}" class="nav-item {% if request.endpoint == 'saved_posts' %}active{% endif %}">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
