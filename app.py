@@ -24,10 +24,7 @@ app = Flask(__name__,
 @app.context_processor
 def inject_stories():
     if current_user.is_authenticated:
-        try:
-            Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False).delete()
-            db.session.commit()
-            
+try:
             followers = current_user.followers.all()
             following = current_user.followed.all()
             follower_ids = [f.id for f in followers]
@@ -38,7 +35,7 @@ def inject_stories():
                 story_users = db.session.query(Story.user_id).filter(
                     Story.user_id.in_(user_ids),
                     Story.expires_at > datetime.utcnow()
-                ).group_by(Story.user_id).all()
+                ).group_by(Story.user_id).limit(20).all()
                 stories_list = []
                 for (uid,) in story_users:
                     s = Story.query.filter(Story.user_id == uid, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).first()
@@ -52,6 +49,7 @@ def inject_stories():
         except Exception as e:
             app.logger.error(f"Stories error: {e}")
             return dict(top_stories=[], my_story=None, user_has_story=False)
+    return dict(top_stories=[], my_story=None, user_has_story=False)
     return dict(top_stories=[], my_story=None, user_has_story=False)
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -2026,15 +2024,22 @@ def recommendations():
 def messages():
     blocked_ids = [u.id for u in current_user.blocked]
     
-    # Личные переписки
     conversations = {}
-    for msg in current_user.messages_received.filter(~Message.sender_id.in_(blocked_ids)):
+    recent_received = current_user.messages_received.filter(
+        ~Message.sender_id.in_(blocked_ids)
+    ).order_by(Message.created_at.desc()).limit(100).all()
+    
+    for msg in recent_received:
         if msg.sender_id not in conversations:
             conversations[msg.sender_id] = {'user': msg.sender, 'last': msg, 'unread': 0, 'type': 'private'}
         if not msg.read:
             conversations[msg.sender_id]['unread'] += 1
     
-    for msg in current_user.messages_sent.filter(~Message.recipient_id.in_(blocked_ids)):
+    recent_sent = current_user.messages_sent.filter(
+        ~Message.recipient_id.in_(blocked_ids)
+    ).order_by(Message.created_at.desc()).limit(100).all()
+    
+    for msg in recent_sent:
         if msg.recipient_id not in conversations:
             conversations[msg.recipient_id] = {'user': msg.recipient, 'last': msg, 'unread': 0, 'type': 'private'}
     
@@ -2136,12 +2141,14 @@ def conversation(username):
             messages = Message.query.filter(
                 Message.sender_id == current_user.id,
                 Message.recipient_id == current_user.id
-            ).order_by(Message.created_at.asc()).all()
+            ).order_by(Message.created_at.desc()).limit(100).all()
+            messages = list(reversed(messages))
         else:
             messages = Message.query.filter(
                 ((Message.sender == current_user) & (Message.recipient == other_user)) |
                 ((Message.sender == other_user) & (Message.recipient == current_user))
-            ).order_by(Message.created_at.asc()).all()
+            ).order_by(Message.created_at.desc()).limit(100).all()
+            messages = list(reversed(messages))
     except Exception as e:
         app.logger.error(f"Load messages error: {e}")
         messages = []
