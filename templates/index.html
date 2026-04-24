@@ -100,6 +100,13 @@
             <strong>{{ post.likes.count() }}</strong> отметок "Нравится"
         </div>
 
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form-inline">
+            <input type="text" name="body" placeholder="Добавить комментарий...">
+            <button type="submit" class="btn btn-small">Отправить</button>
+        </form>
+        {% endif %}
+
         {% if post.body %}
         <div class="post-caption">
             <strong>{{ post.author.username }}</strong>
@@ -143,7 +150,7 @@ function changeMedia(event, postId, mediaCount, direction) {
 }
 
 function toggleLike(postId) {
-    fetch(`/like_post/${postId}`, { method: 'POST' }).then(() => window.location.reload());
+    fetch(`/post/${postId}/like`, { method: 'POST' }).then(() => window.location.reload());
 }
 
 function showShareMenu(postId) {
