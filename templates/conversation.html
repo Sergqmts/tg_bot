@@ -1,32 +1,32 @@
 {% extends "base.html" %}
 {% block title %}{{ other_user.username }} - Social{% endblock %}
 {% block content %}
-<div class="chat-container">
-    <div class="chat-header">
+<div class="chat-page">
+    <header class="chat-header">
         <a href="{{ url_for('messages') }}" class="btn btn-icon">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </a>
-        <a href="{{ url_for('user_profile', username=other_user.username) }}" class="chat-userInfo">
-            <div class="chat-avatar">
+        <a href="{{ url_for('user_profile', username=other_user.username) }}" class="chat-user">
+            <div class="avatar">
                 {% if other_user.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=other_user.avatar) }}" alt="">
+                <img src="{{ url_for('uploaded_file', filename=other_user.avatar) }}">
                 {% else %}
-                <div class="avatar-placeholder">{{ other_user.username[0].upper() }}</div>
+                {{ other_user.username[0].upper() }}
                 {% endif %}
             </div>
             <span>{{ other_user.username }}</span>
         </a>
-    </div>
+    </header>
     
     <div class="chat-messages" id="messagesArea">
         {% for msg in messages %}
-        <div class="message-row {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+        <div class="chat-message {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
             {% if msg.sender_id != current_user.id %}
             <a href="{{ url_for('user_profile', username=msg.sender.username) }}" class="message-avatar">
                 {% if msg.sender.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=msg.sender.avatar) }}" alt="">
+                <img src="{{ url_for('uploaded_file', filename=msg.sender.avatar) }}">
                 {% else %}
-                <div class="avatar-placeholder" style="width: 28px; height: 28px; font-size: 11px;">{{ msg.sender.username[0].upper() }}</div>
+                <div class="avatar-placeholder">{{ msg.sender.username[0].upper() }}</div>
                 {% endif %}
             </a>
             {% endif %}
@@ -36,22 +36,22 @@
                 {% set post = Post.query.get(msg.post_id) %}
                 {% if post %}
                 <a href="{{ url_for('view_post', post_id=post.id) }}" class="message-post">
-                    <div style="font-size: 12px; font-weight: 600;">{{ post.author.username }}</div>
-                    <div style="font-size: 13px;">{{ post.body[:30] }}...</div>
+                    <div style="font-weight: 600;">{{ post.author.username }}</div>
+                    <div>{{ post.body[:30] }}...</div>
                 </a>
                 {% endif %}
                 {% endif %}
                 
                 {% for m in msg.medias %}
                 {% if m.media_type == 'audio' %}
-                <div class="voice-message {% if msg.sender_id == current_user.id %}sent{% endif %}">
-                    <button class="play-btn" onclick="playVoice('{{ m.media_url }}')">▶</button>
+                <div class="voice-msg">
+                    <button onclick="playVoice('{{ m.media_url }}')">▶</button>
                     <span>0:15</span>
                 </div>
                 {% elif m.media_type == 'video' %}
                 <video src="{{ m.media_url }}" muted></video>
                 {% else %}
-                <img src="{{ m.media_url }}" alt="" style="max-width: 180px; max-height: 180px; border-radius: 12px; object-fit: cover;" onclick="openModal(this.src)">
+                <img src="{{ m.media_url }}" alt="" onclick="openModal(this.src)">
                 {% endif %}
                 {% endfor %}
                 
@@ -59,48 +59,33 @@
                 <div class="message-text">{{ msg.body }}</div>
                 {% endif %}
                 
-                <div class="message-time">{{ msg.created_at.strftime('%H:%M') }}</div>
+                <span class="message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
             </div>
         </div>
         {% endfor %}
     </div>
     
-    <div class="chat-input-area">
-        <button class="attach-btn" onclick="toggleAttachMenu()">
+    <footer class="chat-footer">
+        <button type="button" class="attach-btn" onclick="toggleAttach()">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
         </button>
         
-        <div class="attach-menu" id="attachMenu">
-            <label class="attach-option">
-                <input type="file" name="media" accept="image/*,video/*,audio/*" onchange="this.form.submit()" hidden>
-                <span>📷</span> Фото/видео
-            </label>
-            <label class="attach-option">
-                <input type="file" name="media" accept="audio/*" onchange="this.form.submit()" hidden>
-                <span>🎤</span> Голосовое
-            </label>
-            <label class="attach-option">
-                <input type="file" name="file" onchange="this.form.submit()" hidden>
-                <span>📎</span> Файл
-            </label>
-        </div>
-        
         <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form">
-            <input type="text" name="body" placeholder="Сообщение..." class="message-input">
+            <input type="text" name="body" placeholder="Соо��щение..." class="chat-input">
             <button type="submit" class="send-btn">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15-2-15 2z"/></svg>
             </button>
         </form>
-    </div>
+    </footer>
     
     <div class="modal" id="imageModal" onclick="closeModal()">
-        <span class="modal-close" onclick="closeModal()">&times;</span>
-        <img id="modalImage" src="">
+        <span>&times;</span>
+        <img id="modalImg">
     </div>
 </div>
 
 <style>
-.chat-container {
+.chat-page {
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -115,7 +100,7 @@
     background: var(--bg);
     flex-shrink: 0;
 }
-.chat-userInfo {
+.chat-user {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -123,30 +108,22 @@
     color: var(--text);
     flex: 1;
 }
-.chat-avatar {
+.chat-user .avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     overflow: hidden;
-    background: linear-gradient(45deg, #f09433, #bc1888);
+    background: var(--primary-gradient);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-weight: 600;
+    color: #fff;
 }
-.chat-avatar img {
+.chat-user .avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-.chat-avatar .avatar-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 600;
-    color: #fff;
 }
 .chat-messages {
     flex: 1;
@@ -156,7 +133,96 @@
     flex-direction: column;
     gap: 8px;
 }
-.chat-input-area {
+.chat-message {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 80%;
+}
+.chat-message.sent {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+.chat-message.received {
+    align-self: flex-start;
+}
+.message-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #fff;
+}
+.message-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.message-bubble {
+    padding: 10px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+.chat-message.sent .message-bubble {
+    background: var(--primary);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+.chat-message.received .message-bubble {
+    background: var(--surface);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+}
+.message-post {
+    display: block;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 4px;
+    text-decoration: none;
+    color: var(--text);
+}
+.message-bubble img {
+    max-width: 180px;
+    max-height: 180px;
+    border-radius: 12px;
+    object-fit: cover;
+    cursor: pointer;
+}
+.message-time {
+    font-size: 10px;
+    opacity: 0.7;
+    display: block;
+    margin-top: 4px;
+}
+.voice-msg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+}
+.chat-message.sent .voice-msg {
+    background: rgba(255,255,255,0.25);
+}
+.voice-msg button {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: #fff;
+    cursor: pointer;
+}
+.chat-footer {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -164,6 +230,17 @@
     border-top: 1px solid var(--border);
     background: var(--bg);
     flex-shrink: 0;
+}
+.attach-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+}
+.attach-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--text);
 }
 .chat-form {
     flex: 1;
@@ -173,7 +250,7 @@
     border-radius: 22px;
     padding: 8px 16px;
 }
-.message-input {
+.chat-input {
     flex: 1;
     background: none;
     border: none;
@@ -181,30 +258,63 @@
     font-size: 14px;
     outline: none;
 }
-.message-input::placeholder {
-    color: var(--text-muted);
+.send-btn {
+    background: var(--primary);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.send-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: #fff;
+}
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal.show {
+    display: flex;
+}
+.modal img {
+    max-width: 90%;
+    max-height: 90%;
+}
+.modal span {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 30px;
+    color: #fff;
+    cursor: pointer;
 }
 </style>
 
 <script>
-function toggleAttachMenu() {
-    document.getElementById('attachMenu').classList.toggle('show');
+function toggleAttach() {
+    var menu = document.querySelector('.attach-menu');
+    if (menu) menu.classList.toggle('show');
 }
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
-        document.getElementById('attachMenu').classList.remove('show');
-    }
-});
 function openModal(src) {
-    document.getElementById('modalImage').src = src;
-    document.getElementById('imageModal').classList.add('show');
+    var modal = document.getElementById('imageModal');
+    document.getElementById('modalImg').src = src;
+    modal.classList.add('show');
 }
 function closeModal() {
     document.getElementById('imageModal').classList.remove('show');
 }
 function playVoice(url) {
-    var audio = new Audio(url);
-    audio.play();
+    new Audio(url).play();
 }
 document.addEventListener('DOMContentLoaded', function() {
     var area = document.getElementById('messagesArea');
