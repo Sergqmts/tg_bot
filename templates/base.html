@@ -97,6 +97,12 @@
             </div>
         </a>
     </nav>
+    
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('create') }}" class="fab-create" title="Новый пост">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2"/></svg>
+    </a>
+    {% endif %}
     {% endif %}
 
     {% if not current_user.is_authenticated and request.endpoint not in ['login', 'register'] %}
