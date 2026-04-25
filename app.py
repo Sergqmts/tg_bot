@@ -96,7 +96,8 @@ def init_db():
     except Exception as e:
         app.logger.error(f"DB init error: {e}")
 
-init_db()
+with app.app_context():
+    init_db()
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
