@@ -2082,9 +2082,9 @@ def messages():
     
     group_chats = sorted(group_chats, key=lambda x: x['last'].created_at if x.get('last') else datetime.min, reverse=True)
     
-    suggested = [u for u in User.query.order_by(User.created_at.desc()).all() 
-                 if u != current_user and u.id not in conversations and not current_user.is_blocking(u)]
-    return render_template('messages.html', conversations=conversations, group_chats=group_chats, suggested_users=suggested)
+    followed = [u for u in current_user.followed 
+               if u.id not in conversations and not current_user.is_blocking(u)]
+    return render_template('messages.html', conversations=conversations, group_chats=group_chats, suggested_users=followed)
 
 
 @app.route('/messages/<username>', methods=['GET', 'POST'])
