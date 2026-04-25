@@ -744,7 +744,12 @@ function cancelRecording() {
 }
 
 async function sendRecording() {
-    if (!recordedBlob) return;
+    if (!recordedBlob) {
+        alert('Нет записи');
+        return;
+    }
+    
+    alert('Отправляю: ' + recordedBlob.size + ' байт');
     
     const micBtn = document.getElementById('micBtn');
     const voiceRecording = document.getElementById('voiceRecording');
@@ -758,11 +763,16 @@ async function sendRecording() {
     const formData = new FormData();
     formData.append('voice', recordedBlob, 'voice_message.webm');
     
+    const url = '{{ url_for("send_voice", username=other_user.username) }}';
+    alert('URL: ' + url);
+    
     try {
-        const response = await fetch('{{ url_for("send_voice", username=other_user.username) }}', {
+        const response = await fetch(url, {
             method: 'POST',
             body: formData
         });
+        
+        alert('Ответ: ' + response.status);
         
         if (response.ok) {
             location.reload();
@@ -772,7 +782,7 @@ async function sendRecording() {
             messageForm.style.display = 'flex';
         }
     } catch (err) {
-        alert('Ошибка отправки');
+        alert('Ошибка: ' + err.message);
         voiceRecording.style.display = 'none';
         messageForm.style.display = 'flex';
     }
