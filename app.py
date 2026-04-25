@@ -2246,12 +2246,18 @@ def send_voice(username):
     if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
         return 'Blocked', 403
     
+    app.logger.info(f"Voice message from {current_user.username} to {username}")
+    app.logger.info(f"Files: {request.files}")
+    app.logger.info(f"Voice file: {request.files.get('voice')}")
+    
     if 'voice' not in request.files:
-        return 'No voice file', 400
+        app.logger.error("No voice file in request")
+        return {'error': 'No voice file'}, 400
     
     voice_file = request.files['voice']
     if not voice_file.filename:
-        return 'No file', 400
+        app.logger.error("Empty filename")
+        return {'error': 'No file'}, 400
     
     temp_path = None
     try:
