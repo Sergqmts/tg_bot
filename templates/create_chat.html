@@ -1,35 +1,89 @@
 {% extends "base.html" %}
 {% block title %}Создать чат - Social{% endblock %}
 {% block content %}
-    <div style="max-width: 500px; margin: 40px auto;">
-        <div class="card">
-            <h2>Создать групповой чат</h2>
-            <form method="POST">
-                <div class="form-group">
-                    <label>Название чата</label>
-                    <input type="text" name="name" required placeholder="Например: Друзья">
-                </div>
-                <div class="form-group">
-                    <label>Участники</label>
-                    {% for user in users %}
-                        <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border);">
-                            <input type="checkbox" name="members" value="{{ user.id }}" style="width: auto; margin-right: 10px;">
-                            <div class="avatar" style="width: 30px; height: 30px; margin-right: 10px; font-size: 0.8rem;">
-                                {% if user.avatar != 'default.png' %}
-                                    <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                                {% else %}
-                                    {{ user.username[0].upper() }}
-                                {% endif %}
-                            </div>
-                            <span>{{ user.username }}</span>
-                        </div>
-                    {% endfor %}
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-primary">Создать</button>
-                    <a href="{{ url_for('messages') }}" class="btn btn-secondary">Отмена</a>
-                </div>
-            </form>
+<div class="profile">
+    <div class="profile-header">
+        <div class="profile-info" style="padding: 0;">
+            <a href="{{ url_for('messages') }}" class="btn btn-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </a>
+            <h1 class="profile-username">Новый чат</h1>
         </div>
     </div>
+    
+    <div style="padding: 20px;">
+        <form method="POST" class="form">
+            <div class="form-group">
+                <label class="form-label">Название чата</label>
+                <input type="text" name="name" required placeholder="Например: Друзья" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Участники</label>
+                <div class="members-list">
+                    {% for user in users %}
+                    <label class="member-item">
+                        <input type="checkbox" name="members" value="{{ user.id }}">
+                        <div class="member-avatar">
+                            {% if user.avatar != 'default.png' %}
+                            <img src="{{ url_for('uploaded_file', filename=user.avatar) }}">
+                            {% else %}
+                            {{ user.username[0].upper() }}
+                            {% endif %}
+                        </div>
+                        <span>{{ user.username }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Создать</button>
+                <a href="{{ url_for('messages') }}" class="btn btn-outline">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.members-list {
+    background: var(--surface);
+    border-radius: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+}
+.member-item:last-child {
+    border-bottom: none;
+}
+.member-item input {
+    width: 20px;
+    height: 20px;
+}
+.member-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+}
+.member-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+</style>
 {% endblock %}
