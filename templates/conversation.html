@@ -66,27 +66,32 @@
     </div>
     
     <footer class="chat-footer">
+        <div class="attach-preview" id="attachPreview" style="display: none;">
+            <div class="preview-grid" id="previewGrid"></div>
+        </div>
+        
         <button type="button" class="attach-btn" onclick="toggleAttachMenu()">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
         </button>
         
         <div class="attach-menu" id="attachMenu">
             <label class="attach-option">
-                <input type="file" name="media" accept="image/*,video/*,audio/*" hidden>
+                <input type="file" name="media" accept="image/*,video/*,audio/*" hidden onchange="handleFileSelect(this)">
                 <span>📷</span> Фото/видео
             </label>
             <label class="attach-option">
-                <input type="file" name="media" accept="audio/*" hidden>
+                <input type="file" name="media" accept="audio/*" hidden onchange="handleFileSelect(this)">
                 <span>🎵</span> Музыка
             </label>
             <label class="attach-option">
-                <input type="file" name="file" hidden>
+                <input type="file" name="file" hidden onchange="handleFileSelect(this)">
                 <span>📎</span> Файл
             </label>
         </div>
         
-        <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form">
+        <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form-row" onsubmit="return attachFileToForm(this)">
             <input type="text" name="body" placeholder="Сообщение..." class="chat-input">
+            <input type="file" name="media" id="attachedFile" hidden>
             <button type="submit" class="send-btn">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15-2-15 2z"/></svg>
             </button>
@@ -239,13 +244,67 @@
 }
 .chat-footer {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
     padding: 12px 16px;
     border-top: 1px solid var(--border);
     background: var(--bg);
     flex-shrink: 0;
     position: relative;
+}
+.chat-form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+.attach-preview {
+    padding: 8px;
+    background: var(--surface);
+    border-radius: 12px;
+}
+.preview-grid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.preview-item {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.preview-item img,
+.preview-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.preview-item .preview-icon {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-elevated);
+    font-size: 24px;
+}
+.preview-item .remove-preview {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .attach-btn {
     background: none;
@@ -343,6 +402,8 @@
 </style>
 
 <script>
+let selectedFile = null;
+
 function toggleAttachMenu() {
     document.getElementById('attachMenu').classList.toggle('show');
 }
@@ -351,6 +412,59 @@ document.addEventListener('click', function(e) {
         document.getElementById('attachMenu').classList.remove('show');
     }
 });
+
+function handleFileSelect(input) {
+    if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        showPreview(selectedFile);
+    }
+}
+
+function showPreview(file) {
+    const preview = document.getElementById('attachPreview');
+    const grid = document.getElementById('previewGrid');
+    grid.innerHTML = '';
+    
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            item.innerHTML = '<img src="' + e.target.result + '">';
+        };
+        reader.readAsDataURL(file);
+    } else if (file.type.startsWith('video/')) {
+        item.innerHTML = '<div class="preview-icon">🎬</div>';
+    } else if (file.type.startsWith('audio/')) {
+        item.innerHTML = '<div class="preview-icon">🎵</div>';
+    } else {
+        item.innerHTML = '<div class="preview-icon">📄</div>';
+    }
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-preview';
+    removeBtn.innerHTML = '×';
+    removeBtn.onclick = function() {
+        selectedFile = null;
+        preview.style.display = 'none';
+        document.getElementById('attachedFile').value = '';
+    };
+    item.appendChild(removeBtn);
+    grid.appendChild(item);
+    preview.style.display = 'block';
+}
+
+function attachFileToForm(form) {
+    if (selectedFile) {
+        const fileInput = document.getElementById('attachedFile');
+        const dt = new DataTransfer();
+        dt.items.add(selectedFile);
+        fileInput.files = dt.files;
+    }
+    return true;
+}
+
 function openModal(src) {
     var modal = document.getElementById('imageModal');
     document.getElementById('modalImg').src = src;
