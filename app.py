@@ -84,6 +84,20 @@ if cloudinary_configured:
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
+
+def init_db():
+    try:
+        from sqlalchemy import text
+        with db.engine.connect() as conn:
+            result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message' AND column_name='transcription'"))
+            if not result.fetchone():
+                conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
+                conn.commit()
+    except Exception as e:
+        app.logger.error(f"DB init error: {e}")
+
+init_db()
+
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите для доступа'
