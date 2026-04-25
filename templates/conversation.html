@@ -66,9 +66,24 @@
     </div>
     
     <footer class="chat-footer">
-        <button type="button" class="attach-btn" onclick="toggleAttach()">
+        <button type="button" class="attach-btn" onclick="toggleAttachMenu()">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
         </button>
+        
+        <div class="attach-menu" id="attachMenu">
+            <label class="attach-option">
+                <input type="file" name="media" accept="image/*,video/*,audio/*" hidden>
+                <span>📷</span> Фото/видео
+            </label>
+            <label class="attach-option">
+                <input type="file" name="media" accept="audio/*" hidden>
+                <span>🎤</span> Голосовое
+            </label>
+            <label class="attach-option">
+                <input type="file" name="file" hidden>
+                <span>📎</span> Файл
+            </label>
+        </div>
         
         <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form">
             <input type="text" name="body" placeholder="Сообщение..." class="chat-input">
@@ -230,6 +245,7 @@
     border-top: 1px solid var(--border);
     background: var(--bg);
     flex-shrink: 0;
+    position: relative;
 }
 .attach-btn {
     background: none;
@@ -241,6 +257,32 @@
     width: 24px;
     height: 24px;
     fill: var(--text);
+}
+.attach-menu {
+    display: none;
+    position: absolute;
+    bottom: 70px;
+    left: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 0;
+    z-index: 100;
+}
+.attach-menu.show {
+    display: block;
+}
+.attach-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text);
+}
+.attach-option:hover {
+    background: var(--border);
 }
 .chat-form {
     flex: 1;
@@ -301,10 +343,14 @@
 </style>
 
 <script>
-function toggleAttach() {
-    var menu = document.querySelector('.attach-menu');
-    if (menu) menu.classList.toggle('show');
+function toggleAttachMenu() {
+    document.getElementById('attachMenu').classList.toggle('show');
 }
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
+        document.getElementById('attachMenu').classList.remove('show');
+    }
+});
 function openModal(src) {
     var modal = document.getElementById('imageModal');
     document.getElementById('modalImg').src = src;
