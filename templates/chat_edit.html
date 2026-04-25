@@ -1,40 +1,62 @@
 {% extends "base.html" %}
 {% block title %}Редактировать чат - Social{% endblock %}
 {% block content %}
-    <div style="max-width: 500px; margin: 40px auto;">
-        <div style="display: flex; align-items: center; margin-bottom: 20px;">
-            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-secondary">←</a>
-            <h2 style="margin-left: 10px;">Редактировать чат</h2>
-        </div>
-        
-        <div class="card">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <div class="avatar" style="width: 100px; height: 100px; margin: 0 auto;">
-                    {% if chat.avatar and chat.avatar != 'chat_default.png' %}
-                        {% if chat.avatar.startswith('http') %}
-                            <img src="{{ chat.avatar }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                        {% else %}
-                            <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                        {% endif %}
-                    {% else %}
-                        👥
-                    {% endif %}
-                </div>
-            </div>
-            
-            <form method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label>Название чата</label>
-                    <input type="text" name="name" value="{{ chat.name }}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Аватар чата</label>
-                    <input type="file" name="avatar" accept="image/*">
-                </div>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Сохранить</button>
-            </form>
+<div class="profile">
+    <div class="profile-header">
+        <div class="profile-info" style="padding: 0;">
+            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </a>
+            <h1 class="profile-username">Редактировать</h1>
         </div>
     </div>
+    
+    <div style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div class="chat-avatar-large" style="width: 100px; height: 100px; margin: 0 auto; font-size: 40px;">
+                {% if chat.avatar and chat.avatar != 'chat_default.png' %}
+                    {% if chat.avatar.startswith('http') %}
+                    <img src="{{ chat.avatar }}">
+                    {% else %}
+                    <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}">
+                    {% endif %}
+                {% else %}
+                👥
+                {% endif %}
+            </div>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="form">
+            <div class="form-group">
+                <label class="form-label">Название чата</label>
+                <input type="text" name="name" value="{{ chat.name }}" required class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Аватар чата</label>
+                <input type="file" name="avatar" accept="image/*" class="form-input">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.chat-avatar-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chat-avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+</style>
 {% endblock %}
