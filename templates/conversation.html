@@ -99,7 +99,7 @@
             </div>
             <div class="recording-controls">
                 <button type="button" class="cancel-record" onclick="cancelRecording()">✕</button>
-                <button type="button" class="send-record" onclick="sendRecording()">➤</button>
+                <button type="button" class="send-record" id="sendRecordBtn" onclick="sendRecording()">➤</button>
             </div>
         </div>
         
@@ -733,8 +733,6 @@ function stopRecording() {
     }
     clearInterval(recordingTimer);
     document.getElementById('micBtn').classList.remove('recording');
-    document.getElementById('voiceRecording').style.display = 'none';
-    document.getElementById('messageForm').style.display = 'flex';
 }
 
 function cancelRecording() {
@@ -745,11 +743,13 @@ function cancelRecording() {
 
 async function sendRecording() {
     if (!recordedBlob) {
-        alert('Нет записи');
+        console.log('No recorded blob');
         return;
     }
     
-    alert('Отправляю: ' + recordedBlob.size + ' байт');
+    console.log('Sending voice message...');
+    console.log('Blob size:', recordedBlob.size);
+    console.log('Blob type:', recordedBlob.type);
     
     const micBtn = document.getElementById('micBtn');
     const voiceRecording = document.getElementById('voiceRecording');
@@ -764,7 +764,7 @@ async function sendRecording() {
     formData.append('voice', recordedBlob, 'voice_message.webm');
     
     const url = '{{ url_for("send_voice", username=other_user.username) }}';
-    alert('URL: ' + url);
+    console.log('URL:', url);
     
     try {
         const response = await fetch(url, {
@@ -772,17 +772,18 @@ async function sendRecording() {
             body: formData
         });
         
-        alert('Ответ: ' + response.status);
+        console.log('Response:', response.status);
         
         if (response.ok) {
             location.reload();
         } else {
-            alert('Ошибка отправки');
+            const text = await response.text();
+            console.log('Error:', text);
             voiceRecording.style.display = 'none';
             messageForm.style.display = 'flex';
         }
     } catch (err) {
-        alert('Ошибка: ' + err.message);
+        console.error('Error:', err);
         voiceRecording.style.display = 'none';
         messageForm.style.display = 'flex';
     }
