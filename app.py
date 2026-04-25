@@ -2206,7 +2206,8 @@ def create_chat():
         flash(f'Чат "{name}" создан')
         return redirect(url_for('messages'))
     
-    users = User.query.filter(User.id != current_user.id).all()
+    followed_ids = [u.id for u in current_user.followed]
+    users = User.query.filter(User.id.in_(followed_ids)).all()
     return render_template('create_chat.html', users=users)
 
 
