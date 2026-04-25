@@ -129,6 +129,9 @@
     border-bottom: 1px solid var(--border);
     background: var(--bg);
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 .chat-user {
     display: flex;
@@ -295,7 +298,9 @@
     border-top: 1px solid var(--border);
     background: var(--bg);
     flex-shrink: 0;
-    position: relative;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
 }
 .chat-form-row {
     display: flex;
