@@ -70,26 +70,26 @@
             <div class="preview-grid" id="previewGrid"></div>
         </div>
         
-        <button type="button" class="attach-btn" onclick="toggleAttachMenu()">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
-        </button>
-        
-        <div class="attach-menu" id="attachMenu">
-            <label class="attach-option">
-                <input type="file" name="media" accept="image/*,video/*,audio/*" hidden onchange="handleFileSelect(this)">
-                <span>📷</span> Фото/видео
-            </label>
-            <label class="attach-option">
-                <input type="file" name="media" accept="audio/*" hidden onchange="handleFileSelect(this)">
-                <span>🎵</span> Музыка
-            </label>
-            <label class="attach-option">
-                <input type="file" name="file" hidden onchange="handleFileSelect(this)">
-                <span>📎</span> Файл
-            </label>
-        </div>
-        
         <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form-row" onsubmit="return attachFileToForm(this)">
+            <button type="button" class="attach-btn" onclick="toggleAttachMenu()">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
+            </button>
+            
+            <div class="attach-menu" id="attachMenu">
+                <label class="attach-option">
+                    <input type="file" name="media" accept="image/*,video/*,audio/*" hidden onchange="handleFileSelect(this)">
+                    <span>📷</span> Фото/видео
+                </label>
+                <label class="attach-option">
+                    <input type="file" name="media" accept="audio/*" hidden onchange="handleFileSelect(this)">
+                    <span>🎵</span> Музыка
+                </label>
+                <label class="attach-option">
+                    <input type="file" name="file" hidden onchange="handleFileSelect(this)">
+                    <span>📎</span> Файл
+                </label>
+            </div>
+            
             <input type="text" name="body" placeholder="Сообщение..." class="chat-input">
             <input type="file" name="media" id="attachedFile" hidden>
             <button type="submit" class="send-btn">
