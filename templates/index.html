@@ -1,35 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Лента - Social{% endblock %}
 {% block content %}
-<div class="stories-bar">
-    <div class="stories-scroll">
-        <div class="story-item">
-            <a href="{{ url_for('create_story') }}" class="story-ring-add">
-                <div class="story-ring-inner">
-                    <span class="plus-icon">+</span>
-                </div>
-            </a>
-            <span class="story-username">Ваша</span>
-        </div>
-        {% for story in top_stories %}
-        {% if story and story.user_id != current_user.id %}
-        <div class="story-item">
-            <a href="{{ url_for('view_story', story_id=story.id) }}" class="story-ring {% if story.viewed %}viewed{% endif %}">
-                <div class="story-ring-inner">
-                    {% if story.user.avatar != 'default.png' %}
-                    <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" class="story-avatar-img">
-                    {% else %}
-                    <div class="story-avatar-placeholder">{{ story.user.username[0].upper() }}</div>
-                    {% endif %}
-                </div>
-            </a>
-            <span class="story-username">{{ story.user.username[:8] }}</span>
-        </div>
-        {% endif %}
-        {% endfor %}
-    </div>
-</div>
-
 <div class="feed">
     {% for post in posts %}
     <article class="post-card" style="position: relative;">
@@ -146,7 +117,37 @@
         <h3 class="empty-title">Пока нет постов</h3>
         <p class="empty-text">Подпишитесь на людей, чтобы видеть их посты</p>
     </div>
+    {% endfor %}
+</div>
+
+<div class="stories-bar">
+    <div class="stories-scroll">
+        <div class="story-item">
+            <a href="{{ url_for('create_story') }}" class="story-ring-add">
+                <div class="story-ring-inner">
+                    <span class="plus-icon">+</span>
+                </div>
+            </a>
+            <span class="story-username">Ваша</span>
+        </div>
+        {% for story in top_stories %}
+        {% if story and story.user_id != current_user.id %}
+        <div class="story-item">
+            <a href="{{ url_for('view_story', story_id=story.id) }}" class="story-ring {% if story.viewed %}viewed{% endif %}">
+                <div class="story-ring-inner">
+                    {% if story.user.avatar != 'default.png' %}
+                    <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" class="story-avatar-img">
+                    {% else %}
+                    <div class="story-avatar-placeholder">{{ story.user.username[0].upper() }}</div>
+                    {% endif %}
+                </div>
+            </a>
+            <span class="story-username">{{ story.user.username[:8] }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
     </div>
+</div>
 
 <script>
 const currentIndex = {};
