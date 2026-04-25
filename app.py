@@ -2243,9 +2243,8 @@ def get_whisper_model():
 def send_voice(username):
     other_user = User.query.filter_by(username=username).first_or_404()
     
-    if username != current_user.username:
-        if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
-            return 'Blocked', 403
+    if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
+        return 'Blocked', 403
     
     if 'voice' not in request.files:
         return 'No voice file', 400
