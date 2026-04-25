@@ -49,14 +49,19 @@
                     <span>0:15</span>
                 </div>
                 {% elif m.media_type == 'document' %}
-                <div class="doc-file">
+                <a href="{{ m.media_url }}" download class="doc-file">
                     <span>📄</span>
-                    <span>Файл</span>
-                </div>
+                    <span>Скачать</span>
+                </a>
                 {% elif m.media_type == 'video' %}
-                <video src="{{ m.media_url }}" muted></video>
+                <div class="video-msg">
+                    <video src="{{ m.media_url }}" muted></video>
+                    <a href="{{ m.media_url }}" download class="download-btn">📥</a>
+                </div>
                 {% else %}
-                <img src="{{ m.media_url }}" alt="" style="max-width: 180px; max-height: 180px; border-radius: 12px; object-fit: cover;" onclick="openModal(this.src)">
+                <a href="{{ m.media_url }}" download>
+                    <img src="{{ m.media_url }}" alt="" style="max-width: 180px; max-height: 180px; border-radius: 12px; object-fit: cover;">
+                </a>
                 {% endif %}
                 {% endfor %}
                 
@@ -254,15 +259,33 @@
     padding: 10px 14px;
     background: var(--surface);
     border-radius: 12px;
+    text-decoration: none;
+    color: var(--text);
 }
 .chat-message.sent .doc-file {
     background: rgba(255,255,255,0.25);
 }
-.chat-message.sent .doc-file span:first-child {
-    font-size: 20px;
+.video-msg {
+    position: relative;
 }
-.chat-message.received .doc-file span:first-child {
-    font-size: 20px;
+.video-msg video {
+    max-width: 180px;
+    max-height: 180px;
+    border-radius: 12px;
+}
+.video-msg .download-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 16px;
 }
 .chat-footer {
     display: flex;
