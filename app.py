@@ -815,6 +815,7 @@ class Message(db.Model):
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
+    transcription = db.Column(db.Text, nullable=True)
     
     medias = db.relationship('MessageMedia', backref='message')
 
@@ -2209,6 +2210,72 @@ def create_chat():
     followed_ids = [u.id for u in current_user.followed]
     users = User.query.filter(User.id.in_(followed_ids)).all()
     return render_template('create_chat.html', users=users)
+
+
+from faster_whisper import WhisperModel
+import tempfile
+
+model = None
+
+def get_whisper_model():
+    global model
+    if model is None:
+        model = WhisperModel("base", device="cpu", compute_type="int8")
+    return model
+
+
+@app.route('/messages/<username>/voice', methods=['POST'])
+@login_required
+def send_voice(username):
+    other_user = User.query.filter_by(username=username).first_or_404()
+    
+    if username != current_user.username:
+        if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
+            return 'Blocked', 403
+    
+    if 'voice' not in request.files:
+        return 'No voice file', 400
+    
+    voice_file = request.files['voice']
+    if not voice_file.filename:
+        return 'No file', 400
+    
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as tmp:
+            voice_file.save(tmp.name)
+            temp_path = tmp.name
+        
+        whisper_model = get_whisper_model()
+        segments, info = whisper_model.transcribe(temp_path, language='ru')
+        
+        transcription = ''
+        for segment in segments:
+            transcription += segment.text.strip() + ' '
+        transcription = transcription.strip()
+        
+        os.unlink(temp_path)
+        temp_path = None
+        
+        filename = secure_filename(f"voice_{datetime.now().timestamp()}.webm")
+        voice_file.seek(0)
+        voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        media_url = '/media/' + filename
+        
+        msg = Message(body=transcription if transcription else '', sender=current_user, recipient=other_user, transcription=transcription)
+        db.session.add(msg)
+        db.session.flush()
+        
+        media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='voice')
+        db.session.add(media)
+        db.session.commit()
+        
+        return 'OK', 200
+    except Exception as e:
+        app.logger.error(f"Voice message error: {e}")
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        return str(e), 500
 
 
 @app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
