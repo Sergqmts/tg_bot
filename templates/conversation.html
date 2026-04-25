@@ -99,7 +99,7 @@
             </div>
             <div class="recording-controls">
                 <button type="button" class="cancel-record" onclick="cancelRecording()">✕</button>
-                <button type="button" class="send-record" id="sendRecordBtn" onclick="console.log('Button clicked'); alert('Кнопка нажата!'); sendRecording();">➤</button>
+                <button type="button" class="send-record" onclick="sendRecording()">➤</button>
             </div>
         </div>
         
@@ -684,6 +684,8 @@ let audioChunks = [];
 let recordingTimer;
 let recordingSeconds = 0;
 let recordedBlob = null;
+let recordingPromise = null;
+let recordingResolve = null;
 
 async function toggleRecording() {
     const micBtn = document.getElementById('micBtn');
@@ -691,7 +693,7 @@ async function toggleRecording() {
     const messageForm = document.getElementById('messageForm');
     
     if (mediaRecorder && mediaRecorder.state === 'recording') {
-        stopRecording();
+        recordingResolve();
     } else {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -699,11 +701,13 @@ async function toggleRecording() {
             audioChunks = [];
             recordedBlob = null;
             recordingSeconds = 0;
+            recordingPromise = new Promise(resolve => recordingResolve = resolve);
             
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
             mediaRecorder.onstop = () => {
                 recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
                 stream.getTracks().forEach(t => t.stop());
+                if (recordingResolve) recordingResolve();
             };
             
             mediaRecorder.start();
@@ -736,29 +740,48 @@ function stopRecording() {
 }
 
 function cancelRecording() {
-    stopRecording();
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    clearInterval(recordingTimer);
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('voiceRecording').style.display = 'none';
+    document.getElementById('messageForm').style.display = 'flex';
     recordedBlob = null;
     audioChunks = [];
 }
 
 async function sendRecording() {
-    if (!recordedBlob) {
-        console.log('No recorded blob');
-        return;
-    }
-    
-    console.log('Sending voice message...');
-    console.log('Blob size:', recordedBlob.size);
-    console.log('Blob type:', recordedBlob.type);
+    console.log('sendRecording called, state:', mediaRecorder?.state);
     
     const micBtn = document.getElementById('micBtn');
     const voiceRecording = document.getElementById('voiceRecording');
     const messageForm = document.getElementById('messageForm');
     
-    stopRecording();
-    micBtn.disabled = true;
+    clearInterval(recordingTimer);
+    document.getElementById('micBtn').classList.remove('recording');
+    voiceRecording.style.display = 'none';
     voiceRecording.innerHTML = '<span style="color: var(--text);">⏳ Расшифровка...</span>';
     voiceRecording.style.display = 'flex';
+    micBtn.disabled = true;
+    
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    
+    if (recordingPromise) {
+        await recordingPromise;
+    }
+    
+    console.log('recordedBlob after await:', recordedBlob);
+    
+    if (!recordedBlob) {
+        console.log('No recorded blob');
+        voiceRecording.style.display = 'none';
+        messageForm.style.display = 'flex';
+        micBtn.disabled = false;
+        return;
+    }
     
     const formData = new FormData();
     formData.append('voice', recordedBlob, 'voice_message.webm');
@@ -788,6 +811,8 @@ async function sendRecording() {
         messageForm.style.display = 'flex';
     }
     
+    recordedBlob = null;
+    audioChunks = [];
     micBtn.disabled = false;
 }
 
