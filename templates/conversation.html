@@ -42,16 +42,21 @@
                 {% endif %}
                 {% endif %}
                 
-                {% for m in msg.medias %}
+{% for m in msg.medias %}
                 {% if m.media_type == 'audio' %}
                 <div class="voice-msg">
                     <button onclick="playVoice('{{ m.media_url }}')">▶</button>
                     <span>0:15</span>
                 </div>
+                {% elif m.media_type == 'document' %}
+                <div class="doc-file">
+                    <span>📄</span>
+                    <span>Файл</span>
+                </div>
                 {% elif m.media_type == 'video' %}
                 <video src="{{ m.media_url }}" muted></video>
                 {% else %}
-                <img src="{{ m.media_url }}" alt="" onclick="openModal(this.src)">
+                <img src="{{ m.media_url }}" alt="" style="max-width: 180px; max-height: 180px; border-radius: 12px; object-fit: cover;" onclick="openModal(this.src)">
                 {% endif %}
                 {% endfor %}
                 
@@ -241,6 +246,23 @@
     border: none;
     background: #fff;
     cursor: pointer;
+}
+.doc-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border-radius: 12px;
+}
+.chat-message.sent .doc-file {
+    background: rgba(255,255,255,0.25);
+}
+.chat-message.sent .doc-file span:first-child {
+    font-size: 20px;
+}
+.chat-message.received .doc-file span:first-child {
+    font-size: 20px;
 }
 .chat-footer {
     display: flex;

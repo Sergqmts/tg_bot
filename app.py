@@ -2118,13 +2118,27 @@ def conversation(username):
                     media_url = upload_to_cloudinary(file, folder='messages')
                     if media_url:
                         ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                        if ext in {'mp4', 'webm', 'mov'}:
+                            media_type = 'video'
+                        elif ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'}:
+                            media_type = 'audio'
+                        elif ext in {'pdf', 'doc', 'docx', 'txt'}:
+                            media_type = 'document'
+                        else:
+                            media_type = 'image'
                 else:
                     filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     media_url = '/media/' + filename
                     ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                    if ext in {'mp4', 'webm', 'mov'}:
+                        media_type = 'video'
+                    elif ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'}:
+                        media_type = 'audio'
+                    elif ext in {'pdf', 'doc', 'docx', 'txt'}:
+                        media_type = 'document'
+                    else:
+                        media_type = 'image'
                 app.logger.info(f"Media URL: {media_url}, type: {media_type}")
         
         if body or media_url:
