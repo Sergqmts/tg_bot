@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Сохранённые - Social{% endblock %}
 {% block content %}
-<div class="saved-page">
-    <h2 class="saved-title">Сохранённые публикации</h2>
+<div class="profile">
+    <div class="profile-header">
+        <div class="profile-info" style="padding: 0;">
+            <h1 class="profile-username">Сохранённые</h1>
+        </div>
+    </div>
     
     {% if posts %}
     <div class="posts-grid">
@@ -12,19 +16,19 @@
             {% if media %}
                 {% if media.cloudinary_url %}
                     {% if media.media_type == 'video' %}
-                        <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted></video>
+                    <video src="{{ media.cloudinary_url }}" muted></video>
                     {% elif media.media_type == 'audio' %}
-                        <div class="grid-audio-preview">🎵</div>
+                    <div class="grid-audio-preview">🎵</div>
                     {% else %}
-                        <img src="{{ media.cloudinary_url }}" alt="">
+                    <img src="{{ media.cloudinary_url }}" alt="">
                     {% endif %}
                 {% else %}
                     {% if media.media_type == 'video' %}
-                        <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
+                    <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
                     {% elif media.media_type == 'audio' %}
-                        <div class="grid-audio-preview">🎵</div>
+                    <div class="grid-audio-preview">🎵</div>
                     {% else %}
-                        <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
+                    <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
                     {% endif %}
                 {% endif %}
             {% elif post.body %}
@@ -33,13 +37,17 @@
             {% if post.media.count() > 1 %}
             <div class="multi-indicator">⋮</div>
             {% endif %}
+            <div class="grid-overlay">
+                <span>❤️ {{ post.likes.count() }}</span>
+                <span>💬 {{ post.comments.count() }}</span>
+            </div>
         </a>
         {% endfor %}
     </div>
     {% else %}
     <div class="empty-state">
         <div class="empty-icon">📌</div>
-        <h3 class="empty-title">Нет сохранённых публикаций</h3>
+        <h3 class="empty-title">Нет сохранённых</h3>
         <p class="empty-text">Сохраняйте публикации, чтобы посмотреть их позже</p>
     </div>
     {% endif %}
