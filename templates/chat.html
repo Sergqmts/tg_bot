@@ -21,7 +21,7 @@
             </span>
             {% endif %}
         </div>
-        <a href="{% if chat.type == 'direct' %}{{ url_for('conversation', username=chat.members|rejectattr('id', 'equalto', current_user.id)|first|attr('username') }}{% else %}{{ url_for('chat_view', chat_id=chat.id) }}{% endif %}" class="chat-user">
+        <a href="{% if chat.type == 'direct' %}{% for m in chat.members %}{% if m.id != current_user.id %}{{ url_for('conversation', username=m.username) }}{% endif %}{% endfor %}{% else %}{{ url_for('chat_view', chat_id=chat.id) }}{% endif %}" class="chat-user">
             <span class="chat-name">
             {% if chat.type == 'direct' %}
                 {% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}
