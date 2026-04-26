@@ -67,11 +67,15 @@
         {% for conv in conversations %}
         <a href="{{ url_for('conversation', username=conv.user.username) }}" class="chat-item">
             <div class="chat-avatar">
+                {% if conv.user %}
                 {% set avatar_url = get_avatar_url(conv.user) %}
                 {% if avatar_url %}
                 <img src="{{ avatar_url }}" alt="">
                 {% else %}
                 <div class="avatar-placeholder">{{ conv.user.username[0].upper() }}</div>
+                {% endif %}
+                {% else %}
+                <div class="avatar-placeholder">?</div>
                 {% endif %}
             </div>
             <div class="chat-info">
