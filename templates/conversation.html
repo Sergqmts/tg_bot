@@ -58,6 +58,21 @@
                     <video src="{{ m.media_url }}" muted></video>
                     <a href="{{ m.media_url }}" download class="download-btn">📥</a>
                 </div>
+                {% elif m.media_type == 'voice' %}
+                <div class="voice-msg">
+                    <button class="play-voice-btn" onclick="playVoice('{{ m.media_url }}', this)">
+                        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                    </button>
+                    <div class="voice-wave"></div>
+                </div>
+                {% if msg.transcription %}
+                <div class="voice-transcript-wrap">
+                    <button class="transcript-toggle" onclick="toggleTranscription('{{ msg.id }}')">Аа</button>
+                    <div class="voice-transcript" id="transcript-{{ msg.id }}" style="display: none;">
+                        {{ msg.transcription }}
+                    </div>
+                </div>
+                {% endif %}
                 {% else %}
                 <a href="{{ m.media_url }}" download>
                     <img src="{{ m.media_url }}" alt="" style="max-width: 180px; max-height: 180px; border-radius: 12px; object-fit: cover;">
@@ -80,14 +95,25 @@
             <div class="preview-grid" id="previewGrid"></div>
         </div>
         
-        <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form-row" onsubmit="return attachFileToForm(this)">
+        <div class="voice-recording" id="voiceRecording" style="display: none;">
+            <div class="recording-indicator">
+                <span class="recording-dot"></span>
+                <span class="recording-time" id="recordingTime">0:00</span>
+            </div>
+            <div class="recording-controls">
+                <button type="button" class="cancel-record" onclick="cancelRecording()">✕</button>
+                <button type="button" class="send-record" onclick="sendRecording()">➤</button>
+            </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form-row" id="messageForm">
             <button type="button" class="attach-btn" onclick="toggleAttachMenu()">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
             </button>
             
             <div class="attach-menu" id="attachMenu">
                 <label class="attach-option">
-                    <input type="file" name="media" accept="image/*,video/*,audio/*" hidden onchange="handleFileSelect(this)">
+                    <input type="file" name="media" accept="image/*,video/*" hidden onchange="handleFileSelect(this)">
                     <span>📷</span> Фото/видео
                 </label>
                 <label class="attach-option">
@@ -100,9 +126,13 @@
                 </label>
             </div>
             
-            <input type="text" name="body" placeholder="Сообщение..." class="chat-input">
+            <button type="button" class="mic-btn" id="micBtn" onclick="toggleRecording()">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </button>
+            
+            <input type="text" name="body" placeholder="Сообщение..." class="chat-input" id="messageInput">
             <input type="file" name="media" id="attachedFile" hidden>
-            <button type="submit" class="send-btn">
+            <button type="submit" class="send-btn" id="sendBtn">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15-2-15 2z"/></svg>
             </button>
         </form>
@@ -115,11 +145,21 @@
 </div>
 
 <style>
+body .top-bar, body .bottom-nav {
+    display: none;
+}
 .chat-page {
     display: flex;
     flex-direction: column;
     height: 100vh;
     height: 100dvh;
+    margin-top: 0;
+    padding-top: 0;
+}
+.chat-header {
+    height: 100dvh;
+    margin-top: 0;
+    padding-top: 0;
 }
 .chat-header {
     display: flex;
@@ -267,6 +307,143 @@
 }
 .chat-message.sent .doc-file {
     background: rgba(255,255,255,0.25);
+}
+.mic-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+.mic-btn:hover {
+    background: var(--surface);
+}
+.mic-btn.recording {
+    background: #ED4956;
+    animation: pulse 1s infinite;
+}
+.mic-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--text);
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+.voice-recording {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+.recording-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.recording-dot {
+    width: 12px;
+    height: 12px;
+    background: #ED4956;
+    border-radius: 50%;
+    animation: blink 1s infinite;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+.recording-time {
+    font-weight: 600;
+    color: var(--text);
+}
+.recording-controls {
+    display: flex;
+    gap: 8px;
+}
+.cancel-record, .send-record {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+.cancel-record {
+    background: var(--surface-elevated);
+    color: var(--text);
+}
+.voice-msg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 18px;
+    min-width: 120px;
+}
+.chat-message.received .voice-msg {
+    background: var(--surface);
+}
+.play-voice-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.play-voice-btn.playing {
+    background: #ED4956;
+}
+.play-voice-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+.voice-wave {
+    flex: 1;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary) 50%, var(--border) 50%);
+    background-size: 8px 100%;
+    border-radius: 2px;
+}
+.voice-transcript {
+    display: none;
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    background: var(--surface);
+    border-radius: 10px;
+    margin-top: 4px;
+    font-style: italic;
+}
+.chat-message.sent .voice-transcript {
+    background: rgba(255,255,255,0.1);
+}
+.transcript-toggle {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    margin-top: 4px;
+}
+.transcript-toggle:hover {
+    text-decoration: underline;
 }
 .video-msg {
     position: relative;
@@ -523,8 +700,173 @@ function openModal(src) {
 function closeModal() {
     document.getElementById('imageModal').classList.remove('show');
 }
-function playVoice(url) {
-    new Audio(url).play();
+let mediaRecorder;
+let audioChunks = [];
+let recordingTimer;
+let recordingSeconds = 0;
+let recordedBlob = null;
+let recordingPromise = null;
+let recordingResolve = null;
+
+async function toggleRecording() {
+    const micBtn = document.getElementById('micBtn');
+    const voiceRecording = document.getElementById('voiceRecording');
+    const messageForm = document.getElementById('messageForm');
+    
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        recordingResolve();
+    } else {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            recordedBlob = null;
+            recordingSeconds = 0;
+            recordingPromise = new Promise(resolve => recordingResolve = resolve);
+            
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                stream.getTracks().forEach(t => t.stop());
+                if (recordingResolve) recordingResolve();
+            };
+            
+            mediaRecorder.start();
+            micBtn.classList.add('recording');
+            voiceRecording.style.display = 'flex';
+            messageForm.style.display = 'none';
+            
+            recordingTimer = setInterval(() => {
+                recordingSeconds++;
+                document.getElementById('recordingTime').textContent = formatTime(recordingSeconds);
+            }, 1000);
+        } catch (err) {
+            alert('Не удалось получить доступ к микрофону');
+        }
+    }
+}
+
+function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    clearInterval(recordingTimer);
+    document.getElementById('micBtn').classList.remove('recording');
+}
+
+function cancelRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    clearInterval(recordingTimer);
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('voiceRecording').style.display = 'none';
+    document.getElementById('messageForm').style.display = 'flex';
+    recordedBlob = null;
+    audioChunks = [];
+}
+
+async function sendRecording() {
+    console.log('sendRecording called, state:', mediaRecorder?.state);
+    
+    const micBtn = document.getElementById('micBtn');
+    const voiceRecording = document.getElementById('voiceRecording');
+    const messageForm = document.getElementById('messageForm');
+    
+    clearInterval(recordingTimer);
+    document.getElementById('micBtn').classList.remove('recording');
+    voiceRecording.style.display = 'none';
+    voiceRecording.innerHTML = '<span style="color: var(--text);">⏳ Расшифровка...</span>';
+    voiceRecording.style.display = 'flex';
+    micBtn.disabled = true;
+    
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    
+    if (recordingPromise) {
+        await recordingPromise;
+    }
+    
+    console.log('recordedBlob after await:', recordedBlob);
+    
+    if (!recordedBlob) {
+        console.log('No recorded blob');
+        voiceRecording.style.display = 'none';
+        messageForm.style.display = 'flex';
+        micBtn.disabled = false;
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('voice', recordedBlob, 'voice_message.webm');
+    
+    const url = '{{ url_for("send_voice", username=other_user.username) }}';
+    console.log('URL:', url);
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('Response:', response.status);
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            const text = await response.text();
+            console.log('Error:', text);
+            voiceRecording.style.display = 'none';
+            messageForm.style.display = 'flex';
+        }
+    } catch (err) {
+        console.error('Error:', err);
+        voiceRecording.style.display = 'none';
+        messageForm.style.display = 'flex';
+    }
+    
+    recordedBlob = null;
+    audioChunks = [];
+    micBtn.disabled = false;
+}
+
+let currentAudio = null;
+
+function playVoice(url, btn) {
+    if (btn.classList.contains('playing')) {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+        }
+        btn.classList.remove('playing');
+        return;
+    }
+    
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        document.querySelectorAll('.play-voice-btn.playing').forEach(b => b.classList.remove('playing'));
+    }
+    
+    currentAudio = new Audio(url);
+    currentAudio.onplay = () => btn.classList.add('playing');
+    currentAudio.onended = () => {
+        btn.classList.remove('playing');
+        currentAudio = null;
+    };
+    currentAudio.play();
+}
+
+function toggleTranscription(msgId) {
+    const el = document.getElementById('transcript-' + msgId);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 document.addEventListener('DOMContentLoaded', function() {
     var area = document.getElementById('messagesArea');
