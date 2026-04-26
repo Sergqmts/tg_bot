@@ -2,7 +2,7 @@
 {% block title %}Shorts - Social{% endblock %}
 {% block content %}
 <style>
-.shorts-container {
+.shorts-page {
     position: fixed;
     top: 0;
     left: 0;
@@ -11,64 +11,73 @@
     background: #000;
     overflow: hidden;
 }
-.shorts-video {
-    position: absolute;
-    top: 0;
-    left: 0;
+.shorts-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-y: snap;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+}
+.shorts-item {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    scroll-snap-align: start;
+    background: #000;
+}
+.shorts-item video {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-.shorts-nav {
+.shorts-item-info {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 100%;
+    right: 0;
     padding: 20px;
     padding-bottom: 80px;
-    background: linear-gradient(transparent, rgba(0,0,0,0.8));
-}
-.shorts-info {
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
     color: #fff;
 }
-.shorts-author {
+.shorts-item-author {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 10px;
 }
-.shorts-avatar {
-    width: 36px;
-    height: 36px;
+.shorts-item-avatar {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     overflow: hidden;
     background: var(--primary-gradient);
 }
-.shorts-avatar img {
+.shorts-item-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-.shorts-username {
+.shorts-item-username {
     font-weight: 600;
     color: #fff;
     text-decoration: none;
 }
-.shorts-caption {
+.shorts-item-caption {
     font-size: 14px;
-    color: #fff;
     margin-bottom: 10px;
 }
-.shorts-sidebar {
+.shorts-item-sidebar {
     position: absolute;
     right: 10px;
-    bottom: 100px;
+    bottom: 120px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     align-items: center;
 }
-.shorts-action {
+.shorts-item-action {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -78,112 +87,135 @@
     border: none;
     cursor: pointer;
 }
-.shorts-action svg {
+.shorts-item-action svg {
     width: 32px;
     height: 32px;
 }
-.shorts-action span {
+.shorts-item-action span {
     font-size: 12px;
+    font-weight: 600;
 }
-.shorts-action.liked svg {
-    fill: #ff2d55;
-}
-.shorts-nav-buttons {
+.shorts-item-close {
     position: absolute;
     top: 10px;
     left: 10px;
-    right: 10px;
-    display: flex;
-    justify-content: space-between;
-    z-index: 10;
-}
-.shorts-nav-btn {
     color: #fff;
+    font-size: 24px;
     text-decoration: none;
-    font-size: 14px;
+    z-index: 10;
     background: rgba(0,0,0,0.5);
-    padding: 8px 16px;
-    border-radius: 20px;
-}
-.shorts-page {
-    padding-top: 60px;
-    padding-bottom: 60px;
-    background: var(--bg);
-    min-height: 100vh;
-}
-.shorts-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
-}
-.shorts-grid-item {
-    aspect-ratio: 9/16;
-    background: var(--surface);
-    position: relative;
-    cursor: pointer;
-}
-.shorts-grid-item video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.shorts-grid-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 8px;
-    background: linear-gradient(transparent, rgba(0,0,0,0.8));
-    color: #fff;
-}
-.shorts-grid-views {
-    font-size: 12px;
-}
-.shorts-create-btn {
-    position: fixed;
-    bottom: 85px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
-    background: var(--primary-gradient);
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-size: 24px;
-    z-index: 90;
-    text-decoration: none;
-    box-shadow: var(--shadow-lg);
 }
-.shorts-nav-btn-home {
+.shorts-item-nav {
     position: absolute;
-    left: 10px;
     top: 10px;
-    z-index: 10;
-}
-.shorts-nav-btn-explore {
-    position: absolute;
     right: 10px;
-    top: 10px;
     z-index: 10;
+}
+.shorts-item-nav a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    background: rgba(255,255,255,0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+}
+.shorts-page-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    background: rgba(0,0,0,0.5);
+    z-index: 20;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.shorts-page-header a {
+    color: #fff;
+    text-decoration: none;
+}
+.shorts-page-header h1 {
+    color: #fff;
+    font-size: 16px;
 }
 </style>
 <div class="shorts-page">
-    <header class="top-bar">
-        <a href="{{ url_for('index') }}" class="btn btn-icon">←</a>
+    <div class="shorts-page-header">
+        <a href="{{ url_for('index') }}">✕</a>
         <h1>Shorts</h1>
-    </header>
-    <div class="shorts-grid">
+        <a href="{{ url_for('create_shorts') }}">+</a>
+    </div>
+    <div class="shorts-container">
         {% for shorts in shorts_list %}
-<a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-grid-item">
-            <video src="{{ url_for('uploaded_file', filename=shorts.video_url.lstrip('/uploads/')) }}" muted></video>
-            <div class="shorts-grid-overlay">
-                <span class="shorts-grid-views">▶ {{ shorts.views }}</span>
+        <div class="shorts-item" id="shorts-{{ shorts.id }}">
+            <video src="{{ url_for('uploaded_file', filename=shorts.video_url.lstrip('/uploads/')) }}" autoplay loop muted playsinline></video>
+            
+            <a href="{{ url_for('index') }}" class="shorts-item-close">✕</a>
+            
+            <div class="shorts-item-sidebar">
+                <form method="POST" action="{{ url_for('like_shorts', shorts_id=shorts.id) }}" class="shorts-item-action">
+                    <svg viewBox="0 0 24 24" fill="{% if current_user.is_authenticated and shorts.liked_by(current_user) %}#ff2d55{% else %}#fff{% endif %}"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span>{{ shorts.likes.count() }}</span>
+                </form>
+                
+                <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-item-action">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span>{{ shorts.comments.count() }}</span>
+                </a>
             </div>
-        </a>
+            
+            <div class="shorts-item-info">
+                <div class="shorts-item-author">
+                    <div class="shorts-item-avatar">
+                        {% if shorts.user.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=shorts.user.avatar) }}">
+                        {% else %}
+                        <span>{{ shorts.user.username[0].upper() }}</span>
+                        {% endif %}
+                    </div>
+                    <a href="{{ url_for('user_profile', username=shorts.user.username) }}" class="shorts-item-username">@{{ shorts.user.username }}</a>
+                </div>
+                {% if shorts.caption %}
+                <div class="shorts-item-caption">{{ shorts.caption }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="shorts-item" style="display: flex; align-items: center; justify-content: center; color: #fff;">
+            <p>Пока нет шортсов</p>
+        </div>
         {% endfor %}
     </div>
 </div>
-<a href="{{ url_for('create_shorts') }}" class="shorts-create-btn">+</a>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var container = document.querySelector('.shorts-container');
+    if (!container) return;
+    
+    var videos = container.querySelectorAll('video');
+    
+    container.addEventListener('scroll', function() {
+        var scrollTop = container.scrollTop;
+        var itemHeight = container.clientHeight || window.innerHeight;
+        var currentIndex = Math.round(scrollTop / itemHeight);
+        videos.forEach(function(v, i) {
+            if (i === currentIndex) {
+                v.play().catch(function() {});
+            } else {
+                v.pause();
+            }
+        });
+    });
+    if (videos.length > 0) {
+        videos[0].play().catch(function() {});
+    }
+});
+</script>
 {% endblock %}
