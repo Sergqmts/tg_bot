@@ -827,15 +827,31 @@ async function sendRecording() {
     micBtn.disabled = false;
 }
 
+let currentAudio = null;
+
 function playVoice(url, btn) {
     if (btn.classList.contains('playing')) {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+        }
         btn.classList.remove('playing');
         return;
     }
-    const audio = new Audio(url);
-    audio.onplay = () => btn.classList.add('playing');
-    audio.onended = () => btn.classList.remove('playing');
-    audio.play();
+    
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        document.querySelectorAll('.play-voice-btn.playing').forEach(b => b.classList.remove('playing'));
+    }
+    
+    currentAudio = new Audio(url);
+    currentAudio.onplay = () => btn.classList.add('playing');
+    currentAudio.onended = () => {
+        btn.classList.remove('playing');
+        currentAudio = null;
+    };
+    currentAudio.play();
 }
 
 function toggleTranscription(msgId) {
