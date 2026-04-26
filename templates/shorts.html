@@ -22,7 +22,6 @@
     cursor: pointer;
     color: #fff;
 }
-</style>
 .shorts-page {
     position: fixed;
     top: 0;
@@ -172,6 +171,40 @@
     color: #fff;
     font-size: 16px;
 }
+.shorts-follow-btn {
+    padding: 8px 16px;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+}
+.shorts-follow-btn.following {
+    background: transparent;
+    color: #fff;
+    border: 1px solid #fff;
+}
+.shorts-reactions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 10px;
+}
+.shorts-reaction {
+    font-size: 24px;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+.shorts-reaction:hover {
+    transform: scale(1.2);
+}
+.shorts-reaction.selected {
+    transform: scale(1.3);
+}
 </style>
 <div class="shorts-page">
     <div class="shorts-page-header">
@@ -181,8 +214,8 @@
     </div>
     <div class="shorts-container">
         {% for shorts in shorts_list %}
-        <div class="shorts-item" id="shorts-{{ shorts.id }}">
-            <video src="{{ shorts.video_url }}" autoplay loop muted playsinline></video>
+        <div class="shorts-item" id="shorts-{{ shorts.id }}" data-index="{{ loop.index0 }}">
+            <video src="{{ shorts.video_url }}" class="shorts-video" autoplay loop muted playsinline></video>
             
             <a href="{{ url_for('index') }}" class="shorts-item-close">✕</a>
             
@@ -210,10 +243,23 @@
                         {% endif %}
                     </div>
                     <a href="{{ url_for('user_profile', username=shorts.user.username) }}" class="shorts-item-username">@{{ shorts.user.username }}</a>
+                    {% if current_user.is_authenticated and current_user.id != shorts.user.id %}
+                    <form method="POST" action="{{ url_for('follow', username=shorts.user.username) }}">
+                        <button type="submit" class="shorts-follow-btn" data-username="{{ shorts.user.username }}">Подписаться</button>
+                    </form>
+                    {% endif %}
                 </div>
                 {% if shorts.caption %}
                 <div class="shorts-item-caption">{{ shorts.caption }}</div>
                 {% endif %}
+                
+                <div class="shorts-reactions">
+                    <span class="shorts-reaction" data-emoji="❤️">❤️</span>
+                    <span class="shorts-reaction" data-emoji="😂">😂</span>
+                    <span class="shorts-reaction" data-emoji="😮">😮</span>
+                    <span class="shorts-reaction" data-emoji="😭">😭</span>
+                    <span class="shorts-reaction" data-emoji="🔥">🔥</span>
+                </div>
             </div>
         </div>
         {% else %}
@@ -228,9 +274,20 @@ document.addEventListener('DOMContentLoaded', function() {
     var container = document.querySelector('.shorts-container');
     if (!container) return;
     
-    var videos = container.querySelectorAll('video');
-    var sidebar = container.querySelector('.shorts-item-sidebar');
+    var videos = container.querySelectorAll('.shorts-video');
+    var items = container.querySelectorAll('.shorts-item');
     var isScrolling = false;
+    var currentIndex = 0;
+    
+    function playCurrentVideo() {
+        videos.forEach(function(v, i) {
+            if (i === currentIndex) {
+                v.play().catch(function() {});
+            } else {
+                v.pause();
+            }
+        });
+    }
     
     container.addEventListener('scroll', function() {
         if (isScrolling) return;
@@ -241,18 +298,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         var scrollTop = container.scrollTop;
         var itemHeight = container.clientHeight || window.innerHeight;
-        var currentIndex = Math.round(scrollTop / itemHeight);
+        currentIndex = Math.round(scrollTop / itemHeight);
         
-        videos.forEach(function(v, i) {
-            if (i === currentIndex) {
-                v.play().catch(function() {});
-            } else {
-                v.pause();
-            }
-        });
+        playCurrentVideo();
     });    
+    
     if (videos.length > 0) {
-        videos[0].play().catch(function() {});
+        playCurrentVideo();
     }
     
     document.querySelectorAll('[data-action="like"]').forEach(function(btn) {
@@ -264,6 +316,44 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+    
+    document.querySelectorAll('.shorts-follow-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var form = btn.closest('form');
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form)
+            }).then(function() {
+                btn.textContent = 'Подписан';
+                btn.classList.add('following');
+            });
+        });
+    });
+    
+    document.querySelectorAll('.shorts-reaction').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            var emoji = this.dataset.emoji;
+            var item = this.closest('.shorts-item');
+            var video = item.querySelector('.shorts-video');
+            var shortsId = item.id.replace('shorts-', '');
+            
+            fetch('/shorts/' + shortsId + '/react', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'emoji=' + encodeURIComponent(emoji)
+            }).then(function() {
+                el.classList.toggle('selected');
+            });
+        });
+    });
+    
+    var autoAdvance = setInterval(function() {
+        if (videos.length > 0 && currentIndex < videos.length - 1) {
+            var nextIndex = currentIndex + 1;
+            items[nextIndex].scrollIntoView({behavior: 'smooth'});
+        }
+    }, 8000);
 });
 </script>
 {% endblock %}

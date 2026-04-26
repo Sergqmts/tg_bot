@@ -824,6 +824,14 @@ class ShortsLike(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class ShortsReaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    emoji = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class ShortsComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
@@ -2092,6 +2100,23 @@ def like_shorts(shorts_id):
     
     db.session.commit()
     return jsonify({'likes': shorts_video.likes.count()})
+
+
+@app.route('/shorts/<int:shorts_id>/react', methods=['POST'])
+@login_required
+def react_shorts(shorts_id):
+    shorts_video = Shorts.query.get_or_404(shorts_id)
+    emoji = request.form.get('emoji', '❤️')
+    
+    existing = ShortsReaction.query.filter_by(user_id=current_user.id, shorts_id=shorts_id, emoji=emoji).first()
+    if existing:
+        db.session.delete(existing)
+    else:
+        reaction = ShortsReaction(user_id=current_user.id, shorts_id=shorts_id, emoji=emoji)
+        db.session.add(reaction)
+    
+    db.session.commit()
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/shorts/audio/upload', methods=['GET', 'POST'])
