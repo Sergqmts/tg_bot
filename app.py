@@ -1902,45 +1902,54 @@ def verify_phone():
 @app.route('/search')
 def explore():
     search_query = request.args.get('q', '')
-    search_type = request.args.get('type', 'users')  # users, tags, posts
+    search_type = request.args.get('type', 'users')  # users, tags, posts, communities
     blocked_ids = []
     if current_user.is_authenticated:
         blocked_ids = [u.id for u in current_user.blocked]
+    
+    users = []
+    tags = []
+    posts = []
+    communities = []
     
     if search_query.lstrip('#'):
         if search_type == 'tags':
             tags = Tag.query.filter(
                 Tag.name.ilike(f'%{search_query.lstrip("#")}%')
             ).order_by(Tag.created_at.desc()).limit(50).all()
-            posts = []
-            users = []
+        elif search_type == 'communities':
+            communities = Community.query.filter(
+                Community.name.ilike(f'%{search_query}%')
+            ).order_by(Community.created_at.desc()).limit(50).all()
+        elif search_type == 'posts':
+            posts = Post.query.filter(
+                Post.user_id.notin_(blocked_ids) if blocked_ids else True,
+                Post.body.ilike(f'%#{search_query.lstrip("#")}%')
+            ).order_by(Post.created_at.desc()).limit(50).all()
+            if search_query.lstrip('#'):
+                tags = Tag.query.filter(
+                    Tag.name.ilike(f'%{search_query.lstrip("#")}%')
+                ).order_by(Tag.created_at.desc()).limit(20).all()
         else:
-            tags = Tag.query.filter(
-                Tag.name.ilike(f'%{search_query.lstrip("#")}%')
-            ).order_by(Tag.created_at.desc()).limit(20).all()
-            
-            if search_type == 'posts':
-                posts = Post.query.filter(
-                    Post.user_id.notin_(blocked_ids) if blocked_ids else True,
-                    Post.body.ilike(f'%#{search_query.lstrip("#")}%')
-                ).order_by(Post.created_at.desc()).limit(50).all()
-                users = []
-            else:
-                users = User.query.filter(
-                    ~User.id.in_(blocked_ids) if blocked_ids else True,
-                    User.id != current_user.id if current_user.is_authenticated else True,
-                    User.username.ilike(f'%{search_query.lstrip("@")}%')
-                ).order_by(User.created_at.desc()).limit(50).all()
-                posts = []
+            users = User.query.filter(
+                ~User.id.in_(blocked_ids) if blocked_ids else True,
+                User.id != current_user.id if current_user.is_authenticated else True,
+                User.username.ilike(f'%{search_query.lstrip("@")}%')
+            ).order_by(User.created_at.desc()).limit(50).all()
+            if search_query.lstrip('#'):
+                tags = Tag.query.filter(
+                    Tag.name.ilike(f'%{search_query.lstrip("#")}%')
+                ).order_by(Tag.created_at.desc()).limit(20).all()
     else:
-        users = User.query.filter(
-            ~User.id.in_(blocked_ids) if blocked_ids else True,
-            User.id != current_user.id if current_user.is_authenticated else True
-        ).order_by(User.created_at.desc()).limit(20).all()
-        tags = []
-        posts = []
+        if search_type == 'communities':
+            communities = Community.query.order_by(Community.created_at.desc()).limit(20).all()
+        else:
+            users = User.query.filter(
+                ~User.id.in_(blocked_ids) if blocked_ids else True,
+                User.id != current_user.id if current_user.is_authenticated else True
+            ).order_by(User.created_at.desc()).limit(20).all()
     
-    return render_template('explore.html', users=users, tags=tags, posts=posts, search_query=search_query, search_type=search_type)
+    return render_template('explore.html', users=users, tags=tags, posts=posts, communities=communities, search_query=search_query, search_type=search_type)
 
 
 @app.route('/photos')

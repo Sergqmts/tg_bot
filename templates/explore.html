@@ -12,6 +12,7 @@
             </div>
             <select name="type" class="search-select">
                 <option value="users" {% if search_type == 'users' %}selected{% endif %}>Люди</option>
+                <option value="communities" {% if search_type == 'communities' %}selected{% endif %}>Сообщества</option>
                 <option value="tags" {% if search_type == 'tags' %}selected{% endif %}>Теги</option>
                 <option value="posts" {% if search_type == 'posts' %}selected{% endif %}>Посты</option>
             </select>
@@ -87,6 +88,36 @@
                 {% endif %}
             {% endif %}
         </div>
+        
+        {% if communities %}
+        <div class="explore-section">
+            <h3 class="section-title">Сообщества</h3>
+            <div class="communities-list">
+                {% for comm in communities %}
+                <div class="community-item">
+                    <a href="{{ url_for('community', slug=comm.slug) }}" class="community-avatar">
+                        {% if comm.avatar %}
+                        <img src="{{ url_for('uploaded_file', filename=comm.avatar) }}">
+                        {% else %}
+                        <span>{{ comm.name[0].upper() }}</span>
+                        {% endif %}
+                    </a>
+                    <div class="community-info">
+                        <a href="{{ url_for('community', slug=comm.slug) }}" class="community-name">{{ comm.name }}</a>
+                        <span class="community-stats">{{ comm.members.count() }} участников</span>
+                    </div>
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}">
+                        <button type="submit" class="join-btn {% if current_user.is_member_of(comm) %}joined{% endif %}">
+                            {{ 'Вступить' if not current_user.is_member_of(comm) else 'Вступил' }}
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -299,6 +330,83 @@
 }
 
 .follow-btn.following {
+    background: var(--surface-elevated);
+    color: var(--text);
+}
+
+.communities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.community-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 12px;
+}
+
+.community-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.community-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.community-avatar span {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.community-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.community-name {
+    display: block;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.community-stats {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.join-btn {
+    padding: 8px 14px;
+    border-radius: 18px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--primary);
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.join-btn.joined {
     background: var(--surface-elevated);
     color: var(--text);
 }
