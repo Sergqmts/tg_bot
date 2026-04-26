@@ -2,6 +2,28 @@
 {% block title %}Лента - Social{% endblock %}
 {% block content %}
 <div class="feed">
+    {% if shorts_list %}
+    <div class="shorts-mini-feed">
+        <div class="shorts-mini-header">
+            <span>Shorts</span>
+            <a href="{{ url_for('shorts') }}">Смотреть все →</a>
+        </div>
+        <div class="shorts-mini-scroll">
+            {% for shorts in shorts_list %}
+            <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-mini-item">
+                <video src="{{ shorts.video_url }}" muted></video>
+                <div class="shorts-mini-overlay">
+                    <span>▶ {{ shorts.views }}</span>
+                </div>
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('create_shorts') }}" class="shorts-mini-item shorts-mini-add">
+                <span>+</span>
+                <span>Создать</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
     {% for post in posts %}
     <article class="post-card" style="position: relative;">
         <div class="post-header">

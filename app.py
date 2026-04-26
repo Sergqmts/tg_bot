@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, abort, send_from_directory
+from flask import Flask, render_template, redirect, url_for, flash, request, abort, send_from_directory, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
@@ -784,6 +784,52 @@ class PostTag(db.Model):
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=False)
 
 
+class Shorts(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    video_url = db.Column(db.String(500), nullable=False)
+    audio_id = db.Column(db.Integer, db.ForeignKey('shorts_audio.id'), nullable=True)
+    caption = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    views = db.Column(db.Integer, default=0)
+    likes = db.relationship('ShortsLike', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
+    comments = db.relationship('ShortsComment', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
+    
+    user = db.relationship('User', backref='shorts_videos')
+    audio = db.relationship('ShortsAudio', backref='shorts_videos')
+    
+    def liked_by(self, user):
+        return self.likes.filter_by(user_id=user.id).first() is not None
+
+
+class ShortsAudio(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    audio_url = db.Column(db.String(500), nullable=False)
+    duration = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    user = db.relationship('User', backref='uploaded_shorts_audios')
+
+
+class ShortsLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ShortsComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    
+    author = db.relationship('User', foreign_keys=[user_id])
+
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
@@ -1003,11 +1049,14 @@ def index():
         posts = [p for _, p in scored_posts[:100]]
         
         repost_counts = {p.id: Repost.query.filter_by(post_id=p.id).count() for p in posts}
+        
+        shorts_list = Shorts.query.order_by(Shorts.created_at.desc()).limit(5).all()
     except Exception as e:
         app.logger.error(f"Feed Error: {e}")
         posts = []
         repost_counts = {}
-    return render_template('index.html', posts=posts, repost_counts=repost_counts)
+        shorts_list = []
+    return render_template('index.html', posts=posts, repost_counts=repost_counts, shorts_list=shorts_list)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -1959,6 +2008,100 @@ def explore():
             ).order_by(User.created_at.desc()).limit(20).all()
     
     return render_template('explore.html', users=users, tags=tags, posts=posts, communities=communities, search_query=search_query, search_type=search_type)
+
+
+@app.route('/shorts')
+@app.route('/sharts')
+def shorts():
+    shorts_list = Shorts.query.order_by(Shorts.created_at.desc()).limit(20).all()
+    audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).limit(20).all()
+    return render_template('shorts.html', shorts_list=shorts_list, audios=audios)
+
+
+@app.route('/shorts/create', methods=['GET', 'POST'])
+@login_required
+def create_shorts():
+    if request.method == 'POST':
+        video = request.files.get('video')
+        caption = request.form.get('caption', '')
+        audio_id = request.form.get('audio_id')
+        
+        if video:
+            filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp4'
+            video.save(os.path.join(UPLOAD_FOLDER, filename))
+            video_url = f'/uploads/{filename}'
+            
+            shorts = Shorts(
+                video_url=video_url,
+                caption=caption,
+                user_id=current_user.id,
+                audio_id=int(audio_id) if audio_id else None
+            )
+            db.session.add(shorts)
+            db.session.commit()
+            return redirect(url_for('shorts'))
+    
+    audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).all()
+    return render_template('create_shorts.html', audios=audios)
+
+
+@app.route('/shorts/<int:shorts_id>', methods=['GET', 'POST'])
+def view_shorts(shorts_id):
+    shorts_video = Shorts.query.get_or_404(shorts_id)
+    
+    if request.method == 'POST' and current_user.is_authenticated:
+        comment_body = request.form.get('body')
+        if comment_body:
+            comment = ShortsComment(
+                body=comment_body,
+                user_id=current_user.id,
+                shorts_id=shorts_id
+            )
+            db.session.add(comment)
+            db.session.commit()
+    
+    comments = shorts_video.comments.order_by(ShortsComment.created_at.desc()).all()
+    return render_template('view_shorts.html', shorts=shorts_video, comments=comments)
+
+
+@app.route('/shorts/like/<int:shorts_id>', methods=['POST'])
+@login_required
+def like_shorts(shorts_id):
+    shorts_video = Shorts.query.get_or_404(shorts_id)
+    existing_like = ShortsLike.query.filter_by(user_id=current_user.id, shorts_id=shorts_id).first()
+    
+    if existing_like:
+        db.session.delete(existing_like)
+    else:
+        like = ShortsLike(user_id=current_user.id, shorts_id=shorts_id)
+        db.session.add(like)
+    
+    db.session.commit()
+    return jsonify({'likes': shorts_video.likes.count()})
+
+
+@app.route('/shorts/audio/upload', methods=['GET', 'POST'])
+@login_required
+def upload_shorts_audio():
+    if request.method == 'POST':
+        audio = request.files.get('audio')
+        title = request.form.get('title', 'Original audio')
+        
+        if audio:
+            filename = f'saudio_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp3'
+            audio.save(os.path.join(UPLOAD_FOLDER, filename))
+            audio_url = f'/uploads/{filename}'
+            
+            shorts_audio = ShortsAudio(
+                title=title,
+                audio_url=audio_url,
+                user_id=current_user.id
+            )
+            db.session.add(shorts_audio)
+            db.session.commit()
+            return redirect(url_for('create_shorts'))
+    
+    return render_template('upload_shorts_audio.html')
 
 
 @app.route('/photos')

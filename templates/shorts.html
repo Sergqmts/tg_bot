@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Shorts - Social{% endblock %}
+{% block content %}
+<style>
+.shorts-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+}
+.shorts-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.shorts-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    padding-bottom: 80px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+}
+.shorts-info {
+    color: #fff;
+}
+.shorts-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.shorts-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-gradient);
+}
+.shorts-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.shorts-username {
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+}
+.shorts-caption {
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 10px;
+}
+.shorts-sidebar {
+    position: absolute;
+    right: 10px;
+    bottom: 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+.shorts-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #fff;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.shorts-action svg {
+    width: 32px;
+    height: 32px;
+}
+.shorts-action span {
+    font-size: 12px;
+}
+.shorts-action.liked svg {
+    fill: #ff2d55;
+}
+.shorts-nav-buttons {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 10;
+}
+.shorts-nav-btn {
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    background: rgba(0,0,0,0.5);
+    padding: 8px 16px;
+    border-radius: 20px;
+}
+.shorts-page {
+    padding-top: 60px;
+    padding-bottom: 60px;
+    background: var(--bg);
+    min-height: 100vh;
+}
+.shorts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+}
+.shorts-grid-item {
+    aspect-ratio: 9/16;
+    background: var(--surface);
+    position: relative;
+    cursor: pointer;
+}
+.shorts-grid-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.shorts-grid-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    color: #fff;
+}
+.shorts-grid-views {
+    font-size: 12px;
+}
+.shorts-create-btn {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 24px;
+    z-index: 90;
+    text-decoration: none;
+    box-shadow: var(--shadow-lg);
+}
+.shorts-nav-btn-home {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    z-index: 10;
+}
+.shorts-nav-btn-explore {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    z-index: 10;
+}
+</style>
+<div class="shorts-page">
+    <header class="top-bar">
+        <a href="{{ url_for('index') }}" class="btn btn-icon">←</a>
+        <h1>Shorts</h1>
+    </header>
+    <div class="shorts-grid">
+        {% for shorts in shorts_list %}
+        <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-grid-item">
+            <video src="{{ shorts.video_url }}" muted></video>
+            <div class="shorts-grid-overlay">
+                <span class="shorts-grid-views">▶ {{ shorts.views }}</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+<a href="{{ url_for('create_shorts') }}" class="shorts-create-btn">+</a>
+{% endblock %}
