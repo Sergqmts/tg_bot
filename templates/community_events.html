@@ -6,9 +6,14 @@
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2>Мероприятия</h2>
-        {% if is_member %}
-            <a href="{{ url_for('community_events', slug=community.slug) }}?create=1" class="btn btn-primary">+ Создать</a>
-        {% endif %}
+        <div style="display: flex; gap: 10px;">
+            {% if is_admin %}
+                <a href="{{ url_for('community_events_archive', slug=community.slug) }}" class="btn btn-secondary">📁 Архив</a>
+            {% endif %}
+            {% if is_member %}
+                <a href="{{ url_for('community_events', slug=community.slug) }}?create=1" class="btn btn-primary">+ Создать</a>
+            {% endif %}
+        </div>
     </div>
     
     {% if request.args.get('create') and is_member %}

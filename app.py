@@ -708,6 +708,7 @@ class CommunityEvent(db.Model):
     event_date = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_archived = db.Column(db.Boolean, default=False)
     
     community = db.relationship('Community', backref='events')
     creator = db.relationship('User', backref='created_events')
@@ -718,6 +719,14 @@ class CommunityEvent(db.Model):
     
     def is_attending(self, user):
         return self.attendees.filter_by(user_id=user.id, status='going').first() is not None
+    
+    def is_past(self):
+        return self.event_date < datetime.utcnow()
+    
+    def archive_if_expired(self):
+        if self.event_date < datetime.utcnow() and not self.is_archived:
+            self.is_archived = True
+            db.session.commit()
 
 
 class EventAttendee(db.Model):
@@ -2836,8 +2845,16 @@ def community_events(slug):
         else:
             flash('Заполните название и дату')
     
-    events = CommunityEvent.query.filter_by(community_id=comm.id).order_by(CommunityEvent.event_date.asc()).all()
-    return render_template('community_events.html', community=comm, events=events, is_member=is_member, is_admin=is_admin)
+    for event in CommunityEvent.query.filter_by(community_id=comm.id).all():
+        event.archive_if_expired()
+    
+    show_archived = request.args.get('archived') == '1' and is_admin
+    if show_archived:
+        events = CommunityEvent.query.filter_by(community_id=comm.id, is_archived=True).order_by(CommunityEvent.event_date.desc()).all()
+    else:
+        events = CommunityEvent.query.filter_by(community_id=comm.id, is_archived=False).order_by(CommunityEvent.event_date.asc()).all()
+    
+    return render_template('community_events.html', community=comm, events=events, is_member=is_member, is_admin=is_admin, show_archived=show_archived)
 
 
 @app.route('/community/<slug>/event/<int:event_id>/rsvp', methods=['POST'])
@@ -2880,6 +2897,33 @@ def event_rsvp(slug, event_id):
         flash('Вы зарегистрированы! Информация отправлена вам в сообщения.')
     
     return redirect(url_for('community_events', slug=slug))
+
+
+@app.route('/community/<slug>/events/archived')
+@login_required
+def community_events_archive(slug):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    
+    if not current_user.is_admin(comm):
+        abort(403)
+    
+    events = CommunityEvent.query.filter_by(community_id=comm.id, is_archived=True).order_by(CommunityEvent.event_date.desc()).all()
+    return render_template('community_events_archive.html', community=comm, events=events)
+
+
+@app.route('/community/<slug>/event/<int:event_id>/unarchive', methods=['POST'])
+@login_required
+def unarchive_event(slug, event_id):
+    comm = Community.query.filter_by(slug=slug).first_or_404()
+    
+    if not current_user.is_admin(comm):
+        abort(403)
+    
+    event = CommunityEvent.query.get_or_404(event_id)
+    event.is_archived = False
+    db.session.commit()
+    flash('Мероприятие восстановлено')
+    return redirect(url_for('community_events_archive', slug=slug))
 
 
 @app.route('/community/<slug>/leave', methods=['POST'])

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ community.name }} - Архив мероприятий - Social{% endblock %}
+{% block content %}
+<a href="{{ url_for('community_events', slug=community.slug) }}" class="btn btn-secondary" style="margin-bottom: 20px;">← Мероприятия</a>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>📁 Архив мероприятий</h2>
+        <a href="{{ url_for('community_events', slug=community.slug) }}" class="btn btn-primary">← Активные</a>
+    </div>
+    
+    {% if events %}
+        <div style="display: grid; gap: 15px;">
+            {% for event in events %}
+            <div style="border: 1px solid var(--border); border-radius: 8px; padding: 15px; opacity: 0.7;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin: 0 0 5px 0;">{{ event.title }}</h3>
+                        <div style="color: var(--text-light); font-size: 0.9rem;">
+                            📅 {{ event.event_date.strftime('%d.%m.%Y %H:%M') }}
+                            {% if event.location %}
+                                📍 {{ event.location }}
+                            {% endif %}
+                        </div>
+                        <span style="background: var(--surface-elevated); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Прошедшее</span>
+                    </div>
+                    <form method="POST" action="{{ url_for('unarchive_event', slug=community.slug, event_id=event.id) }}">
+                        <button type="submit" class="btn btn-secondary" style="padding: 8px 15px;">↩ Восстановить</button>
+                    </form>
+                </div>
+                {% if event.description %}
+                    <p style="margin-top: 10px; color: var(--text);">{{ event.description }}</p>
+                {% endif %}
+                <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-light);">
+                    👥 {{ event.attendee_count() }} участников
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="text-align: center; color: var(--text-light); padding: 40px;">Архив пуст</p>
+    {% endif %}
+</div>
+{% endblock %}
