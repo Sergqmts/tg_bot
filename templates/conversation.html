@@ -144,19 +144,19 @@
     </div>
 </div>
 
-{% block extra_styles %}
 <style>
-body:has(.chat-page) .top-bar { display: none; }
-body:has(.chat-page) .bottom-nav { display: none; }
-body:has(.chat-page) .main-content { padding-top: 0; }
-</style>
-{% endblock %}
-
-<style>
+body .top-bar, body .bottom-nav {
+    display: none;
+}
 .chat-page {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
+    margin-top: 0;
+    padding-top: 0;
+}
+.chat-header {
     height: 100dvh;
     margin-top: 0;
     padding-top: 0;
