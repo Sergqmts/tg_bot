@@ -5,7 +5,9 @@
     <div class="profile-header">
         <div class="profile-info">
             <div class="profile-avatar-large">
-                {% if community.image and community.image != 'community_default.png' %}
+                {% if community.image and community.image.startswith('http') %}
+                <img src="{{ community.image }}" alt="">
+                {% elif community.image and community.image != 'community_default.png' %}
                 <img src="{{ url_for('uploaded_file', filename=community.image) }}" alt="">
                 {% else %}
                 <div class="avatar-placeholder-large">{{ community.name[0].upper() }}</div>
@@ -67,7 +69,9 @@
         <article class="post-card">
             <div class="post-header">
                 <a href="{{ url_for('community', slug=community.slug) }}" class="post-avatar">
-                    {% if community.image and community.image != 'community_default.png' %}
+                    {% if community.image and community.image.startswith('http') %}
+                    <img src="{{ community.image }}" alt="">
+                    {% elif community.image and community.image != 'community_default.png' %}
                     <img src="{{ url_for('uploaded_file', filename=community.image) }}" alt="">
                     {% else %}
                     <div class="avatar-placeholder">{{ community.name[0].upper() }}</div>
@@ -201,8 +205,10 @@ document.addEventListener('click', function(e) {
             <div class="form-group">
                 <label>Обложка</label>
                 <input type="file" name="image" accept="image/*" class="form-input">
-                {% if community.image %}
+                {% if community.image and community.image.startswith('http') %}
                 <img src="{{ community.image }}" style="max-width: 100px; margin-top: 10px; border-radius: 8px;">
+                {% elif community.image %}
+                <img src="{{ url_for('uploaded_file', filename=community.image) }}" style="max-width: 100px; margin-top: 10px; border-radius: 8px;">
                 {% endif %}
             </div>
             <div class="form-actions">
