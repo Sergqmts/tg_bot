@@ -60,6 +60,11 @@
                 </button>
                 <div class="message-menu" id="menu-{{ msg.id }}">
                     <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item">📤 Переслать</a>
+                    {% if msg.sender_id == current_user.id %}
+                    <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}" onsubmit="return confirm('Удалить сообщение для всех?')">
+                        <button type="submit" class="menu-item danger">🗑️ Удалить</button>
+                    </form>
+                    {% endif %}
                 </div>
                 {% if msg.post_id %}
                 {% set post = Post.query.get(msg.post_id) %}
@@ -792,6 +797,16 @@ async function sendChatRecording() {
 }
 .message-menu .menu-item:hover {
     background: var(--surface-elevated);
+}
+.message-menu .menu-item.danger {
+    color: #ED4956;
+    width: 100%;
+    border: none;
+    text-align: left;
+    font-size: 14px;
+}
+.message-menu .menu-item.danger:hover {
+    background: rgba(237, 73, 86, 0.1);
 }
 </script>
 {% endblock %}
