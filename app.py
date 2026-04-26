@@ -1029,14 +1029,17 @@ def index():
         user_interests = set(current_user.interests.lower().split()) if current_user.interests else set()
         likers = [l.user_id for l in current_user.likes.all()]
         
-        all_candidates = Post.query.filter(
-            ~Post.user_id.in_(blocked_ids),
-            Post.user_id != current_user.id
-        ).all()
+        query = Post.query
+        if blocked_ids:
+            query = query.filter(~Post.user_id.in_(blocked_ids))
+        all_candidates = query.all()
         
         scored_posts = []
         for p in all_candidates:
             score = 0
+            
+            if p.user_id == current_user.id:
+                score += 100
             
             if p.user_id in followed_ids:
                 score += 50
