@@ -2985,7 +2985,30 @@ def community(slug):
     is_admin = current_user.is_authenticated and current_user.is_admin(comm)
     is_pending = current_user.is_authenticated and current_user.is_pending(comm)
     posts = comm.posts.order_by(Post.created_at.desc()).all()
-    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin, is_pending=is_pending)
+    
+    show_edit = request.args.get('edit') == '1' and is_admin
+    
+    if show_edit and request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+        
+        if name:
+            comm.name = name
+            comm.description = description
+            
+            if 'image' in request.files:
+                file = request.files['image']
+                if file.filename and allowed_file(file.filename):
+                    if cloudinary_configured:
+                        url = upload_to_cloudinary(file, folder='communities')
+                        if url:
+                            comm.image = url
+            
+            db.session.commit()
+            flash('Сообщество обновлено')
+            return redirect(url_for('community', slug=comm.slug))
+    
+    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin, is_pending=is_pending, show_edit=show_edit)
 
 
 @app.route('/community/<slug>/join', methods=['POST'])
