@@ -321,116 +321,29 @@
     height: 24px;
     fill: var(--text);
 }
-.attach-menu {
-    display: none;
-    position: absolute;
-    bottom: 70px;
-    left: 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 8px 0;
-    z-index: 100;
-}
-.attach-menu.show {
-    display: block;
-}
-.attach-option {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--text);
-}
-.chat-input {
-    flex: 1;
-    background: var(--surface);
+.mic-btn {
+    background: none;
     border: none;
-    border-radius: 22px;
-    padding: 10px 16px;
-    color: var(--text);
-    font-size: 14px;
-    outline: none;
-}
-.send-btn {
-    background: var(--primary);
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-.send-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: #fff;
-}
-.attach-preview {
     padding: 8px;
-    background: var(--surface);
-    border-radius: 12px;
-}
-.preview-grid {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.preview-item {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    overflow: hidden;
-}
-.preview-item img,
-.preview-item video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.preview-item .preview-icon {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--surface-elevated);
-    font-size: 24px;
-}
-.preview-item .remove-preview {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 20px;
-    height: 20px;
     border-radius: 50%;
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transition: background 0.2s;
 }
-.doc-file {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
+.mic-btn:hover {
     background: var(--surface);
-    border-radius: 12px;
-    text-decoration: none;
-    color: var(--text);
 }
-.chat-message.sent .doc-file {
-    background: rgba(255,255,255,0.25);
+.mic-btn.recording {
+    background: #ED4956;
+    animation: pulse 1s infinite;
+}
+.mic-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--text);
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 </style>
 
@@ -620,6 +533,124 @@ async function sendChatRecording() {
     chatRecordedBlob = null;
     chatAudioChunks = [];
     micBtn.disabled = false;
+}
+
+.voice-msg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 18px;
+    min-width: 120px;
+}
+.chat-message.received .voice-msg {
+    background: var(--surface);
+}
+.play-voice-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.play-voice-btn.playing {
+    background: #ED4956;
+}
+.play-voice-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+.voice-wave {
+    flex: 1;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary) 50%, var(--border) 50%);
+    background-size: 8px 100%;
+    border-radius: 2px;
+}
+.voice-transcript {
+    display: none;
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    background: var(--surface);
+    border-radius: 10px;
+    margin-top: 4px;
+    font-style: italic;
+}
+.chat-message.sent .voice-transcript {
+    background: rgba(255,255,255,0.1);
+}
+.transcript-toggle {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    margin-top: 4px;
+}
+.transcript-toggle:hover {
+    text-decoration: underline;
+}
+.voice-recording {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+.recording-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.recording-dot {
+    width: 12px;
+    height: 12px;
+    background: #ED4956;
+    border-radius: 50%;
+    animation: blink 1s infinite;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+.recording-time {
+    font-weight: 600;
+    color: var(--text);
+}
+.recording-controls {
+    display: flex;
+    gap: 8px;
+}
+.cancel-record, .send-record {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+.cancel-record {
+    background: var(--surface-elevated);
+    color: var(--text);
+}
+.send-record {
+    background: var(--primary);
+    color: #fff;
 }
 </script>
 {% endblock %}
