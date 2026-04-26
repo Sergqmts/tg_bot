@@ -2978,7 +2978,7 @@ def create_community():
     return render_template('create_community.html', form=form)
 
 
-@app.route('/community/<slug>')
+@app.route('/community/<slug>', methods=['GET', 'POST'])
 def community(slug):
     comm = Community.query.filter_by(slug=slug).first_or_404()
     is_member = current_user.is_authenticated and current_user.is_member(comm)
