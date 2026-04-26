@@ -11,7 +11,7 @@
         <div class="shorts-mini-scroll">
             {% for shorts in shorts_list %}
             <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-mini-item">
-                <video src="{{ shorts.video_url }}" muted></video>
+                <video src="{{ url_for('uploaded_file', filename=shorts.video_url.lstrip('/uploads/')) }}" muted></video>
                 <div class="shorts-mini-overlay">
                     <span>▶ {{ shorts.views }}</span>
                 </div>

@@ -176,8 +176,8 @@
     </header>
     <div class="shorts-grid">
         {% for shorts in shorts_list %}
-        <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-grid-item">
-            <video src="{{ shorts.video_url }}" muted></video>
+<a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-grid-item">
+            <video src="{{ url_for('uploaded_file', filename=shorts.video_url.lstrip('/uploads/')) }}" muted></video>
             <div class="shorts-grid-overlay">
                 <span class="shorts-grid-views">▶ {{ shorts.views }}</span>
             </div>
