@@ -25,8 +25,8 @@
                     <label class="member-item">
                         <input type="checkbox" name="members" value="{{ user.id }}">
                         <div class="member-avatar">
-                            {% if user.avatar != 'default.png' %}
-                            <img src="{{ url_for('uploaded_file', filename=user.avatar) }}">
+                            {% set avatar_url = get_avatar_url(user) %}{% if avatar_url %}
+                            <img src="{{ avatar_url }}">
                             {% else %}
                             {{ user.username[0].upper() }}
                             {% endif %}

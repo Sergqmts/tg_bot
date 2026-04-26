@@ -64,9 +64,9 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9 7 9-7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4zM3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4M9 22V11l6-4 6 4v11"/></svg>
         </a>
         <a href="{{ url_for('user_profile', username=current_user.username) }}" class="nav-item-profile {% if request.endpoint == 'user_profile' %}active{% endif %}">
-            <div class="nav-avatar{% if current_user.avatar != 'default.png' %} has-img{% endif %}">
-                {% if current_user.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=current_user.avatar) }}">
+            <div class="nav-avatar{% set avatar_url = get_avatar_url(current_user) %}{% if avatar_url %} has-img{% endif %}">
+                {% set avatar_url = get_avatar_url(current_user) %}{% if avatar_url %}
+                <img src="{{ avatar_url }}">
                 {% else %}
                 {{ current_user.username[0].upper() }}
                 {% endif %}

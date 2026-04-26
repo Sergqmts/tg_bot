@@ -281,8 +281,8 @@
             <div class="ig-story-header">
                 <div class="ig-story-user">
                     <a href="{{ url_for('user_profile', username=story.user.username) }}" class="ig-story-avatar">
-                        {% if story.user.avatar != 'default.png' %}
-                            <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}">
+                        {% set avatar_url = get_avatar_url(story.user) %}{% if avatar_url %}
+                            <img src="{{ avatar_url }}">
                         {% else %}
                             <div class="ig-avatar-initials">{{ story.user.username[0].upper() }}</div>
                         {% endif %}

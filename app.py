@@ -3430,9 +3430,18 @@ with app.app_context():
 @app.context_processor
 def inject_utils():
     def get_avatar_url(user):
-        if user.avatar_cloudinary_url:
+        if user and user.avatar_cloudinary_url:
             return user.avatar_cloudinary_url
-        if user.avatar and user.avatar != 'default.png':
+        if user and user.avatar and user.avatar != 'default.png':
             return url_for('uploaded_file', filename=user.avatar)
         return None
     return dict(get_avatar_url=get_avatar_url)
+
+
+@app.template_filter('avatar_url')
+def avatar_url_filter(user):
+    if user and user.avatar_cloudinary_url:
+        return user.avatar_cloudinary_url
+    if user and user.avatar and user.avatar != 'default.png':
+        return url_for('uploaded_file', filename=user.avatar)
+    return None

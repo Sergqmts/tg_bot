@@ -18,7 +18,7 @@
                     {% if chat.avatar.startswith('http') %}
                     <img src="{{ chat.avatar }}">
                     {% else %}
-                    <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}">
+                    <img src="{{ avatar_url }}">
                     {% endif %}
                 {% else %}
                 👥

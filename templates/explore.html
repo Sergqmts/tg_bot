@@ -62,8 +62,8 @@
                 {% for user in users %}
                 <div class="user-item">
                     <a href="{{ url_for('user_profile', username=user.username) }}" class="user-avatar">
-                        {% if user.avatar != 'default.png' %}
-                        <img src="{{ url_for('uploaded_file', filename=user.avatar) }}">
+                        {% set avatar_url = get_avatar_url(user) %}{% if avatar_url %}
+                        <img src="{{ avatar_url }}">
                         {% else %}
                         <span>{{ user.username[0].upper() }}</span>
                         {% endif %}
@@ -97,7 +97,7 @@
                 <div class="community-item">
                     <a href="{{ url_for('community', slug=comm.slug) }}" class="community-avatar">
                         {% if comm.avatar %}
-                        <img src="{{ url_for('uploaded_file', filename=comm.avatar) }}">
+                        <img src="{{ avatar_url }}">
                         {% else %}
                         <span>{{ comm.name[0].upper() }}</span>
                         {% endif %}

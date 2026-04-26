@@ -67,7 +67,7 @@
         {% for conv in conversations %}
         <a href="{{ url_for('conversation', username=conv.user.username) }}" class="chat-item">
             <div class="chat-avatar">
-                {% if conv.user.avatar != 'default.png' %}
+                {% set avatar_url = get_avatar_url(conv.user) %}{% if avatar_url %}
                 <img src="{{ url_for('uploaded_file', filename=conv.user.avatar) }}" alt="">
                 {% else %}
                 <div class="avatar-placeholder">{{ conv.user.username[0].upper() }}</div>
