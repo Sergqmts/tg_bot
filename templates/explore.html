@@ -108,8 +108,8 @@
                     </div>
                     {% if current_user.is_authenticated %}
                     <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}">
-                        <button type="submit" class="join-btn {% if current_user.is_member_of(comm) %}joined{% endif %}">
-                            {{ 'Вступить' if not current_user.is_member_of(comm) else 'Вступил' }}
+                        <button type="submit" class="join-btn {% if current_user.is_member(comm) %}joined{% endif %}">
+                            {{ 'Вступить' if not current_user.is_member(comm) else 'Вступил' }}
                         </button>
                     </form>
                     {% endif %}
