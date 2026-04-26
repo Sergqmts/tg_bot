@@ -425,6 +425,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     bio = db.Column(db.Text)
     avatar = db.Column(db.String(200), default='default.png')
+    avatar_cloudinary_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     location = db.Column(db.String(100), nullable=True)
@@ -1898,11 +1899,13 @@ def edit_profile():
             if cloudinary_configured:
                 url = upload_to_cloudinary(file, folder='avatars')
                 if url:
-                    current_user.avatar = url
+                    current_user.avatar_cloudinary_url = url
+                    current_user.avatar = url.split('/')[-1].split('.')[0]
             else:
                 filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 current_user.avatar = filename
+                current_user.avatar_cloudinary_url = None
         
         if form.birthday.data:
             try:
@@ -3408,3 +3411,28 @@ def video_thumbnail_route():
     except Exception as e:
         app.logger.error(f"Thumbnail route error: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+with app.app_context():
+    try:
+        from sqlalchemy import text
+        is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
+        
+        if is_postgres:
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='avatar_cloudinary_url'"))
+            if not result.fetchone():
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
+                db.session.commit()
+    except Exception as e:
+        app.logger.info(f"Migration avatar_cloudinary_url: {e}")
+
+
+@app.context_processor
+def inject_utils():
+    def get_avatar_url(user):
+        if user.avatar_cloudinary_url:
+            return user.avatar_cloudinary_url
+        if user.avatar and user.avatar != 'default.png':
+            return url_for('uploaded_file', filename=user.avatar)
+        return None
+    return dict(get_avatar_url=get_avatar_url)
