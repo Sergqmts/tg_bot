@@ -130,6 +130,14 @@
             </a>
             <span class="story-username">Ваша</span>
         </div>
+        <div class="story-item story-add-mobile">
+            <a href="{{ url_for('create_story') }}" class="story-ring-add">
+                <div class="story-ring-inner">
+                    <span class="plus-icon">+</span>
+                </div>
+            </a>
+            <span class="story-username">Добавить</span>
+        </div>
         {% for story in top_stories %}
         {% if story and story.user_id != current_user.id %}
         <div class="story-item">
@@ -146,21 +154,12 @@
         </div>
         {% endif %}
         {% endfor %}
-    </div>
-    
-    <div class="stories-mobile-controls">
-        <div class="story-item story-add-mobile">
-            <a href="{{ url_for('create_story') }}" class="story-ring-add">
-                <div class="story-ring-inner">
-                    <span class="plus-icon">+</span>
-                </div>
-            </a>
-            <span class="story-username">Добавить</span>
+        <div class="stories-gallery-wrap">
+            <label for="storyGalleryInput" class="stories-gallery-btn" title="Из галереи">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+            </label>
+            <input type="file" id="storyGalleryInput" accept="image/*,video/*" hidden onchange="submitGalleryStory(this)">
         </div>
-        <label for="storyGalleryInput" class="stories-gallery-btn">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-        </label>
-        <input type="file" id="storyGalleryInput" accept="image/*,video/*" hidden onchange="submitGalleryStory(this)">
     </div>
 </div>
 
