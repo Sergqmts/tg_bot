@@ -2395,6 +2395,60 @@ def chat_view(chat_id):
     return render_template('chat.html', chat=chat, messages=messages, Post=Post)
 
 
+@app.route('/chat/<int:chat_id>/voice', methods=['POST'])
+@login_required
+def send_chat_voice(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member:
+        return 'Not a member', 403
+    
+    if 'voice' not in request.files:
+        return 'No voice file', 400
+    
+    voice_file = request.files['voice']
+    if not voice_file.filename:
+        return 'No file', 400
+    
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as tmp:
+            voice_file.save(tmp.name)
+            temp_path = tmp.name
+        
+        whisper_model = get_whisper_model()
+        segments, info = whisper_model.transcribe(temp_path, language='ru')
+        
+        transcription = ''
+        for segment in segments:
+            transcription += segment.text.strip() + ' '
+        transcription = transcription.strip()
+        
+        os.unlink(temp_path)
+        temp_path = None
+        
+        filename = secure_filename(f"voice_{datetime.now().timestamp()}.webm")
+        voice_file.seek(0)
+        voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        media_url = '/media/' + filename
+        
+        msg = Message(body=transcription if transcription else '', sender=current_user, chat_id=chat_id, transcription=transcription)
+        db.session.add(msg)
+        db.session.flush()
+        
+        media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='voice')
+        db.session.add(media)
+        db.session.commit()
+        
+        return 'OK', 200
+    except Exception as e:
+        app.logger.error(f"Chat voice message error: {e}")
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        return str(e), 500
+
+
 @app.route('/chat/<int:chat_id>/leave', methods=['POST'])
 @login_required
 def leave_chat(chat_id):
