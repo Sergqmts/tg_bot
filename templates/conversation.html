@@ -31,6 +31,7 @@
             </a>
             {% endif %}
             
+            {% if msg.body != '[удалено]' or msg.medias.count() > 0 %}
             <div class="message-bubble">
                 <button class="message-more-btn" onclick="toggleMessageMenu(this, {{ msg.id }})">
                     <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
@@ -91,12 +92,13 @@
                 {% endif %}
                 {% endfor %}
                 
-                {% if msg.body %}
+                {% if msg.body and msg.body != '[удалено]' %}
                 <div class="message-text">{{ msg.body }}</div>
                 {% endif %}
                 
                 <span class="message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
             </div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
