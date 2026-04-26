@@ -1,78 +1,327 @@
 {% extends "base.html" %}
 {% block title %}{% if search_query %}Поиск: {{ search_query }}{% else %}Поиск{% endif %} - Social{% endblock %}
 {% block content %}
-    <div style="max-width: 935px; margin: 0 auto; padding-top: 60px;">
-        <h2 style="margin-bottom: 20px;">{% if search_query %}Результаты{% else %}Поиск{% endif %}</h2>
+<div class="explore-page">
+    <div class="explore-container">
+        <h2 class="explore-title">{% if search_query %}Результаты{% else %}Поиск{% endif %}</h2>
         
-        <form method="GET" action="{{ url_for('explore') }}" style="margin-bottom: 20px; display: flex; gap: 10px;">
-            <input type="text" name="q" placeholder="Поиск по @username или #тег..." value="{{ search_query }}" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 20px;">
-            <select name="type" style="padding: 10px; border: 1px solid var(--border); border-radius: 20px;">
+        <form method="GET" action="{{ url_for('explore') }}" class="explore-form">
+            <div class="search-input-wrap">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" name="q" placeholder="Поиск..." value="{{ search_query }}" class="search-input">
+            </div>
+            <select name="type" class="search-select">
                 <option value="users" {% if search_type == 'users' %}selected{% endif %}>Люди</option>
                 <option value="tags" {% if search_type == 'tags' %}selected{% endif %}>Теги</option>
                 <option value="posts" {% if search_type == 'posts' %}selected{% endif %}>Посты</option>
             </select>
-            <button type="submit" class="btn btn-primary">Найти</button>
         </form>
         
         {% if tags %}
-        <h3 style="margin: 20px 0 15px;">Теги</h3>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            {% for tag in tags %}
-                <a href="{{ url_for('tag_posts', name=tag.name) }}" style="display: inline-block; padding: 8px 16px; background: var(--surface); border-radius: 20px; color: var(--text); text-decoration: none;">
-                    #{{ tag.name }}
-                </a>
-            {% endfor %}
+        <div class="explore-section">
+            <h3 class="section-title">Теги</h3>
+            <div class="tags-grid">
+                {% for tag in tags %}
+                    <a href="{{ url_for('tag_posts', name=tag.name) }}" class="tag-chip">
+                        #{{ tag.name }}
+                    </a>
+                {% endfor %}
+            </div>
         </div>
         {% endif %}
         
         {% if posts %}
-        <h3 style="margin: 20px 0 15px;">Посты</h3>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;">
-            {% for post in posts %}
-                <a href="{{ url_for('view_post', post_id=post.id) }}" style="aspect-ratio: 1; position: relative; display: block; background: var(--surface);">
-                    {% set first_media = post.media.first() %}
-                    {% if first_media %}
-                        {% if first_media.media_type == 'video' %}
-                            <video src="{{ first_media.cloudinary_url or url_for('uploaded_file', filename=first_media.filename) }}" muted style="width: 100%; height: 100%; object-fit: cover;"></video>
-                        {% elif first_media.media_type == 'audio' %}
-                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 2rem;">🎵</div>
+        <div class="explore-section">
+            <h3 class="section-title">Посты</h3>
+            <div class="posts-grid">
+                {% for post in posts %}
+                    <a href="{{ url_for('view_post', post_id=post.id) }}" class="post-thumb">
+                        {% set first_media = post.media.first() %}
+                        {% if first_media %}
+                            {% if first_media.media_type == 'video' %}
+                                <video src="{{ first_media.cloudinary_url or url_for('uploaded_file', filename=first_media.filename) }}" muted></video>
+                            {% elif first_media.media_type == 'audio' %}
+                                <div class="audio-thumb">🎵</div>
+                            {% else %}
+                                <img src="{{ first_media.cloudinary_url or url_for('uploaded_file', filename=first_media.filename) }}">
+                            {% endif %}
                         {% else %}
-                            <img src="{{ first_media.cloudinary_url or url_for('uploaded_file', filename=first_media.filename) }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            <div class="text-thumb">{{ post.body[:30] if post.body else '📝' }}</div>
                         {% endif %}
-                    {% else %}
-                        <div style="padding: 20px; text-align: center; color: var(--text-light);">{{ post.body[:30] }}...</div>
-                    {% endif %}
-                </a>
-            {% endfor %}
+                    </a>
+                {% endfor %}
+            </div>
         </div>
         {% endif %}
         
-        <h3 style="margin: 20px 0 15px;">Люди</h3>
-        {% for user in users %}
-            <div class="card user-card">
-                <div class="user-row">
-                    <div class="avatar" style="margin-right: 15px;">{{ user.username[0].upper() }}</div>
-                    <div style="flex: 1;">
-                        <a href="{{ url_for('user_profile', username=user.username) }}" class="username" style="font-size: 1.1em;">{{ user.username }}</a>
-                        <div style="color: #65676b; font-size: 0.9em;">
-                            {{ user.posts.count() }} постов · {{ user.followers.count() }} подписчиков
-                        </div>
+        <div class="explore-section">
+            <h3 class="section-title">Люди</h3>
+            {% if users %}
+            <div class="users-list">
+                {% for user in users %}
+                <div class="user-item">
+                    <a href="{{ url_for('user_profile', username=user.username) }}" class="user-avatar">
+                        {% if user.avatar != 'default.png' %}
+                        <img src="{{ url_for('uploaded_file', filename=user.avatar) }}">
+                        {% else %}
+                        <span>{{ user.username[0].upper() }}</span>
+                        {% endif %}
+                    </a>
+                    <div class="user-info">
+                        <a href="{{ url_for('user_profile', username=user.username) }}" class="user-name">{{ user.username }}</a>
+                        <span class="user-stats">{{ user.posts.count() }} постов · {{ user.followers.count() }} подписчиков</span>
                     </div>
-                </div>
-                {% if current_user.is_authenticated and user != current_user %}
+                    {% if current_user.is_authenticated and user != current_user %}
                     <form method="POST" action="{{ url_for('follow' if not current_user.is_following(user) else 'unfollow', username=user.username) }}">
-                        <button type="submit" class="btn {% if current_user.is_following(user) %}btn-secondary{% else %}btn-primary{% endif %}">
+                        <button type="submit" class="follow-btn {% if current_user.is_following(user) %}following{% endif %}">
                             {{ 'Отписаться' if current_user.is_following(user) else 'Подписаться' }}
                         </button>
                     </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                {% if not search_query %}
+                <div class="empty-explore">Пока нет пользователей</div>
                 {% endif %}
-            </div>
-        {% else %}
-            {% if not search_query %}
-            <div class="card" style="text-align: center; color: #65676b;">
-                Пока нет пользователей
-            </div>
             {% endif %}
-        {% endfor %}
+        </div>
     </div>
+</div>
+
+<style>
+.explore-page {
+    padding: 16px;
+    padding-top: 70px;
+    min-height: 100vh;
+}
+
+.explore-container {
+    max-width: 470px;
+    margin: 0 auto;
+}
+
+.explore-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text);
+}
+
+.explore-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.search-input-wrap {
+    flex: 1;
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 10px 10px 38px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.search-select {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    min-width: 90px;
+}
+
+.explore-section {
+    margin-bottom: 24px;
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text);
+}
+
+.tags-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag-chip {
+    display: inline-block;
+    padding: 8px 14px;
+    background: var(--surface);
+    border-radius: 18px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.tag-chip:hover {
+    background: var(--border);
+}
+
+.posts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+}
+
+.post-thumb {
+    aspect-ratio: 1;
+    position: relative;
+    display: block;
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.post-thumb img,
+.post-thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.post-thumb .audio-thumb,
+.post-thumb .text-thumb {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-size: 2rem;
+}
+
+.post-thumb .text-thumb {
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    padding: 8px;
+}
+
+.users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface);
+    border-radius: 12px;
+}
+
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-avatar span {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name {
+    display: block;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-stats {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.follow-btn {
+    padding: 8px 14px;
+    border-radius: 18px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--primary);
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.follow-btn.following {
+    background: var(--surface-elevated);
+    color: var(--text);
+}
+
+.empty-explore {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 30px;
+}
+
+@media (min-width: 768px) {
+    .explore-page {
+        padding: 20px;
+        padding-top: 80px;
+    }
+    
+    .explore-container {
+        max-width: 600px;
+    }
+    
+    .posts-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+</style>
 {% endblock %}
