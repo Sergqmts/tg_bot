@@ -1,7 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Shorts - Social{% endblock %}
 {% block content %}
-<style>
+.shorts-item-sidebar form {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+.shorts-item-sidebar button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+.shorts-item-sidebar a.button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #fff;
+}
+</style>
 .shorts-page {
     position: fixed;
     top: 0;
@@ -165,7 +184,7 @@
                     <span>{{ shorts.likes.count() }}</span>
                 </form>
                 
-                <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-item-action">
+                <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}#comments" class="shorts-item-action button" onclick="event.stopPropagation()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     <span>{{ shorts.comments.count() }}</span>
                 </a>
@@ -200,11 +219,20 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!container) return;
     
     var videos = container.querySelectorAll('video');
+    var sidebar = container.querySelector('.shorts-item-sidebar');
+    var isScrolling = false;
     
     container.addEventListener('scroll', function() {
+        if (isScrolling) return;
+        isScrolling = true;
+        setTimeout(function() {
+            isScrolling = false;
+        }, 100);
+        
         var scrollTop = container.scrollTop;
         var itemHeight = container.clientHeight || window.innerHeight;
         var currentIndex = Math.round(scrollTop / itemHeight);
+        
         videos.forEach(function(v, i) {
             if (i === currentIndex) {
                 v.play().catch(function() {});
@@ -213,8 +241,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
     if (videos.length > 0) {
         videos[0].play().catch(function() {});
+    }
+    
+    var likeForm = document.querySelector('.shorts-item-sidebar form');
+    if (likeForm) {
+        likeForm.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.submit();
+        });
+    }
+    
+    var commentBtn = document.querySelector('.shorts-item-sidebar a.button');
+    if (commentBtn) {
+        commentBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
     }
 });
 </script>
