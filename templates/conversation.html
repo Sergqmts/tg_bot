@@ -66,8 +66,11 @@
                     <div class="voice-wave"></div>
                 </div>
                 {% if msg.transcription %}
-                <div class="voice-transcript" id="transcript-{{ msg.id }}">
-                    <span class="transcript-icon">📝</span> {{ msg.transcription }}
+                <div class="voice-transcript-wrap">
+                    <button class="transcript-toggle" onclick="toggleTranscription('{{ msg.id }}')">Аа</button>
+                    <div class="voice-transcript" id="transcript-{{ msg.id }}" style="display: none;">
+                        {{ msg.transcription }}
+                    </div>
                 </div>
                 {% endif %}
                 {% else %}
@@ -407,9 +410,7 @@
     border-radius: 2px;
 }
 .voice-transcript {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
+    display: none;
     font-size: 13px;
     color: var(--text-secondary);
     padding: 6px 10px;
@@ -421,8 +422,18 @@
 .chat-message.sent .voice-transcript {
     background: rgba(255,255,255,0.1);
 }
-.transcript-icon {
-    flex-shrink: 0;
+.transcript-toggle {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    margin-top: 4px;
+}
+.transcript-toggle:hover {
+    text-decoration: underline;
 }
 .video-msg {
     position: relative;
