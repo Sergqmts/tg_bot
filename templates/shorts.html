@@ -182,7 +182,7 @@
     <div class="shorts-container">
         {% for shorts in shorts_list %}
         <div class="shorts-item" id="shorts-{{ shorts.id }}">
-            <video src="{{ url_for('uploaded_file', filename=shorts.video_url.lstrip('/uploads/')) }}" autoplay loop muted playsinline></video>
+            <video src="{{ shorts.video_url }}" autoplay loop muted playsinline></video>
             
             <a href="{{ url_for('index') }}" class="shorts-item-close">✕</a>
             
@@ -199,19 +199,12 @@
                     <span>Comment</span>
                 </a>
             </div>
-                
-                <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}#comments" class="shorts-item-action">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="display:block;width:32px;height:32px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    <span>{{ shorts.comments.count() }}</span>
-                    <span>Comment</span>
-                </a>
-            </div>
             
             <div class="shorts-item-info">
                 <div class="shorts-item-author">
                     <div class="shorts-item-avatar">
-                        {% if shorts.user.avatar != 'default.png' %}
-                        <img src="{{ url_for('uploaded_file', filename=shorts.user.avatar) }}">
+                        {% if shorts.user.avatar and shorts.user.avatar != 'default.png' %}
+                        <img src="{{ shorts.user.avatar }}">
                         {% else %}
                         <span>{{ shorts.user.username[0].upper() }}</span>
                         {% endif %}
