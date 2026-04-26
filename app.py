@@ -62,7 +62,11 @@ if DATABASE_URL:
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///social.db'
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-key-change-in-production-secret-key-fixed'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+if not app.config['SECRET_KEY']:
+    import secrets
+    app.config['SECRET_KEY'] = secrets.token_hex(32)
+    app.logger.warning("SECRET_KEY not set - generating random key. Sessions will reset on restart.")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
@@ -828,12 +832,6 @@ class ShortsComment(db.Model):
     shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
     
     author = db.relationship('User', foreign_keys=[user_id])
-    body = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
-    
-    author = db.relationship('User', foreign_keys=[user_id])
 
 
 class Comment(db.Model):
@@ -860,8 +858,8 @@ class CommentMedia(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     
     author = db.relationship('User', foreign_keys=[user_id])
-    
-    
+
+
 class CommentReaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
