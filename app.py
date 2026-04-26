@@ -2608,12 +2608,14 @@ def delete_message(message_id):
     
     if delete_type == 'me':
         message.body = '[удалено]'
-        message.medias.delete()
+        for m in message.medias:
+            db.session.delete(m)
         db.session.commit()
         flash('Сообщение удалено для вас')
     elif delete_type == 'all':
         if is_sender:
-            message.medias.delete()
+            for m in message.medias:
+                db.session.delete(m)
             db.session.delete(message)
             db.session.commit()
             flash('Сообщение удалено для всех')
