@@ -2504,11 +2504,13 @@ def forward_message(message_id):
     user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
     chats = [Chat.query.get(cm.chat_id) for cm in user_chats]
     
+    following = current_user.followed.all()
+    
     other_user = None
     if message.recipient_id and not message.chat_id:
         other_user = User.query.get(message.recipient_id)
     
-    return render_template('forward_message.html', message=message, chats=chats, other_user=other_user, Post=Post)
+    return render_template('forward_message.html', message=message, chats=chats, other_user=other_user, following=following, Post=Post)
 
 
 @app.route('/message/<int:message_id>/forward', methods=['POST'])

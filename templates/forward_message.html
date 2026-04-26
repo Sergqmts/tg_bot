@@ -1,78 +1,344 @@
 {% extends "base.html" %}
-{% block title %}Переслать сообщение - Social{% endblock %}
+{% block title %}Переслать - Social{% endblock %}
 {% block content %}
-<div class="card" style="max-width: 500px; margin: 40px auto;">
-    <h3>Переслать сообщение</h3>
-    
-    <div class="post-preview" style="padding: 15px; background: var(--bg); border-radius: 8px; margin-bottom: 20px;">
-        <div class="post-header">
-            <div class="avatar">
+<div class="forward-page">
+    <div class="forward-container">
+        <div class="forward-header">
+            <a href="javascript:history.back()" class="back-btn">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </a>
+            <h2>Переслать</h2>
+        </div>
+        
+        <div class="message-preview">
+            <div class="preview-avatar">
                 {% if message.sender.avatar != 'default.png' %}
-                    <img src="{{ url_for('uploaded_file', filename=message.sender.avatar) }}" alt="">
+                <img src="{{ url_for('uploaded_file', filename=message.sender.avatar) }}">
                 {% else %}
-                    {{ message.sender.username[0].upper() }}
+                <span>{{ message.sender.username[0].upper() }}</span>
                 {% endif %}
             </div>
-            <div>
-                <span class="username">{{ message.sender.username }}</span>
-                <div class="post-time">{{ message.created_at.strftime('%d.%m %H:%M') }}</div>
+            <div class="preview-content">
+                <span class="preview-username">{{ message.sender.username }}</span>
+                {% if message.body %}
+                <p class="preview-text">{{ message.body[:80] }}{% if message.body|length > 80 %}...{% endif %}</p>
+                {% endif %}
+                {% if message.medias.count() > 0 %}
+                <div class="preview-media">
+                    {% for m in message.medias[:3] %}
+                        {% if m.media_type == 'image' %}
+                        <img src="{{ m.media_url }}">
+                        {% elif m.media_type == 'video' %}
+                        <div class="media-icon">▶</div>
+                        {% elif m.media_type == 'voice' %}
+                        <div class="media-icon">🎵</div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </div>
-        {% if message.body %}
-            <div class="post-content">{{ message.body[:100] }}{% if message.body|length > 100 %}...{% endif %}</div>
-        {% endif %}
-        {% if message.medias.count() > 0 %}
-            <div style="display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap;">
-                {% for m in message.medias %}
-                    {% if m.media_type == 'video' %}
-                        <div style="width: 60px; height: 60px; background: #333; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white;">▶</div>
-                    {% elif m.media_type == 'audio' %}
-                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🎵</div>
-                    {% else %}
-                        <img src="{{ m.media_url }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
-                    {% endif %}
+        
+        <div class="forward-section">
+            <h3 class="section-title">📱 Личные сообщения</h3>
+            <div class="users-grid">
+                {% for user in following %}
+                <form method="POST" class="forward-user-form">
+                    <input type="hidden" name="action" value="to_user">
+                    <input type="hidden" name="username" value="{{ user.username }}">
+                    <button type="submit" class="forward-user-btn">
+                        <div class="user-avatar">
+                            {% if user.avatar != 'default.png' %}
+                            <img src="{{ url_for('uploaded_file', filename=user.avatar) }}">
+                            {% else %}
+                            <span>{{ user.username[0].upper() }}</span>
+                            {% endif %}
+                        </div>
+                        <span class="user-name">{{ user.username }}</span>
+                    </button>
+                </form>
                 {% endfor %}
             </div>
-        {% endif %}
-        {% if message.post_id %}
-            {% set post = Post.query.get(message.post_id) %}
-            {% if post %}
-            <div style="margin-top: 10px; padding: 10px; background: var(--card-bg); border-radius: 4px; font-size: 0.9rem;">
-                Репост: @{{ post.author.username }}
+        </div>
+        
+        {% if chats %}
+        <div class="forward-section">
+            <h3 class="section-title">💬 Групповые чаты</h3>
+            <div class="chats-list">
+                {% for chat in chats %}
+                <form method="POST" class="forward-chat-form">
+                    <input type="hidden" name="action" value="to_chat">
+                    <input type="hidden" name="chat_id" value="{{ chat.id }}">
+                    <button type="submit" class="forward-chat-btn">
+                        <div class="chat-avatar">
+                            <span>👥</span>
+                        </div>
+                        <span class="chat-name">{{ chat.name }}</span>
+                        <span class="chat-members">{{ chat.members.count() }} уч.</span>
+                    </button>
+                </form>
+                {% endfor %}
             </div>
-            {% endif %}
+        </div>
         {% endif %}
     </div>
-    
-    {% if chats %}
-    <hr style="margin: 20px 0;">
-    
-    <h4>В групповой чат</h4>
-    <form method="POST">
-        <input type="hidden" name="action" value="to_chat">
-        <div class="form-group">
-            <label>Выберите чат:</label>
-            <select name="chat_id" required>
-                <option value="">-- Выберите чат --</option>
-                {% for chat in chats %}
-                    <option value="{{ chat.id }}">{{ chat.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Переслать</button>
-    </form>
-    {% endif %}
-    
-    <hr style="margin: 20px 0;">
-    
-    <h4>Личное сообщение</h4>
-    <form method="POST">
-        <input type="hidden" name="action" value="to_user">
-        <div class="form-group">
-            <label>Имя пользователя:</label>
-            <input type="text" name="username" placeholder="username" required>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Отправить</button>
-    </form>
 </div>
+
+<style>
+.forward-page {
+    padding: 16px;
+    padding-top: 70px;
+    min-height: 100vh;
+}
+
+.forward-container {
+    max-width: 470px;
+    margin: 0 auto;
+}
+
+.forward-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.back-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+.forward-header h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.message-preview {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.preview-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.preview-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.preview-avatar span {
+    color: #fff;
+    font-weight: 600;
+}
+
+.preview-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.preview-username {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+.preview-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 4px 0 0;
+    white-space: pre-wrap;
+}
+
+.preview-media {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.preview-media img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.media-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--surface-elevated);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.forward-section {
+    margin-bottom: 24px;
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.forward-user-form {
+    display: contents;
+}
+
+.forward-user-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: var(--surface);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.forward-user-btn:hover {
+    background: var(--surface-elevated);
+    transform: scale(1.02);
+}
+
+.forward-user-btn:active {
+    transform: scale(0.98);
+}
+
+.user-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-avatar span {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.user-name {
+    font-size: 0.75rem;
+    color: var(--text);
+    max-width: 70px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.forward-chat-form {
+    display: contents;
+}
+
+.forward-chat-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: all 0.2s;
+}
+
+.forward-chat-btn:hover {
+    background: var(--surface-elevated);
+}
+
+.chat-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chat-avatar span {
+    font-size: 1.2rem;
+}
+
+.chat-name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.chat-members {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+@media (min-width: 768px) {
+    .forward-page {
+        padding: 20px;
+        padding-top: 80px;
+    }
+    
+    .users-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+</style>
 {% endblock %}

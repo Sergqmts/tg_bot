@@ -55,6 +55,12 @@
             {% endif %}
             
             <div class="message-bubble">
+                <button class="message-more-btn" onclick="toggleMessageMenu(this, {{ msg.id }})">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                </button>
+                <div class="message-menu" id="menu-{{ msg.id }}">
+                    <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item">📤 Переслать</a>
+                </div>
                 {% if msg.post_id %}
                 {% set post = Post.query.get(msg.post_id) %}
                 {% if post %}
@@ -418,9 +424,19 @@ let selectedFile = null;
 function toggleAttachMenu() {
     document.getElementById('attachMenu').classList.toggle('show');
 }
+
+function toggleMessageMenu(btn, msgId) {
+    event.stopPropagation();
+    document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
+    document.getElementById('menu-' + msgId).classList.toggle('show');
+}
+
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
         document.getElementById('attachMenu').classList.remove('show');
+    }
+    if (!e.target.closest('.message-more-btn') && !e.target.closest('.message-menu')) {
+        document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
     }
 });
 
@@ -723,6 +739,59 @@ async function sendChatRecording() {
 .send-record {
     background: var(--primary);
     color: #fff;
+}
+.message-more-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.chat-message:hover .message-more-btn {
+    display: flex;
+}
+.message-more-btn:hover {
+    background: var(--surface-elevated);
+}
+.message-more-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+.message-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 0;
+    z-index: 100;
+    min-width: 140px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.message-menu.show {
+    display: block;
+}
+.message-menu .menu-item {
+    display: block;
+    padding: 10px 16px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+.message-menu .menu-item:hover {
+    background: var(--surface-elevated);
 }
 </script>
 {% endblock %}

@@ -32,6 +32,12 @@
             {% endif %}
             
             <div class="message-bubble">
+                <button class="message-more-btn" onclick="toggleMessageMenu(this, {{ msg.id }})">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                </button>
+                <div class="message-menu" id="menu-{{ msg.id }}">
+                    <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item">📤 Переслать</a>
+                </div>
                 {% if msg.post_id %}
                 {% set post = Post.query.get(msg.post_id) %}
                 {% if post %}
@@ -407,224 +413,58 @@ body .top-bar, body .bottom-nav {
     color: #fff;
     border-color: var(--primary);
 }
-.play-voice-btn svg {
+.message-more-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.chat-message:hover .message-more-btn {
+    display: flex;
+}
+.message-more-btn:hover {
+    background: var(--surface-elevated);
+}
+.message-more-btn svg {
     width: 16px;
     height: 16px;
     fill: currentColor;
 }
-.voice-wave {
-    flex: 1;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary) 50%, var(--border) 50%);
-    background-size: 8px 100%;
-    border-radius: 2px;
-}
-.voice-transcript {
-    display: none;
-    font-size: 13px;
-    color: var(--text-secondary);
-    padding: 6px 10px;
-    background: var(--surface);
-    border-radius: 10px;
-    margin-top: 4px;
-    font-style: italic;
-}
-.chat-message.sent .voice-transcript {
-    background: rgba(255,255,255,0.1);
-}
-.transcript-toggle {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--primary);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 2px 6px;
-    margin-top: 4px;
-}
-.transcript-toggle:hover {
-    text-decoration: underline;
-}
-.video-msg {
-    position: relative;
-}
-.video-msg video {
-    max-width: 180px;
-    max-height: 180px;
-    border-radius: 12px;
-}
-.video-msg .download-btn {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    width: 32px;
-    height: 32px;
-    background: rgba(0,0,0,0.7);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    font-size: 16px;
-}
-.chat-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 16px;
-    border-top: 1px solid var(--border);
-    background: var(--bg);
-    flex-shrink: 0;
-    position: sticky;
-    bottom: 0;
-    z-index: 100;
-}
-.chat-form-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-}
-.attach-preview {
-    padding: 8px;
-    background: var(--surface);
-    border-radius: 12px;
-}
-.preview-grid {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.preview-item {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    overflow: hidden;
-}
-.preview-item img,
-.preview-item video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.preview-item .preview-icon {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--surface-elevated);
-    font-size: 24px;
-}
-.preview-item .remove-preview {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.attach-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-}
-.attach-btn svg {
-    width: 24px;
-    height: 24px;
-    fill: var(--text);
-}
-.attach-menu {
+.message-menu {
     display: none;
     position: absolute;
-    bottom: 70px;
-    left: 12px;
+    top: 100%;
+    right: 0;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 8px 0;
+    border-radius: 8px;
+    padding: 4px 0;
     z-index: 100;
+    min-width: 140px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.attach-menu.show {
+.message-menu.show {
     display: block;
 }
-.attach-option {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.message-menu .menu-item {
+    display: block;
     padding: 10px 16px;
-    cursor: pointer;
-    font-size: 14px;
     color: var(--text);
-}
-.attach-option:hover {
-    background: var(--border);
-}
-.chat-form {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    background: var(--surface);
-    border-radius: 22px;
-    padding: 8px 16px;
-}
-.chat-input {
-    flex: 1;
-    background: none;
-    border: none;
-    color: var(--text);
+    text-decoration: none;
     font-size: 14px;
-    outline: none;
+    transition: background 0.2s;
 }
-.send-btn {
-    background: var(--primary);
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.send-btn svg {
-    width: 18px;
-    height: 18px;
-    fill: #fff;
-}
-.modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.9);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-}
-.modal.show {
-    display: flex;
-}
-.modal img {
-    max-width: 90%;
-    max-height: 90%;
-}
-.modal span {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    font-size: 30px;
-    color: #fff;
-    cursor: pointer;
+.message-menu .menu-item:hover {
+    background: var(--surface-elevated);
 }
 </style>
 
@@ -634,9 +474,19 @@ let selectedFile = null;
 function toggleAttachMenu() {
     document.getElementById('attachMenu').classList.toggle('show');
 }
+
+function toggleMessageMenu(btn, msgId) {
+    event.stopPropagation();
+    document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
+    document.getElementById('menu-' + msgId).classList.toggle('show');
+}
+
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
         document.getElementById('attachMenu').classList.remove('show');
+    }
+    if (!e.target.closest('.message-more-btn') && !e.target.closest('.message-menu')) {
+        document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
     }
 });
 
