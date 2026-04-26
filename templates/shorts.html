@@ -187,14 +187,21 @@
             <a href="{{ url_for('index') }}" class="shorts-item-close">✕</a>
             
             <div class="shorts-item-sidebar">
-                <form method="POST" action="{{ url_for('like_shorts', shorts_id=shorts.id) }}" class="shorts-item-action" onclick="this.submit()">
-                    <svg viewBox="0 0 24 24" fill="{% if current_user.is_authenticated and shorts.liked_by(current_user) %}#ff2d55{% else %}#fff{% endif %}"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <a href="{{ url_for('like_shorts', shorts_id=shorts.id) }}" class="shorts-item-action" data-action="like">
+                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                     <span>{{ shorts.likes.count() }}</span>
                     <span>Like</span>
-                </form>
+                </a>
                 
                 <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}#comments" class="shorts-item-action">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span>{{ shorts.comments.count() }}</span>
+                    <span>Comment</span>
+                </a>
+            </div>
+                
+                <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}#comments" class="shorts-item-action">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="display:block;width:32px;height:32px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     <span>{{ shorts.comments.count() }}</span>
                     <span>Comment</span>
                 </a>
@@ -250,26 +257,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 v.pause();
             }
         });
-    });
-    
+    });    
     if (videos.length > 0) {
         videos[0].play().catch(function() {});
     }
     
-    var likeForm = document.querySelector('.shorts-item-sidebar form');
-    if (likeForm) {
-        likeForm.addEventListener('click', function(e) {
-            e.stopPropagation();
-            this.submit();
+    document.querySelectorAll('[data-action="like"]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var url = this.getAttribute('href');
+            fetch(url, {method: 'POST'}).then(function() {
+                location.reload();
+            });
         });
-    }
-    
-    var commentBtn = document.querySelector('.shorts-item-sidebar a.button');
-    if (commentBtn) {
-        commentBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    }
+    });
 });
 </script>
 {% endblock %}
