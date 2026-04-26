@@ -772,19 +772,11 @@ async function sendChatRecording() {
     background: var(--surface-elevated);
     color: var(--text);
 }
-.message-more-btn svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
-}
 .chat-message.sent .message-more-btn {
     right: auto;
     left: -40px;
 }
-.chat-message.received .message-more-btn {
-    right: -40px;
-    left: auto;
-}
+
 @media (max-width: 768px) {
     .message-more-btn {
         position: static;
@@ -801,11 +793,17 @@ async function sendChatRecording() {
         margin-right: 8px;
     }
 }
+
+.message-more-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
 .message-menu {
+    display: none;
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    right: -140px;
+    top: 100%;
+    right: 0;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -813,11 +811,10 @@ async function sendChatRecording() {
     z-index: 100;
     min-width: 140px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    display: none;
 }
 .chat-message.sent .message-menu {
     right: auto;
-    left: -140px;
+    left: 0;
 }
 .message-menu.show {
     display: block;
