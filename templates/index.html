@@ -59,8 +59,9 @@
     <article class="post-card" style="position: relative;">
         <div class="post-header">
             <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-avatar">
-                {% if post.author.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
+                {% set avatar_url = get_avatar_url(post.author) %}
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="">
                 {% else %}
                 <div class="post-avatar-placeholder">{{ post.author.username[0].upper() }}</div>
                 {% endif %}
