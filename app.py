@@ -3284,6 +3284,21 @@ if __name__ == '__main__':
 
 
 def process_video(file_data, start_time=0, duration=None, quality='medium'):
+    if cloudinary_configured and file_data.get('cloudinary_url'):
+        public_id = file_data['cloudinary_url']
+        transforms = {}
+        if start_time:
+            transforms['start_offset'] = str(start_time)
+        if duration:
+            transforms['duration'] = str(duration)
+        if quality == 'low':
+            transforms['quality'] = 'auto:low'
+        elif quality == 'medium':
+            transforms['quality'] = 'auto'
+        else:
+            transforms['quality'] = 'auto:best'
+        return cloudinary.CloudinaryImage(public_id).build_url(**transforms)
+    
     import ffmpeg
     
     try:
@@ -3307,6 +3322,15 @@ def process_video(file_data, start_time=0, duration=None, quality='medium'):
 
 
 def generate_video_thumbnail(video_path, timestamp=1):
+    if cloudinary_configured and video_path.startswith('http'):
+        public_id = video_path
+        return cloudinary.CloudinaryImage(public_id).build_url(
+            start_offset=timestamp,
+            format='jpg',
+            width=300,
+            crop='scale'
+        )
+    
     import ffmpeg
     
     try:
