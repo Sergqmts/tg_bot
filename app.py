@@ -784,6 +784,17 @@ class PostTag(db.Model):
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=False)
 
 
+class ShortsAudio(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    audio_url = db.Column(db.String(500), nullable=False)
+    duration = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    user = db.relationship('User', backref='uploaded_shorts_audios')
+
+
 class Shorts(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     video_url = db.Column(db.String(500), nullable=False)
@@ -802,17 +813,6 @@ class Shorts(db.Model):
         return self.likes.filter_by(user_id=user.id).first() is not None
 
 
-class ShortsAudio(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    audio_url = db.Column(db.String(500), nullable=False)
-    duration = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    user = db.relationship('User', backref='uploaded_shorts_audios')
-
-
 class ShortsLike(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -822,6 +822,12 @@ class ShortsLike(db.Model):
 
 class ShortsComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    
+    author = db.relationship('User', foreign_keys=[user_id])
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -2026,8 +2032,13 @@ def create_shorts():
         caption = request.form.get('caption', '')
         audio_id = request.form.get('audio_id')
         
-        if video:
-            filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp4'
+        if not video or video.filename == '':
+            flash('Выберите видео')
+            return redirect(url_for('create_shorts'))
+        
+        try:
+            ext = video.filename.rsplit('.', 1)[-1].lower() if '.' in video.filename else 'mp4'
+            filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.{ext}'
             video.save(os.path.join(UPLOAD_FOLDER, filename))
             video_url = f'/uploads/{filename}'
             
@@ -2039,7 +2050,12 @@ def create_shorts():
             )
             db.session.add(shorts)
             db.session.commit()
+            flash('Shorts опубликован!')
             return redirect(url_for('shorts'))
+        except Exception as e:
+            app.logger.error(f"Error creating shorts: {e}")
+            flash('Ошибка при загрузке видео')
+            return redirect(url_for('create_shorts'))
     
     audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).all()
     return render_template('create_shorts.html', audios=audios)

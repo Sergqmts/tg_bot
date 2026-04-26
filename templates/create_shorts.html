@@ -65,18 +65,25 @@ textarea {
     cursor: pointer;
     margin-bottom: 20px;
 }
+.video-preview {
+    position: relative;
+}
 </style>
 <div class="create-shorts-page">
     <header class="top-bar">
         <a href="{{ url_for('shorts') }}" class="btn btn-icon">✕</a>
         <h1>Создать Shorts</h1>
     </header>
-    <form method="POST" enctype="multipart/form-data" class="create-shorts-form">
+    <form method="POST" enctype="multipart/form-data" class="create-shorts-form" id="shortsForm">
         <div class="upload-area" onclick="document.getElementById('videoInput').click()">
-            <div class="upload-icon">🎬</div>
-            <p>Нажмите для выбора видео</p>
+            <div class="upload-icon" id="uploadIcon">🎬</div>
+            <p id="uploadText">Нажмите для выбора видео</p>
             <p style="font-size: 12px; color: var(--text-muted);">или перетащите файл сюда</p>
-            <input type="file" name="video" id="videoInput" accept="video/*" style="display: none;" required>
+            <input type="file" name="video" id="videoInput" accept="video/mp4,video/webm" style="display: none;" required onchange="showPreview(this)">
+        </div>
+        <div id="videoPreview" class="video-preview" style="display: none; margin-bottom: 20px;">
+            <video id="previewVideo" controls style="width: 100%; max-height: 300px; border-radius: var(--radius-md);"></video>
+            <button type="button" onclick="removeVideo()" style="margin-top: 10px; padding: 8px 16px; background: var(--danger); color: #fff; border: none; border-radius: var(--radius-md);">Удалить</button>
         </div>
         
         <textarea name="caption" rows="3" placeholder="Описание..."></textarea>
@@ -100,4 +107,23 @@ textarea {
         <button type="submit" class="btn btn-primary" style="width: 100%;">Опубликовать</button>
     </form>
 </div>
+<script>
+function showPreview(input) {
+    if (input.files && input.files[0]) {
+        var file = input.files[0];
+        var url = URL.createObjectURL(file);
+        document.getElementById('previewVideo').src = url;
+        document.getElementById('uploadIcon').style.display = 'none';
+        document.getElementById('uploadText').style.display = 'none';
+        document.getElementById('videoPreview').style.display = 'block';
+    }
+}
+function removeVideo() {
+    document.getElementById('videoInput').value = '';
+    document.getElementById('previewVideo').src = '';
+    document.getElementById('uploadIcon').style.display = 'block';
+    document.getElementById('uploadText').style.display = 'block';
+    document.getElementById('videoPreview').style.display = 'none';
+}
+</script>
 {% endblock %}
