@@ -39,7 +39,7 @@
             <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="btn btn-icon">➕</a>
             {% endif %}
             <div class="chat-settings-dropdown">
-                <button class="btn btn-icon" onclick="toggleSettingsMenu(event)">⋯</button>
+                <button class="btn btn-icon" id="settingsBtn">⋯</button>
                 <div class="settings-menu" id="settingsMenu">
                     <div class="settings-menu-item" onclick="toggleFontSettings()">🖍 Размер шрифта</div>
                     <div class="font-settings" id="fontSettings" style="display:none; padding: 8px 16px;">
@@ -547,17 +547,17 @@ function toggleAttachMenu() {
     document.getElementById('attachMenu').classList.toggle('show');
 }
 
-function showMessageMenu(event, msgId) {
-    event.preventDefault();
-    event.stopPropagation();
+function showMessageMenu(e, msgId) {
+    e.preventDefault();
+    e.stopPropagation();
     
     var menu = document.getElementById('menu-' + msgId);
     if (!menu) return;
     
     document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
     
-    var x = event.clientX;
-    var y = event.clientY;
+    var x = e.clientX;
+    var y = e.clientY;
     var winWidth = window.innerWidth;
     var winHeight = window.innerHeight;
     var menuWidth = 160;
@@ -583,9 +583,13 @@ document.addEventListener('click', function(e) {
     document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
 });
 
-function toggleSettingsMenu(e) {
-    e.stopPropagation();
-    document.getElementById('settingsMenu').classList.toggle('show');
+var settingsBtn = document.getElementById('settingsBtn');
+if (settingsBtn) {
+    settingsBtn.onclick = function(e) {
+        e.stopPropagation();
+        var menu = document.getElementById('settingsMenu');
+        if (menu) menu.classList.toggle('show');
+    };
 }
 
 function toggleFontSettings() {
@@ -663,6 +667,56 @@ document.addEventListener('DOMContentLoaded', function() {
         select.value = savedSize;
         applyFontSize(savedSize);
     }
+    
+    // Link preview for YouTube
+    var messages = document.querySelectorAll('[id^="msg-text-"]');
+    messages.forEach(function(el) {
+        var msgId = el.id.replace('msg-text-', '');
+        var text = el.textContent;
+        var ytMatch = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (ytMatch) {
+            var videoId = ytMatch[1];
+            var preview = document.getElementById('preview-' + msgId);
+            if (preview) {
+                preview.style.display = 'block';
+                preview.innerHTML = `
+                    <div style="border-radius:12px; overflow:hidden; max-width:300px;">
+                        <iframe width="300" height="169" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                `;
+            }
+        }
+    });
+    
+    // Create preview tooltip
+    if (!document.getElementById('mediaPreviewTooltip')) {
+        var tooltip = document.createElement('div');
+        tooltip.id = 'mediaPreviewTooltip';
+        tooltip.className = 'media-preview-tooltip';
+        document.body.appendChild(tooltip);
+    }
+    
+    // Add hover listeners to images and videos
+    document.querySelectorAll('.message-bubble img, .message-bubble video').forEach(function(el) {
+        el.addEventListener('mouseenter', function(e) {
+            var tooltip = document.getElementById('mediaPreviewTooltip');
+            if (this.tagName === 'IMG') {
+                tooltip.innerHTML = `<img src="${this.src}" alt="Preview">`;
+            } else {
+                tooltip.innerHTML = `<video src="${this.src}" muted></video>`;
+            }
+            tooltip.style.display = 'block';
+            updateTooltipPosition(e);
+        });
+        
+        el.addEventListener('mousemove', function(e) {
+            updateTooltipPosition(e);
+        });
+        
+        el.addEventListener('mouseleave', function() {
+            document.getElementById('mediaPreviewTooltip').style.display = 'none';
+        });
+    });
 });
 
 function changeFontSize() {
@@ -679,8 +733,7 @@ function applyFontSize(size) {
     }
 }
 
-// Link preview for YouTube
-document.addEventListener('DOMContentLoaded', function() {
+// Link preview for YouTube - removed duplicate
     var messages = document.querySelectorAll('[id^="msg-text-"]');
     messages.forEach(function(el) {
         var msgId = el.id.replace('msg-text-', '');
@@ -1083,5 +1136,13 @@ async function sendChatRecording() {
 .message-menu .menu-item.danger:hover {
     background: rgba(237, 73, 86, 0.1);
 }
+
+// Close settings menu on click outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.chat-settings-dropdown')) {
+        var menu = document.getElementById('settingsMenu');
+        if (menu) menu.classList.remove('show');
+    }
+});
 </script>
 {% endblock %}
