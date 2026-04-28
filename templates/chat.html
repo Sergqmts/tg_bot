@@ -39,7 +39,7 @@
             <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="btn btn-icon">➕</a>
             {% endif %}
             <div class="chat-settings-dropdown">
-                <button class="btn btn-icon" id="settingsBtn">⋯</button>
+                <button class="btn btn-icon" id="settingsBtn" onclick="toggleSettingsMenu()">⋯</button>
                 <div class="settings-menu" id="settingsMenu">
                     <div class="settings-menu-item" onclick="toggleFontSettings()">🖍 Размер шрифта</div>
                     <div class="font-settings" id="fontSettings" style="display:none; padding: 8px 16px;">
@@ -583,18 +583,16 @@ document.addEventListener('click', function(e) {
     document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
 });
 
-var settingsBtn = document.getElementById('settingsBtn');
-if (settingsBtn) {
-    settingsBtn.onclick = function(e) {
-        e.stopPropagation();
-        var menu = document.getElementById('settingsMenu');
-        if (menu) menu.classList.toggle('show');
-    };
+function toggleSettingsMenu() {
+    var menu = document.getElementById('settingsMenu');
+    if (menu) menu.classList.toggle('show');
 }
 
 function toggleFontSettings() {
-    const fontDiv = document.getElementById('fontSettings');
-    fontDiv.style.display = fontDiv.style.display === 'none' ? 'block' : 'none';
+    var fontDiv = document.getElementById('fontSettings');
+    if (fontDiv) {
+        fontDiv.style.display = fontDiv.style.display === 'none' ? 'block' : 'none';
+    }
 }
 
 document.addEventListener('contextmenu', function(e) {
