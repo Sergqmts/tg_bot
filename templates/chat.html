@@ -39,9 +39,9 @@
             <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="btn btn-icon">➕</a>
             {% endif %}
             <div class="chat-settings-dropdown">
-                <button class="btn btn-icon" id="settingsBtn" onclick="toggleSettingsMenu()">⋯</button>
+                <button class="btn btn-icon" id="settingsBtn">⋯</button>
                 <div class="settings-menu" id="settingsMenu">
-                    <div class="settings-menu-item" onclick="toggleFontSettings()">🖍 Размер шрифта</div>
+                    <div class="settings-menu-item" id="fontSettingsToggle">🖍 Размер шрифта</div>
                     <div class="font-settings" id="fontSettings" style="display:none; padding: 8px 16px;">
                         <select id="fontSizeSelect" onchange="changeFontSize()" style="width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text);">
                             <option value="small">Мелкий</option>
@@ -543,19 +543,6 @@ body .top-bar, body .bottom-nav {
 </style>
 
 <script>
-// Global functions for chat
-window.toggleSettingsMenu = function() {
-    var menu = document.getElementById('settingsMenu');
-    if (menu) menu.classList.toggle('show');
-};
-
-window.toggleFontSettings = function() {
-    var fontDiv = document.getElementById('fontSettings');
-    if (fontDiv) {
-        fontDiv.style.display = fontDiv.style.display === 'none' ? 'block' : 'none';
-    }
-};
-
 let selectedFile = null;
 
 function toggleAttachMenu() {
@@ -677,6 +664,27 @@ function attachFileToForm(form) {
 document.addEventListener('DOMContentLoaded', function() {
     var area = document.getElementById('messagesArea');
     if (area) area.scrollTop = area.scrollHeight;
+    
+    // Settings menu button
+    var settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var menu = document.getElementById('settingsMenu');
+            if (menu) menu.classList.toggle('show');
+        });
+    }
+    
+    // Font settings toggle
+    var fontToggle = document.getElementById('fontSettingsToggle');
+    if (fontToggle) {
+        fontToggle.addEventListener('click', function() {
+            var fontDiv = document.getElementById('fontSettings');
+            if (fontDiv) {
+                fontDiv.style.display = fontDiv.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+    }
     
     // Load font size preference
     var savedSize = localStorage.getItem('chat_font_size') || 'medium';
