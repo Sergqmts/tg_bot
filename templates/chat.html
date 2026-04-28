@@ -280,9 +280,7 @@ body .top-bar, body .bottom-nav {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 .settings-menu.show {
-    display: block !important;
-    background: var(--surface) !important;
-    border: 2px solid var(--primary) !important;
+    display: block;
 }
 .settings-menu-item {
     display: block;
@@ -1138,31 +1136,12 @@ async function sendChatRecording() {
 .message-menu {
     display: none;
 }
-.message-menu.show {
-    display: block;
-}
-.message-menu .menu-item {
-    display: block;
-    padding: 10px 16px;
-    color: var(--text);
-    text-decoration: none;
-    font-size: 14px;
-    transition: background 0.2s;
-}
-.message-menu .menu-item:hover {
-    background: var(--surface-elevated);
-}
-.message-menu .menu-item.danger {
-    color: #ED4956;
-    width: 100%;
-    border: none;
-    text-align: left;
-    font-size: 14px;
-}
-.message-menu .menu-item.danger:hover {
-    background: rgba(237, 73, 86, 0.1);
-}
-
-// Close settings menu on click outside - removed duplicate
+// Close settings menu on click outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.chat-settings-dropdown')) {
+        var menu = document.getElementById('settingsMenu');
+        if (menu) menu.classList.remove('show');
+    }
+});
 </script>
 {% endblock %}
