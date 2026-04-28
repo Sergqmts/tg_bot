@@ -269,13 +269,13 @@ body .top-bar, body .bottom-nav {
 .settings-menu {
     display: none;
     position: absolute;
-    top: 100%;
+    top:100%;
     right: 0;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 8px 0;
-    z-index: 100;
+    z-index: 9999;
     min-width: 180px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
@@ -585,7 +585,12 @@ document.addEventListener('click', function(e) {
 
 function toggleSettingsMenu() {
     var menu = document.getElementById('settingsMenu');
-    if (menu) menu.classList.toggle('show');
+    if (menu) {
+        menu.classList.toggle('show');
+        console.log('Menu toggled, show:', menu.classList.contains('show'));
+    } else {
+        console.log('Menu not found');
+    }
 }
 
 function toggleFontSettings() {
