@@ -1,32 +1,109 @@
 {% extends "base.html" %}
 {% block title %}Редактировать чат - Social{% endblock %}
 {% block content %}
-<div class="profile">
-    <div class="profile-header">
-        <div class="profile-info" style="padding: 0;">
-            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-            </a>
-            <h1 class="profile-username">Редактировать</h1>
-        </div>
-    </div>
-    
-    <div style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <div class="chat-avatar-large" style="width: 100px; height: 100px; margin: 0 auto; font-size: 40px;">
-                {% if chat.avatar and chat.avatar != 'chat_default.png' %}
-                    {% if chat.avatar.startswith('http') %}
-                    <img src="{{ chat.avatar }}">
-                    {% else %}
-                    <img src="{{ avatar_url }}">
-                    {% endif %}
-                {% else %}
-                👥
-                {% endif %}
-            </div>
+<style>
+.edit-page {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 0 16px;
+}
+.edit-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.edit-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+}
+.edit-header a {
+    color: var(--text);
+    text-decoration: none;
+}
+.edit-title {
+    font-size: 20px;
+    font-weight: 600;
+}
+.chat-avatar-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto 20px;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #fff;
+}
+.chat-avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.color-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.color-option {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.color-option:hover {
+    transform: scale(1.1);
+}
+.color-option.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary);
+}
+.form-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 5px;
+}
+.preview-box {
+    width: 100%;
+    height: 100px;
+    border-radius: 8px;
+    margin-top: 10px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border);
+}
+</style>
+
+<div class="edit-page">
+    <div class="edit-card">
+        <div class="edit-header">
+            <a href="{{ url_for('chat_members', chat_id=chat.id) }}">←</a>
+            <h1 class="edit-title">Настройки чата</h1>
         </div>
         
-        <form method="POST" enctype="multipart/form-data" class="form">
+        <div class="chat-avatar-preview">
+            {% if chat.avatar and chat.avatar != 'chat_default.png' %}
+                {% if chat.avatar.startswith('http') %}
+                <img src="{{ chat.avatar }}">
+                {% else %}
+                <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}">
+                {% endif %}
+            {% else %}
+            👥
+            {% endif %}
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label class="form-label">Название чата</label>
                 <input type="text" name="name" value="{{ chat.name }}" required class="form-input">
@@ -35,28 +112,70 @@
             <div class="form-group">
                 <label class="form-label">Аватар чата</label>
                 <input type="file" name="avatar" accept="image/*" class="form-input">
+                <div class="form-hint">JPG, PNG (макс. 5MB)</div>
             </div>
             
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Сохранить</button>
+            <div class="form-group">
+                <label class="form-label">Цвет фона чата</label>
+                <div class="color-options">
+                    <button type="button" class="color-option" style="background: #0f0f0f;" onclick="selectColor('#0f0f0f', this)"></button>
+                    <button type="button" class="color-option" style="background: #1a1a2e;" onclick="selectColor('#1a1a2e', this)"></button>
+                    <button type="button" class="color-option" style="background: #16213e;" onclick="selectColor('#16213e', this)"></button>
+                    <button type="button" class="color-option" style="background: #0f3460;" onclick="selectColor('#0f3460', this)"></button>
+                    <button type="button" class="color-option" style="background: #1b1b2f;" onclick="selectColor('#1b1b2f', this)"></button>
+                    <button type="button" class="color-option" style="background: #2d132c;" onclick="selectColor('#2d132c', this)"></button>
+                    <button type="button" class="color-option" style="background: #1c1c1c;" onclick="selectColor('#1c1c1c', this)"></button>
+                    <button type="button" class="color-option" style="background: #1a1a1a;" onclick="selectColor('#1a1a1a', this)"></button>
+                </div>
+                <input type="color" id="colorPicker" value="{{ chat.background_color or '#0f0f0f' }}" style="margin-top: 10px; width: 100%; height: 40px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer;">
+                <input type="hidden" name="background_color" id="bgColorInput" value="{{ chat.background_color or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Фоновое изображение</label>
+                <input type="text" name="bg_image_url" placeholder="https://..." value="{{ chat.background_image or '' }}" class="form-input">
+                <div class="form-hint">Или загрузите изображение:</div>
+                <input type="file" name="bg_image_file" accept="image/*" class="form-input" style="margin-top: 8px;" onchange="previewBgImage(this)">
+                <div id="bgPreview" class="preview-box" {% if chat.background_image %}style="background-image: url('{{ chat.background_image }}')"{% endif %}></div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Сохранить</button>
         </form>
     </div>
 </div>
 
-<style>
-.chat-avatar-large {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+<script>
+function selectColor(color, btn) {
+    document.getElementById('colorPicker').value = color;
+    document.getElementById('bgColorInput').value = color;
+    document.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 }
-.chat-avatar-large img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+
+document.getElementById('colorPicker').addEventListener('change', function() {
+    document.getElementById('bgColorInput').value = this.value;
+});
+
+function previewBgImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('bgPreview').style.backgroundImage = `url('${e.target.result}')`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
 }
-</style>
+
+// Activate current color on load
+window.addEventListener('DOMContentLoaded', function() {
+    const currentColor = '{{ chat.background_color or "" }}';
+    if (currentColor) {
+        document.querySelectorAll('.color-option').forEach(btn => {
+            if (btn.style.background === currentColor || btn.style.backgroundColor === currentColor) {
+                btn.classList.add('active');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

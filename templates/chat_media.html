@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Медиа - {{ chat.name or 'Чат' }} - Social{% endblock %}
+{% block content %}
+<style>
+.media-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px;
+}
+.media-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+.media-header a {
+    color: var(--text);
+    text-decoration: none;
+}
+.media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+}
+.media-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--surface);
+}
+.media-item img, .media-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s;
+}
+.media-item:hover img, .media-item:hover video {
+    transform: scale(1.05);
+}
+.media-item .video-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.media-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.media-modal.show {
+    display: flex;
+}
+.media-modal img, .media-modal video {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+}
+.media-modal .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 32px;
+    cursor: pointer;
+}
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+.pagination a {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    text-decoration: none;
+}
+.pagination a.active {
+    background: var(--primary);
+    color: #fff;
+}
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+</style>
+
+<div class="media-page">
+    <div class="media-header">
+        <a href="{{ url_for('chat_view', chat_id=chat.id) }}">← Назад</a>
+        <h2>Медиа чата</h2>
+    </div>
+    
+    {% if media_messages.items %}
+    <div class="media-grid">
+        {% for message, media in media_messages.items %}
+        <div class="media-item" onclick="openMedia('{{ media.media_url }}', '{{ media.media_type }}')">
+            {% if media.media_type == 'image' %}
+                <img src="{{ media.media_url }}" alt="Изображение">
+            {% else %}
+                <video src="{{ media.media_url }}"></video>
+                <div class="video-icon">▶</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="pagination">
+        {% if media_messages.has_prev %}
+            <a href="{{ url_for('chat_media', chat_id=chat.id, page=media_messages.prev_num) }}">←</a>
+        {% endif %}
+        <a class="active">{{ media_messages.page }}</a>
+        {% if media_messages.has_next %}
+            <a href="{{ url_for('chat_media', chat_id=chat.id, page=media_messages.next_num) }}">→</a>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div style="font-size: 48px; margin-bottom: 12px;">📷</div>
+        <p>В этом чате пока нет медиа</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="media-modal" id="mediaModal" onclick="closeMedia()">
+    <button class="close-btn">×</button>
+    <div id="mediaContent"></div>
+</div>
+
+<script>
+function openMedia(url, type) {
+    const modal = document.getElementById('mediaModal');
+    const content = document.getElementById('mediaContent');
+    
+    if (type === 'image') {
+        content.innerHTML = `<img src="${url}">`;
+    } else {
+        content.innerHTML = `<video src="${url}" controls autoplay></video>`;
+    }
+    
+    modal.classList.add('show');
+}
+
+function closeMedia() {
+    document.getElementById('mediaModal').classList.remove('show');
+    document.getElementById('mediaContent').innerHTML = '';
+}
+</script>
+{% endblock %}

@@ -319,7 +319,9 @@ def run_migrations():
                         name VARCHAR(100) NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         creator_id INTEGER REFERENCES "user"(id) NOT NULL,
-                        avatar VARCHAR(200) DEFAULT 'chat_default.png'
+                        avatar VARCHAR(200) DEFAULT 'chat_default.png',
+                        background_color VARCHAR(20) DEFAULT '',
+                        background_image VARCHAR(500) DEFAULT ''
                     );
                     CREATE TABLE chat_member (
                         id SERIAL PRIMARY KEY,
@@ -336,6 +338,20 @@ def run_migrations():
             if 'chat_id' not in existing:
                 db.session.execute(text('ALTER TABLE message ADD COLUMN chat_id INTEGER'))
                 db.session.commit()
+            
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='chat'"))
+            chat_existing = [row[0] for row in result]
+            for col, typ in [('background_color', 'VARCHAR(20)'), ('background_image', 'VARCHAR(500)')]:
+                if col not in chat_existing:
+                    db.session.execute(text(f'ALTER TABLE chat ADD COLUMN {col} {typ}'))
+                    db.session.commit()
+            
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message'"))
+            msg_existing = [row[0] for row in result]
+            for col, typ in [('self_destruct_after', 'INTEGER'), ('self_destruct_at', 'TIMESTAMP')]:
+                if col not in msg_existing:
+                    db.session.execute(text(f'ALTER TABLE message ADD COLUMN {col} {typ}'))
+                    db.session.commit()
             
             db.session.execute(text('ALTER TABLE message ALTER COLUMN recipient_id DROP NOT NULL'))
             db.session.commit()
@@ -909,6 +925,8 @@ class Message(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
     transcription = db.Column(db.Text, nullable=True)
+    self_destruct_after = db.Column(db.Integer, nullable=True)
+    self_destruct_at = db.Column(db.DateTime, nullable=True)
     
     medias = db.relationship('MessageMedia', backref='message')
 
@@ -929,6 +947,8 @@ class Chat(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     avatar = db.Column(db.String(200), default='chat_default.png')
+    background_color = db.Column(db.String(20), default='')
+    background_image = db.Column(db.String(500), default='')
     
     messages = db.relationship('Message', backref='chat', lazy='dynamic')
     members = db.relationship('ChatMember', backref='chat', lazy='dynamic', cascade='all, delete-orphan')
@@ -2524,9 +2544,22 @@ def chat_view(chat_id):
         flash('Вы не состоите в этом чате')
         return redirect(url_for('messages'))
     
+    # Auto-delete messages with self-destruct timer
+    if current_user.is_authenticated:
+        expired = Message.query.filter(
+            Message.chat_id == chat_id,
+            Message.self_destruct_at.isnot(None),
+            Message.self_destruct_at <= datetime.utcnow()
+        ).all()
+        for msg in expired:
+            db.session.delete(msg)
+        if expired:
+            db.session.commit()
+    
     if request.method == 'POST':
         body = request.form.get('body', '').strip()
         post_id = request.form.get('post_id')
+        self_destruct_after = request.form.get('self_destruct_after', type=int)
         media_url = None
         media_type = None
         
@@ -2582,11 +2615,17 @@ def chat_view(chat_id):
         
         if has_content:
             try:
+                destruct_at = None
+                if self_destruct_after and self_destruct_after > 0:
+                    destruct_at = datetime.utcnow() + timedelta(seconds=self_destruct_after)
+                
                 msg = Message(
                     body=body or '', 
                     sender_id=current_user.id, 
                     chat_id=chat_id,
-                    post_id=int(post_id) if post_id else None
+                    post_id=int(post_id) if post_id else None,
+                    self_destruct_after=self_destruct_after if self_destruct_after else None,
+                    self_destruct_at=destruct_at
                 )
                 db.session.add(msg)
                 db.session.flush()
@@ -2683,6 +2722,71 @@ def leave_chat(chat_id):
     db.session.commit()
     flash('Вы покинули чат')
     return redirect(url_for('messages'))
+
+
+@app.route('/chat/<int:chat_id>/media')
+@login_required
+def chat_media(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    page = request.args.get('page', 1, type=int)
+    media_messages = db.session.query(Message, MessageMedia).join(
+        MessageMedia, Message.id == MessageMedia.message_id
+    ).filter(
+        Message.chat_id == chat_id,
+        MessageMedia.media_type.in_(['image', 'video'])
+    ).order_by(Message.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    
+    return render_template('chat_media.html', chat=chat, media_messages=media_messages)
+
+
+@app.route('/chat/<int:chat_id>/documents')
+@login_required
+def chat_documents(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    documents = db.session.query(Message, MessageMedia).join(
+        MessageMedia, Message.id == MessageMedia.message_id
+    ).filter(
+        Message.chat_id == chat_id,
+        MessageMedia.media_type == 'document'
+    ).order_by(Message.created_at.desc()).all()
+    
+    return render_template('chat_documents.html', chat=chat, documents=documents)
+
+
+@app.route('/chat/<int:chat_id>/links')
+@login_required
+def chat_links(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    messages_with_links = Message.query.filter(
+        Message.chat_id == chat_id,
+        Message.body.isnot(None),
+        Message.body.like('%http%')
+    ).order_by(Message.created_at.desc()).all()
+    
+    import re
+    links_dict = {}
+    for msg in messages_with_links:
+        urls = re.findall(r'https?://[^\s<>"{}|\\^`\[\]]+', msg.body)
+        for url in urls:
+            if url not in links_dict:
+                links_dict[url] = msg
+    
+    return render_template('chat_links.html', chat=chat, links=links_dict)
 
 
 @app.route('/message/<int:message_id>/forward')
@@ -2927,6 +3031,29 @@ def chat_edit(chat_id):
         if name:
             chat.name = name
         
+        # Background color
+        bg_color = request.form.get('background_color', '').strip()
+        if bg_color:
+            chat.background_color = bg_color
+        else:
+            chat.background_color = ''
+        
+        # Background image
+        bg_image_url = request.form.get('bg_image_url', '').strip()
+        if bg_image_url:
+            chat.background_image = bg_image_url
+        elif 'bg_image_file' in request.files:
+            file = request.files['bg_image_file']
+            if file.filename and allowed_file(file.filename):
+                if cloudinary_configured:
+                    media_url = upload_to_cloudinary(file, folder='chat_backgrounds')
+                    if media_url:
+                        chat.background_image = media_url
+                else:
+                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    chat.background_image = filename
+        
         if 'avatar' in request.files:
             file = request.files['avatar']
             if file.filename and allowed_file(file.filename):
@@ -2935,7 +3062,7 @@ def chat_edit(chat_id):
                     if media_url:
                         chat.avatar = media_url
                 else:
-                    filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
+                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     chat.avatar = filename
         

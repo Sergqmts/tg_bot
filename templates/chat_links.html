@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Ссылки - {{ chat.name or 'Чат' }} - Social{% endblock %}
+{% block content %}
+<style>
+.links-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 16px;
+}
+.links-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+.links-header a {
+    color: var(--text);
+    text-decoration: none;
+}
+.links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.link-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text);
+    transition: background 0.2s;
+}
+.link-item:hover {
+    background: var(--border);
+}
+.link-icon {
+    font-size: 20px;
+}
+.link-info {
+    flex: 1;
+    overflow: hidden;
+}
+.link-url {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.link-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+</style>
+
+<div class="links-page">
+    <div class="links-header">
+        <a href="{{ url_for('chat_view', chat_id=chat.id) }}">← Назад</a>
+        <h2>Ссылки чата</h2>
+    </div>
+    
+    {% if links %}
+    <div class="links-list">
+        {% for url, message in links.items() %}
+        <a href="{{ url }}" target="_blank" class="link-item">
+            <div class="link-icon">🔗</div>
+            <div class="link-info">
+                <div class="link-url">{{ url }}</div>
+                <div class="link-meta">{{ message.sender.username }} • {{ message.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div style="font-size: 48px; margin-bottom: 12px;">🔗</div>
+        <p>В этом чате пока нет ссылок</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

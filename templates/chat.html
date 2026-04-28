@@ -38,10 +38,26 @@
             <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-icon">👥</a>
             <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="btn btn-icon">➕</a>
             {% endif %}
+            <div class="chat-tabs-dropdown">
+                <button class="btn btn-icon" onclick="toggleTabsMenu()">⋯</button>
+                <div class="tabs-menu" id="tabsMenu">
+                    <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="tabs-menu-item">📷 Медиа</a>
+                    <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="tabs-menu-item">📎 Документы</a>
+                    <a href="{{ url_for('chat_links', chat_id=chat.id) }}" class="tabs-menu-item">🔗 Ссылки</a>
+                </div>
+            </div>
         </div>
     </header>
     
-    <div class="chat-messages" id="messagesArea">
+    <div class="chat-controls" style="display: flex; gap: 8px; padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--border);">
+    <select id="fontSizeSelect" onchange="changeFontSize()" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px;">
+        <option value="small">Мелкий</option>
+        <option value="medium" selected>Средний</option>
+        <option value="large">Крупный</option>
+    </select>
+</div>
+
+<div class="chat-messages" id="messagesArea">
         {% for msg in messages %}
         <div class="chat-message {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}" oncontextmenu="showMessageMenu(event, {{ msg.id }}); return false;">
             {% if msg.sender_id != current_user.id %}
@@ -74,7 +90,8 @@
                 {% endif %}
                 
                 {% if msg.body and msg.body != '[удалено]' %}
-                <div class="message-text">{{ msg.body }}</div>
+                <div class="message-text" id="msg-text-{{ msg.id }}">{{ msg.body }}</div>
+                <div class="link-preview" id="preview-{{ msg.id }}" style="display:none; margin-top:8px;"></div>
                 {% elif msg.body == '[удалено]' %}
                 <div class="message-text" style="font-style: italic; opacity: 0.6;">Сообщение удалено</div>
                 {% endif %}
@@ -160,6 +177,14 @@
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 </button>
                 <input type="text" name="body" placeholder="Сообщение..." class="chat-input">
+                <select name="self_destruct_after" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px;">
+                    <option value="0">Исчезает: никогда</option>
+                    <option value="30">Через 30 сек</option>
+                    <option value="60">Через 1 мин</option>
+                    <option value="300">Через 5 мин</option>
+                    <option value="3600">Через 1 час</option>
+                    <option value="86400">Через 24 часа</option>
+                </select>
                 <input type="file" name="media" id="attachedFile" hidden>
                 <button type="submit" class="send-btn">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15-2-15 2z"/></svg>
@@ -231,14 +256,53 @@ body .top-bar, body .bottom-nav {
 .chat-actions {
     display: flex;
     gap: 8px;
+    position: relative;
+}
+.chat-tabs-dropdown {
+    position: relative;
+}
+.tabs-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 0;
+    z-index: 100;
+    min-width: 160px;
+}
+.tabs-menu.show {
+    display: block;
+}
+.tabs-menu-item {
+    display: block;
+    padding: 10px 16px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+.tabs-menu-item:hover {
+    background: var(--border);
 }
 .chat-messages {
-    flex: 1;
+    flex:1;
     overflow-y: auto;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    {% if chat.background_color %}
+    background-color: {{ chat.background_color }};
+    {% endif %}
+    {% if chat.background_image %}
+    background-image: url('{{ chat.background_image }}');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    {% endif %}
 }
 .chat-message {
     display: flex;
@@ -246,6 +310,18 @@ body .top-bar, body .bottom-nav {
     gap: 8px;
     max-width: 80%;
     position: relative;
+}
+.chat-messages.font-small .message-bubble {
+    font-size: 12px;
+}
+.chat-messages.font-small .chat-input {
+    font-size: 12px;
+}
+.chat-messages.font-large .message-bubble {
+    font-size: 16px;
+}
+.chat-messages.font-large .chat-input {
+    font-size: 16px;
 }
 .chat-message.sent {
     align-self: flex-end;
@@ -302,6 +378,28 @@ body .top-bar, body .bottom-nav {
     max-height: 180px;
     border-radius: 12px;
     object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.message-bubble img:hover {
+    transform: scale(1.02);
+}
+.media-preview-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    pointer-events: none;
+}
+.media-preview-tooltip img, .media-preview-tooltip video {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 8px;
+    object-fit: contain;
 }
 .message-time {
     font-size: 10px;
@@ -459,8 +557,15 @@ document.addEventListener('click', function(e) {
     if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
         document.getElementById('attachMenu').classList.remove('show');
     }
+    if (!e.target.closest('.chat-tabs-dropdown')) {
+        document.getElementById('tabsMenu').classList.remove('show');
+    }
     document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
 });
+
+function toggleTabsMenu() {
+    document.getElementById('tabsMenu').classList.toggle('show');
+}
 
 document.addEventListener('contextmenu', function(e) {
     if (e.target.closest('.chat-message')) {
@@ -524,7 +629,89 @@ function attachFileToForm(form) {
 document.addEventListener('DOMContentLoaded', function() {
     var area = document.getElementById('messagesArea');
     if (area) area.scrollTop = area.scrollHeight;
+    
+    // Load font size preference
+    var savedSize = localStorage.getItem('chat_font_size') || 'medium';
+    var select = document.getElementById('fontSizeSelect');
+    select.value = savedSize;
+    applyFontSize(savedSize);
 });
+
+function changeFontSize() {
+    var size = document.getElementById('fontSizeSelect').value;
+    localStorage.setItem('chat_font_size', size);
+    applyFontSize(size);
+}
+
+function applyFontSize(size) {
+    var area = document.getElementById('messagesArea');
+    area.classList.remove('font-small', 'font-medium', 'font-large');
+    area.classList.add('font-' + size);
+}
+
+// Link preview for YouTube
+document.addEventListener('DOMContentLoaded', function() {
+    var messages = document.querySelectorAll('[id^="msg-text-"]');
+    messages.forEach(function(el) {
+        var msgId = el.id.replace('msg-text-', '');
+        var text = el.textContent;
+        var ytMatch = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (ytMatch) {
+            var videoId = ytMatch[1];
+            var preview = document.getElementById('preview-' + msgId);
+            if (preview) {
+                preview.style.display = 'block';
+                preview.innerHTML = `
+                    <div style="border-radius:12px; overflow:hidden; max-width:300px;">
+                        <iframe width="300" height="169" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                `;
+            }
+        }
+    });
+    
+    // Create preview tooltip
+    if (!document.getElementById('mediaPreviewTooltip')) {
+        var tooltip = document.createElement('div');
+        tooltip.id = 'mediaPreviewTooltip';
+        tooltip.className = 'media-preview-tooltip';
+        document.body.appendChild(tooltip);
+    }
+    
+    // Add hover listeners to images and videos
+    document.querySelectorAll('.message-bubble img, .message-bubble video').forEach(function(el) {
+        el.addEventListener('mouseenter', function(e) {
+            var tooltip = document.getElementById('mediaPreviewTooltip');
+            if (this.tagName === 'IMG') {
+                tooltip.innerHTML = `<img src="${this.src}" alt="Preview">`;
+            } else {
+                tooltip.innerHTML = `<video src="${this.src}" muted></video>`;
+            }
+            tooltip.style.display = 'block';
+            updateTooltipPosition(e);
+        });
+        
+        el.addEventListener('mousemove', function(e) {
+            updateTooltipPosition(e);
+        });
+        
+        el.addEventListener('mouseleave', function() {
+            document.getElementById('mediaPreviewTooltip').style.display = 'none';
+        });
+    });
+});
+
+function updateTooltipPosition(e) {
+    var tooltip = document.getElementById('mediaPreviewTooltip');
+    var x = e.clientX + 15;
+    var y = e.clientY - 150;
+    
+    if (x + 320 > window.innerWidth) x = window.innerWidth - 320 - 10;
+    if (y < 10) y = 10;
+    
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+}
 
 let chatMediaRecorder;
 let chatAudioChunks = [];
