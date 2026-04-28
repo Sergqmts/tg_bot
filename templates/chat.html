@@ -1140,12 +1140,6 @@ async function sendChatRecording() {
     background: rgba(237, 73, 86, 0.1);
 }
 
-// Close settings menu on click outside
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.chat-settings-dropdown')) {
-        var menu = document.getElementById('settingsMenu');
-        if (menu) menu.classList.remove('show');
-    }
-});
+// Close settings menu on click outside - removed duplicate
 </script>
 {% endblock %}
