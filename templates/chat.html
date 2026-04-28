@@ -546,12 +546,7 @@ body .top-bar, body .bottom-nav {
 // Global functions for chat
 window.toggleSettingsMenu = function() {
     var menu = document.getElementById('settingsMenu');
-    if (menu) {
-        menu.classList.toggle('show');
-        console.log('Settings menu toggled:', menu.classList.contains('show'));
-    } else {
-        console.log('Settings menu not found');
-    }
+    if (menu) menu.classList.toggle('show');
 };
 
 window.toggleFontSettings = function() {
