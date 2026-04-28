@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Загрузить звук - Social{% endblock %}
+{% block content %}
+<style>
+.upload-audio-page {
+    padding-top: 60px;
+    padding-bottom: 70px;
+    min-height: 100vh;
+}
+.upload-audio-form {
+    padding: 20px;
+}
+</style>
+<div class="upload-audio-page">
+    <header class="top-bar">
+        <a href="{{ url_for('create_shorts') }}" class="btn btn-icon">←</a>
+        <h1>Загрузить звук</h1>
+    </header>
+    <form method="POST" enctype="multipart/form-data" class="upload-audio-form">
+        <div class="form-group">
+            <label>Название</label>
+            <input type="text" name="title" class="input" placeholder="Название звука" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Аудио файл</label>
+            <input type="file" name="audio" accept="audio/*" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Загрузить</button>
+    </form>
+</div>
+{% endblock %}

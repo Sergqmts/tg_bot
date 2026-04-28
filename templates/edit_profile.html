@@ -1,86 +1,184 @@
 {% extends "base.html" %}
 {% block title %}Редактирование профиля - Social{% endblock %}
 {% block content %}
-    <div style="max-width: 500px; margin: 40px auto;">
-        <div class="card">
-            <h2 style="margin-bottom: 20px;">Редактирование профиля</h2>
-            <form method="POST" enctype="multipart/form-data">
-                {{ form.hidden_tag() }}
-                <div class="form-group">
-                    <label>Username (без @)</label>
-                    <div style="display: flex; align-items: center;">
-                        <span style="padding: 10px; border: 1px solid var(--border); border-right: none; border-radius: var(--radius) 0 0 var(--radius); background: var(--bg);">@</span>
-                        {{ form.username(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 0 var(--radius) var(--radius) 0; flex: 1;") }}
-                    </div>
-                </div>
-                <div class="form-group">
-                    {{ form.bio.label }}
-                    {{ form.bio(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);") }}
-                </div>
-                <div class="form-group">
-                    {{ form.avatar.label }}
-                    {{ form.avatar(style="width: 100%; padding: 10px; border: 1px dashed var(--border); border-radius: var(--radius);") }}
-                    <small style="color: var(--text-light);">JPG, PNG, GIF (макс. 5MB)</small>
-                </div>
-                
-                <h3 style="margin: 20px 0 15px; font-size: 1rem; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">Контактная информация</h3>
-                
-                <div class="form-group">
-                    {{ form.phone.label }}
-                    {{ form.phone(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);") }}
-                    {% if current_user.phone_verified %}
-                        <span style="color: #22c55e; font-size: 12px;">✓ Номер подтверждён</span>
-                    {% elif current_user.phone %}
-                        <span style="color: #f59e0b; font-size: 12px;">Ожидает подтверждения</span>
-                        <a href="{{ url_for('verify_phone') }}" style="margin-left: 10px;">Подтвердить</a>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    {{ form.location.label }}
-                    {{ form.location(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);") }}
-                </div>
-                <div class="form-group">
-                    {{ form.website.label }}
-                    {{ form.website(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);") }}
-                </div>
-                <div class="form-group">
-                    {{ form.birthday.label }}
-                    {{ form.birthday(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);") }}
-                </div>
-                <div class="form-group">
-                    {{ form.occupation.label }}
-                    {{ form.occupation(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius);") }}
-                </div>
-                <div class="form-group">
-                    {{ form.interests.label }}
-                    {{ form.interests(style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); min-height: 80px;") }}
-                </div>
-                
-                <h3 style="margin: 20px 0 15px; font-size: 1rem; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">Настройки приватности</h3>
-                
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
-                    {{ form.is_private(style="width: 18px; height: 18px;") }}
-                    <label for="is_private">{{ form.is_private.label.text }}</label>
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
-                    {{ form.hide_followers(style="width: 18px; height: 18px;") }}
-                    <label for="hide_followers">{{ form.hide_followers.label.text }}</label>
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
-                    {{ form.hide_following(style="width: 18px; height: 18px;") }}
-                    <label for="hide_following">{{ form.hide_following.label.text }}</label>
-                </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
-                    {{ form.approve_followers(style="width: 18px; height: 18px;") }}
-                    <label for="approve_followers">{{ form.approve_followers.label.text }}</label>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    {{ form.submit(class="btn btn-primary") }}
-                    <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn btn-secondary">Отмена</a>
-                </div>
-            </form>
+<style>
+.edit-profile-card {
+    max-width: 500px;
+    margin: 40px auto;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.edit-profile-title {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border);
+}
+.form-section {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+.form-section-title {
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.privacy-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+.privacy-option:last-child {
+    border-bottom: none;
+}
+.privacy-option input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+}
+.privacy-option label {
+    cursor: pointer;
+}
+.phone-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    margin-top: 5px;
+}
+.phone-status.verified {
+    color: #22c55e;
+}
+.phone-status.pending {
+    color: #f59e0b;
+}
+.avatar-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-top: 10px;
+    background: var(--primary-gradient);
+}
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+</style>
+
+<div class="edit-profile-card">
+    <h2 class="edit-profile-title">Настройки профиля</h2>
+    
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-group">
+            <label class="form-label">Имя пользователя</label>
+            <div style="display: flex; align-items: center;">
+                <span class="input-prefix">@</span>
+                {{ form.username(class="form-input", style="flex: 1; border-radius: 0 var(--radius-md) var(--radius-md) 0;") }}
+            </div>
         </div>
-    </div>
+        
+        <div class="form-group">
+            {{ form.bio.label(class="form-label") }}
+            {{ form.bio(class="form-input", rows="3") }}
+        </div>
+        
+        <div class="form-group">
+            {{ form.avatar.label(class="form-label") }}
+            {{ form.avatar(class="form-input", style="border-style: dashed;") }}
+            <small class="form-hint">JPG, PNG, GIF (макс. 5MB)</small>
+            {% if current_user.avatar_cloudinary_url %}
+            <div class="avatar-preview">
+                <img src="{{ current_user.avatar_cloudinary_url }}">
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-section">
+            <div class="form-section-title">Контактная информация</div>
+            
+            <div class="form-group">
+                {{ form.phone.label(class="form-label") }}
+                {{ form.phone(class="form-input") }}
+                {% if current_user.phone_verified %}
+                <div class="phone-status verified">✓ Номер подтверждён</div>
+                {% elif current_user.phone %}
+                <div class="phone-status pending">Ожидает подтверждения</div>
+                <a href="{{ url_for('verify_phone') }}" class="btn btn-sm btn-outline" style="margin-top: 5px;">Подтвердить</a>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.location.label(class="form-label") }}
+                {{ form.location(class="form-input") }}
+            </div>
+            
+            <div class="form-group">
+                {{ form.website.label(class="form-label") }}
+                {{ form.website(class="form-input", placeholder="https://") }}
+            </div>
+            
+            <div class="form-group">
+                {{ form.birthday.label(class="form-label") }}
+                {{ form.birthday(class="form-input", placeholder="ДД.ММ.ГГГГ") }}
+            </div>
+            
+            <div class="form-group">
+                {{ form.occupation.label(class="form-label") }}
+                {{ form.occupation(class="form-input") }}
+            </div>
+            
+            <div class="form-group">
+                {{ form.interests.label(class="form-label") }}
+                {{ form.interests(class="form-input", rows="3", placeholder=" Interests (comma separated)") }}
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="form-section-title">Настройки приватности</div>
+            
+            <div class="privacy-option">
+                {{ form.is_private() }}
+                <label for="is_private">{{ form.is_private.label.text }}</label>
+            </div>
+            
+            <div class="privacy-option">
+                {{ form.hide_followers() }}
+                <label for="hide_followers">{{ form.hide_followers.label.text }}</label>
+            </div>
+            
+            <div class="privacy-option">
+                {{ form.hide_following() }}
+                <label for="hide_following">{{ form.hide_following.label.text }}</label>
+            </div>
+            
+            <div class="privacy-option">
+                {{ form.approve_followers() }}
+                <label for="approve_followers">{{ form.approve_followers.label.text }}</label>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

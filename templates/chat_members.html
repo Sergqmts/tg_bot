@@ -34,8 +34,8 @@
             <div class="member-row">
                 <div class="member-info">
                     <div class="member-avatar">
-                        {% if m.user.avatar != 'default.png' %}
-                        <img src="{{ url_for('uploaded_file', filename=m.user.avatar) }}">
+                        {% set avatar_url = get_avatar_url(m.user) %}{% if avatar_url %}
+                        <img src="{{ avatar_url }}">
                         {% else %}
                         {{ m.user.username[0].upper() }}
                         {% endif %}

@@ -54,6 +54,9 @@
         <a href="{{ url_for('explore') }}" class="nav-item {% if request.endpoint == 'explore' %}active{% endif %}">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         </a>
+        <a href="{{ url_for('shorts') }}" class="nav-item {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10l5-5v14l-5-5V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v5z"/><path d="M7 3v4a1 1 0 0 1-1 1H3v6h3v4h4v-4h3"/></svg>
+        </a>
         <a href="{{ url_for('messages') }}" class="nav-item {% if request.endpoint == 'messages' %}active{% endif %}">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </a>
@@ -61,9 +64,9 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9 7 9-7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4zM3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4M9 22V11l6-4 6 4v11"/></svg>
         </a>
         <a href="{{ url_for('user_profile', username=current_user.username) }}" class="nav-item-profile {% if request.endpoint == 'user_profile' %}active{% endif %}">
-            <div class="nav-avatar{% if current_user.avatar != 'default.png' %} has-img{% endif %}">
-                {% if current_user.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=current_user.avatar) }}">
+            <div class="nav-avatar{% set avatar_url = get_avatar_url(current_user) %}{% if avatar_url %} has-img{% endif %}">
+                {% set avatar_url = get_avatar_url(current_user) %}{% if avatar_url %}
+                <img src="{{ avatar_url }}">
                 {% else %}
                 {{ current_user.username[0].upper() }}
                 {% endif %}

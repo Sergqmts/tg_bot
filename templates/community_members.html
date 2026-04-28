@@ -11,7 +11,7 @@
         {% for member in members %}
             <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee;">
                 <div class="avatar" style="margin-right: 10px;">
-                    {% if member.user.avatar != 'default.png' %}
+                    {% set avatar_url = get_avatar_url(member.user) %}{% if avatar_url %}
                         <img src="{{ url_for('uploaded_file', filename=member.user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
                     {% else %}
                         {{ member.user.username[0].upper() }}

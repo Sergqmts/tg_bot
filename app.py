@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, abort, send_from_directory
+from flask import Flask, render_template, redirect, url_for, flash, request, abort, send_from_directory, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
@@ -13,6 +13,8 @@ from socket import gethostname, gethostbyname
 import os
 import cloudinary
 import cloudinary.uploader
+import tempfile
+import io
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -51,22 +53,14 @@ def inject_stories():
             return dict(top_stories=[], my_story=None, user_has_story=False)
     return dict(top_stories=[], my_story=None, user_has_story=False)
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if DATABASE_URL:
-    if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+psycopg://', 1)
-    elif not DATABASE_URL.startswith('postgresql+'):
-        DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///social.db'
+def get_avatar_url(user):
+    if user.avatar_cloudinary_url:
+        return user.avatar_cloudinary_url
+    if user.avatar and user.avatar != 'default.png':
+        return url_for('uploaded_file', filename=user.avatar)
+    return None
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-key-change-in-production-secret-key-fixed'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'pdf', 'doc', 'docx', 'txt'}
 
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
@@ -419,6 +413,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     bio = db.Column(db.Text)
     avatar = db.Column(db.String(200), default='default.png')
+    avatar_cloudinary_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     location = db.Column(db.String(100), nullable=True)
@@ -784,6 +779,60 @@ class PostTag(db.Model):
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=False)
 
 
+class ShortsAudio(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    audio_url = db.Column(db.String(500), nullable=False)
+    duration = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    user = db.relationship('User', backref='uploaded_shorts_audios')
+
+
+class Shorts(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    video_url = db.Column(db.String(500), nullable=False)
+    audio_id = db.Column(db.Integer, db.ForeignKey('shorts_audio.id'), nullable=True)
+    caption = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    views = db.Column(db.Integer, default=0)
+    likes = db.relationship('ShortsLike', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
+    comments = db.relationship('ShortsComment', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
+    
+    user = db.relationship('User', backref='shorts_videos')
+    audio = db.relationship('ShortsAudio', backref='shorts_videos')
+    
+    def liked_by(self, user):
+        return self.likes.filter_by(user_id=user.id).first() is not None
+
+
+class ShortsLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ShortsReaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    emoji = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ShortsComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    
+    author = db.relationship('User', foreign_keys=[user_id])
+
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
@@ -808,8 +857,8 @@ class CommentMedia(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
     
     author = db.relationship('User', foreign_keys=[user_id])
-    
-    
+
+
 class CommentReaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=False)
@@ -969,14 +1018,17 @@ def index():
         user_interests = set(current_user.interests.lower().split()) if current_user.interests else set()
         likers = [l.user_id for l in current_user.likes.all()]
         
-        all_candidates = Post.query.filter(
-            ~Post.user_id.in_(blocked_ids),
-            Post.user_id != current_user.id
-        ).all()
+        query = Post.query
+        if blocked_ids:
+            query = query.filter(~Post.user_id.in_(blocked_ids))
+        all_candidates = query.all()
         
         scored_posts = []
         for p in all_candidates:
             score = 0
+            
+            if p.user_id == current_user.id:
+                score += 100
             
             if p.user_id in followed_ids:
                 score += 50
@@ -1003,11 +1055,14 @@ def index():
         posts = [p for _, p in scored_posts[:100]]
         
         repost_counts = {p.id: Repost.query.filter_by(post_id=p.id).count() for p in posts}
+        
+        shorts_list = Shorts.query.order_by(Shorts.created_at.desc()).limit(5).all()
     except Exception as e:
         app.logger.error(f"Feed Error: {e}")
         posts = []
         repost_counts = {}
-    return render_template('index.html', posts=posts, repost_counts=repost_counts)
+        shorts_list = []
+    return render_template('index.html', posts=posts, repost_counts=repost_counts, shorts_list=shorts_list)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -1832,11 +1887,13 @@ def edit_profile():
             if cloudinary_configured:
                 url = upload_to_cloudinary(file, folder='avatars')
                 if url:
-                    current_user.avatar = url
+                    current_user.avatar_cloudinary_url = url
+                    current_user.avatar = url.split('/')[-1].split('.')[0]
             else:
                 filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 current_user.avatar = filename
+                current_user.avatar_cloudinary_url = None
         
         if form.birthday.data:
             try:
@@ -1959,6 +2016,127 @@ def explore():
             ).order_by(User.created_at.desc()).limit(20).all()
     
     return render_template('explore.html', users=users, tags=tags, posts=posts, communities=communities, search_query=search_query, search_type=search_type)
+
+
+@app.route('/shorts')
+@app.route('/sharts')
+def shorts():
+    shorts_list = Shorts.query.order_by(Shorts.created_at.desc()).limit(20).all()
+    audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).limit(20).all()
+    return render_template('shorts.html', shorts_list=shorts_list, audios=audios)
+
+
+@app.route('/shorts/create', methods=['GET', 'POST'])
+@login_required
+def create_shorts():
+    if request.method == 'POST':
+        video = request.files.get('video')
+        caption = request.form.get('caption', '')
+        audio_id = request.form.get('audio_id')
+        
+        if not video or video.filename == '':
+            flash('Выберите видео')
+            return redirect(url_for('create_shorts'))
+        
+        try:
+            ext = video.filename.rsplit('.', 1)[-1].lower() if '.' in video.filename else 'mp4'
+            filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.{ext}'
+            video.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            video_url = f'/uploads/{filename}'
+            
+            shorts = Shorts(
+                video_url=video_url,
+                caption=caption,
+                user_id=current_user.id,
+                audio_id=int(audio_id) if audio_id else None
+            )
+            db.session.add(shorts)
+            db.session.commit()
+            flash('Shorts опубликован!')
+            return redirect(url_for('shorts'))
+        except Exception as e:
+            app.logger.error(f"Error creating shorts: {e}")
+            flash('Ошибка при загрузке видео')
+            return redirect(url_for('create_shorts'))
+    
+    audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).all()
+    return render_template('create_shorts.html', audios=audios)
+
+
+@app.route('/shorts/<int:shorts_id>', methods=['GET', 'POST'])
+def view_shorts(shorts_id):
+    shorts_video = Shorts.query.get_or_404(shorts_id)
+    
+    if request.method == 'POST' and current_user.is_authenticated:
+        comment_body = request.form.get('body')
+        if comment_body:
+            comment = ShortsComment(
+                body=comment_body,
+                user_id=current_user.id,
+                shorts_id=shorts_id
+            )
+            db.session.add(comment)
+            db.session.commit()
+    
+    comments = shorts_video.comments.order_by(ShortsComment.created_at.desc()).all()
+    return render_template('view_shorts.html', shorts=shorts_video, comments=comments)
+
+
+@app.route('/shorts/like/<int:shorts_id>', methods=['POST'])
+@login_required
+def like_shorts(shorts_id):
+    shorts_video = Shorts.query.get_or_404(shorts_id)
+    existing_like = ShortsLike.query.filter_by(user_id=current_user.id, shorts_id=shorts_id).first()
+    
+    if existing_like:
+        db.session.delete(existing_like)
+    else:
+        like = ShortsLike(user_id=current_user.id, shorts_id=shorts_id)
+        db.session.add(like)
+    
+    db.session.commit()
+    return jsonify({'likes': shorts_video.likes.count()})
+
+
+@app.route('/shorts/<int:shorts_id>/react', methods=['POST'])
+@login_required
+def react_shorts(shorts_id):
+    shorts_video = Shorts.query.get_or_404(shorts_id)
+    emoji = request.form.get('emoji', '❤️')
+    
+    existing = ShortsReaction.query.filter_by(user_id=current_user.id, shorts_id=shorts_id, emoji=emoji).first()
+    if existing:
+        db.session.delete(existing)
+    else:
+        reaction = ShortsReaction(user_id=current_user.id, shorts_id=shorts_id, emoji=emoji)
+        db.session.add(reaction)
+    
+    db.session.commit()
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/shorts/audio/upload', methods=['GET', 'POST'])
+@login_required
+def upload_shorts_audio():
+    if request.method == 'POST':
+        audio = request.files.get('audio')
+        title = request.form.get('title', 'Original audio')
+        
+        if audio:
+            filename = f'saudio_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp3'
+            audio.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            audio_url = f'/uploads/{filename}'
+            
+            shorts_audio = ShortsAudio(
+                title=title,
+                audio_url=audio_url,
+                user_id=current_user.id
+            )
+            db.session.add(shorts_audio)
+            db.session.commit()
+            return redirect(url_for('create_shorts'))
+    
+    return render_template('upload_shorts_audio.html')
 
 
 @app.route('/photos')
@@ -2788,14 +2966,37 @@ def create_community():
     return render_template('create_community.html', form=form)
 
 
-@app.route('/community/<slug>')
+@app.route('/community/<slug>', methods=['GET', 'POST'])
 def community(slug):
     comm = Community.query.filter_by(slug=slug).first_or_404()
     is_member = current_user.is_authenticated and current_user.is_member(comm)
     is_admin = current_user.is_authenticated and current_user.is_admin(comm)
     is_pending = current_user.is_authenticated and current_user.is_pending(comm)
     posts = comm.posts.order_by(Post.created_at.desc()).all()
-    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin, is_pending=is_pending)
+    
+    show_edit = request.args.get('edit') == '1' and is_admin
+    
+    if show_edit and request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+        
+        if name:
+            comm.name = name
+            comm.description = description
+            
+            if 'image' in request.files:
+                file = request.files['image']
+                if file.filename and allowed_file(file.filename):
+                    if cloudinary_configured:
+                        url = upload_to_cloudinary(file, folder='communities')
+                        if url:
+                            comm.image = url
+            
+            db.session.commit()
+            flash('Сообщество обновлено')
+            return redirect(url_for('community', slug=comm.slug))
+    
+    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin, is_pending=is_pending, show_edit=show_edit)
 
 
 @app.route('/community/<slug>/join', methods=['POST'])
@@ -3097,3 +3298,165 @@ with app.app_context():
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000, host='0.0.0.0')
+
+
+def process_video(file_data, start_time=0, duration=None, quality='medium'):
+    if cloudinary_configured and file_data.get('cloudinary_url'):
+        public_id = file_data['cloudinary_url']
+        transforms = {}
+        if start_time:
+            transforms['start_offset'] = str(start_time)
+        if duration:
+            transforms['duration'] = str(duration)
+        if quality == 'low':
+            transforms['quality'] = 'auto:low'
+        elif quality == 'medium':
+            transforms['quality'] = 'auto'
+        else:
+            transforms['quality'] = 'auto:best'
+        return cloudinary.CloudinaryImage(public_id).build_url(**transforms)
+    
+    import ffmpeg
+    
+    try:
+        input_path = file_data.get('temp_path')
+        output_filename = f'processed_{datetime.now().timestamp()}.mp4'
+        output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+        
+        stream = ffmpeg.input(input_path, ss=start_time)
+        
+        if duration:
+            stream = ffmpeg.output(stream, output_path, t=duration, **{'preset': quality})
+        else:
+            stream = ffmpeg.output(stream, output_path, **{'preset': quality})
+        
+        ffmpeg.run(stream, overwrite_output=True, capture_stdout=True, capture_stderr=True)
+        
+        return output_filename
+    except Exception as e:
+        app.logger.error(f"Video processing error: {e}")
+        return None
+
+
+def generate_video_thumbnail(video_path, timestamp=1):
+    if cloudinary_configured and video_path.startswith('http'):
+        public_id = video_path
+        return cloudinary.CloudinaryImage(public_id).build_url(
+            start_offset=timestamp,
+            format='jpg',
+            width=300,
+            crop='scale'
+        )
+    
+    import ffmpeg
+    
+    try:
+        output_filename = f'thumb_{datetime.now().timestamp()}.jpg'
+        output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+        
+        stream = ffmpeg.input(video_path, ss=timestamp)
+        stream = ffmpeg.output(stream, output_path, vframes=1, format='image2', vcodec='mjpeg')
+        ffmpeg.run(stream, overwrite_output=True, capture_stdout=True)
+        
+        return output_filename
+    except Exception as e:
+        app.logger.error(f"Thumbnail generation error: {e}")
+        return None
+
+
+@app.route('/video/process', methods=['POST'])
+@login_required
+def process_video_route():
+    try:
+        video = request.files.get('video')
+        start_time = float(request.form.get('start_time', 0))
+        duration = float(request.form.get('duration')) if request.form.get('duration') else None
+        quality = request.form.get('quality', 'medium')
+        
+        if not video:
+            return jsonify({'error': 'No video file'}), 400
+        
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            video.save(tmp.name)
+            temp_path = tmp.name
+        
+        result = process_video({'temp_path': temp_path}, start_time, duration, quality)
+        
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
+        
+        if result:
+            return jsonify({'video_url': f'/media/{result}'})
+        return jsonify({'error': 'Processing failed'}), 500
+    except Exception as e:
+        app.logger.error(f"Video process route error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/video/thumbnail', methods=['POST'])
+@login_required
+def video_thumbnail_route():
+    try:
+        video = request.files.get('video')
+        timestamp = float(request.form.get('timestamp', 1))
+        
+        if not video:
+            return jsonify({'error': 'No video file'}), 400
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp:
+            video.save(tmp.name)
+            temp_path = tmp.name
+        
+        thumb = generate_video_thumbnail(temp_path, timestamp)
+        
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
+        
+        if thumb:
+            return jsonify({'thumbnail': f'/media/{thumb}'})
+        return jsonify({'error': 'Thumbnail generation failed'}), 500
+    except Exception as e:
+        app.logger.error(f"Thumbnail route error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+with app.app_context():
+    try:
+        from sqlalchemy import text
+        is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
+        
+        if is_postgres:
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='avatar_cloudinary_url'"))
+            if not result.fetchone():
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
+                db.session.commit()
+    except Exception as e:
+        app.logger.info(f"Migration avatar_cloudinary_url: {e}")
+
+
+@app.context_processor
+def inject_utils():
+    def get_avatar_url(user):
+        if user is None:
+            return None
+        if hasattr(user, 'avatar_cloudinary_url') and user.avatar_cloudinary_url:
+            return user.avatar_cloudinary_url
+        if hasattr(user, 'avatar') and user.avatar and user.avatar != 'default.png':
+            return url_for('uploaded_file', filename=user.avatar)
+        return None
+    return dict(get_avatar_url=get_avatar_url)
+
+
+@app.template_filter('avatar_url')
+def avatar_url_filter(user):
+    if user is None:
+        return None
+    if hasattr(user, 'avatar_cloudinary_url') and user.avatar_cloudinary_url:
+        return user.avatar_cloudinary_url
+    if hasattr(user, 'avatar') and user.avatar and user.avatar != 'default.png':
+        return url_for('uploaded_file', filename=user.avatar)
+    return None

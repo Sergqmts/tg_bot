@@ -12,8 +12,8 @@
         
         <div class="message-preview">
             <div class="preview-avatar">
-                {% if message.sender.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=message.sender.avatar) }}">
+                {% set avatar_url = get_avatar_url(message.sender) %}{% if avatar_url %}
+                <img src="{{ avatar_url }}">
                 {% else %}
                 <span>{{ message.sender.username[0].upper() }}</span>
                 {% endif %}
@@ -48,8 +48,8 @@
                     <input type="hidden" name="username" value="{{ user.username }}">
                     <button type="submit" class="forward-user-btn">
                         <div class="user-avatar">
-                            {% if user.avatar != 'default.png' %}
-                            <img src="{{ url_for('uploaded_file', filename=user.avatar) }}">
+                            {% set avatar_url = get_avatar_url(user) %}{% if avatar_url %}
+                            <img src="{{ avatar_url }}">
                             {% else %}
                             <span>{{ user.username[0].upper() }}</span>
                             {% endif %}

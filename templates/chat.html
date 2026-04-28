@@ -11,7 +11,7 @@
                 {% if chat.avatar.startswith('http') %}
                 <img src="{{ chat.avatar }}">
                 {% else %}
-                <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}">
+                <img src="{{ avatar_url }}">
                 {% endif %}
             {% else %}
             <span>
@@ -43,11 +43,11 @@
     
     <div class="chat-messages" id="messagesArea">
         {% for msg in messages %}
-        <div class="chat-message {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}">
+        <div class="chat-message {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}" oncontextmenu="showMessageMenu(event, {{ msg.id }}); return false;">
             {% if msg.sender_id != current_user.id %}
             <a href="{{ url_for('user_profile', username=msg.sender.username) }}" class="message-avatar">
-                {% if msg.sender.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=msg.sender.avatar) }}">
+                {% set avatar_url = get_avatar_url(msg.sender) %}{% if avatar_url %}
+                <img src="{{ avatar_url }}">
                 {% else %}
                 <div class="avatar-placeholder">{{ msg.sender.username[0].upper() }}</div>
                 {% endif %}
@@ -55,14 +55,11 @@
             {% endif %}
             
             <div class="message-bubble">
-                <button class="message-more-btn" onclick="toggleMessageMenu(this, {{ msg.id }})">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                </button>
                 <div class="message-menu" id="menu-{{ msg.id }}">
-                    <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item">📤 Переслать</a>
+                    <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item" style="display: block; padding: 8px 12px; color: var(--text); text-decoration: none; font-size: 13px;">📤 Переслать</a>
                     {% if msg.sender_id == current_user.id %}
-                    <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}" onsubmit="return confirm('Удалить сообщение для всех?')">
-                        <button type="submit" class="menu-item danger">🗑️ Удалить</button>
+                    <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}">
+                        <button type="submit" class="menu-item danger" style="display: block; padding: 8px 12px; color: #ED4956; background: none; border: none; width: 100%; text-align: left; font-size: 13px;">🗑️ Удалить</button>
                     </form>
                     {% endif %}
                 </div>
@@ -432,18 +429,43 @@ function toggleAttachMenu() {
     document.getElementById('attachMenu').classList.toggle('show');
 }
 
-function toggleMessageMenu(btn, msgId) {
+function showMessageMenu(event, msgId) {
+    event.preventDefault();
     event.stopPropagation();
-    document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
-    document.getElementById('menu-' + msgId).classList.toggle('show');
+    
+    var menu = document.getElementById('menu-' + msgId);
+    if (!menu) return;
+    
+    document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
+    
+    var x = event.clientX;
+    var y = event.clientY;
+    var winWidth = window.innerWidth;
+    var winHeight = window.innerHeight;
+    var menuWidth = 160;
+    var menuHeight = 80;
+    
+    if (x + menuWidth > winWidth) x = winWidth - menuWidth - 10;
+    if (y + menuHeight > winHeight) y = winHeight - menuHeight - 10;
+    
+    menu.style.display = 'block';
+    menu.style.position = 'fixed';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.classList.add('message-context-menu');
 }
 
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
         document.getElementById('attachMenu').classList.remove('show');
     }
-    if (!e.target.closest('.message-more-btn') && !e.target.closest('.message-menu')) {
-        document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
+    document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
+});
+
+document.addEventListener('contextmenu', function(e) {
+    if (e.target.closest('.chat-message')) {
+    } else {
+        document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
     }
 });
 
@@ -815,6 +837,10 @@ async function sendChatRecording() {
 .chat-message.sent .message-menu {
     right: auto;
     left: 0;
+    position: absolute;
+}
+.message-menu {
+    display: none;
 }
 .message-menu.show {
     display: block;

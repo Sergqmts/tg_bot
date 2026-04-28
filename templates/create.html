@@ -36,6 +36,7 @@
                 files.push(newFiles[i]);
             }
             updatePreview();
+            updateFileInput();
         }
         
         function removeFile(index) {
@@ -96,6 +97,25 @@
                 configurable: true
             });
         }
+        
+        document.getElementById('postForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('{{ url_for("create") }}', {
+                method: 'POST',
+                body: formData
+            }).then(r => {
+                if (r.ok) {
+                    window.location.href = '{{ url_for("index") }}';
+                } else {
+                    alert('Ошибка при публикации');
+                }
+            }).catch(err => {
+                alert('Ошибка: ' + err);
+            });
+        });
     </script>
 </div>
 {% endblock %}

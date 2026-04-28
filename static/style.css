@@ -451,6 +451,75 @@ img, video {
     padding-bottom: 20px;
 }
 
+.shorts-mini-feed {
+    padding: 12px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.shorts-mini-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 12px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+.shorts-mini-header a {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+.shorts-mini-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 12px;
+    scroll-snap-type: x mandatory;
+}
+.shorts-mini-item {
+    flex-shrink: 0;
+    width: 100px;
+    height: 160px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    position: relative;
+    background: var(--surface);
+    cursor: pointer;
+    scroll-snap-align: start;
+}
+.shorts-mini-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.shorts-mini-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 6px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: #fff;
+    font-size: 0.75rem;
+}
+.shorts-mini-add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--text);
+    background: var(--surface);
+    border: 2px dashed var(--border);
+}
+.shorts-mini-add span:first-child {
+    font-size: 24px;
+    color: var(--primary);
+}
+.shorts-mini-add span:last-child {
+    font-size: 0.75rem;
+}
+
 .post-time {
     font-size: 0.75rem;
     color: var(--text-muted);

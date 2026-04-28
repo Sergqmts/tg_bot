@@ -11,7 +11,7 @@
             <div class="card" style="margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <div class="avatar">
-                        {% if request.user.avatar != 'default.png' %}
+                        {% set avatar_url = get_avatar_url(request.user) %}{% if avatar_url %}
                             <img src="{{ url_for('uploaded_file', filename=request.user.avatar) }}" alt="">
                         {% else %}
                             {{ request.user.username[0].upper() }}
