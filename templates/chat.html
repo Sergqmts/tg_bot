@@ -785,18 +785,7 @@ function applyFontSize(size) {
         document.body.appendChild(tooltip);
     }
     
-    // Add hover listeners to images and videos
-    document.querySelectorAll('.message-bubble img, .message-bubble video').forEach(function(el) {
-        el.addEventListener('mouseenter', function(e) {
-            var tooltip = document.getElementById('mediaPreviewTooltip');
-            if (this.tagName === 'IMG') {
-                tooltip.innerHTML = `<img src="${this.src}" alt="Preview">`;
-            } else {
-                tooltip.innerHTML = `<video src="${this.src}" muted></video>`;
-            }
-            tooltip.style.display = 'block';
-            updateTooltipPosition(e);
-        });
+    
         
         el.addEventListener('mousemove', function(e) {
             updateTooltipPosition(e);
