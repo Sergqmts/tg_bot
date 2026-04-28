@@ -38,26 +38,31 @@
             <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-icon">👥</a>
             <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="btn btn-icon">➕</a>
             {% endif %}
-            <div class="chat-tabs-dropdown">
-                <button class="btn btn-icon" onclick="toggleTabsMenu()">⋯</button>
-                <div class="tabs-menu" id="tabsMenu">
-                    <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="tabs-menu-item">📷 Медиа</a>
-                    <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="tabs-menu-item">📎 Документы</a>
-                    <a href="{{ url_for('chat_links', chat_id=chat.id) }}" class="tabs-menu-item">🔗 Ссылки</a>
+            <div class="chat-settings-dropdown">
+                <button class="btn btn-icon" onclick="toggleSettingsMenu(event)">⋯</button>
+                <div class="settings-menu" id="settingsMenu">
+                    <div class="settings-menu-item" onclick="toggleFontSettings()">🖍 Размер шрифта</div>
+                    <div class="font-settings" id="fontSettings" style="display:none; padding: 8px 16px;">
+                        <select id="fontSizeSelect" onchange="changeFontSize()" style="width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text);">
+                            <option value="small">Мелкий</option>
+                            <option value="medium" selected>Средний</option>
+                            <option value="large">Крупный</option>
+                        </select>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="settings-menu-item">📷 Медиа</a>
+                    <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="settings-menu-item">📎 Документы</a>
+                    <a href="{{ url_for('chat_links', chat_id=chat.id) }}" class="settings-menu-item">🔗 Ссылки</a>
+                    {% if chat.type != 'direct' %}
+                    <div class="settings-divider"></div>
+                    <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="settings-menu-item">⚙ Настройки чата</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </header>
     
-    <div class="chat-controls" style="display: flex; gap: 8px; padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--border);">
-    <select id="fontSizeSelect" onchange="changeFontSize()" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px;">
-        <option value="small">Мелкий</option>
-        <option value="medium" selected>Средний</option>
-        <option value="large">Крупный</option>
-    </select>
-</div>
-
-<div class="chat-messages" id="messagesArea">
+    <div class="chat-messages" id="messagesArea">
         {% for msg in messages %}
         <div class="chat-message {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}" oncontextmenu="showMessageMenu(event, {{ msg.id }}); return false;">
             {% if msg.sender_id != current_user.id %}
@@ -258,10 +263,10 @@ body .top-bar, body .bottom-nav {
     gap: 8px;
     position: relative;
 }
-.chat-tabs-dropdown {
+.chat-settings-dropdown {
     position: relative;
 }
-.tabs-menu {
+.settings-menu {
     display: none;
     position: absolute;
     top: 100%;
@@ -271,21 +276,36 @@ body .top-bar, body .bottom-nav {
     border-radius: 12px;
     padding: 8px 0;
     z-index: 100;
-    min-width: 160px;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.tabs-menu.show {
+.settings-menu.show {
     display: block;
 }
-.tabs-menu-item {
+.settings-menu-item {
     display: block;
     padding: 10px 16px;
     color: var(--text);
     text-decoration: none;
     font-size: 14px;
     transition: background 0.2s;
+    cursor: pointer;
 }
-.tabs-menu-item:hover {
+.settings-menu-item:hover {
     background: var(--border);
+}
+.settings-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
+.font-settings select {
+    width: 100%;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
 }
 .chat-messages {
     flex:1;
@@ -557,14 +577,20 @@ document.addEventListener('click', function(e) {
     if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
         document.getElementById('attachMenu').classList.remove('show');
     }
-    if (!e.target.closest('.chat-tabs-dropdown')) {
-        document.getElementById('tabsMenu').classList.remove('show');
+    if (!e.target.closest('.chat-settings-dropdown')) {
+        document.getElementById('settingsMenu').classList.remove('show');
     }
     document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
 });
 
-function toggleTabsMenu() {
-    document.getElementById('tabsMenu').classList.toggle('show');
+function toggleSettingsMenu(e) {
+    e.stopPropagation();
+    document.getElementById('settingsMenu').classList.toggle('show');
+}
+
+function toggleFontSettings() {
+    const fontDiv = document.getElementById('fontSettings');
+    fontDiv.style.display = fontDiv.style.display === 'none' ? 'block' : 'none';
 }
 
 document.addEventListener('contextmenu', function(e) {
@@ -633,8 +659,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load font size preference
     var savedSize = localStorage.getItem('chat_font_size') || 'medium';
     var select = document.getElementById('fontSizeSelect');
-    select.value = savedSize;
-    applyFontSize(savedSize);
+    if (select) {
+        select.value = savedSize;
+        applyFontSize(savedSize);
+    }
 });
 
 function changeFontSize() {
@@ -645,8 +673,10 @@ function changeFontSize() {
 
 function applyFontSize(size) {
     var area = document.getElementById('messagesArea');
-    area.classList.remove('font-small', 'font-medium', 'font-large');
-    area.classList.add('font-' + size);
+    if (area) {
+        area.classList.remove('font-small', 'font-medium', 'font-large');
+        area.classList.add('font-' + size);
+    }
 }
 
 // Link preview for YouTube
