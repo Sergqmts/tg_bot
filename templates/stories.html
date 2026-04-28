@@ -164,7 +164,7 @@
                 <div class="ig-story-item" onclick="window.location.href='{{ url_for('view_story', story_id=story.id) }}'">
                     <div class="ig-story-ring {% if story.viewed %}viewed{% endif %}">
                         <div class="ig-story-ring-inner">
-                            {% if story.user.avatar != 'default.png' %}
+                            {% set avatar_url = get_avatar_url(story.user) %}{% if avatar_url %}
                                 <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}" class="ig-story-img">
                             {% else %}
                                 <span class="ig-story-initials">{{ story.user.username[0].upper() }}</span>

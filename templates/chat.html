@@ -11,7 +11,7 @@
                 {% if chat.avatar.startswith('http') %}
                 <img src="{{ chat.avatar }}">
                 {% else %}
-                <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}">
+                <img src="{{ avatar_url }}">
                 {% endif %}
             {% else %}
             <span>
@@ -46,8 +46,8 @@
         <div class="chat-message {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}" oncontextmenu="showMessageMenu(event, {{ msg.id }}); return false;">
             {% if msg.sender_id != current_user.id %}
             <a href="{{ url_for('user_profile', username=msg.sender.username) }}" class="message-avatar">
-                {% if msg.sender.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=msg.sender.avatar) }}">
+                {% set avatar_url = get_avatar_url(msg.sender) %}{% if avatar_url %}
+                <img src="{{ avatar_url }}">
                 {% else %}
                 <div class="avatar-placeholder">{{ msg.sender.username[0].upper() }}</div>
                 {% endif %}

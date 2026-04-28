@@ -18,8 +18,8 @@
             <div class="story-header-bar">
                 <div class="user-info">
                     <div class="avatar-sm">
-                        {% if story.user.avatar != 'default.png' %}
-                            <img src="{{ url_for('uploaded_file', filename=story.user.avatar) }}">
+                        {% set avatar_url = get_avatar_url(story.user) %}{% if avatar_url %}
+                            <img src="{{ avatar_url }}">
                         {% else %}
                             {{ story.user.username[0].upper() }}
                         {% endif %}

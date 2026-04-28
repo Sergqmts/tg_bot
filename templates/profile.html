@@ -5,8 +5,9 @@
     <div class="profile-header">
         <div class="profile-info">
             <div class="profile-avatar-large">
-                {% if user.avatar and user.avatar != 'default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="">
+                {% set avatar_url = get_avatar_url(user) %}
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="">
                 {% else %}
                 <div class="avatar-placeholder-large">{{ user.username[0].upper() }}</div>
                 {% endif %}

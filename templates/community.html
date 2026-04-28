@@ -5,7 +5,9 @@
     <div class="profile-header">
         <div class="profile-info">
             <div class="profile-avatar-large">
-                {% if community.image and community.image != 'community_default.png' %}
+                {% if community.image and community.image.startswith('http') %}
+                <img src="{{ community.image }}" alt="">
+                {% elif community.image and community.image != 'community_default.png' %}
                 <img src="{{ url_for('uploaded_file', filename=community.image) }}" alt="">
                 {% else %}
                 <div class="avatar-placeholder-large">{{ community.name[0].upper() }}</div>
@@ -41,8 +43,11 @@
                         {% if is_member %}
                         <a href="{{ url_for('community_post', slug=community.slug) }}" class="btn btn-primary">Написать</a>
                         {% endif %}
-                        {% if community.creator_id == current_user.id %}
-                        <a href="{{ url_for('communities') }}" class="btn btn-outline">Управление</a>
+                        {% if is_admin %}
+                        {% if community.is_private %}
+                        <a href="{{ url_for('community_requests', slug=community.slug) }}" class="btn btn-outline">📩 Заявки</a>
+                        {% endif %}
+                        <a href="{{ url_for('community', slug=community.slug) }}?edit=1" class="btn btn-outline">⚙️ Управление</a>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -64,7 +69,9 @@
         <article class="post-card">
             <div class="post-header">
                 <a href="{{ url_for('community', slug=community.slug) }}" class="post-avatar">
-                    {% if community.image and community.image != 'community_default.png' %}
+                    {% if community.image and community.image.startswith('http') %}
+                    <img src="{{ community.image }}" alt="">
+                    {% elif community.image and community.image != 'community_default.png' %}
                     <img src="{{ url_for('uploaded_file', filename=community.image) }}" alt="">
                     {% else %}
                     <div class="avatar-placeholder">{{ community.name[0].upper() }}</div>
@@ -181,4 +188,35 @@ document.addEventListener('click', function(e) {
     });
 });
 </script>
+
+{% if show_edit %}
+<div class="modal show" style="display: flex;">
+    <div class="modal-content" style="max-width: 500px;">
+        <h2>Редактирование сообщества</h2>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Название</label>
+                <input type="text" name="name" value="{{ community.name }}" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label>Описание</label>
+                <textarea name="description" class="form-input" rows="4">{{ community.description or '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Обложка</label>
+                <input type="file" name="image" accept="image/*" class="form-input">
+                {% if community.image and community.image.startswith('http') %}
+                <img src="{{ community.image }}" style="max-width: 100px; margin-top: 10px; border-radius: 8px;">
+                {% elif community.image %}
+                <img src="{{ url_for('uploaded_file', filename=community.image) }}" style="max-width: 100px; margin-top: 10px; border-radius: 8px;">
+                {% endif %}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="{{ url_for('community', slug=community.slug) }}" class="btn btn-outline">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
