@@ -542,7 +542,7 @@ body .top-bar, body .bottom-nav {
 
 <script>
 // Simple toggle for settings menu
-function toggleMenu() {
+window.toggleMenu = function() {
     var menu = document.getElementById('settingsMenu');
     if (menu) menu.classList.toggle('show');
 }
@@ -600,8 +600,6 @@ document.addEventListener('click', function(e) {
 });
 
         console.log('Menu not found');
-    }
-}
 
 function toggleFontSettings() {
     var fontDiv = document.getElementById('fontSettings');
@@ -690,7 +688,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('mediaPreviewTooltip').style.display = 'none';
         });
     });
-});
 
 function changeFontSize() {
     var select = document.getElementById('fontSizeSelect');
@@ -746,8 +743,6 @@ function applyFontSize(size) {
         el.addEventListener('mouseleave', function() {
             document.getElementById('mediaPreviewTooltip').style.display = 'none';
         });
-    });
-});
 
 function updateTooltipPosition(e) {
     var tooltip = document.getElementById('mediaPreviewTooltip');
