@@ -2426,7 +2426,18 @@ def conversation(username):
         app.logger.error(f"Load messages error: {e}")
         messages = []
     
-    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post)
+    # Find chat_id for direct messages
+    chat_id = None
+    if other_user.id != current_user.id:
+        chat = Chat.query.filter(
+            Chat.type == 'direct',
+            Chat.members.any(ChatMember.user_id == current_user.id),
+            Chat.members.any(ChatMember.user_id == other_user.id)
+        ).first()
+        if chat:
+            chat_id = chat.id
+    
+    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post, chat_id=chat_id)
 
 
 @app.route('/chat/create', methods=['GET', 'POST'])

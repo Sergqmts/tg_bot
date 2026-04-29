@@ -22,9 +22,11 @@
     <div class="chat-actions" style="padding: 10px 16px; text-align: right;">
         <button class="btn btn-icon" onclick="toggleChatMenu()">...</button>
         <div class="settings-menu" id="chatMenu" style="display:none; position:absolute; right:16px; top:60px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px 0; z-index:9999; min-width:180px;">
-            <a href="{{ url_for('chat_media', chat_id=chat.id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">📷 Медиа</a>
-            <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">📎 Документы</a>
-            <a href="{{ url_for('chat_links', chat_id=chat.id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">🔗 Ссылки</a>
+            {% if chat_id %}
+            <a href="{{ url_for('chat_media', chat_id=chat_id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">📷 Медиа</a>
+            <a href="{{ url_for('chat_documents', chat_id=chat_id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">📎 Документы</a>
+            <a href="{{ url_for('chat_links', chat_id=chat_id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">🔗 Ссылки</a>
+            {% endif %}
         </div>
     </div>
     
