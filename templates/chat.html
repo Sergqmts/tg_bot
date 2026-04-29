@@ -61,17 +61,6 @@
                 </div>
             </div>
         </div>
-                    <div class="settings-divider"></div>
-                    <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="settings-menu-item">📷 Медиа</a>
-                    <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="settings-menu-item">📎 Документы</a>
-                    <a href="{{ url_for('chat_links', chat_id=chat.id) }}" class="settings-menu-item">🔗 Ссылки</a>
-                    {% if chat.type != 'direct' %}
-                    <div class="settings-divider"></div>
-                    <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="settings-menu-item">⚙ Настройки чата</a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
     </header>
     
     <div class="chat-messages" id="messagesArea">
