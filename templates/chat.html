@@ -33,34 +33,14 @@
             {% if chat.type != 'direct' %}{{ chat.members.count() }} участников{% else %}Личный{% endif %}
             </span>
         </a>
-        <div class="chat-actions">
-            <div class="chat-settings-dropdown">
-                <button class="btn btn-icon" id="settingsBtn" onclick="toggleMenu()">⋯</button>
-                <div class="settings-menu" id="settingsMenu">
-                    {% if chat.type != 'direct' %}
-                    <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="settings-menu-item">👥 Участники</a>
-                    <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="settings-menu-item">➕ Добавить</a>
-                    <div class="settings-divider"></div>
-                    {% endif %}
-                    <div class="settings-menu-item" id="fontSettingsToggle">🖍 Размер шрифта</div>
-                    <div class="font-settings" id="fontSettings" style="display:none; padding:8px 16px;">
-                        <select id="fontSizeSelect" onchange="changeFontSize()" style="width:100%; padding:4px 8px; border-radius:6px; border:1px solid var(--border); background: var(--surface); color: var(--text);">
-                            <option value="small">Мелкий</option>
-                            <option value="medium" selected>Средний</option>
-                            <option value="large">Крупный</option>
-                        </select>
-                    </div>
-                    <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="settings-menu-item">📷 Медиа</a>
-                    <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="settings-menu-item">📎 Документы</a>
-                    <a href="{{ url_for('chat_links', chat_id=chat.id) }}" class="settings-menu-item">🔗 Ссылки</a>
-                    {% if chat.type != 'direct' %}
-                    <div class="settings-divider"></div>
-                    <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="settings-menu-item">⚙ Настройки чата</a>
-                    {% endif %}
-                </div>
-            </div>
+    <div class="chat-actions" style="padding: 10px 16px; text-align: right;">
+        <button class="btn btn-icon" onclick="toggleChatMenu()">...</button>
+        <div class="settings-menu" id="chatMenu" style="display:none; position:absolute; right:16px; top:60px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px 0; z-index:9999; min-width:180px;">
+            <a href="{{ url_for('chat_media', chat_id=chat.id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">📷 Медиа</a>
+            <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">📎 Документы</a>
+            <a href="{{ url_for('chat_links', chat_id=chat.id) }}" style="display:block; padding:10px 16px; color:var(--text); text-decoration:none;">🔗 Ссылки</a>
         </div>
-    </header>
+    </div>
     
     <div class="chat-messages" id="messagesArea">
         {% for msg in messages %}
@@ -541,6 +521,12 @@ body .top-bar, body .bottom-nav {
 </style>
 
 <script>
+// Toggle chat settings menu
+window.toggleChatMenu = function() {
+    var menu = document.getElementById('chatMenu');
+    if (menu) menu.classList.toggle('show');
+};
+
 // Simple toggle for settings menu
 window.toggleMenu = function() {
     var menu = document.getElementById('settingsMenu');
