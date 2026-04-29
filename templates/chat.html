@@ -34,9 +34,9 @@
             </span>
         </a>
         <div class="chat-actions">
-            <div class="chat-settings-dropdown">
+            <div class="chat-settings-dropdown" style="position: relative;">
                 <button class="btn btn-icon" id="settingsBtn" onclick="toggleChatMenu()">⋯</button>
-                <div class="settings-menu" id="settingsMenu">
+                <div class="settings-menu" id="settingsMenu" style="display: none; position: absolute; top: 100%; right: 0; background: white; border: 1px solid #ccc; padding: 8px; z-index: 1000;">
                     {% if chat.type != 'direct' %}
                     <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="settings-menu-item">👥 Участники</a>
                     <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="settings-menu-item">➕ Добавить</a>
@@ -52,6 +52,26 @@
                 </div>
             </div>
         </div>
+
+        <script>
+        function toggleChatMenu() {
+            const menu = document.getElementById('settingsMenu');
+            if (menu.style.display === 'block') {
+            menu.style.display = 'none';
+            } else {
+            menu.style.display = 'block';
+            }
+        }
+
+        // Чтобы закрывать меню при клике вне его
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('settingsMenu');
+            const button = document.getElementById('settingsBtn');
+            if (!menu.contains(event.target) && !button.contains(event.target)) {
+            menu.style.display = 'none';
+            }
+        });
+        </script>
     </header>
     
     <div class="chat-messages" id="messagesArea">
