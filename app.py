@@ -2429,13 +2429,15 @@ def conversation(username):
     # Find chat_id for direct messages
     chat_id = None
     if other_user.id != current_user.id:
-        chat = Chat.query.filter(
-            Chat.type == 'direct',
-            Chat.members.any(ChatMember.user_id == current_user.id),
-            Chat.members.any(ChatMember.user_id == other_user.id)
-        ).first()
-        if chat:
-            chat_id = chat.id
+        # Find a chat where both users are members
+        chats_with_current = Chat.query.join(ChatMember).filter(
+            ChatMember.user_id == current_user.id
+        ).all()
+        for chat in chats_with_current:
+            member_ids = [m.user_id for m in chat.members]
+            if current_user.id in member_ids and other_user.id in member_ids and len(member_ids) == 2:
+                chat_id = chat.id
+                break
     
     return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post, chat_id=chat_id)
 
