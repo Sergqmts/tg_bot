@@ -533,6 +533,8 @@ body .top-bar, body .bottom-nav {
 </style>
 
 <script>
+// Toggle chat menu
+
 // Toggle chat settings menu
 window.toggleChatMenu = function() {
     var menu = document.getElementById('chatMenu');
@@ -581,12 +583,7 @@ document.addEventListener('click', function(e) {
     document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
 });
 
-function toggleChatMenu() {
-    var menu = document.getElementById('settingsMenu');
-    if (menu) {
-        menu.classList.toggle('show');
-        console.log('Menu toggled, show:', menu.classList.contains('show'));
-    } else {
+ else {
         console.log('Menu not found');
     }
 }
