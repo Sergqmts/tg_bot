@@ -35,7 +35,7 @@
         </a>
         <div class="chat-actions">
             <div class="chat-settings-dropdown">
-                <button class="btn btn-icon" id="settingsBtn">⋯</button>
+                <button class="btn btn-icon" id="settingsBtn" onclick="toggleMenu()">⋯</button>
                 <div class="settings-menu" id="settingsMenu">
                     {% if chat.type != 'direct' %}
                     <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="settings-menu-item">👥 Участники</a>
@@ -541,6 +541,20 @@ body .top-bar, body .bottom-nav {
 </style>
 
 <script>
+// Simple toggle for settings menu
+function toggleMenu() {
+    var menu = document.getElementById('settingsMenu');
+    if (menu) menu.classList.toggle('show');
+}
+
+// Close settings menu on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.chat-settings-dropdown')) {
+        var menu = document.getElementById('settingsMenu');
+        if (menu) menu.classList.remove('show');
+    }
+});
+
 let selectedFile = null;
 
 function toggleAttachMenu() {
@@ -575,20 +589,16 @@ function showMessageMenu(e, msgId) {
 
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
-        document.getElementById('attachMenu').classList.remove('show');
+        var am = document.getElementById('attachMenu');
+        if (am) am.classList.remove('show');
     }
     if (!e.target.closest('.chat-settings-dropdown')) {
-        document.getElementById('settingsMenu').classList.remove('show');
+        var sm = document.getElementById('settingsMenu');
+        if (sm) sm.classList.remove('show');
     }
     document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
 });
 
-function toggleSettingsMenu() {
-    var menu = document.getElementById('settingsMenu');
-    if (menu) {
-        menu.classList.toggle('show');
-        console.log('Menu toggled, show:', menu.classList.contains('show'));
-    } else {
         console.log('Menu not found');
     }
 }
@@ -662,27 +672,6 @@ function attachFileToForm(form) {
 document.addEventListener('DOMContentLoaded', function() {
     var area = document.getElementById('messagesArea');
     if (area) area.scrollTop = area.scrollHeight;
-    
-    // Settings menu button
-    var settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn) {
-        settingsBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var menu = document.getElementById('settingsMenu');
-            if (menu) menu.classList.toggle('show');
-        });
-    }
-    
-    // Font settings toggle
-    var fontToggle = document.getElementById('fontSettingsToggle');
-    if (fontToggle) {
-        fontToggle.addEventListener('click', function() {
-            var fontDiv = document.getElementById('fontSettings');
-            if (fontDiv) {
-                fontDiv.style.display = fontDiv.style.display === 'none' ? 'block' : 'none';
-            }
-        });
-    }
     
     // Load font size preference
     var savedSize = localStorage.getItem('chat_font_size') || 'medium';
