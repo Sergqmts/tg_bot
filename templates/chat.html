@@ -35,20 +35,48 @@
         </a>
         <div class="chat-actions">
             {% if chat.type != 'direct' %}
-            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-icon">👥</a>
-            <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="btn btn-icon">➕</a>
-            {% endif %}
             <div class="chat-settings-dropdown">
                 <button class="btn btn-icon" id="settingsBtn">⋯</button>
                 <div class="settings-menu" id="settingsMenu">
+                    <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="settings-menu-item">👥 Участники</a>
+                    <a href="{{ url_for('chat_add_member', chat_id=chat.id) }}" class="settings-menu-item">➕ Добавить</a>
+                    <div class="settings-divider"></div>
                     <div class="settings-menu-item" id="fontSettingsToggle">🖍 Размер шрифта</div>
-                    <div class="font-settings" id="fontSettings" style="display:none; padding: 8px 16px;">
-                        <select id="fontSizeSelect" onchange="changeFontSize()" style="width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text);">
+                    <div class="font-settings" id="fontSettings" style="display:none; padding:8px 16px;">
+                        <select id="fontSizeSelect" onchange="changeFontSize()" style="width:100%; padding:4px 8px; border-radius:6px; border:1px solid var(--border); background: var(--surface); color: var(--text);">
                             <option value="small">Мелкий</option>
                             <option value="medium" selected>Средний</option>
                             <option value="large">Крупный</option>
                         </select>
                     </div>
+                    <div class="settings-divider"></div>
+                    <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="settings-menu-item">📷 Медиа</a>
+                    <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="settings-menu-item">📎 Документы</a>
+                    <a href="{{ url_for('chat_links', chat_id=chat.id) }}" class="settings-menu-item">🔗 Ссылки</a>
+                    <div class="settings-divider"></div>
+                    <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="settings-menu-item">⚙ Настройки чата</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="chat-settings-dropdown">
+                <button class="btn btn-icon" id="settingsBtn2">⋯</button>
+                <div class="settings-menu" id="settingsMenu2">
+                    <div class="settings-menu-item" id="fontSettingsToggle2">🖍 Размер шрифта</div>
+                    <div class="font-settings" id="fontSettings2" style="display:none; padding:8px 16px;">
+                        <select id="fontSizeSelect2" onchange="changeFontSize2()" style="width:100%; padding:4px 8px; border-radius:6px; border:1px solid var(--border); background: var(--surface); color: var(--text);">
+                            <option value="small">Мелкий</option>
+                            <option value="medium" selected>Средний</option>
+                            <option value="large">Крупный</option>
+                        </select>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="settings-menu-item">📷 Медиа</a>
+                    <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="settings-menu-item">📎 Документы</a>
+                    <a href="{{ url_for('chat_links', chat_id=chat.id) }}" class="settings-menu-item">🔗 Ссылки</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
                     <div class="settings-divider"></div>
                     <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="settings-menu-item">📷 Медиа</a>
                     <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="settings-menu-item">📎 Документы</a>
@@ -663,26 +691,32 @@ document.addEventListener('DOMContentLoaded', function() {
     var area = document.getElementById('messagesArea');
     if (area) area.scrollTop = area.scrollHeight;
     
-    // Settings menu button
-    var settingsBtn = document.getElementById('settingsBtn');
-    if (settingsBtn) {
-        settingsBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var menu = document.getElementById('settingsMenu');
-            if (menu) menu.classList.toggle('show');
-        });
-    }
+    // Settings menu buttons
+    ['settingsBtn', 'settingsBtn2'].forEach(function(btnId) {
+        var btn = document.getElementById(btnId);
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var menuId = btnId === 'settingsBtn' ? 'settingsMenu' : 'settingsMenu2';
+                var menu = document.getElementById(menuId);
+                if (menu) menu.classList.toggle('show');
+            });
+        }
+    });
     
-    // Font settings toggle
-    var fontToggle = document.getElementById('fontSettingsToggle');
-    if (fontToggle) {
-        fontToggle.addEventListener('click', function() {
-            var fontDiv = document.getElementById('fontSettings');
-            if (fontDiv) {
-                fontDiv.style.display = fontDiv.style.display === 'none' ? 'block' : 'none';
-            }
-        });
-    }
+    // Font settings toggles
+    ['fontSettingsToggle', 'fontSettingsToggle2'].forEach(function(toggleId) {
+        var toggle = document.getElementById(toggleId);
+        if (toggle) {
+            toggle.addEventListener('click', function() {
+                var fontId = toggleId === 'fontSettingsToggle' ? 'fontSettings' : 'fontSettings2';
+                var fontDiv = document.getElementById(fontId);
+                if (fontDiv) {
+                    fontDiv.style.display = fontDiv.style.display === 'none' ? 'block' : 'none';
+                }
+            });
+        }
+    });
     
     // Load font size preference
     var savedSize = localStorage.getItem('chat_font_size') || 'medium';
@@ -704,9 +738,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function changeFontSize() {
-    var size = document.getElementById('fontSizeSelect').value;
-    localStorage.setItem('chat_font_size', size);
-    applyFontSize(size);
+    var select = document.getElementById('fontSizeSelect');
+    if (!select) select = document.getElementById('fontSizeSelect2');
+    if (select) {
+        var size = select.value;
+        localStorage.setItem('chat_font_size', size);
+        applyFontSize(size);
+    }
+}
+
+function changeFontSize2() {
+    var select = document.getElementById('fontSizeSelect2');
+    if (select) {
+        var size = select.value;
+        localStorage.setItem('chat_font_size', size);
+        applyFontSize(size);
+    }
 }
 
 function applyFontSize(size) {
