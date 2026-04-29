@@ -2658,7 +2658,8 @@ def chat_view(chat_id):
     Message.query.filter_by(chat_id=chat_id).filter(Message.sender_id != current_user.id, Message.read == False).update({'read': True})
     db.session.commit()
     
-    return render_template('chat.html', chat=chat, messages=messages, Post=Post)
+    is_admin = member and member.role == 'admin'
+    return render_template('chat.html', chat=chat, messages=messages, Post=Post, is_admin=is_admin)
 
 
 @app.route('/chat/<int:chat_id>/voice', methods=['POST'])
