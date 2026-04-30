@@ -2395,7 +2395,7 @@ def conversation(username):
         
         if body or media_url:
             try:
-                msg = Message(body=body or '', sender=current_user, recipient=other_user)
+                msg = Message(body=body or '', sender=current_user, recipient=other_user, chat_id=chat_id)
                 db.session.add(msg)
                 db.session.flush()
                 
@@ -2468,6 +2468,14 @@ def conversation(username):
                 member1 = ChatMember(chat_id=new_chat.id, user_id=current_user.id, role='member')
                 member2 = ChatMember(chat_id=new_chat.id, user_id=other_user.id, role='member')
                 db.session.add_all([member1, member2])
+                db.session.flush()
+                
+                # Update existing messages to link them to this chat
+                Message.query.filter(
+                    ((Message.sender_id == current_user.id) & (Message.recipient_id == other_user.id)) |
+                    ((Message.sender_id == other_user.id) & (Message.recipient_id == current_user.id))
+                ).update({Message.chat_id: new_chat.id})
+                
                 db.session.commit()
                 
                 chat_id = new_chat.id
