@@ -204,14 +204,6 @@ body .top-bar, body .bottom-nav {
     top: 0;
     z-index: 100;
 }
-.chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
 .chat-form-row {
     display: flex;
     align-items: center;
@@ -291,14 +283,15 @@ body .top-bar, body .bottom-nav {
     border-radius: 20px;
     font-size: 14px;
     line-height: 1.4;
+    backdrop-filter: blur(10px);
 }
 .chat-message.sent .message-bubble {
-    background: var(--primary);
+    background: rgba(0, 123, 255, 0.85);
     color: #fff;
     border-bottom-right-radius: 4px;
 }
 .chat-message.received .message-bubble {
-    background: var(--surface);
+    background: rgba(255, 255, 255, 0.85);
     color: var(--text);
     border-bottom-left-radius: 4px;
 }

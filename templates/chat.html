@@ -339,15 +339,6 @@ body .top-bar, body .bottom-nav {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    {% if chat.background_color %}
-    background-color: {{ chat.background_color }};
-    {% endif %}
-    {% if chat.background_image %}
-    background-image: url('{{ chat.background_image }}');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    {% endif %}
 }
 .chat-message {
     display: flex;
@@ -394,14 +385,15 @@ body .top-bar, body .bottom-nav {
     font-size: 14px;
     line-height: 1.4;
     position: relative;
+    backdrop-filter: blur(10px);
 }
 .chat-message.sent .message-bubble {
-    background: var(--primary);
+    background: rgba(0, 123, 255, 0.85);
     color: #fff;
     border-bottom-right-radius: 4px;
 }
 .chat-message.received .message-bubble {
-    background: var(--surface);
+    background: rgba(255, 255, 255, 0.85);
     color: var(--text);
     border-bottom-left-radius: 4px;
 }
