@@ -1877,3 +1877,83 @@ img, video {
     }
 }
 
+
+/* ===== MESSAGE MENU - Instagram Style ===== */
+.message-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--surface-elevated, #262626);
+    border: 1px solid var(--border, #363636);
+    border-radius: var(--radius-md, 8px);
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.3));
+    z-index: 1000;
+    animation: scaleIn 0.2s ease;
+}
+
+.message-menu.show {
+    display: block;
+}
+
+.message-menu .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--text, #FAFAFA);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 400;
+    transition: background 0.2s ease;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.message-menu .menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.message-menu .menu-item.danger {
+    color: var(--danger, #ED4956);
+}
+
+.message-menu .menu-item.danger:hover {
+    background: rgba(237, 73, 86, 0.1);
+}
+
+.menu-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    opacity: 0.9;
+}
+
+.menu-divider {
+    height: 1px;
+    background: var(--border, #363636);
+    margin: 8px 0;
+}
+
+/* Light mode overrides */
+.light-mode .message-menu {
+    background: var(--surface-elevated, #FFFFFF);
+    border-color: var(--border, #DBDBDB);
+}
+
+.light-mode .message-menu .menu-item {
+    color: var(--text, #262626);
+}
+
+.light-mode .message-menu .menu-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.light-mode .menu-divider {
+    background: var(--border, #DBDBDB);
+}

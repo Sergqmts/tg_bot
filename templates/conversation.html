@@ -775,7 +775,7 @@ body .top-bar, body .bottom-nav {
 </style>
 
 <script>
-// Toggle chat menu
+// Toggle chat settings menu
 function toggleChatMenu() {
     var menu = document.getElementById("settingsMenu");
     if (menu) {
@@ -783,43 +783,51 @@ function toggleChatMenu() {
     }
 }
 
-// Close menu when clicking outside
+// Close menus when clicking outside
 document.addEventListener('click', function(event) {
+    // Close chat settings menu
     var menu = document.getElementById('settingsMenu');
     var button = document.getElementById('settingsBtn');
     if (menu && button && !menu.contains(event.target) && !button.contains(event.target)) {
         menu.classList.remove('show');
     }
+    
+    // Close attach menu
+    if (!event.target.closest('.attach-btn') && !event.target.closest('.attach-menu')) {
+        var attachMenu = document.getElementById('attachMenu');
+        if (attachMenu) attachMenu.classList.remove('show');
+    }
+    
+    // Close message menus
+    if (!event.target.closest('.message-more-btn') && !event.target.closest('.message-menu')) {
+        document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
+    }
 });
 
 // Close chat settings menu on scroll
-document.getElementById('messagesArea')?.addEventListener('scroll', function() {
-    var menu = document.getElementById('settingsMenu');
-    if (menu) {
-        menu.classList.remove('show');
-    }
-});
+var messagesArea = document.getElementById('messagesArea');
+if (messagesArea) {
+    messagesArea.addEventListener('scroll', function() {
+        var menu = document.getElementById('settingsMenu');
+        if (menu) {
+            menu.classList.remove('show');
+        }
+    });
+}
 
 let selectedFile = null;
 
 function toggleAttachMenu() {
-    document.getElementById('attachMenu').classList.toggle('show');
+    var menu = document.getElementById('attachMenu');
+    if (menu) menu.classList.toggle('show');
 }
 
 function toggleMessageMenu(btn, msgId) {
     event.stopPropagation();
     document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
-    document.getElementById('menu-' + msgId).classList.toggle('show');
+    var menu = document.getElementById('menu-' + msgId);
+    if (menu) menu.classList.toggle('show');
 }
-
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
-        document.getElementById('attachMenu').classList.remove('show');
-    }
-    if (!e.target.closest('.message-more-btn') && !e.target.closest('.message-menu')) {
-        document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
-    }
-});
 
 function handleFileSelect(input) {
     if (input.files && input.files[0]) {
