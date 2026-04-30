@@ -2432,7 +2432,7 @@ def conversation(username):
     if other_user.id != current_user.id:
         try:
             # First, try to find existing direct chat with both users
-            # Find chats where current user is a member
+            # Find chats where current user is a member and type is 'direct'
             current_user_chats = Chat.query.join(ChatMember).filter(
                 ChatMember.user_id == current_user.id,
                 Chat.type == 'direct'
@@ -2493,7 +2493,7 @@ def create_chat():
             flash('Введите название чата')
             return redirect(url_for('create_chat'))
         
-        chat = Chat(name=name, creator_id=current_user.id)
+        chat = Chat(name=name, creator_id=current_user.id, type='group')
         db.session.add(chat)
         db.session.flush()
         
@@ -3703,33 +3703,53 @@ with app.app_context():
         from sqlalchemy import text
         is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
         
+        # Migration: add avatar_cloudinary_url if missing (PostgreSQL only)
         if is_postgres:
-            # Migration: add avatar_cloudinary_url if missing
             result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='avatar_cloudinary_url'"))
             if not result.fetchone():
                 db.session.execute(text('ALTER TABLE "user" ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
                 db.session.commit()
-            
-            # Migration: add type column to chat table if missing
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='chat' AND column_name='type'"))
-            if not result.fetchone():
+        
+        # Migration: add type column to chat table if missing (works for both Postgres and SQLite)
+        try:
+            # Try to query the type column - if it fails, we need to add it
+            Chat.query.filter_by(type='group').first()
+        except Exception:
+            # Column doesn't exist, add it
+            if is_postgres:
                 db.session.execute(text("ALTER TABLE chat ADD COLUMN type VARCHAR(20) DEFAULT 'group'"))
-                db.session.commit()
-                app.logger.info("Added type column to chat table")
-                
-                # Update existing chats
-                chats = Chat.query.all()
-                for chat in chats:
-                    members = ChatMember.query.filter_by(chat_id=chat.id).all()
-                    if len(members) == 2 and (not chat.name or chat.name.startswith('Direct:')):
-                        chat.type = 'direct'
-                    else:
-                        chat.type = 'group'
-                
-                db.session.commit()
-                app.logger.info("Updated chat types")
+            else:
+                # SQLite doesn't support ADD COLUMN with DEFAULT easily, so we add without default
+                db.session.execute(text("ALTER TABLE chat ADD COLUMN type VARCHAR(20)"))
+            db.session.commit()
+            app.logger.info("Added type column to chat table")
+            
+            # Update existing chats - set type based on number of members
+            chats = Chat.query.all()
+            for chat in chats:
+                members = ChatMember.query.filter_by(chat_id=chat.id).all()
+                if len(members) == 2 and (not chat.name or chat.name.startswith('Direct:')):
+                    chat.type = 'direct'
+                else:
+                    chat.type = 'group'
+            
+            db.session.commit()
+            app.logger.info("Updated chat types")
+        
+        # Make sure all chats have type set
+        chats_without_type = Chat.query.filter(Chat.type.is_(None)).all()
+        for chat in chats_without_type:
+            members = ChatMember.query.filter_by(chat_id=chat.id).all()
+            if len(members) == 2 and (not chat.name or chat.name.startswith('Direct:')):
+                chat.type = 'direct'
+            else:
+                chat.type = 'group'
+        if chats_without_type:
+            db.session.commit()
+            app.logger.info(f"Updated {len(chats_without_type)} chats with missing type")
+            
     except Exception as e:
-        app.logger.info(f"Migration error: {e}")
+        app.logger.error(f"Migration error: {e}")
 
 
 @app.context_processor
