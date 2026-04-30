@@ -66,6 +66,7 @@
             <h3 class="section-title">💬 Групповые чаты</h3>
             <div class="chats-list">
                 {% for chat in chats %}
+                {% if chat and chat.type != 'direct' %}
                 <form method="POST" class="forward-chat-form">
                     <input type="hidden" name="action" value="to_chat">
                     <input type="hidden" name="chat_id" value="{{ chat.id }}">
@@ -77,6 +78,7 @@
                         <span class="chat-members">{{ chat.members.count() }} уч.</span>
                     </button>
                 </form>
+                {% endif %}
                 {% endfor %}
             </div>
         </div>

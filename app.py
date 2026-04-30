@@ -2931,7 +2931,7 @@ def forward_message(message_id):
             return redirect(url_for('messages'))
     
     user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
-    chats = [Chat.query.get(cm.chat_id) for cm in user_chats]
+    chats = [Chat.query.get(cm.chat_id) for cm in user_chats if Chat.query.get(cm.chat_id) and Chat.query.get(cm.chat_id).type != 'direct']
     
     following = current_user.followed.all()
     
