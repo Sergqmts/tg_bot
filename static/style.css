@@ -1878,21 +1878,6 @@ img, video {
 }
 
 
-/* ===== MESSAGE MENU - Instagram Style ===== */
-.message-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--surface-elevated, #262626);
-    border: 1px solid var(--border, #363636);
-    border-radius: var(--radius-md, 8px);
-    padding: 8px 0;
-    min-width: 180px;
-    box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.3));
-    z-index: 1000;
-    animation: scaleIn 0.2s ease;
-}
 
 .message-menu.show {
     display: block;
@@ -1955,5 +1940,70 @@ img, video {
 }
 
 .light-mode .menu-divider {
+    background: var(--border, #DBDBDB);
+}
+
+/* ===== SETTINGS MENU - Instagram Style ===== */
+.settings-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--surface-elevated, #262626);
+    border: 1px solid var(--border, #363636);
+    border-radius: var(--radius-md, 8px);
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.3));
+    z-index: 1000;
+    animation: scaleIn 0.2s ease;
+}
+
+.settings-menu.show {
+    display: block;
+}
+
+.settings-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--text, #FAFAFA);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 400;
+    transition: background 0.2s ease;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.settings-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--border, #363636);
+    margin: 8px 0;
+}
+
+/* Light mode overrides */
+.light-mode .settings-menu {
+    background: var(--surface-elevated, #FFFFFF);
+    border-color: var(--border, #DBDBDB);
+}
+
+.light-mode .settings-menu-item {
+    color: var(--text, #262626);
+}
+
+.light-mode .settings-menu-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.light-mode .settings-divider {
     background: var(--border, #DBDBDB);
 }
