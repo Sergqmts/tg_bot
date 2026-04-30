@@ -33,11 +33,12 @@
     {% endif %}
     
     {% if group_chats %}
-    <div style="padding: 0 20px;">
+    <div style="padding:0 20px;">
         <h3 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Группы</h3>
     </div>
     <div class="chat-list" style="margin-bottom: 20px;">
         {% for item in group_chats %}
+        {% if item.chat.type == 'group' and not item.chat.name.startswith('Direct:') %}
         <a href="{{ url_for('chat_view', chat_id=item.chat.id) }}" class="chat-item">
             <div class="chat-avatar" style="background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);">
                 <span style="font-size: 20px;">👥</span>
@@ -50,6 +51,15 @@
                 {% if item.last %}
                 <div class="chat-time">{{ item.last.created_at.strftime('%H:%M') }}</div>
                 {% endif %}
+                {% if item.unread > 0 %}
+                <div class="unread-badge">{{ item.unread }}</div>
+                {% endif %}
+            </div>
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
                 {% if item.unread > 0 %}
                 <div class="unread-badge">{{ item.unread }}</div>
                 {% endif %}

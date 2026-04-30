@@ -2303,12 +2303,12 @@ def messages():
         if msg.recipient_id not in conversations:
             conversations[msg.recipient_id] = {'user': msg.recipient, 'last': msg, 'unread': 0, 'type': 'private'}
     
-    # Групповые чаты (только не direct)
+    # Групповые чаты (только с type='group')
     user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
     group_chats = []
     for member in user_chats:
         chat = Chat.query.get(member.chat_id)
-        if chat and chat.type != 'direct':
+        if chat and chat.type == 'group':
             last_msg = chat.messages.order_by(Message.created_at.desc()).first()
             unread_count = Message.query.filter_by(chat_id=chat.id).filter(Message.sender_id != current_user.id, Message.read == False).count()
             group_chats.append({
@@ -3717,12 +3717,14 @@ with app.app_context():
                 db.session.commit()
                 app.logger.info("Added type column to chat table")
                 
-                # Update existing chats: if they have exactly 2 members, mark as direct
+                # Update existing chats
                 chats = Chat.query.all()
                 for chat in chats:
                     members = ChatMember.query.filter_by(chat_id=chat.id).all()
-                    if len(members) == 2:
+                    if len(members) == 2 and (not chat.name or chat.name.startswith('Direct:')):
                         chat.type = 'direct'
+                    else:
+                        chat.type = 'group'
                 
                 db.session.commit()
                 app.logger.info("Updated chat types")
