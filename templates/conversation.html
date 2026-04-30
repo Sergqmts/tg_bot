@@ -25,15 +25,29 @@
             </div>
             <span>{{ other_user.username }}</span>
         </a>
-        <div class="chat-settings-dropdown" style="position: relative;">
-            <button class="btn btn-icon" id="settingsBtn" onclick="toggleChatMenu()">⋯</button>
-            <div class="settings-menu" id="settingsMenu" style="display: none; position: absolute; top: 100%; right: 0; background: white; border: 1px solid #ccc; padding: 8px; z-index: 1000;">
+        <div class="chat-settings-dropdown">
+            <button class="icon-btn" id="settingsBtn" onclick="toggleChatMenu()" title="Настройки чата">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            </button>
+            <div class="dropdown-menu" id="settingsMenu">
                 {% if chat_id %}
-                <a href="{{ url_for('chat_media', chat_id=chat_id) }}" class="settings-menu-item">📷 Медиа</a>
-                <a href="{{ url_for('chat_documents', chat_id=chat_id) }}" class="settings-menu-item">📎 Документы</a>
-                <a href="{{ url_for('chat_links', chat_id=chat_id) }}" class="settings-menu-item">🔗 Ссылки</a>
-                <div class="settings-divider"></div>
-                <a href="{{ url_for('chat_background', chat_id=chat_id) }}" class="settings-menu-item">🎨 Фон чата</a>
+                <a href="{{ url_for('chat_media', chat_id=chat_id) }}" class="dropdown-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                    Медиа
+                </a>
+                <a href="{{ url_for('chat_documents', chat_id=chat_id) }}" class="dropdown-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    Документы
+                </a>
+                <a href="{{ url_for('chat_links', chat_id=chat_id) }}" class="dropdown-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+                    Ссылки
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="{{ url_for('chat_background', chat_id=chat_id) }}" class="dropdown-item">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm0 2.18l6.74 3.68L12 12.72 5.26 8.86 12 5.18zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
+                    Фон чата
+                </a>
                 {% endif %}
             </div>
         </div>
@@ -765,11 +779,7 @@ body .top-bar, body .bottom-nav {
 function toggleChatMenu() {
     var menu = document.getElementById("settingsMenu");
     if (menu) {
-        if (menu.style.display === 'block') {
-            menu.style.display = 'none';
-        } else {
-            menu.style.display = 'block';
-        }
+        menu.classList.toggle('show');
     }
 }
 
@@ -778,7 +788,7 @@ document.addEventListener('click', function(event) {
     var menu = document.getElementById('settingsMenu');
     var button = document.getElementById('settingsBtn');
     if (menu && button && !menu.contains(event.target) && !button.contains(event.target)) {
-        menu.style.display = 'none';
+        menu.classList.remove('show');
     }
 });
 
