@@ -2426,18 +2426,55 @@ def conversation(username):
         app.logger.error(f"Load messages error: {e}")
         messages = []
     
-    # Find chat_id for direct messages
+    # Find or create chat_id for direct messages
     chat_id = None
     if other_user.id != current_user.id:
-        # Find a chat where both users are members
-        chats_with_current = Chat.query.join(ChatMember).filter(
-            ChatMember.user_id == current_user.id
-        ).all()
-        for chat in chats_with_current:
-            member_ids = [m.user_id for m in chat.members]
-            if current_user.id in member_ids and other_user.id in member_ids and len(member_ids) == 2:
-                chat_id = chat.id
-                break
+        try:
+            # Find a chat that has both users as members using subquery
+            # First, find chats where current_user is a member
+            subq1 = ChatMember.query.filter(
+                ChatMember.user_id == current_user.id
+            ).with_entities(ChatMember.chat_id).subquery()
+            
+            # Then, find chats where other_user is also a member
+            subq2 = ChatMember.query.filter(
+                ChatMember.user_id == other_user.id,
+                ChatMember.chat_id.in_(subq1)
+            ).with_entities(ChatMember.chat_id).subquery()
+            
+            # Finally, find chats that have exactly these 2 members
+            from sqlalchemy import func
+            chat_counts = ChatMember.query.filter(
+                ChatMember.chat_id.in_(subq2)
+            ).with_entities(
+                ChatMember.chat_id, 
+                func.count(ChatMember.user_id).label('member_count')
+            ).group_by(ChatMember.chat_id).subquery()
+            
+            found_chat = Chat.query.join(chat_counts, Chat.id == chat_counts.c.chat_id).filter(
+                chat_counts.c.member_count == 2
+            ).first()
+            
+            if found_chat:
+                chat_id = found_chat.id
+                app.logger.info(f"Found existing direct chat {chat_id}")
+            else:
+                # Create a new direct chat
+                new_chat = Chat(name=f"Direct: {current_user.username} - {other_user.username}", creator_id=current_user.id)
+                db.session.add(new_chat)
+                db.session.flush()
+                
+                # Add both users as members
+                member1 = ChatMember(chat_id=new_chat.id, user_id=current_user.id, role='member')
+                member2 = ChatMember(chat_id=new_chat.id, user_id=other_user.id, role='member')
+                db.session.add_all([member1, member2])
+                db.session.commit()
+                
+                chat_id = new_chat.id
+                app.logger.info(f"Created direct chat {chat_id} for {current_user.username} and {other_user.username}")
+        except Exception as e:
+            app.logger.error(f"Error in direct chat logic: {e}")
+            db.session.rollback()
     
     return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post, chat_id=chat_id)
 
