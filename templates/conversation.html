@@ -1034,18 +1034,18 @@ document.addEventListener('DOMContentLoaded', function() {
     </script>
     
     <script>
-    // Apply chat background to body
+    // Apply chat background to html element
     (function() {
         var bgColor = "{{ chat.background_color or '' }}";
         var bgImage = "{% if chat and chat.background_image %}{{ chat.background_image }}{% endif %}";
         
         if (bgColor) {
-            document.body.style.backgroundColor = bgColor;
+            document.documentElement.style.backgroundColor = bgColor;
         }
         if (bgImage) {
-            document.body.style.backgroundImage = "url('" + bgImage + "')";
-            document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundPosition = 'center';
+            document.documentElement.style.backgroundImage = "url('" + bgImage + "')";
+            document.documentElement.style.backgroundSize = 'cover';
+            document.documentElement.style.backgroundPosition = 'center';
         }
     })();
     </script>
