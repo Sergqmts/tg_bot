@@ -2484,7 +2484,12 @@ def conversation(username):
             app.logger.error(f"Error in direct chat logic: {e}")
             db.session.rollback()
     
-    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post, chat_id=chat_id)
+    # Get chat object if chat_id exists
+    chat = None
+    if chat_id:
+        chat = Chat.query.get(chat_id)
+    
+    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post, chat_id=chat_id, chat=chat)
 
 
 @app.route('/chat/create', methods=['GET', 'POST'])
@@ -2846,6 +2851,79 @@ def chat_links(chat_id):
                 links_dict[url] = msg
     
     return render_template('chat_links.html', chat=chat, links=links_dict)
+
+
+@app.route('/chat/<int:chat_id>/background', methods=['GET', 'POST'])
+@login_required
+def chat_background(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    # Predefined background colors
+    predefined_colors = [
+        '#ffffff', '#f0f0f0', '#e3f2fd', '#f3e5f5', '#e8f5e9',
+        '#fff3e0', '#ffebee', '#263238', '#1a237e', '#4a148c'
+    ]
+    
+    # Predefined background images (can be hosted or local)
+    predefined_images = [
+        'https://images.unsplash.com/photo-1557683316-973673baf926?w=800',
+        'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800',
+        'https://images.unsplash.com/photo-1558591715-ef1513844edd?w=800',
+        'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800',
+    ]
+    
+    if request.method == 'POST':
+        bg_type = request.form.get('bg_type', 'color')
+        
+        if bg_type == 'reset':
+            chat.background_color = ''
+            chat.background_image = ''
+            db.session.commit()
+            flash('Фон сброшен')
+            
+        elif bg_type == 'color':
+            color = request.form.get('color', '')
+            chat.background_color = color
+            chat.background_image = ''
+            db.session.commit()
+            flash('Цвет фона обновлен')
+            
+        elif bg_type == 'image_url':
+            image_url = request.form.get('image_url', '')
+            if image_url:
+                chat.background_image = image_url
+                chat.background_color = ''
+                db.session.commit()
+                flash('Фоновое изображение обновлено')
+                
+        elif bg_type == 'upload':
+            if 'background_image' in request.files:
+                file = request.files['background_image']
+                if file and file.filename:
+                    if cloudinary_configured:
+                        url = upload_to_cloudinary(file, folder='chat_backgrounds')
+                        if url:
+                            chat.background_image = url
+                            chat.background_color = ''
+                            db.session.commit()
+                            flash('Фоновое изображение загружено')
+                    else:
+                        filename = secure_filename(f"bg_{chat_id}_{int(datetime.now().timestamp())}_{file.filename}")
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        chat.background_image = '/media/' + filename
+                        chat.background_color = ''
+                        db.session.commit()
+                        flash('Фоновое изображение загружено')
+        
+        return redirect(url_for('chat_background', chat_id=chat_id))
+    
+    return render_template('chat_background.html', chat=chat, 
+                          predefined_colors=predefined_colors,
+                          predefined_images=predefined_images)
 
 
 @app.route('/message/<int:message_id>/forward')

@@ -25,6 +25,8 @@
                     <a href="{{ url_for('chat_media', chat_id=chat_id) }}" class="settings-menu-item">📷 Медиа</a>
                     <a href="{{ url_for('chat_documents', chat_id=chat_id) }}" class="settings-menu-item">📎 Документы</a>
                     <a href="{{ url_for('chat_links', chat_id=chat_id) }}" class="settings-menu-item">🔗 Ссылки</a>
+                    <div class="settings-divider"></div>
+                    <a href="{{ url_for('chat_background', chat_id=chat_id) }}" class="settings-menu-item">🎨 Фон чата</a>
                     {% endif %}
                 </div>
             </div>

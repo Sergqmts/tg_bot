@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{% if chat.type == 'direct' %}{% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}{% else %}{{ chat.name }}{% endif %} - Social{% endblock %}
 {% block content %}
-<div class="chat-page">
+<div class="chat-page" style="
+    background-color: {{ chat.background_color or '' }};
+    {% if chat.background_image %}
+    background-image: url('{{ chat.background_image }}');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    {% endif %}
+">
     <header class="chat-header">
         <a href="{{ url_for('messages') }}" class="btn btn-icon">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
@@ -47,6 +55,8 @@
                     <a href="{{ url_for('chat_media', chat_id=chat.id) }}" class="settings-menu-item">📷 Медиа</a>
                     <a href="{{ url_for('chat_documents', chat_id=chat.id) }}" class="settings-menu-item">📎 Документы</a>
                     <a href="{{ url_for('chat_links', chat_id=chat.id) }}" class="settings-menu-item">🔗 Ссылки</a>
+                    <div class="settings-divider"></div>
+                    <a href="{{ url_for('chat_background', chat_id=chat.id) }}" class="settings-menu-item">🎨 Фон чата</a>
                     {% if chat.type != 'direct' %}
                     <div class="settings-divider"></div>
                     <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="settings-menu-item">⚙ Настройки чата</a>
