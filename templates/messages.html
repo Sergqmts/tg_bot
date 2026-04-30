@@ -60,14 +60,6 @@
         {% endfor %}
     </div>
     {% endif %}
-                {% if item.unread > 0 %}
-                <div class="unread-badge">{{ item.unread }}</div>
-                {% endif %}
-            </div>
-        </a>
-        {% endfor %}
-    </div>
-    {% endif %}
     
     <div style="padding: 0 20px;">
         <h3 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Личные сообщения</h3>
@@ -78,14 +70,14 @@
         <a href="{{ url_for('conversation', username=conv.user.username) }}" class="chat-item">
             <div class="chat-avatar">
                 {% if conv.user %}
-                {% set avatar_url = get_avatar_url(conv.user) %}
-                {% if avatar_url %}
-                <img src="{{ avatar_url }}" alt="">
+                    {% set avatar_url = get_avatar_url(conv.user) %}
+                    {% if avatar_url %}
+                    <img src="{{ avatar_url }}" alt="">
+                    {% else %}
+                    <div class="avatar-placeholder">{{ conv.user.username[0].upper() }}</div>
+                    {% endif %}
                 {% else %}
-                <div class="avatar-placeholder">{{ conv.user.username[0].upper() }}</div>
-                {% endif %}
-                {% else %}
-                <div class="avatar-placeholder">?</div>
+                    <div class="avatar-placeholder">?</div>
                 {% endif %}
             </div>
             <div class="chat-info">
