@@ -1,14 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ other_user.username }} - Social{% endblock %}
 {% block content %}
-<div class="chat-page" style="
-    background-color: {{ chat.background_color or '' }};
-    {% if chat and chat.background_image %}
-    background-image: url('{{ chat.background_image }}');
-    background-size: cover;
-    background-position: center;
-    {% endif %}
-">
+<div class="chat-page">
     <header class="chat-header">
         <a href="{{ url_for('messages') }}" class="btn btn-icon">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
@@ -1038,5 +1031,22 @@ document.addEventListener('DOMContentLoaded', function() {
     var area = document.getElementById('messagesArea');
     area.scrollTop = area.scrollHeight;
 });
-</script>
+    </script>
+    
+    <script>
+    // Apply chat background to body
+    (function() {
+        var bgColor = "{{ chat.background_color or '' }}";
+        var bgImage = "{% if chat and chat.background_image %}{{ chat.background_image }}{% endif %}";
+        
+        if (bgColor) {
+            document.body.style.backgroundColor = bgColor;
+        }
+        if (bgImage) {
+            document.body.style.backgroundImage = "url('" + bgImage + "')";
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+        }
+    })();
+    </script>
 {% endblock %}
