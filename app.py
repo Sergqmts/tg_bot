@@ -101,12 +101,16 @@ db = SQLAlchemy(app)
 
 def init_db():
     try:
-        from sqlalchemy import text
-        with db.engine.connect() as conn:
-            result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message' AND column_name='transcription'"))
-            if not result.fetchone():
-                conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
-                conn.commit()
+        from sqlalchemy import text, inspect
+        inspector = inspect(db.engine)
+        tables = inspector.get_table_names()
+        
+        if 'message' in tables:
+            columns = [col['name'] for col in inspector.get_columns('message')]
+            if 'transcription' not in columns:
+                with db.engine.connect() as conn:
+                    conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
+                    conn.commit()
     except Exception as e:
         app.logger.error(f"DB init error: {e}")
 
@@ -190,237 +194,23 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-_migration_done = False
-
-@app.before_request
-def run_migrations():
-    global _migration_done
-    if _migration_done:
-        return
-    _migration_done = True
-    
-    from sqlalchemy import text
-    is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
-    is_sqlite = 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']
-    
+def _add_column_if_not_exists(table_name, col_name, col_type, default=None):
+    """Add column to table if it doesn't exist (database-agnostic)"""
+    from sqlalchemy import text, inspect
     try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
-            existing = [row[0] for row in result]
-            for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
-                if col not in existing:
-                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-            
-            privacy_cols = [('is_private', 'BOOLEAN DEFAULT FALSE'), ('hide_followers', 'BOOLEAN DEFAULT FALSE'), ('hide_following', 'BOOLEAN DEFAULT FALSE'), ('approve_followers', 'BOOLEAN DEFAULT FALSE')]
-            for col, typ in privacy_cols:
-                if col not in existing:
-                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-            
-            phone_cols = [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT FALSE'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]
-            for col, typ in phone_cols:
-                if col not in existing:
-                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-        elif is_sqlite:
-            for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
-                try:
-                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-                except:
-                    pass
-            for col, typ in [('is_private', 'BOOLEAN DEFAULT 0'), ('hide_followers', 'BOOLEAN DEFAULT 0'), ('hide_following', 'BOOLEAN DEFAULT 0'), ('approve_followers', 'BOOLEAN DEFAULT 0')]:
-                try:
-                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-                except:
-                    pass
-            for col, typ in [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT 0'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]:
-                try:
-                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-                except:
-                    pass
-    except Exception as e:
-        app.logger.info(f"User migration: {e}")
-    
-    try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='community'"))
-            existing = [row[0] for row in result]
-            if 'is_private' not in existing:
-                db.session.execute(text('ALTER TABLE "community" ADD COLUMN is_private BOOLEAN DEFAULT FALSE'))
-                db.session.commit()
-        elif is_sqlite:
-            try:
-                db.session.execute(text("ALTER TABLE community ADD COLUMN is_private BOOLEAN DEFAULT 0"))
-                db.session.commit()
-            except:
-                pass
-    except Exception as e:
-        app.logger.info(f"Community migration: {e}")
-    
-    try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='community_member'"))
-            existing = [row[0] for row in result]
-            if 'status' not in existing:
-                db.session.execute(text('ALTER TABLE "community_member" ADD COLUMN status VARCHAR(20) DEFAULT \'approved\''))
-                db.session.commit()
-        elif is_sqlite:
-            try:
-                db.session.execute(text("ALTER TABLE community_member ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
-                db.session.commit()
-            except:
-                pass
-    except Exception as e:
-        app.logger.info(f"Member migration: {e}")
-    
-    try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='post'"))
-            existing = [row[0] for row in result]
-            if 'is_community_post' not in existing:
-                db.session.execute(text('ALTER TABLE "post" ADD COLUMN is_community_post BOOLEAN DEFAULT FALSE'))
-                db.session.commit()
-        elif is_sqlite:
-            try:
-                db.session.execute(text("ALTER TABLE post ADD COLUMN is_community_post BOOLEAN DEFAULT 0"))
-                db.session.commit()
-            except:
-                pass
-    except Exception as e:
-        app.logger.info(f"Post migration: {e}")
-    
-    try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='followers'"))
-            existing = [row[0] for row in result]
-            if 'status' not in existing:
-                db.session.execute(text('ALTER TABLE "followers" ADD COLUMN status VARCHAR(20) DEFAULT \'approved\''))
-                db.session.commit()
-        elif is_sqlite:
-            try:
-                db.session.execute(text("ALTER TABLE followers ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
-                db.session.commit()
-            except:
-                pass
-    except Exception as e:
-        app.logger.info(f"Followers migration: {e}")
-    
-    try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT table_name FROM information_schema.tables WHERE table_name='chat'"))
-            if not result.fetchone():
-                db.session.execute(text('''
-                    CREATE TABLE chat (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        creator_id INTEGER REFERENCES "user"(id) NOT NULL,
-                        avatar VARCHAR(200) DEFAULT 'chat_default.png',
-                        background_color VARCHAR(20) DEFAULT '',
-                        background_image VARCHAR(500) DEFAULT ''
-                    );
-                    CREATE TABLE chat_member (
-                        id SERIAL PRIMARY KEY,
-                        chat_id INTEGER REFERENCES chat(id) ON DELETE CASCADE NOT NULL,
-                        user_id INTEGER REFERENCES "user"(id) NOT NULL,
-                        role VARCHAR(20) DEFAULT 'member',
-                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                '''))
-                db.session.commit()
-            
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message'"))
-            existing = [row[0] for row in result]
-            if 'chat_id' not in existing:
-                db.session.execute(text('ALTER TABLE message ADD COLUMN chat_id INTEGER'))
-                db.session.commit()
-            
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='chat'"))
-            chat_existing = [row[0] for row in result]
-            for col, typ in [('background_color', 'VARCHAR(20)'), ('background_image', 'VARCHAR(500)')]:
-                if col not in chat_existing:
-                    db.session.execute(text(f'ALTER TABLE chat ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-            
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message'"))
-            msg_existing = [row[0] for row in result]
-            for col, typ in [('self_destruct_after', 'INTEGER'), ('self_destruct_at', 'TIMESTAMP')]:
-                if col not in msg_existing:
-                    db.session.execute(text(f'ALTER TABLE message ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-            
-            db.session.execute(text('ALTER TABLE message ALTER COLUMN recipient_id DROP NOT NULL'))
+        inspector = inspect(db.engine)
+        if table_name not in inspector.get_table_names():
+            return
+        columns = [col['name'] for col in inspector.get_columns(table_name)]
+        if col_name not in columns:
+            sql = f'ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}'
+            if default is not None:
+                sql += f' DEFAULT {default}'
+            db.session.execute(text(sql))
             db.session.commit()
-            
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='story'"))
-            story_cols = [row[0] for row in result]
-            if 'is_archived' not in story_cols:
-                db.session.execute(text('ALTER TABLE story ADD COLUMN is_archived BOOLEAN DEFAULT FALSE'))
-                db.session.commit()
-            if 'reposted_at' not in story_cols:
-                db.session.execute(text('ALTER TABLE story ADD COLUMN reposted_at TIMESTAMP'))
-                db.session.commit()
-            
-            try:
-                db.session.execute(text("ALTER TABLE story_reaction DROP CONSTRAINT IF EXISTS story_reaction_story_id_fkey"))
-                db.session.execute(text("ALTER TABLE story_reaction ADD CONSTRAINT story_reaction_story_id_fkey FOREIGN KEY (story_id) REFERENCES story(id) ON DELETE CASCADE"))
-                db.session.commit()
-            except Exception as e:
-                app.logger.info(f"Story reaction FK: {e}")
-            
-            try:
-                db.session.execute(text("ALTER TABLE story_comment DROP CONSTRAINT IF EXISTS story_comment_story_id_fkey"))
-                db.session.execute(text("ALTER TABLE story_comment ADD CONSTRAINT story_comment_story_id_fkey FOREIGN KEY (story_id) REFERENCES story(id) ON DELETE CASCADE"))
-                db.session.commit()
-            except Exception as e:
-                app.logger.info(f"Story comment FK: {e}")
-        elif is_sqlite:
-            result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='chat'"))
-            if not result.fetchone():
-                db.session.execute(text('''
-                    CREATE TABLE chat (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name VARCHAR(100) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        creator_id INTEGER NOT NULL,
-                        avatar VARCHAR(200) DEFAULT 'chat_default.png'
-                    );
-                    CREATE TABLE chat_member (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        chat_id INTEGER NOT NULL,
-                        user_id INTEGER NOT NULL,
-                        role VARCHAR(20) DEFAULT 'member',
-                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                '''))
-                db.session.commit()
-            
-            try:
-                result = db.session.execute(text("PRAGMA table_info(message)"))
-                columns = [row[1] for row in result.fetchall()]
-                if 'chat_id' not in columns:
-                    db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
-                    db.session.commit()
-            except Exception as e:
-                app.logger.info(f"Chat ID column add: {e}")
-            
-            try:
-                result = db.session.execute(text("PRAGMA table_info(story)"))
-                story_cols = [row[1] for row in result.fetchall()]
-                if 'is_archived' not in story_cols:
-                    db.session.execute(text("ALTER TABLE story ADD COLUMN is_archived INTEGER DEFAULT 0"))
-                    db.session.commit()
-                if 'reposted_at' not in story_cols:
-                    db.session.execute(text("ALTER TABLE story ADD COLUMN reposted_at TIMESTAMP"))
-                    db.session.commit()
-            except Exception as e:
-                app.logger.info(f"Story columns add: {e}")
+            app.logger.info(f"Added column {col_name} to {table_name}")
     except Exception as e:
-        app.logger.info(f"Chat migration: {e}")
+        app.logger.info(f"Column add {col_name} to {table_name}: {e}")
 
 
 followers = db.Table('followers',
@@ -1394,7 +1184,7 @@ def create_story():
             
             try:
                 binary = base64.b64decode(data)
-            except:
+            except Exception:
                 return 'Invalid base64 data', 400
             
             filename = f'story_{datetime.now().timestamp()}.{ext}'
@@ -1777,12 +1567,12 @@ def delete(post_id):
         from sqlalchemy import text
         db.session.execute(text("UPDATE message SET post_id = NULL WHERE post_id = :post_id"), {'post_id': post_id})
         db.session.execute(text("DELETE FROM repost WHERE post_id = :post_id"), {'post_id': post_id})
-    except: pass
+    except Exception: pass
     
     for media in post.media:
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], media.filename))
-        except: pass
+        except Exception: pass
     db.session.delete(post)
     db.session.commit()
     flash('Пост удалён')
@@ -2060,7 +1850,7 @@ def explore():
 
 
 @app.route('/shorts')
-@app.route('/sharts')
+@app.route('/shorts/arts')
 def shorts():
     shorts_list = Shorts.query.order_by(Shorts.created_at.desc()).limit(20).all()
     audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).limit(20).all()
@@ -2353,7 +2143,7 @@ def conversation(username):
     try:
         Message.query.filter_by(sender=other_user, recipient=current_user, read=False).update({'read': True})
         db.session.commit()
-    except:
+    except Exception:
         db.session.rollback()
     
     if request.method == 'POST':
@@ -3526,48 +3316,78 @@ def uploaded_file(filename):
 with app.app_context():
     db.create_all()
     
+    # Run all migrations at startup
     try:
-        from sqlalchemy import text
-        result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
-        columns = [row[0] for row in result]
+        # User columns
+        _add_column_if_not_exists('user', 'location', 'VARCHAR(100)')
+        _add_column_if_not_exists('user', 'website', 'VARCHAR(200)')
+        _add_column_if_not_exists('user', 'birthday', 'DATE')
+        _add_column_if_not_exists('user', 'interests', 'TEXT')
+        _add_column_if_not_exists('user', 'occupation', 'VARCHAR(100)')
+        _add_column_if_not_exists('user', 'is_private', 'BOOLEAN', '0')
+        _add_column_if_not_exists('user', 'hide_followers', 'BOOLEAN', '0')
+        _add_column_if_not_exists('user', 'hide_following', 'BOOLEAN', '0')
+        _add_column_if_not_exists('user', 'approve_followers', 'BOOLEAN', '0')
+        _add_column_if_not_exists('user', 'phone', 'VARCHAR(20)')
+        _add_column_if_not_exists('user', 'phone_verified', 'BOOLEAN', '0')
+        _add_column_if_not_exists('user', 'phone_otp', 'VARCHAR(6)')
+        _add_column_if_not_exists('user', 'phone_otp_expires', 'TIMESTAMP')
+        _add_column_if_not_exists('user', 'avatar_cloudinary_url', 'VARCHAR(500)')
         
-        if 'avatar_url' in columns:
-            db.session.execute(text("ALTER TABLE user DROP COLUMN avatar_url"))
+        # Drop old avatar_url column if exists
+        from sqlalchemy import text, inspect
+        inspector = inspect(db.engine)
+        if 'user' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('user')]
+            if 'avatar_url' in columns:
+                try:
+                    db.session.execute(text("ALTER TABLE user DROP COLUMN avatar_url"))
+                    db.session.commit()
+                    app.logger.info("Dropped avatar_url column")
+                except Exception:
+                    pass
+        
+        # Other tables columns
+        _add_column_if_not_exists('community', 'is_private', 'BOOLEAN', '0')
+        _add_column_if_not_exists('community_member', 'status', 'VARCHAR(20)', "'approved'")
+        _add_column_if_not_exists('post', 'is_community_post', 'BOOLEAN', '0')
+        _add_column_if_not_exists('followers', 'status', 'VARCHAR(20)', "'approved'")
+        _add_column_if_not_exists('message', 'post_id', 'INTEGER')
+        _add_column_if_not_exists('chat', 'type', 'VARCHAR(20)', "'group'")
+        _add_column_if_not_exists('chat', 'background_color', 'VARCHAR(20)', "''")
+        _add_column_if_not_exists('chat', 'background_image', 'VARCHAR(500)', "''")
+        _add_column_if_not_exists('message', 'chat_id', 'INTEGER')
+        _add_column_if_not_exists('message', 'self_destruct_after', 'INTEGER')
+        _add_column_if_not_exists('message', 'self_destruct_at', 'TIMESTAMP')
+        _add_column_if_not_exists('story', 'is_archived', 'BOOLEAN', '0')
+        _add_column_if_not_exists('story', 'reposted_at', 'TIMESTAMP')
+        
+        # Update chat types
+        try:
+            chats_without_type = Chat.query.filter(Chat.type.is_(None)).all()
+            for chat in chats_without_type:
+                members = ChatMember.query.filter_by(chat_id=chat.id).all()
+                if len(members) == 2 and (not chat.name or chat.name.startswith('Direct:')):
+                    chat.type = 'direct'
+                else:
+                    chat.type = 'group'
+            if chats_without_type:
+                db.session.commit()
+                app.logger.info(f"Updated {len(chats_without_type)} chats with missing type")
+        except Exception as e:
+            app.logger.info(f"Chat type update: {e}")
+        
+        # Update message bodies
+        try:
+            db.session.execute(text("UPDATE message SET body = COALESCE(body, '') WHERE body IS NULL"))
             db.session.commit()
-            app.logger.info("Dropped avatar_url column")
+        except Exception as e:
+            db.session.rollback()
+            app.logger.info(f"Error updating bodies: {e}")
+        
+        app.logger.info("All migrations completed successfully")
     except Exception as e:
-        app.logger.info(f"Column check/drop error: {e}")
-    
-    try:
-        db.session.execute(text("CREATE TABLE IF NOT EXISTS repost (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"))
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        app.logger.info(f"Table repost may already exist: {e}")
-    
-    try:
-        result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message' AND column_name='post_id'"))
-        if result.fetchone() is None:
-            db.session.execute(text("ALTER TABLE message ADD COLUMN post_id INTEGER REFERENCES post(id)"))
-            db.session.commit()
-            app.logger.info("Added post_id column to message")
-    except Exception as e:
-        db.session.rollback()
-        app.logger.info(f"Column post_id in message may already exist: {e}")
-    
-    try:
-        db.session.execute(text("CREATE TABLE IF NOT EXISTS message_media (id SERIAL PRIMARY KEY, message_id INTEGER NOT NULL, media_url VARCHAR(500), media_type VARCHAR(20))"))
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        app.logger.info(f"Table message_media may already exist: {e}")
-    
-    try:
-        db.session.execute(text("UPDATE message SET body = COALESCE(body, '')"))
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        app.logger.info(f"Error updating bodies: {e}")
+        app.logger.error(f"Migration error: {e}")
 
 
 if __name__ == '__main__':
@@ -3658,7 +3478,7 @@ def process_video_route():
         
         try:
             os.unlink(temp_path)
-        except:
+        except Exception:
             pass
         
         if result:
@@ -3687,7 +3507,7 @@ def video_thumbnail_route():
         
         try:
             os.unlink(temp_path)
-        except:
+        except Exception:
             pass
         
         if thumb:
@@ -3700,53 +3520,30 @@ def video_thumbnail_route():
 
 with app.app_context():
     try:
-        from sqlalchemy import text
-        is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
+        from sqlalchemy import text, inspect
         
-        # Migration: add avatar_cloudinary_url if missing (PostgreSQL only)
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='avatar_cloudinary_url'"))
-            if not result.fetchone():
-                db.session.execute(text('ALTER TABLE "user" ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
-                db.session.commit()
+        # Migration: add avatar_cloudinary_url if missing
+        _add_column_if_not_exists('user', 'avatar_cloudinary_url', 'VARCHAR(500)')
         
-        # Migration: add type column to chat table if missing (works for both Postgres and SQLite)
+        # Migration: add missing columns to chat table
+        _add_column_if_not_exists('chat', 'type', 'VARCHAR(20)', "'group'")
+        _add_column_if_not_exists('chat', 'background_color', 'VARCHAR(20)', "''")
+        _add_column_if_not_exists('chat', 'background_image', 'VARCHAR(500)', "''")
+        
+        # Update existing chats - set type based on number of members
         try:
-            # Try to query the type column - if it fails, we need to add it
-            Chat.query.filter_by(type='group').first()
-        except Exception:
-            # Column doesn't exist, add it
-            if is_postgres:
-                db.session.execute(text("ALTER TABLE chat ADD COLUMN type VARCHAR(20) DEFAULT 'group'"))
-            else:
-                # SQLite doesn't support ADD COLUMN with DEFAULT easily, so we add without default
-                db.session.execute(text("ALTER TABLE chat ADD COLUMN type VARCHAR(20)"))
-            db.session.commit()
-            app.logger.info("Added type column to chat table")
-            
-            # Update existing chats - set type based on number of members
-            chats = Chat.query.all()
-            for chat in chats:
+            chats_without_type = Chat.query.filter(Chat.type.is_(None)).all()
+            for chat in chats_without_type:
                 members = ChatMember.query.filter_by(chat_id=chat.id).all()
                 if len(members) == 2 and (not chat.name or chat.name.startswith('Direct:')):
                     chat.type = 'direct'
                 else:
                     chat.type = 'group'
-            
-            db.session.commit()
-            app.logger.info("Updated chat types")
-        
-        # Make sure all chats have type set
-        chats_without_type = Chat.query.filter(Chat.type.is_(None)).all()
-        for chat in chats_without_type:
-            members = ChatMember.query.filter_by(chat_id=chat.id).all()
-            if len(members) == 2 and (not chat.name or chat.name.startswith('Direct:')):
-                chat.type = 'direct'
-            else:
-                chat.type = 'group'
-        if chats_without_type:
-            db.session.commit()
-            app.logger.info(f"Updated {len(chats_without_type)} chats with missing type")
+            if chats_without_type:
+                db.session.commit()
+                app.logger.info(f"Updated {len(chats_without_type)} chats with missing type")
+        except Exception as e:
+            app.logger.info(f"Chat type update: {e}")
             
     except Exception as e:
         app.logger.error(f"Migration error: {e}")
