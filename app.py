@@ -944,6 +944,7 @@ class MessageReaction(db.Model):
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(20), default='group')  # 'group' or 'direct'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     avatar = db.Column(db.String(200), default='chat_default.png')
@@ -2302,12 +2303,12 @@ def messages():
         if msg.recipient_id not in conversations:
             conversations[msg.recipient_id] = {'user': msg.recipient, 'last': msg, 'unread': 0, 'type': 'private'}
     
-    # Групповые чаты
+    # Групповые чаты (только не direct)
     user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
     group_chats = []
     for member in user_chats:
         chat = Chat.query.get(member.chat_id)
-        if chat:
+        if chat and chat.type != 'direct':
             last_msg = chat.messages.order_by(Message.created_at.desc()).first()
             unread_count = Message.query.filter_by(chat_id=chat.id).filter(Message.sender_id != current_user.id, Message.read == False).count()
             group_chats.append({
@@ -2430,37 +2431,26 @@ def conversation(username):
     chat_id = None
     if other_user.id != current_user.id:
         try:
-            # Find a chat that has both users as members using subquery
-            # First, find chats where current_user is a member
-            subq1 = ChatMember.query.filter(
-                ChatMember.user_id == current_user.id
-            ).with_entities(ChatMember.chat_id).subquery()
+            # First, try to find existing direct chat with both users
+            # Find chats where current user is a member
+            current_user_chats = Chat.query.join(ChatMember).filter(
+                ChatMember.user_id == current_user.id,
+                Chat.type == 'direct'
+            ).all()
             
-            # Then, find chats where other_user is also a member
-            subq2 = ChatMember.query.filter(
-                ChatMember.user_id == other_user.id,
-                ChatMember.chat_id.in_(subq1)
-            ).with_entities(ChatMember.chat_id).subquery()
-            
-            # Finally, find chats that have exactly these 2 members
-            from sqlalchemy import func
-            chat_counts = ChatMember.query.filter(
-                ChatMember.chat_id.in_(subq2)
-            ).with_entities(
-                ChatMember.chat_id, 
-                func.count(ChatMember.user_id).label('member_count')
-            ).group_by(ChatMember.chat_id).subquery()
-            
-            found_chat = Chat.query.join(chat_counts, Chat.id == chat_counts.c.chat_id).filter(
-                chat_counts.c.member_count == 2
-            ).first()
+            found_chat = None
+            for chat in current_user_chats:
+                member_ids = [m.user_id for m in ChatMember.query.filter_by(chat_id=chat.id).all()]
+                if other_user.id in member_ids and len(member_ids) == 2:
+                    found_chat = chat
+                    break
             
             if found_chat:
                 chat_id = found_chat.id
                 app.logger.info(f"Found existing direct chat {chat_id}")
             else:
                 # Create a new direct chat
-                new_chat = Chat(name=f"Direct: {current_user.username} - {other_user.username}", creator_id=current_user.id)
+                new_chat = Chat(name=f"Direct: {current_user.username} - {other_user.username}", creator_id=current_user.id, type='direct')
                 db.session.add(new_chat)
                 db.session.flush()
                 
@@ -3714,12 +3704,32 @@ with app.app_context():
         is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
         
         if is_postgres:
+            # Migration: add avatar_cloudinary_url if missing
             result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='avatar_cloudinary_url'"))
             if not result.fetchone():
                 db.session.execute(text('ALTER TABLE "user" ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
                 db.session.commit()
+            
+            # Migration: add type column to chat table if missing
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='chat' AND column_name='type'"))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE chat ADD COLUMN type VARCHAR(20) DEFAULT 'group'"))
+                db.session.commit()
+                app.logger.info("Added type column to chat table")
+                
+                # Update existing chats: if they have exactly 2 members, mark as direct
+                from models import Chat, ChatMember
+                chats = Chat.query.all()
+                for chat in chats:
+                    members = ChatMember.query.filter_by(chat_id=chat.id).all()
+                    if len(members) == 2:
+                        # Check if it's a direct chat (no spaces in name, contains both usernames)
+                        chat.type = 'direct'
+                
+                db.session.commit()
+                app.logger.info("Updated chat types")
     except Exception as e:
-        app.logger.info(f"Migration avatar_cloudinary_url: {e}")
+        app.logger.info(f"Migration error: {e}")
 
 
 @app.context_processor
