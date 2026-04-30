@@ -3718,12 +3718,10 @@ with app.app_context():
                 app.logger.info("Added type column to chat table")
                 
                 # Update existing chats: if they have exactly 2 members, mark as direct
-                from models import Chat, ChatMember
                 chats = Chat.query.all()
                 for chat in chats:
                     members = ChatMember.query.filter_by(chat_id=chat.id).all()
                     if len(members) == 2:
-                        # Check if it's a direct chat (no spaces in name, contains both usernames)
                         chat.type = 'direct'
                 
                 db.session.commit()
