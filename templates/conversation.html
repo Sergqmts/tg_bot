@@ -7,7 +7,6 @@
     background-image: url('{{ chat.background_image }}');
     background-size: cover;
     background-position: center;
-    background-attachment: fixed;
     {% endif %}
 ">
     <header class="chat-header">
@@ -240,6 +239,7 @@ body .top-bar, body .bottom-nav {
 }
 .chat-messages {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 16px;
     display: flex;
