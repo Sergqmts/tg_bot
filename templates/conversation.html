@@ -121,6 +121,7 @@
         </div>
         
         <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="chat-form-row" id="messageForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="button" class="attach-btn" onclick="toggleAttachMenu()">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.44 5.05L12.04 14.46a5.5 5.5 0 0 1-7.78 0L2.54 12.7a2 2 0 0 1 2.83-2.83l1.72 1.72 9.91-9.91a2 2 0 0 1 2.83 0l1.72 1.72a2 2 0 0 1 0 2.83z"/></svg>
             </button>
@@ -917,6 +918,7 @@ async function sendRecording() {
     
     const formData = new FormData();
     formData.append('voice', recordedBlob, 'voice_message.webm');
+    formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
     
     const url = '{{ url_for("send_voice", username=other_user.username) }}';
     console.log('URL:', url);
@@ -924,7 +926,10 @@ async function sendRecording() {
     try {
         const response = await fetch(url, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            }
         });
         
         console.log('Response:', response.status);

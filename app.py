@@ -1499,6 +1499,7 @@ def view_story(story_id):
 
 @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])
 @login_required
+@csrf.exempt
 def forward_post(post_id):
     post = Post.query.get_or_404(post_id)
     if request.method == 'POST':
@@ -2370,6 +2371,7 @@ def get_whisper_model():
 
 @app.route('/messages/<username>/voice', methods=['POST'])
 @login_required
+@csrf.exempt
 def send_voice(username):
     other_user = User.query.filter_by(username=username).first_or_404()
     
@@ -2526,6 +2528,7 @@ def chat_view(chat_id):
 
 @app.route('/chat/<int:chat_id>/voice', methods=['POST'])
 @login_required
+@csrf.exempt
 def send_chat_voice(chat_id):
     chat = Chat.query.get_or_404(chat_id)
     member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
@@ -2600,6 +2603,7 @@ def leave_chat(chat_id):
 
 @app.route('/message/<int:message_id>/forward', methods=['GET', 'POST'])
 @login_required
+@csrf.exempt
 def forward_message(message_id):
     message = Message.query.get_or_404(message_id)
     
@@ -2691,6 +2695,7 @@ def forward_message(message_id):
     
     return render_template('forward_message.html', message=message, chats=chats, other_user=other_user, following=following, Post=Post)
 @login_required
+@csrf.exempt
 def forward_message_post(message_id):
     message = Message.query.get_or_404(message_id)
     
