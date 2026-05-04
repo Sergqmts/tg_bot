@@ -69,6 +69,7 @@
         </div>
         
         <div class="form-actions" style="margin-top: 20px;">
+            <a href="{{ url_for('chat_shared_media', chat_id=chat.id) }}" class="btn btn-outline">📎 Общие файлы</a>
             <a href="{{ url_for('chat_edit', chat_id=chat.id) }}" class="btn btn-outline">Редактировать</a>
             {% if chat.creator_id != current_user.id %}
             <form method="POST" action="{{ url_for('leave_chat', chat_id=chat.id) }}">

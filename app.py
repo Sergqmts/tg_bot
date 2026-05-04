@@ -2555,16 +2555,24 @@ def chat_view(chat_id):
         
         app.logger.info(f"Files in request: {list(request.files.keys())}")
         
-        if 'media' in request.files:
-            file = request.files['media']
-            file_len = file.seek(0, 2)
-            file.seek(0)
-            app.logger.info(f"File: '{file.filename}', content_type: {file.content_type}, size: {file_len}, allowed: {allowed_file(file.filename) if file.filename else False}")
-            if file.filename and file_len > 0 and allowed_file(file.filename):
-                try:
-                    media_url = None
-                    media_type = 'image'
-                    if cloudinary_configured:
+            if 'media' in request.files:
+                file = request.files['media']
+                file_len = file.seek(0, 2)
+                file.seek(0)
+                app.logger.info(f"File: '{file.filename}', content_type: {file.content_type}, size: {file_len}, allowed: {allowed_file(file.filename) if file.filename else False}")
+                if file.filename and file_len > 0 and allowed_file(file.filename):
+                    try:
+                        media_url = None
+                        # Determine media type based on file extension
+                        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                        if ext in {'mp4', 'webm', 'mov'}:
+                            media_type = 'video'
+                        elif ext in {'png', 'jpg', 'jpeg', 'gif', 'webp'}:
+                            media_type = 'image'
+                        else:
+                            media_type = 'document'
+                        
+                        if cloudinary_configured:
                         app.logger.info("Uploading to cloudinary...")
                         media_url = upload_to_cloudinary(file, folder='messages')
                         app.logger.info(f"Cloudinary result: {media_url}")
@@ -2928,6 +2936,57 @@ def chat_members(chat_id):
     current_user_role = member.role
     
     return render_template('chat_members.html', chat=chat, members=members, available_users=available_users, current_user_role=current_user_role)
+
+
+@app.route('/chat/<int:chat_id>/shared_media')
+@login_required
+def chat_shared_media(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+    
+    if not member:
+        flash('Вы не состоите в этом чате')
+        return redirect(url_for('messages'))
+    
+    media_type = request.args.get('type', 'photos')  # photos, docs, links
+    
+    photos_videos = []
+    documents = []
+    links = []
+    
+    # Get all messages in chat
+    messages = Message.query.filter_by(chat_id=chat_id).all()
+    
+    for msg in messages:
+        # Check for media attachments
+        if msg.medias:
+            for media in msg.medias:
+                if media.media_type in ['image', 'video']:
+                    photos_videos.append({'media': media, 'message': msg})
+                else:
+                    documents.append({'media': media, 'message': msg})
+        
+        # Check for links in message body
+        if msg.body:
+            import re
+            urls = re.findall(r'(https?://[^\s]+)', msg.body)
+            for url in urls:
+                links.append({'url': url, 'message': msg})
+    
+    # Remove duplicates from links
+    seen = set()
+    unique_links = []
+    for item in links:
+        if item['url'] not in seen:
+            seen.add(item['url'])
+            unique_links.append(item)
+    
+    return render_template('chat_shared_media.html', 
+                         chat=chat, 
+                         photos_videos=photos_videos if media_type == 'photos' else [],
+                         documents=documents if media_type == 'docs' else [],
+                         links=unique_links if media_type == 'links' else [],
+                         media_type=media_type)
 
 
 @app.route('/chat/<int:chat_id>/add_member', methods=['GET', 'POST'])
