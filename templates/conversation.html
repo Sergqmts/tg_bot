@@ -20,6 +20,9 @@
         <a href="{{ url_for('direct_shared_media', user_id=other_user.id) }}" class="btn btn-icon" style="margin-left: auto;">
             📎
         </a>
+        <a href="{{ url_for('direct_edit', user_id=other_user.id) }}" class="btn btn-icon">
+            ⚙️
+        </a>
     </header>
     
     <div class="chat-messages" id="messagesArea">

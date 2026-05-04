@@ -3044,6 +3044,49 @@ def direct_shared_media(user_id):
                          media_type=media_type)
 
 
+@app.route('/direct/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+def direct_edit(user_id):
+    other_user = User.query.get_or_404(user_id)
+    
+    # Find direct chat between current_user and other_user
+    chat = Chat.query.filter_by(type='direct').join(ChatMember).filter(ChatMember.user_id == current_user.id).join(ChatMember, alias='cm2').filter(
+        'cm2.user_id' == other_user.id
+    ).first()
+    
+    if not chat:
+        flash('Чат не найден')
+        return redirect(url_for('conversation', user_id=user_id))
+    
+    if request.method == 'POST':
+        bg_type = request.form.get('background_type', 'default')
+        bg_value = request.form.get('background_value', '').strip()
+        
+        if bg_type in ['default', 'color', 'gradient', 'image']:
+            chat.background_type = bg_type
+            if bg_type == 'default':
+                chat.background_value = ''
+            elif bg_type == 'image' and 'background_image' in request.files:
+                file = request.files['background_image']
+                if file.filename and allowed_file(file.filename):
+                    if cloudinary_configured:
+                        url = upload_to_cloudinary(file, folder='chat_backgrounds')
+                        if url:
+                            chat.background_value = url
+                    else:
+                        filename = secure_filename(f"bg_{datetime.now().timestamp()}_{file.filename}")
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        chat.background_value = filename
+            else:
+                chat.background_value = bg_value
+        
+        db.session.commit()
+        flash('Фон чата обновлён')
+        return redirect(url_for('conversation', user_id=user_id))
+    
+    return render_template('direct_edit.html', chat=chat, other_user=other_user)
+
+
 @app.route('/chat/<int:chat_id>/add_member', methods=['GET', 'POST'])
 @login_required
 def chat_add_member(chat_id):

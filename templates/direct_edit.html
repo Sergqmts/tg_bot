@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Редактировать чат - {{ other_user.username }} - Social{% endblock %}
+{% block content %}
+<div class="profile">
+    <div class="profile-header">
+        <div class="profile-info" style="padding: 0;">
+            <a href="{{ url_for('conversation', user_id=other_user.id) }}" class="btn btn-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </a>
+            <h1 class="profile-username">Редактировать</h1>
+        </div>
+    </div>
+    
+    <div style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="width: 100px; height: 100px; margin: 0 auto; border-radius: 50%; overflow: hidden; background: var(--primary-gradient); display: flex; align-items: center; justify-content: center; font-size: 40px; color: #fff;">
+                {% set avatar_url = get_avatar_url(other_user) %}
+                {% if avatar_url %}
+                    <img src="{{ avatar_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                    {{ other_user.username[0].upper() }}
+                {% endif %}
+            </div>
+            <p style="margin-top: 10px; font-weight: 500;">{{ other_user.username }}</p>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label class="form-label">Фон чата</label>
+                <select name="background_type" class="form-input" id="bgTypeSelect" onchange="toggleBgOptions()">
+                    <option value="default" {% if chat.background_type == 'default' %}selected{% endif %}>По умолчанию</option>
+                    <option value="color" {% if chat.background_type == 'color' %}selected{% endif %}>Цвет</option>
+                    <option value="gradient" {% if chat.background_type == 'gradient' %}selected{% endif %}>Градиент</option>
+                    <option value="image" {% if chat.background_type == 'image' %}selected{% endif %}>Изображение</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="colorOption" style="display: none;">
+                <label class="form-label">Цвет фона</label>
+                <input type="color" name="background_value" value="{% if chat.background_type == 'color' %}{{ chat.background_value }}{% else %}#0A0A0A{% endif %}" class="form-input">
+            </div>
+            
+            <div class="form-group" id="gradientOption" style="display: none;">
+                <label class="form-label">Выберите градиент</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <div onclick="selectGradient('linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Instagram"></div>
+                    <div onclick="selectGradient('linear-gradient(135deg, #667eea, #764ba2)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Ocean Blue"></div>
+                    <div onclick="selectGradient('linear-gradient(135deg, #f093fb, #f5576c)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #f093fb, #f5576c); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Pink Sunset"></div>
+                    <div onclick="selectGradient('linear-gradient(135deg, #4facfe, #00f2fe)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #4facfe, #00f2fe); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Ocean"></div>
+                    <div onclick="selectGradient('linear-gradient(135deg, #43e97b, #38f9d7)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #43e97b, #38f9d7); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Green Mint"></div>
+                </div>
+                <input type="text" id="gradientInput" name="background_value" placeholder="linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)" value="{% if chat.background_type == 'gradient' %}{{ chat.background_value }}{% endif %}" class="form-input">
+                <small style="color: var(--text-secondary);">Или введите свой CSS градиент</small>
+            </div>
+            
+            <div class="form-group" id="imageOption" style="display: none;">
+                <label class="form-label">Изображение фона</label>
+                <input type="file" name="background_image" accept="image/*" class="form-input">
+                {% if chat.background_type == 'image' and chat.background_value %}
+                <div style="margin-top: 8px;">
+                    <small style="color: var(--text-secondary);">Текущий фон:</small>
+                    <img src="{% if chat.background_value.startswith('http') %}{{ chat.background_value }}{% else %}{{ url_for('uploaded_file', filename=chat.background_value) }}{% endif %}" style="max-width: 100px; border-radius: 8px; margin-top: 4px;">
+                </div>
+                {% endif %}
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Сохранить</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleBgOptions() {
+    var type = document.getElementById('bgTypeSelect').value;
+    document.getElementById('colorOption').style.display = type === 'color' ? 'block' : 'none';
+    document.getElementById('gradientOption').style.display = type === 'gradient' ? 'block' : 'none';
+    document.getElementById('imageOption').style.display = type === 'image' ? 'block' : 'none';
+}
+
+function selectGradient(value) {
+    document.getElementById('gradientInput').value = value;
+}
+
+// Init on load
+document.addEventListener('DOMContentLoaded', toggleBgOptions);
+</script>
+
+<style>
+.form-group {
+    margin-bottom: 15px;
+}
+.form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.form-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-primary {
+    background: var(--primary-gradient);
+    color: #fff;
+}
+.btn-primary:hover {
+    opacity: 0.9;
+}
+</style>
+{% endblock %}
