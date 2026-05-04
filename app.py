@@ -2353,8 +2353,11 @@ def conversation(username):
             return redirect(url_for('messages'))
     
     # Find direct chat between current_user and other_user
-    chat = Chat.query.filter_by(type='direct').join(ChatMember).filter(ChatMember.user_id == current_user.id).join(ChatMember, alias='cm2').filter(
-        'cm2.user_id' == other_user.id
+    from sqlalchemy.orm import aliased
+    cm2 = aliased(ChatMember)
+    chat = Chat.query.join(ChatMember).filter(ChatMember.user_id == current_user.id).join(cm2).filter(
+        cm2.user_id == other_user.id,
+        Chat.type == 'direct'
     ).first()
     
     try:
@@ -3000,8 +3003,11 @@ def direct_shared_media(user_id):
     other_user = User.query.get_or_404(user_id)
     
     # Check if they have a direct chat
-    chat = Chat.query.filter_by(type='direct').join(ChatMember).filter(ChatMember.user_id == current_user.id).join(ChatMember, alias='cm2').filter(
-        'cm2.user_id' == other_user.id
+    from sqlalchemy.orm import aliased
+    cm2 = aliased(ChatMember)
+    chat = Chat.query.join(ChatMember).filter(ChatMember.user_id == current_user.id).join(cm2).filter(
+        cm2.user_id == other_user.id,
+        Chat.type == 'direct'
     ).first()
     
     if not chat:
@@ -3055,8 +3061,11 @@ def direct_edit(user_id):
     other_user = User.query.get_or_404(user_id)
     
     # Find direct chat between current_user and other_user
-    chat = Chat.query.filter_by(type='direct').join(ChatMember).filter(ChatMember.user_id == current_user.id).join(ChatMember, alias='cm2').filter(
-        'cm2.user_id' == other_user.id
+    from sqlalchemy.orm import aliased
+    cm2 = aliased(ChatMember)
+    chat = Chat.query.join(ChatMember).filter(ChatMember.user_id == current_user.id).join(cm2).filter(
+        cm2.user_id == other_user.id,
+        Chat.type == 'direct'
     ).first()
     
     if not chat:
