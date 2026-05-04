@@ -38,10 +38,53 @@
                 <input type="file" name="avatar" accept="image/*" class="form-input">
             </div>
             
+            <div class="form-group">
+                <label class="form-label">Фон чата</label>
+                <select name="background_type" class="form-input" id="bgTypeSelect" onchange="toggleBgOptions()">
+                    <option value="default" {% if chat.background_type == 'default' %}selected{% endif %}>По умолчанию</option>
+                    <option value="color" {% if chat.background_type == 'color' %}selected{% endif %}>Цвет</option>
+                    <option value="gradient" {% if chat.background_type == 'gradient' %}selected{% endif %}>Градиент</option>
+                    <option value="image" {% if chat.background_type == 'image' %}selected{% endif %}>Изображение</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="colorOption" style="display: none;">
+                <label class="form-label">Цвет фона</label>
+                <input type="color" name="background_value" value="{% if chat.background_type == 'color' %}{{ chat.background_value }}{% else %}#0A0A0A{% endif %}" class="form-input">
+            </div>
+            
+            <div class="form-group" id="gradientOption" style="display: none;">
+                <label class="form-label">CSS Градиент</label>
+                <input type="text" name="background_value" placeholder="linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)" value="{% if chat.background_type == 'gradient' %}{{ chat.background_value }}{% endif %}" class="form-input">
+                <small style="color: var(--text-secondary);">Пример: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)</small>
+            </div>
+            
+            <div class="form-group" id="imageOption" style="display: none;">
+                <label class="form-label">Изображение фона</label>
+                <input type="file" name="background_image" accept="image/*" class="form-input">
+                {% if chat.background_type == 'image' and chat.background_value %}
+                <div style="margin-top: 8px;">
+                    <small style="color: var(--text-secondary);">Текущий фон:</small>
+                    <img src="{% if chat.background_value.startswith('http') %}{{ chat.background_value }}{% else %}{{ url_for('uploaded_file', filename=chat.background_value) }}{% endif %}" style="max-width: 100px; border-radius: 8px; margin-top: 4px;">
+                </div>
+                {% endif %}
+            </div>
+            
             <button type="submit" class="btn btn-primary" style="width: 100%;">Сохранить</button>
         </form>
     </div>
 </div>
+
+<script>
+function toggleBgOptions() {
+    var type = document.getElementById('bgTypeSelect').value;
+    document.getElementById('colorOption').style.display = type === 'color' ? 'block' : 'none';
+    document.getElementById('gradientOption').style.display = type === 'gradient' ? 'block' : 'none';
+    document.getElementById('imageOption').style.display = type === 'image' ? 'block' : 'none';
+}
+// Init on load
+document.addEventListener('DOMContentLoaded', toggleBgOptions);
+</script>
 
 <style>
 .chat-avatar-large {

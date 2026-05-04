@@ -839,9 +839,12 @@ class MessageReaction(db.Model):
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(20), default='direct')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     avatar = db.Column(db.String(200), default='chat_default.png')
+    background_type = db.Column(db.String(20), default='default')  # default, color, gradient, image
+    background_value = db.Column(db.String(500), default='')  # color hex, gradient css, or image url
     
     messages = db.relationship('Message', backref='chat', lazy='dynamic')
     members = db.relationship('ChatMember', backref='chat', lazy='dynamic', cascade='all, delete-orphan')
@@ -2905,6 +2908,28 @@ def chat_edit(chat_id):
         if name:
             chat.name = name
         
+        # Handle background
+        bg_type = request.form.get('background_type', 'default')
+        bg_value = request.form.get('background_value', '').strip()
+        
+        if bg_type in ['default', 'color', 'gradient', 'image']:
+            chat.background_type = bg_type
+            if bg_type == 'default':
+                chat.background_value = ''
+            elif bg_type == 'image' and 'background_image' in request.files:
+                file = request.files['background_image']
+                if file.filename and allowed_file(file.filename):
+                    if cloudinary_configured:
+                        url = upload_to_cloudinary(file, folder='chat_backgrounds')
+                        if url:
+                            chat.background_value = url
+                    else:
+                        filename = secure_filename(f"bg_{datetime.now().timestamp()}_{file.filename}")
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        chat.background_value = filename
+            else:
+                chat.background_value = bg_value
+        
         if 'avatar' in request.files:
             file = request.files['avatar']
             if file.filename and allowed_file(file.filename):
@@ -2913,12 +2938,12 @@ def chat_edit(chat_id):
                     if media_url:
                         chat.avatar = media_url
                 else:
-                    filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
+                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     chat.avatar = filename
         
         db.session.commit()
-        flash('Чат обновлен')
+        flash('Чат обновлён')
         return redirect(url_for('chat_view', chat_id=chat_id))
     
     return render_template('chat_edit.html', chat=chat)
