@@ -2989,6 +2989,61 @@ def chat_shared_media(chat_id):
                          media_type=media_type)
 
 
+@app.route('/direct/<int:user_id>/shared_media')
+@login_required
+def direct_shared_media(user_id):
+    other_user = User.query.get_or_404(user_id)
+    
+    # Check if they have a direct chat
+    chat = Chat.query.filter_by(type='direct').join(ChatMember).filter(ChatMember.user_id == current_user.id).join(ChatMember, alias='cm2').filter(
+        'cm2.user_id' == other_user.id
+    ).first()
+    
+    if not chat:
+        flash('Чат не найден')
+        return redirect(url_for('messages'))
+    
+    media_type = request.args.get('type', 'photos')
+    
+    photos_videos = []
+    documents = []
+    links = []
+    
+    # Get messages between these two users
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.recipient_id == other_user.id)) |
+        ((Message.sender_id == other_user.id) & (Message.recipient_id == current_user.id))
+    ).all()
+    
+    for msg in messages:
+        if msg.medias:
+            for media in msg.medias:
+                if media.media_type in ['image', 'video']:
+                    photos_videos.append({'media': media, 'message': msg})
+                else:
+                    documents.append({'media': media, 'message': msg})
+        
+        if msg.body:
+            import re
+            urls = re.findall(r'(https?://[^\s]+)', msg.body)
+            for url in urls:
+                links.append({'url': url, 'message': msg})
+    
+    seen = set()
+    unique_links = []
+    for item in links:
+        if item['url'] not in seen:
+            seen.add(item['url'])
+            unique_links.append(item)
+    
+    return render_template('direct_shared_media.html', 
+                         other_user=other_user,
+                         photos_videos=photos_videos if media_type == 'photos' else [],
+                         documents=documents if media_type == 'docs' else [],
+                         links=unique_links if media_type == 'links' else [],
+                         media_type=media_type)
+
+
 @app.route('/chat/<int:chat_id>/add_member', methods=['GET', 'POST'])
 @login_required
 def chat_add_member(chat_id):

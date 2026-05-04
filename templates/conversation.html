@@ -17,6 +17,9 @@
             </div>
             <span>{{ other_user.username }}</span>
         </a>
+        <a href="{{ url_for('direct_shared_media', user_id=other_user.id) }}" class="btn btn-icon" style="margin-left: auto;">
+            📎
+        </a>
     </header>
     
     <div class="chat-messages" id="messagesArea">
