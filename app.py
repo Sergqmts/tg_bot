@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
+from flask_wtf.csrf import CSRFProtect
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from wtforms import StringField, TextAreaField, SubmitField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
@@ -103,8 +104,8 @@ def init_db():
     try:
         from sqlalchemy import text
         with db.engine.connect() as conn:
-            result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message' AND column_name='transcription'"))
-            if not result.fetchone():
+            result = conn.execute(text("SELECT COUNT(*) FROM pragma_table_info('message') WHERE name='transcription'"))
+            if not result.scalar():
                 conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
                 conn.commit()
     except Exception as e:
@@ -149,7 +150,7 @@ def handle_message(data):
             'timestamp': datetime.utcnow().isoformat()
         }, room=f'user_{recipient_id}')
 
-# csrf = CSRFProtect(app)
+csrf = CSRFProtect(app)
 
 
 def allowed_file(filename):
@@ -200,43 +201,28 @@ def run_migrations():
     _migration_done = True
     
     from sqlalchemy import text
-    is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
-    is_sqlite = 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']
     
     try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
-            existing = [row[0] for row in result]
-            for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
-                if col not in existing:
-                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-            
-            privacy_cols = [('is_private', 'BOOLEAN DEFAULT FALSE'), ('hide_followers', 'BOOLEAN DEFAULT FALSE'), ('hide_following', 'BOOLEAN DEFAULT FALSE'), ('approve_followers', 'BOOLEAN DEFAULT FALSE')]
-            for col, typ in privacy_cols:
-                if col not in existing:
-                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-            
-            phone_cols = [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT FALSE'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]
-            for col, typ in phone_cols:
-                if col not in existing:
-                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
-                    db.session.commit()
-        elif is_sqlite:
-            for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
+        result = db.session.execute(text("SELECT name FROM pragma_table_info('user')"))
+        existing = [row[0] for row in result]
+        for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
+            if col not in existing:
                 try:
                     db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
                     db.session.commit()
                 except:
                     pass
-            for col, typ in [('is_private', 'BOOLEAN DEFAULT 0'), ('hide_followers', 'BOOLEAN DEFAULT 0'), ('hide_following', 'BOOLEAN DEFAULT 0'), ('approve_followers', 'BOOLEAN DEFAULT 0')]:
+        privacy_cols = [('is_private', 'BOOLEAN DEFAULT 0'), ('hide_followers', 'BOOLEAN DEFAULT 0'), ('hide_following', 'BOOLEAN DEFAULT 0'), ('approve_followers', 'BOOLEAN DEFAULT 0')]
+        for col, typ in privacy_cols:
+            if col not in existing:
                 try:
                     db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
                     db.session.commit()
                 except:
                     pass
-            for col, typ in [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT 0'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]:
+        phone_cols = [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT 0'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]
+        for col, typ in phone_cols:
+            if col not in existing:
                 try:
                     db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
                     db.session.commit()
@@ -246,15 +232,10 @@ def run_migrations():
         app.logger.info(f"User migration: {e}")
     
     try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='community'"))
-            existing = [row[0] for row in result]
-            if 'is_private' not in existing:
-                db.session.execute(text('ALTER TABLE "community" ADD COLUMN is_private BOOLEAN DEFAULT FALSE'))
-                db.session.commit()
-        elif is_sqlite:
+        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('community') WHERE name='is_private'"))
+        if not result.scalar():
             try:
-                db.session.execute(text("ALTER TABLE community ADD COLUMN is_private BOOLEAN DEFAULT 0"))
+                db.session.execute(text('ALTER TABLE community ADD COLUMN is_private BOOLEAN DEFAULT 0'))
                 db.session.commit()
             except:
                 pass
@@ -262,13 +243,8 @@ def run_migrations():
         app.logger.info(f"Community migration: {e}")
     
     try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='community_member'"))
-            existing = [row[0] for row in result]
-            if 'status' not in existing:
-                db.session.execute(text('ALTER TABLE "community_member" ADD COLUMN status VARCHAR(20) DEFAULT \'approved\''))
-                db.session.commit()
-        elif is_sqlite:
+        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('community_member') WHERE name='status'"))
+        if not result.scalar():
             try:
                 db.session.execute(text("ALTER TABLE community_member ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
                 db.session.commit()
@@ -278,13 +254,8 @@ def run_migrations():
         app.logger.info(f"Member migration: {e}")
     
     try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='post'"))
-            existing = [row[0] for row in result]
-            if 'is_community_post' not in existing:
-                db.session.execute(text('ALTER TABLE "post" ADD COLUMN is_community_post BOOLEAN DEFAULT FALSE'))
-                db.session.commit()
-        elif is_sqlite:
+        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('post') WHERE name='is_community_post'"))
+        if not result.scalar():
             try:
                 db.session.execute(text("ALTER TABLE post ADD COLUMN is_community_post BOOLEAN DEFAULT 0"))
                 db.session.commit()
@@ -294,13 +265,8 @@ def run_migrations():
         app.logger.info(f"Post migration: {e}")
     
     try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='followers'"))
-            existing = [row[0] for row in result]
-            if 'status' not in existing:
-                db.session.execute(text('ALTER TABLE "followers" ADD COLUMN status VARCHAR(20) DEFAULT \'approved\''))
-                db.session.commit()
-        elif is_sqlite:
+        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('followers') WHERE name='status'"))
+        if not result.scalar():
             try:
                 db.session.execute(text("ALTER TABLE followers ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
                 db.session.commit()
@@ -310,99 +276,46 @@ def run_migrations():
         app.logger.info(f"Followers migration: {e}")
     
     try:
-        if is_postgres:
-            result = db.session.execute(text("SELECT table_name FROM information_schema.tables WHERE table_name='chat'"))
-            if not result.fetchone():
-                db.session.execute(text('''
-                    CREATE TABLE chat (
-                        id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        creator_id INTEGER REFERENCES "user"(id) NOT NULL,
-                        avatar VARCHAR(200) DEFAULT 'chat_default.png'
-                    );
-                    CREATE TABLE chat_member (
-                        id SERIAL PRIMARY KEY,
-                        chat_id INTEGER REFERENCES chat(id) ON DELETE CASCADE NOT NULL,
-                        user_id INTEGER REFERENCES "user"(id) NOT NULL,
-                        role VARCHAR(20) DEFAULT 'member',
-                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                '''))
-                db.session.commit()
-            
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message'"))
-            existing = [row[0] for row in result]
-            if 'chat_id' not in existing:
-                db.session.execute(text('ALTER TABLE message ADD COLUMN chat_id INTEGER'))
-                db.session.commit()
-            
-            db.session.execute(text('ALTER TABLE message ALTER COLUMN recipient_id DROP NOT NULL'))
+        result = db.session.execute(text("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='chat'"))
+        if not result.scalar():
+            db.session.execute(text('''
+                CREATE TABLE chat (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name VARCHAR(100) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    creator_id INTEGER NOT NULL,
+                    avatar VARCHAR(200) DEFAULT 'chat_default.png'
+                );
+                CREATE TABLE chat_member (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    role VARCHAR(20) DEFAULT 'member',
+                    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            '''))
             db.session.commit()
-            
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='story'"))
+        
+        result = db.session.execute(text("SELECT name FROM pragma_table_info('message')"))
+        columns = [row[0] for row in result]
+        if 'chat_id' not in columns:
+            try:
+                db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
+                db.session.commit()
+            except:
+                pass
+        
+        try:
+            result = db.session.execute(text("SELECT name FROM pragma_table_info('story')"))
             story_cols = [row[0] for row in result]
             if 'is_archived' not in story_cols:
-                db.session.execute(text('ALTER TABLE story ADD COLUMN is_archived BOOLEAN DEFAULT FALSE'))
+                db.session.execute(text("ALTER TABLE story ADD COLUMN is_archived INTEGER DEFAULT 0"))
                 db.session.commit()
             if 'reposted_at' not in story_cols:
-                db.session.execute(text('ALTER TABLE story ADD COLUMN reposted_at TIMESTAMP'))
+                db.session.execute(text("ALTER TABLE story ADD COLUMN reposted_at TIMESTAMP"))
                 db.session.commit()
-            
-            try:
-                db.session.execute(text("ALTER TABLE story_reaction DROP CONSTRAINT IF EXISTS story_reaction_story_id_fkey"))
-                db.session.execute(text("ALTER TABLE story_reaction ADD CONSTRAINT story_reaction_story_id_fkey FOREIGN KEY (story_id) REFERENCES story(id) ON DELETE CASCADE"))
-                db.session.commit()
-            except Exception as e:
-                app.logger.info(f"Story reaction FK: {e}")
-            
-            try:
-                db.session.execute(text("ALTER TABLE story_comment DROP CONSTRAINT IF EXISTS story_comment_story_id_fkey"))
-                db.session.execute(text("ALTER TABLE story_comment ADD CONSTRAINT story_comment_story_id_fkey FOREIGN KEY (story_id) REFERENCES story(id) ON DELETE CASCADE"))
-                db.session.commit()
-            except Exception as e:
-                app.logger.info(f"Story comment FK: {e}")
-        elif is_sqlite:
-            result = db.session.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='chat'"))
-            if not result.fetchone():
-                db.session.execute(text('''
-                    CREATE TABLE chat (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name VARCHAR(100) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        creator_id INTEGER NOT NULL,
-                        avatar VARCHAR(200) DEFAULT 'chat_default.png'
-                    );
-                    CREATE TABLE chat_member (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        chat_id INTEGER NOT NULL,
-                        user_id INTEGER NOT NULL,
-                        role VARCHAR(20) DEFAULT 'member',
-                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                '''))
-                db.session.commit()
-            
-            try:
-                result = db.session.execute(text("PRAGMA table_info(message)"))
-                columns = [row[1] for row in result.fetchall()]
-                if 'chat_id' not in columns:
-                    db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
-                    db.session.commit()
-            except Exception as e:
-                app.logger.info(f"Chat ID column add: {e}")
-            
-            try:
-                result = db.session.execute(text("PRAGMA table_info(story)"))
-                story_cols = [row[1] for row in result.fetchall()]
-                if 'is_archived' not in story_cols:
-                    db.session.execute(text("ALTER TABLE story ADD COLUMN is_archived INTEGER DEFAULT 0"))
-                    db.session.commit()
-                if 'reposted_at' not in story_cols:
-                    db.session.execute(text("ALTER TABLE story ADD COLUMN reposted_at TIMESTAMP"))
-                    db.session.commit()
-            except Exception as e:
-                app.logger.info(f"Story columns add: {e}")
+        except Exception as e:
+            app.logger.info(f"Story columns add: {e}")
     except Exception as e:
         app.logger.info(f"Chat migration: {e}")
 
@@ -2685,7 +2598,7 @@ def leave_chat(chat_id):
     return redirect(url_for('messages'))
 
 
-@app.route('/message/<int:message_id>/forward')
+@app.route('/message/<int:message_id>/forward', methods=['GET', 'POST'])
 @login_required
 def forward_message(message_id):
     message = Message.query.get_or_404(message_id)
@@ -2699,6 +2612,74 @@ def forward_message(message_id):
             flash('Нет доступа к этому сообщению')
             return redirect(url_for('messages'))
     
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'to_chat':
+            chat_id = request.form.get('chat_id')
+            if chat_id:
+                chat = Chat.query.get(int(chat_id))
+                member = ChatMember.query.filter_by(chat_id=chat.id, user_id=current_user.id).first()
+                if member:
+                    if message.body:
+                        forward_body = message.body
+                    else:
+                        forward_body = None
+                    
+                    new_msg = Message(
+                        body=forward_body,
+                        sender_id=current_user.id,
+                        chat_id=chat.id,
+                        post_id=message.post_id
+                    )
+                    db.session.add(new_msg)
+                    db.session.flush()
+                    
+                    for m in message.medias:
+                        new_media = MessageMedia(
+                            message_id=new_msg.id,
+                            media_url=m.media_url,
+                            media_type=m.media_type
+                        )
+                        db.session.add(new_media)
+                    
+                    db.session.commit()
+                    flash(f'Сообщение переслано в чат {chat.name}')
+                    return redirect(url_for('chat_view', chat_id=chat.id))
+        
+        elif action == 'to_user':
+            username = request.form.get('username', '').strip()
+            user = User.query.filter_by(username=username).first()
+            if user:
+                if message.body:
+                    forward_body = message.body
+                else:
+                    forward_body = None
+                
+                new_msg = Message(
+                    body=forward_body,
+                    sender_id=current_user.id,
+                    recipient_id=user.id,
+                    post_id=message.post_id
+                )
+                db.session.add(new_msg)
+                db.session.flush()
+                
+                for m in message.medias:
+                    new_media = MessageMedia(
+                        message_id=new_msg.id,
+                        media_url=m.media_url,
+                        media_type=m.media_type
+                    )
+                    db.session.add(new_media)
+                
+                db.session.commit()
+                flash(f'Сообщение переслано пользователю {user.username}')
+                return redirect(url_for('conversation', username=user.username))
+        
+        flash('Ошибка при пересылке')
+        return redirect(url_for('messages'))
+    
     user_chats = ChatMember.query.filter_by(user_id=current_user.id).all()
     chats = [Chat.query.get(cm.chat_id) for cm in user_chats]
     
@@ -2709,9 +2690,6 @@ def forward_message(message_id):
         other_user = User.query.get(message.recipient_id)
     
     return render_template('forward_message.html', message=message, chats=chats, other_user=other_user, following=following, Post=Post)
-
-
-@app.route('/message/<int:message_id>/forward', methods=['POST'])
 @login_required
 def forward_message_post(message_id):
     message = Message.query.get_or_404(message_id)
@@ -3274,7 +3252,7 @@ with app.app_context():
     
     try:
         from sqlalchemy import text
-        result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user'"))
+        result = db.session.execute(text("SELECT name FROM pragma_table_info('user')"))
         columns = [row[0] for row in result]
         
         if 'avatar_url' in columns:
@@ -3292,8 +3270,8 @@ with app.app_context():
         app.logger.info(f"Table repost may already exist: {e}")
     
     try:
-        result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='message' AND column_name='post_id'"))
-        if result.fetchone() is None:
+        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('message') WHERE name='post_id'"))
+        if not result.scalar():
             db.session.execute(text("ALTER TABLE message ADD COLUMN post_id INTEGER REFERENCES post(id)"))
             db.session.commit()
             app.logger.info("Added post_id column to message")
@@ -3447,13 +3425,11 @@ def video_thumbnail_route():
 with app.app_context():
     try:
         from sqlalchemy import text
-        is_postgres = 'postgresql' in app.config['SQLALCHEMY_DATABASE_URI']
         
-        if is_postgres:
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='avatar_cloudinary_url'"))
-            if not result.fetchone():
-                db.session.execute(text('ALTER TABLE "user" ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
-                db.session.commit()
+        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('user') WHERE name='avatar_cloudinary_url'"))
+        if not result.scalar():
+            db.session.execute(text('ALTER TABLE user ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
+            db.session.commit()
     except Exception as e:
         app.logger.info(f"Migration avatar_cloudinary_url: {e}")
 

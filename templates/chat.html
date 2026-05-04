@@ -59,6 +59,7 @@
                     <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item" style="display: block; padding: 8px 12px; color: var(--text); text-decoration: none; font-size: 13px;">📤 Переслать</a>
                     {% if msg.sender_id == current_user.id %}
                     <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="menu-item danger" style="display: block; padding: 8px 12px; color: #ED4956; background: none; border: none; width: 100%; text-align: left; font-size: 13px;">🗑️ Удалить</button>
                     </form>
                     {% endif %}

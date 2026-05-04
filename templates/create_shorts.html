@@ -187,7 +187,8 @@ textarea {
         <button type="button" onclick="showMode('camera')">🎥 Записать</button>
     </div>
     
-    <form method="POST" enctype="multipart/form-data" class="create-shorts-form" id="shortsForm">
+    <form method="POST" enctype="multipart/form-data" class="create-shorts-form" id="shortsForm"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div id="uploadMode">
             <div class="upload-area" onclick="document.getElementById('videoInput').click()">
                 <div class="upload-icon" id="uploadIcon">🎬</div>

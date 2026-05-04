@@ -16,7 +16,8 @@
         <a href="{{ url_for('create_shorts') }}" class="btn btn-icon">←</a>
         <h1>Загрузить звук</h1>
     </header>
-    <form method="POST" enctype="multipart/form-data" class="upload-audio-form">
+    <form method="POST" enctype="multipart/form-data" class="upload-audio-form"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>Название</label>
             <input type="text" name="title" class="input" placeholder="Название звука" required>

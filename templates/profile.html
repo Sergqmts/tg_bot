@@ -38,18 +38,22 @@
                         {% if user.id != current_user.id %}
                             {% if is_blocked %}
                             <form method="POST" action="{{ url_for('unblock_user', username=user.username) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-outline">Разблокировать</button>
                             </form>
                             {% elif is_pending %}
                             <form method="POST" action="{{ url_for('unfollow', username=user.username) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-outline">Отменить заявку</button>
                             </form>
                             {% else %}
                             <form method="POST" action="{{ url_for('follow', username=user.username) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-primary">Подписаться</button>
                             </form>
                             <a href="{{ url_for('conversation', username=user.username) }}" class="btn btn-outline">Написать</a>
                             <form method="POST" action="{{ url_for('block_user', username=user.username) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-icon" onclick="return confirm('Заблокировать?')">⋮</button>
                             </form>
                             {% endif %}

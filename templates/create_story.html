@@ -90,7 +90,8 @@
             </div>
         </div>
         
-        <form method="POST" id="storyForm" enctype="multipart/form-data">
+        <form method="POST" id="storyForm" enctype="multipart/form-data"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="media_data" id="mediaData">
             <button type="submit" class="ig-submit-btn" id="submitBtn" disabled>Опубликовать</button>
         </form>

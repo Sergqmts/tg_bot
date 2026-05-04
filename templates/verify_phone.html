@@ -8,7 +8,8 @@
                 Введите 6-значный код, отправленный на номер<br>
                 <strong>{{ current_user.phone }}</strong>
             </p>
-            <form method="POST">
+            <form method="POST"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <input type="text" name="otp" required maxlength="6" pattern="[0-9]{6}"
                            style="width: 150px; padding: 12px; font-size: 24px; text-align: center; letter-spacing: 8px;"

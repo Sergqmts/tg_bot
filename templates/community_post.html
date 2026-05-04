@@ -8,7 +8,8 @@
             <span>Запись в <strong>{{ community.name }}</strong></span>
         </div>
         
-        <form method="POST" enctype="multipart/form-data" id="postForm">
+        <form method="POST" enctype="multipart/form-data" id="postForm"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <textarea name="body" class="form-input create-textarea" placeholder="Что нового в сообществе?"></textarea>
             </div>

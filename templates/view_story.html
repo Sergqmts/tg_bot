@@ -298,20 +298,24 @@
             <button class="ig-story-menu-btn" style="position: absolute; top: 18px; right: 40px; z-index: 101;" onclick="toggleMenu()">⋮</button>
             
             <div class="ig-story-menu" id="storyMenu">
-                <form method="POST" action="{{ url_for('save_story', story_id=story.id) }}">
+                <form method="POST" action="{{ url_for('save_story', story_id=story.id) }}"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit">📥 {% if story.is_saved %}Сохранено{% else %}Сохранить{% endif %}</button>
                 </form>
                 {% if current_user.id != story.user_id %}
-                <form method="POST" action="{{ url_for('hide_story', username=story.user.username) }}">
+                <form method="POST" action="{{ url_for('hide_story', username=story.user.username) }}"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit">🚫 Скрыть</button>
                 </form>
                 {% endif %}
-                <form method="POST" action="{{ url_for('react_story', story_id=story.id) }}">
+                <form method="POST" action="{{ url_for('react_story', story_id=story.id) }}"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="emoji" value="🔄">
                     <button type="submit">🔄 Повторить просмотр</button>
                 </form>
                 {% if current_user.id == story.user_id %}
-                <form method="POST" action="{{ url_for('delete_story', story_id=story.id) }}" onsubmit="return confirm('Удалить?')">
+                <form method="POST" action="{{ url_for('delete_story', story_id=story.id) }}" onsubmit="return confirm('Удалить?')"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="danger">🗑️ Удалить</button>
                 </form>
                 {% endif %}
@@ -346,7 +350,8 @@
             </div>
             
             <div class="ig-story-reactions">
-                <form method="POST" action="{{ url_for('comment_story', story_id=story.id) }}" class="ig-reply-form" id="replyForm">
+                <form method="POST" action="{{ url_for('comment_story', story_id=story.id) }}" class="ig-reply-form" id="replyForm"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="ig-reply-input">
                         <input type="text" name="body" placeholder="Отправить сообщение..." id="replyInput">
                         <button type="submit">➤</button>

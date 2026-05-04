@@ -36,7 +36,8 @@
                                     {{ user.followers.count() }} подписчиков
                                 </div>
                                 {% if current_user.is_authenticated and user != current_user %}
-                                    <form method="POST" action="{{ url_for('follow', username=user.username) }}" style="margin-top: 10px;">
+                                    <form method="POST" action="{{ url_for('follow', username=user.username) }}" style="margin-top: 10px;"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 0.9em;">Подписаться</button>
                                     </form>
                                 {% endif %}
@@ -71,7 +72,8 @@
                             {% endif %}
                         </div>
                         {% if current_user.is_authenticated and not current_user.is_member(comm) %}
-                            <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}">
+                            <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-primary">Вступить</button>
                             </form>
                         {% endif %}

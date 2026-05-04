@@ -26,7 +26,8 @@
             {% endif %}
         </div>
         
-        <form method="POST" class="forward-form">
+        <form method="POST" class="forward-form"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="to_profile">
             <button type="submit" class="btn btn-primary btn-full">Добавить в мой профиль</button>
         </form>
@@ -34,7 +35,8 @@
         {% if chats %}
         <div class="forward-section">
             <h3 class="section-title">В групповой чат</h3>
-            <form method="POST">
+            <form method="POST"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="to_chat">
                 <div class="form-group">
                     <select name="chat_id" class="form-select" required>
@@ -51,7 +53,8 @@
         
         <div class="forward-section">
             <h3 class="section-title">В личные сообщения</h3>
-            <form method="POST">
+            <form method="POST"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="to_message">
                 <div class="form-group">
                     <select name="username" class="form-select" required>

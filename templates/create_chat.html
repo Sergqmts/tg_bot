@@ -13,6 +13,7 @@
     
     <div style="padding: 20px;">
         <form method="POST" class="form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label class="form-label">Название чата</label>
                 <input type="text" name="name" required placeholder="Например: Друзья" class="form-input">

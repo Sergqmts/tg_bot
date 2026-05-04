@@ -14,6 +14,7 @@
     <div style="padding: 20px;">
         {% if users %}
         <form method="POST" class="form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label class="form-label">Выберите пользователя:</label>
                 <select name="user_id" required class="form-input">

@@ -24,7 +24,8 @@
                         </div>
                         <span style="background: var(--surface-elevated); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">Прошедшее</span>
                     </div>
-                    <form method="POST" action="{{ url_for('unarchive_event', slug=community.slug, event_id=event.id) }}">
+                    <form method="POST" action="{{ url_for('unarchive_event', slug=community.slug, event_id=event.id) }}"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-secondary" style="padding: 8px 15px;">↩ Восстановить</button>
                     </form>
                 </div>

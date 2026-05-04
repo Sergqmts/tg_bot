@@ -245,6 +245,7 @@
                     <a href="{{ url_for('user_profile', username=shorts.user.username) }}" class="shorts-item-username">@{{ shorts.user.username }}</a>
                     {% if current_user.is_authenticated and current_user.id != shorts.user.id %}
                     <form method="POST" action="{{ url_for('follow', username=shorts.user.username) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="shorts-follow-btn" data-username="{{ shorts.user.username }}">Подписаться</button>
                     </form>
                     {% endif %}

@@ -73,7 +73,8 @@
                         <span class="user-stats">{{ user.posts.count() }} постов · {{ user.followers.count() }} подписчиков</span>
                     </div>
                     {% if current_user.is_authenticated and user != current_user %}
-                    <form method="POST" action="{{ url_for('follow' if not current_user.is_following(user) else 'unfollow', username=user.username) }}">
+                    <form method="POST" action="{{ url_for('follow' if not current_user.is_following(user) else 'unfollow', username=user.username) }}"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="follow-btn {% if current_user.is_following(user) %}following{% endif %}">
                             {{ 'Отписаться' if current_user.is_following(user) else 'Подписаться' }}
                         </button>
@@ -107,7 +108,8 @@
                         <span class="community-stats">{{ comm.members.count() }} участников</span>
                     </div>
                     {% if current_user.is_authenticated %}
-                    <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}">
+                    <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="join-btn {% if current_user.is_member(comm) %}joined{% endif %}">
                             {{ 'Вступить' if not current_user.is_member(comm) else 'Вступил' }}
                         </button>

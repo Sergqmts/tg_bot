@@ -43,7 +43,8 @@
             <h3 class="section-title">📱 Личные сообщения</h3>
             <div class="users-grid">
                 {% for user in following %}
-                <form method="POST" class="forward-user-form">
+                <form method="POST" class="forward-user-form"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="action" value="to_user">
                     <input type="hidden" name="username" value="{{ user.username }}">
                     <button type="submit" class="forward-user-btn">
@@ -66,7 +67,8 @@
             <h3 class="section-title">💬 Групповые чаты</h3>
             <div class="chats-list">
                 {% for chat in chats %}
-                <form method="POST" class="forward-chat-form">
+                <form method="POST" class="forward-chat-form"
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="action" value="to_chat">
                     <input type="hidden" name="chat_id" value="{{ chat.id }}">
                     <button type="submit" class="forward-chat-btn">
