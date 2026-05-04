@@ -2352,6 +2352,11 @@ def conversation(username):
             flash('Вы не можете отправить сообщение этому пользователю')
             return redirect(url_for('messages'))
     
+    # Find direct chat between current_user and other_user
+    chat = Chat.query.filter_by(type='direct').join(ChatMember).filter(ChatMember.user_id == current_user.id).join(ChatMember, alias='cm2').filter(
+        'cm2.user_id' == other_user.id
+    ).first()
+    
     try:
         Message.query.filter_by(sender=other_user, recipient=current_user, read=False).update({'read': True})
         db.session.commit()
@@ -2429,7 +2434,7 @@ def conversation(username):
         app.logger.error(f"Load messages error: {e}")
         messages = []
     
-    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post)
+    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post, chat=chat)
 
 
 @app.route('/chat/create', methods=['GET', 'POST'])
