@@ -104,12 +104,69 @@ def init_db():
     try:
         from sqlalchemy import text
         with db.engine.connect() as conn:
-            result = conn.execute(text("SELECT COUNT(*) FROM pragma_table_info('message') WHERE name='transcription'"))
-            if not result.scalar():
-                conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
-                conn.commit()
+            # Определяем тип БД
+            db_url = str(db.engine.url)
+            is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+            
+            if is_postgres:
+                # PostgreSQL - используем information_schema
+                result = conn.execute(text("""
+                    SELECT COUNT(*) FROM information_schema.columns 
+                    WHERE table_name = 'message' AND column_name = 'transcription'
+                """))
+                if not result.scalar():
+                    conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
+                    conn.commit()
+            else:
+                # SQLite - используем pragma_table_info
+                result = conn.execute(text("SELECT COUNT(*) FROM pragma_table_info('message') WHERE name='transcription'"))
+                if not result.scalar():
+                    conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
+                    conn.commit()
     except Exception as e:
         app.logger.error(f"DB init error: {e}")
+
+
+def column_exists(table_name, column_name):
+    """Проверяет, существует ли колонка в таблице (совместимо с SQLite и PostgreSQL)"""
+    from sqlalchemy import text
+    db_url = str(db.engine.url)
+    is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+    
+    try:
+        if is_postgres:
+            result = db.session.execute(text("""
+                SELECT COUNT(*) FROM information_schema.columns 
+                WHERE table_name = :table AND column_name = :column
+            """), {'table': table_name, 'column': column_name})
+        else:
+            result = db.session.execute(text("""
+                SELECT COUNT(*) FROM pragma_table_info(:table) WHERE name=:column
+            """), {'table': table_name, 'column': column_name})
+        return result.scalar() > 0
+    except:
+        return False
+
+
+def get_table_columns(table_name):
+    """Возвращает список колонок таблицы (совместимо с SQLite и PostgreSQL)"""
+    from sqlalchemy import text
+    db_url = str(db.engine.url)
+    is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+    
+    try:
+        if is_postgres:
+            result = db.session.execute(text("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = :table
+            """), {'table': table_name})
+        else:
+            result = db.session.execute(text("""
+                SELECT name FROM pragma_table_info(:table)
+            """), {'table': table_name})
+        return [row[0] for row in result]
+    except:
+        return []
 
 with app.app_context():
     init_db()
@@ -203,12 +260,11 @@ def run_migrations():
     from sqlalchemy import text
     
     try:
-        result = db.session.execute(text("SELECT name FROM pragma_table_info('user')"))
-        existing = [row[0] for row in result]
+        existing = get_table_columns('user')
         for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:
             if col not in existing:
                 try:
-                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
+                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
                 except:
                     pass
@@ -216,7 +272,7 @@ def run_migrations():
         for col, typ in privacy_cols:
             if col not in existing:
                 try:
-                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
+                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
                 except:
                     pass
@@ -224,7 +280,7 @@ def run_migrations():
         for col, typ in phone_cols:
             if col not in existing:
                 try:
-                    db.session.execute(text(f'ALTER TABLE user ADD COLUMN {col} {typ}'))
+                    db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
                 except:
                     pass
@@ -232,8 +288,7 @@ def run_migrations():
         app.logger.info(f"User migration: {e}")
     
     try:
-        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('community') WHERE name='is_private'"))
-        if not result.scalar():
+        if not column_exists('community', 'is_private'):
             try:
                 db.session.execute(text('ALTER TABLE community ADD COLUMN is_private BOOLEAN DEFAULT 0'))
                 db.session.commit()
@@ -243,8 +298,7 @@ def run_migrations():
         app.logger.info(f"Community migration: {e}")
     
     try:
-        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('community_member') WHERE name='status'"))
-        if not result.scalar():
+        if not column_exists('community_member', 'status'):
             try:
                 db.session.execute(text("ALTER TABLE community_member ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
                 db.session.commit()
@@ -254,8 +308,7 @@ def run_migrations():
         app.logger.info(f"Member migration: {e}")
     
     try:
-        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('post') WHERE name='is_community_post'"))
-        if not result.scalar():
+        if not column_exists('post', 'is_community_post'):
             try:
                 db.session.execute(text("ALTER TABLE post ADD COLUMN is_community_post BOOLEAN DEFAULT 0"))
                 db.session.commit()
@@ -265,8 +318,7 @@ def run_migrations():
         app.logger.info(f"Post migration: {e}")
     
     try:
-        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('followers') WHERE name='status'"))
-        if not result.scalar():
+        if not column_exists('followers', 'status'):
             try:
                 db.session.execute(text("ALTER TABLE followers ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
                 db.session.commit()
@@ -276,28 +328,84 @@ def run_migrations():
         app.logger.info(f"Followers migration: {e}")
     
     try:
-        result = db.session.execute(text("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='chat'"))
+        # Проверка существования таблицы (совместимо с SQLite и PostgreSQL)
+        db_url = str(db.engine.url)
+        is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+        
+        if is_postgres:
+            result = db.session.execute(text("""
+                SELECT COUNT(*) FROM information_schema.tables 
+                WHERE table_name = 'chat'
+            """))
+        else:
+            result = db.session.execute(text("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='chat'"))
+        
         if not result.scalar():
-            db.session.execute(text('''
-                CREATE TABLE chat (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name VARCHAR(100) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    creator_id INTEGER NOT NULL,
-                    avatar VARCHAR(200) DEFAULT 'chat_default.png'
-                );
-                CREATE TABLE chat_member (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    chat_id INTEGER NOT NULL,
-                    user_id INTEGER NOT NULL,
-                    role VARCHAR(20) DEFAULT 'member',
-                    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            '''))
+            db_url = str(db.engine.url)
+            is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+            
+            if is_postgres:
+                # PostgreSQL syntax
+                db.session.execute(text('''
+                    CREATE TABLE chat (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(100) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        creator_id INTEGER NOT NULL,
+                        avatar VARCHAR(200) DEFAULT 'chat_default.png',
+                        background_type VARCHAR(20) DEFAULT 'default',
+                        background_value VARCHAR(500) DEFAULT ''
+                    )
+                '''))
+                db.session.execute(text('''
+                    CREATE TABLE chat_member (
+                        id SERIAL PRIMARY KEY,
+                        chat_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        role VARCHAR(20) DEFAULT 'member',
+                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
+            else:
+                # SQLite syntax
+                db.session.execute(text('''
+                    CREATE TABLE chat (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name VARCHAR(100) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        creator_id INTEGER NOT NULL,
+                        avatar VARCHAR(200) DEFAULT 'chat_default.png',
+                        background_type VARCHAR(20) DEFAULT 'default',
+                        background_value VARCHAR(500) DEFAULT ''
+                    )
+                '''))
+                db.session.execute(text('''
+                    CREATE TABLE chat_member (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        chat_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        role VARCHAR(20) DEFAULT 'member',
+                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
             db.session.commit()
         
-        result = db.session.execute(text("SELECT name FROM pragma_table_info('message')"))
-        columns = [row[0] for row in result]
+        # Add background columns to chat table if they don't exist
+        chat_columns = get_table_columns('chat')
+        if 'background_type' not in chat_columns:
+            try:
+                db.session.execute(text("ALTER TABLE chat ADD COLUMN background_type VARCHAR(20) DEFAULT 'default'"))
+                db.session.commit()
+            except:
+                pass
+        if 'background_value' not in chat_columns:
+            try:
+                db.session.execute(text("ALTER TABLE chat ADD COLUMN background_value VARCHAR(500) DEFAULT ''"))
+                db.session.commit()
+            except:
+                pass
+        
+        columns = get_table_columns('message')
         if 'chat_id' not in columns:
             try:
                 db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
@@ -306,8 +414,7 @@ def run_migrations():
                 pass
         
         try:
-            result = db.session.execute(text("SELECT name FROM pragma_table_info('story')"))
-            story_cols = [row[0] for row in result]
+            story_cols = get_table_columns('story')
             if 'is_archived' not in story_cols:
                 db.session.execute(text("ALTER TABLE story ADD COLUMN is_archived INTEGER DEFAULT 0"))
                 db.session.commit()
@@ -3277,8 +3384,7 @@ with app.app_context():
     
     try:
         from sqlalchemy import text
-        result = db.session.execute(text("SELECT name FROM pragma_table_info('user')"))
-        columns = [row[0] for row in result]
+        columns = get_table_columns('user')
         
         if 'avatar_url' in columns:
             db.session.execute(text("ALTER TABLE user DROP COLUMN avatar_url"))
@@ -3295,8 +3401,7 @@ with app.app_context():
         app.logger.info(f"Table repost may already exist: {e}")
     
     try:
-        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('message') WHERE name='post_id'"))
-        if not result.scalar():
+        if not column_exists('message', 'post_id'):
             db.session.execute(text("ALTER TABLE message ADD COLUMN post_id INTEGER REFERENCES post(id)"))
             db.session.commit()
             app.logger.info("Added post_id column to message")
@@ -3451,8 +3556,7 @@ with app.app_context():
     try:
         from sqlalchemy import text
         
-        result = db.session.execute(text("SELECT COUNT(*) FROM pragma_table_info('user') WHERE name='avatar_cloudinary_url'"))
-        if not result.scalar():
+        if not column_exists('user', 'avatar_cloudinary_url'):
             db.session.execute(text('ALTER TABLE user ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
             db.session.commit()
     except Exception as e:
