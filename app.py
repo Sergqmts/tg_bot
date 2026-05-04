@@ -2555,7 +2555,7 @@ def chat_view(chat_id):
         
         app.logger.info(f"Files in request: {list(request.files.keys())}")
         
-            if 'media' in request.files:
+        if 'media' in request.files:
                 file = request.files['media']
                 file_len = file.seek(0, 2)
                 file.seek(0)
@@ -2573,38 +2573,38 @@ def chat_view(chat_id):
                             media_type = 'document'
                         
                         if cloudinary_configured:
-                        app.logger.info("Uploading to cloudinary...")
-                        media_url = upload_to_cloudinary(file, folder='messages')
-                        app.logger.info(f"Cloudinary result: {media_url}")
-                        if media_url:
-                            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                            app.logger.info("Uploading to cloudinary...")
+                            media_url = upload_to_cloudinary(file, folder='messages')
+                            app.logger.info(f"Cloudinary result: {media_url}")
+                            if media_url:
+                                ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                                media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                        else:
+                            app.logger.warning("Cloudinary not configured, using local storage")
+                        
+                        app.logger.info(f"Before local save check, media_url: {media_url}")
+                        
+                        if not media_url:
+                            app.logger.info("Entering local save block")
+                            filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                            full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                            app.logger.info(f"Saving to: {full_path}")
+                            try:
+                                file.save(full_path)
+                                app.logger.info(f"File saved, exists: {os.path.exists(full_path)}")
+                                list_files = os.listdir(app.config['UPLOAD_FOLDER'])
+                                app.logger.info(f"Files in upload dir: {list_files[:5]}")
+                            except Exception as e:
+                                app.logger.error(f"Save error: {e}")
+                            media_url = '/media/' + filename
+                            app.logger.info(f"Generated URL: {media_url}")
+                            ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                             media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                    else:
-                        app.logger.warning("Cloudinary not configured, using local storage")
-                    
-                    app.logger.info(f"Before local save check, media_url: {media_url}")
-                    
-                    if not media_url:
-                        app.logger.info("Entering local save block")
-                        filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
-                        full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                        app.logger.info(f"Saving to: {full_path}")
-                        try:
-                            file.save(full_path)
-                            app.logger.info(f"File saved, exists: {os.path.exists(full_path)}")
-                            list_files = os.listdir(app.config['UPLOAD_FOLDER'])
-                            app.logger.info(f"Files in upload dir: {list_files[:5]}")
-                        except Exception as e:
-                            app.logger.error(f"Save error: {e}")
-                        media_url = '/media/' + filename
-                        app.logger.info(f"Generated URL: {media_url}")
-                        ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                    app.logger.info(f"Media URL: {media_url}, type: {media_type}")
-                except Exception as e:
-                    app.logger.error(f"Media upload error: {e}")
-            else:
-                app.logger.warning(f"File not allowed or empty: filename='{file.filename}', size={file_len}")
+                        app.logger.info(f"Media URL: {media_url}, type: {media_type}")
+                    except Exception as e:
+                        app.logger.error(f"Media upload error: {e}")
+                else:
+                    app.logger.warning(f"File not allowed or empty: filename='{file.filename}', size={file_len}")
         
         app.logger.info(f"body: '{body}', media_url: {media_url}, post_id: {post_id}")
         
