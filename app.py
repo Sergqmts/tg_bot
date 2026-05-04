@@ -1497,7 +1497,6 @@ def view_story(story_id):
     return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories, current_index=current_index)
 
 
-@csrf.exempt
 @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])
 @login_required
 def forward_post(post_id):
@@ -2369,7 +2368,6 @@ def get_whisper_model():
     return model
 
 
-@csrf.exempt
 @app.route('/messages/<username>/voice', methods=['POST'])
 @login_required
 def send_voice(username):
@@ -2526,7 +2524,6 @@ def chat_view(chat_id):
     return render_template('chat.html', chat=chat, messages=messages, Post=Post)
 
 
-@csrf.exempt
 @app.route('/chat/<int:chat_id>/voice', methods=['POST'])
 @login_required
 def send_chat_voice(chat_id):
@@ -2603,7 +2600,6 @@ def leave_chat(chat_id):
 
 @app.route('/message/<int:message_id>/forward', methods=['GET', 'POST'])
 @login_required
-@csrf.exempt
 def forward_message(message_id):
     message = Message.query.get_or_404(message_id)
     
@@ -2694,7 +2690,6 @@ def forward_message(message_id):
         other_user = User.query.get(message.recipient_id)
     
     return render_template('forward_message.html', message=message, chats=chats, other_user=other_user, following=following, Post=Post)
-@csrf.exempt
 @login_required
 def forward_message_post(message_id):
     message = Message.query.get_or_404(message_id)
@@ -3461,3 +3456,11 @@ def avatar_url_filter(user):
     if hasattr(user, 'avatar') and user.avatar and user.avatar != 'default.png':
         return url_for('uploaded_file', filename=user.avatar)
     return None
+
+
+# Manually exempt specific AJAX endpoints from CSRF protection
+# These endpoints receive CSRF token in FormData from JavaScript
+csrf._exempt_views.add('send_voice')
+csrf._exempt_views.add('send_chat_voice')
+csrf._exempt_views.add('forward_post')
+csrf._exempt_views.add('forward_message')
