@@ -1501,6 +1501,10 @@ def create_story():
                 )
                 db.session.add(story)
                 db.session.commit()
+                # Notify followers
+                followers = current_user.followers.filter_by(status='approved').all()
+                for follower in followers:
+                    create_notification(follower.id, current_user.id, 'new_story')
                 return redirect(url_for('index'))
         
         file = request.files.get('media')
@@ -1532,6 +1536,10 @@ def create_story():
                 )
                 db.session.add(story)
                 db.session.commit()
+                # Notify followers
+                followers = current_user.followers.filter_by(status='approved').all()
+                for follower in followers:
+                    create_notification(follower.id, current_user.id, 'new_story')
                 return redirect(url_for('index'))
     
     return render_template('create_story.html')
