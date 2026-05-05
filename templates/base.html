@@ -86,7 +86,7 @@
                 <div class="w-10 h-10 bg-gradient-to-tr from-brand-start via-brand-middle to-brand-end rounded-xl flex items-center justify-center text-white shadow-lg">
                     <i class="fa-solid fa-bolt-lightning text-xl"></i>
                 </div>
-                <span class="text-2xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle hidden sm:block">VIBE</span>
+                <a href="{{ url_for('index') }}" class="text-2xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle hidden sm:block">VIBE</a>
             </div>
             <div class="flex-1 max-w-md mx-8 hidden md:block">
                 <div class="relative">
@@ -94,7 +94,7 @@
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
                     <form method="GET" action="{{ url_for('explore') }}">
-                        <input type="text" name="q" placeholder="Поиск вдохновения..." class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-2 pl-10 pr-4 focus:ring-2 focus:ring-brand-middle transition-all outline-none text-sm">
+                        <input type="text" name="q" placeholder="Поиск вдохновения..." class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-brand-middle transition-all outline-none text-sm">
                     </form>
                 </div>
             </div>
@@ -105,6 +105,26 @@
                     {% if unread_notifications > 0 %}
                     <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">{{ unread_notifications }}</span>
                     {% endif %}
+                </a>
+                <button id="theme-toggle" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
+                </button>
+                <a href="{{ url_for('user_profile', username=current_user.username) }}" class="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 dark:border-dark-border cursor-pointer">
+                    {% set avatar_url = get_avatar_url(current_user) %}
+                    {% if avatar_url %}
+                    <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    {% endif %}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    {% endif %}
                 </a>
                 <button id="theme-toggle" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
                     <i class="fa-solid fa-moon dark:hidden"></i>
