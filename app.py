@@ -103,7 +103,7 @@ db = SQLAlchemy(app)
 
 def init_db():
     try:
-        from sqlalchemy import text
+        from sqlalchemy import text, inspect
         with db.engine.connect() as conn:
             # Определяем тип БД
             db_url = str(db.engine.url)
@@ -118,6 +118,23 @@ def init_db():
                 if not result.scalar():
                     conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
                     conn.commit()
+                
+                # Добавляем last_seen если его нет
+                result = conn.execute(text("""
+                    SELECT COUNT(*) FROM information_schema.columns 
+                    WHERE table_name = 'user' AND column_name = 'last_seen'
+                """))
+                if not result.scalar():
+                    conn.execute(text('ALTER TABLE "user" ADD COLUMN last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP'))
+                    conn.commit()
+                
+                # Создаем таблицу notification если её нет
+                result = conn.execute(text("""
+                    SELECT COUNT(*) FROM information_schema.tables 
+                    WHERE table_name = 'notification'
+                """))
+                if not result.scalar():
+                    db.create_all()
             else:
                 # SQLite - используем pragma_table_info
                 result = conn.execute(text("SELECT COUNT(*) FROM pragma_table_info('message') WHERE name='transcription'"))
