@@ -36,12 +36,18 @@
                             <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> лайкнул ваш пост
                         {% elif notif.type == 'comment' %}
                             <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> прокомментировал ваш пост
+                        {% elif notif.type == 'reply' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> ответил на ваш комментарий
                         {% elif notif.type == 'follow' %}
                             <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> подписался на вас
                         {% elif notif.type == 'follow_request' %}
                             <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> хочет подписаться на вас
                         {% elif notif.type == 'follow_approved' %}
                             <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> одобрил вашу подписку
+                        {% elif notif.type == 'message' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> отправил вам сообщение
+                        {% elif notif.type == 'new_story' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> опубликовал новую историю
                         {% endif %}
                     </p>
                     <span class="notification-time">{{ notif.created_at.strftime('%d.%m.%Y %H:%M') }}</span>

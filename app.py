@@ -1483,6 +1483,10 @@ def create_story():
                     )
                     db.session.add(story)
                     db.session.commit()
+                    # Notify followers
+                    followers = current_user.followers.filter_by(status='approved').all()
+                    for follower in followers:
+                        create_notification(follower.id, current_user.id, 'new_story')
                     return redirect(url_for('index'))
             else:
                 filename_save = secure_filename(filename)
@@ -1777,6 +1781,11 @@ def add_comment(post_id):
             db.session.add(comment)
             db.session.commit()
             create_notification(post.author_id, current_user.id, 'comment', post_id=post.id, comment_id=comment.id)
+            # Notify parent comment author if this is a reply
+            if reply_to_comment_id:
+                parent_comment = Comment.query.get(reply_to_comment_id)
+                if parent_comment and parent_comment.author_id != current_user.id:
+                    create_notification(parent_comment.author_id, current_user.id, 'reply', post_id=post.id, comment_id=comment.id)
             app.logger.info(f"Comment added successfully")
         except Exception as e:
             app.logger.error(f"Comment error: {e}")
@@ -2518,6 +2527,7 @@ def conversation(username):
                     db.session.add(media)
                 
                 db.session.commit()
+                create_notification(other_user.id, current_user.id, 'message', message_id=msg.id)
                 app.logger.info(f"Message saved with media: {media_url}")
             except Exception as e:
                 app.logger.error(f"Message error: {e}")
