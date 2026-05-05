@@ -139,7 +139,7 @@
     </script>
     {% endif %}
 
-    <main class="pt-20 pb-24 lg:pt-24 max-w-6xl mx-auto px-4">
+    <main class="pt-20 pb-24 lg:pt-28 max-w-6xl mx-auto px-4">
         {% with messages = get_flashed_messages() %}
         {% for message in messages %}
         <div class="flash-message">{{ message }}</div>
@@ -163,10 +163,13 @@
             <a href="{{ url_for('shorts') }}" class="text-2xl {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-clapperboard"></i>
             </a>
-            <a href="{{ url_for('messages') }}" class="text-2xl {% if request.endpoint == 'messages' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+            <a href="{{ url_for('messages') }}" class="text-2xl {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-paper-plane"></i>
             </a>
-            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="w-7 h-7 rounded-full overflow-hidden border border-slate-300">
+            <a href="{{ url_for('communities') }}" class="text-2xl {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-users"></i>
+            </a>
+            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="w-7 h-7 rounded-full overflow-hidden border-2 border-slate-300 hover:border-brand-middle transition-all">
                 {% set avatar_url = get_avatar_url(current_user) %}
                 {% if avatar_url %}
                 <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
@@ -175,6 +178,10 @@
                     {{ current_user.username[0].upper() }}
                 </div>
                 {% endif %}
+            </a>
+        </div>
+    </nav>
+    {% endif %}
             </a>
         </div>
     </nav>
