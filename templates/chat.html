@@ -1,120 +1,131 @@
 {% extends "base.html" %}
-{% block title %}{% if chat.type == 'direct' %}{% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}{% else %}{{ chat.name }}{% endif %} - Social{% endblock %}
+{% block title %}{% if chat.type == 'direct' %}{% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}{% else %}{{ chat.name }}{% endif %} - Vibe{% endblock %}
 {% block content %}
-<div class="chat-page" {% if chat.background_type == 'color' %}style="background: {{ chat.background_value }};"{% elif chat.background_type == 'gradient' %}style="background: {{ chat.background_value }};"{% elif chat.background_type == 'image' and chat.background_value %}style="background: url('{% if chat.background_value.startswith('http') %}{{ chat.background_value }}{% else %}{{ url_for('uploaded_file', filename=chat.background_value) }}{% endif %}') center/cover;"{% endif %}>
-    <header class="chat-header">
-        <a href="{{ url_for('messages') }}" class="btn btn-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-        </a>
-        <div class="chat-avatar">
-            {% if chat.type != 'direct' and chat.avatar and chat.avatar != 'chat_default.png' %}
-                {% if chat.avatar.startswith('http') %}
-                <img src="{{ chat.avatar }}">
-                {% else %}
-                <img src="{{ avatar_url }}">
+<div class="flex flex-col h-screen h-dvh" {% if chat.background_type == 'color' %}style="background: {{ chat.background_value }};"{% elif chat.background_type == 'gradient' %}style="background: {{ chat.background_value }};"{% elif chat.background_type == 'image' and chat.background_value %}style="background: url('{% if chat.background_value.startswith('http') %}{{ chat.background_value }}{% else %}{{ url_for('uploaded_file', filename=chat.background_value) }}{% endif %}') center/cover;"{% endif %}>
+    <header class="sticky top-0 z-50 glass border-b border-slate-200 dark:border-dark-border">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
+            <a href="{{ url_for('messages') }}" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="flex items-center gap-3 flex-1">
+                <div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 {% if chat.type != 'direct' and chat.avatar and chat.avatar != 'chat_default.png' %}{% else %}bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-sm font-bold{% endif %}">
+                    {% if chat.type != 'direct' and chat.avatar and chat.avatar != 'chat_default.png' %}
+                        {% if chat.avatar.startswith('http') %}
+                        <img src="{{ chat.avatar }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <img src="{{ url_for('uploaded_file', filename=chat.avatar) }}" class="w-full h-full object-cover">
+                        {% endif %}
+                    {% else %}
+                        {% if chat.type == 'direct' %}
+                            {% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username[0].upper() }}{% endif %}{% endfor %}
+                        {% else %}👥{% endif %}
+                    {% endif %}
+                </div>
+                <a href="{% if chat.type == 'direct' %}{% for m in chat.members %}{% if m.id != current_user.id %}{{ url_for('conversation', username=m.username) }}{% endif %}{% endfor %}{% else %}{{ url_for('chat_view', chat_id=chat.id) }}{% endif %}" class="font-bold text-sm">
+                    {% if chat.type == 'direct' %}
+                        {% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}
+                    {% else %}
+                        {{ chat.name }}
+                    {% endif %}
+                    <div class="text-[10px] text-slate-400 font-normal">
+                        {% if chat.type != 'direct' %}{{ chat.members.count() }} участников{% else %}Личный{% endif %}
+                    </div>
+                </a>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if chat.type != 'direct' %}
+                <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" title="Участники">
+                    <i class="fa-solid fa-users"></i>
+                </a>
                 {% endif %}
-            {% else %}
-            <span>
-            {% if chat.type == 'direct' %}
-                {% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username[0].upper() }}{% endif %}{% endfor %}
-            {% else %}👥{% endif %}
-            </span>
-            {% endif %}
-        </div>
-        <a href="{% if chat.type == 'direct' %}{% for m in chat.members %}{% if m.id != current_user.id %}{{ url_for('conversation', username=m.username) }}{% endif %}{% endfor %}{% else %}{{ url_for('chat_view', chat_id=chat.id) }}{% endif %}" class="chat-user">
-            <span class="chat-name">
-            {% if chat.type == 'direct' %}
-                {% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}
-            {% else %}
-                {{ chat.name }}
-            {% endif %}
-            </span>
-            <span class="chat-count">
-            {% if chat.type != 'direct' %}{{ chat.members.count() }} участников{% else %}Личный{% endif %}
-            </span>
-        </a>
-        <div class="chat-actions">
-            {% if chat.type != 'direct' %}
-            <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="btn btn-icon">👥</a>
-            {% endif %}
+            </div>
         </div>
     </header>
     
-    <div class="chat-messages" id="messagesArea">
+    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="messagesArea">
         {% for msg in messages %}
-        <div class="chat-message {% if msg.sender_id == current_user.id %}sent{% else %}received{% endif %}" oncontextmenu="showMessageMenu(event, {{ msg.id }}); return false;">
+        <div class="flex {% if msg.sender_id == current_user.id %}justify-end{% else %}justify-start{% endif %} gap-2">
             {% if msg.sender_id != current_user.id %}
-            <a href="{{ url_for('user_profile', username=msg.sender.username) }}" class="message-avatar">
-                {% set avatar_url = get_avatar_url(msg.sender) %}{% if avatar_url %}
-                <img src="{{ avatar_url }}">
+            <a href="{{ url_for('user_profile', username=msg.sender.username) }}" class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mt-1">
+                {% set avatar_url = get_avatar_url(msg.sender) %}
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" class="w-full h-full object-cover">
                 {% else %}
-                <div class="avatar-placeholder">{{ msg.sender.username[0].upper() }}</div>
+                <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
+                    {{ msg.sender.username[0].upper() }}
+                </div>
                 {% endif %}
             </a>
             {% endif %}
             
-            <div class="message-bubble">
-                <div class="message-menu" id="menu-{{ msg.id }}">
-                    <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item" style="display: block; padding: 8px 12px; color: var(--text); text-decoration: none; font-size: 13px;">📤 Переслать</a>
+            <div class="{% if msg.sender_id == current_user.id %}bg-gradient-to-tr from-brand-start to-brand-middle text-white{% else %}glass{% endif %} rounded-2xl px-4 py-3 max-w-[70%] relative group">
+                <button class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full {% if msg.sender_id == current_user.id %}bg-white/20{% else %}bg-slate-200 dark:bg-slate-700{% endif %} opacity-0 group-hover:opacity-100 transition-opacity" onclick="showMessageMenu(event, {{ msg.id }}); return false;">
+                    <i class="fa-solid fa-ellipsis text-xs"></i>
+                </button>
+                <div class="message-menu hidden" id="menu-{{ msg.id }}">
+                    <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item">📤 Переслать</a>
                     {% if msg.sender_id == current_user.id %}
                     <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="menu-item danger" style="display: block; padding: 8px 12px; color: #ED4956; background: none; border: none; width: 100%; text-align: left; font-size: 13px;">🗑️ Удалить</button>
+                        <button type="submit" class="menu-item danger">🗑️ Удалить</button>
                     </form>
                     {% endif %}
                 </div>
                 {% if msg.post_id %}
                 {% set post = Post.query.get(msg.post_id) %}
                 {% if post %}
-                <a href="{{ url_for('view_post', post_id=post.id) }}" class="message-post">
-                    <div style="font-weight: 600;">{{ post.author.username }}</div>
-                    <div>{{ post.body[:30] if post.body else '📷' }}...</div>
+                <a href="{{ url_for('view_post', post_id=post.id) }}" class="block p-3 mb-2 rounded-xl {% if msg.sender_id == current_user.id %}bg-white/20{% else %}bg-slate-100 dark:bg-slate-800{% endif %}">
+                    <div class="font-bold text-xs">{{ post.author.username }}</div>
+                    <div class="text-xs">{{ post.body[:30] if post.body else '📷' }}...</div>
                 </a>
                 {% endif %}
                 {% endif %}
                 
                 {% if msg.body and msg.body != '[удалено]' %}
-                <div class="message-text">{{ msg.body }}</div>
+                <div class="text-sm">{{ msg.body }}</div>
                 {% elif msg.body == '[удалено]' %}
-                <div class="message-text" style="font-style: italic; opacity: 0.6;">Сообщение удалено</div>
+                <div class="text-sm italic opacity-60">Сообщение удалено</div>
                 {% endif %}
                 
                 {% for m in msg.medias %}
                 {% if m.media_type == 'document' %}
-                <a href="{{ m.media_url }}" download class="doc-file">
-                    <span>📄</span><span>Скачать</span>
+                <a href="{{ m.media_url }}" download class="flex items-center gap-2 p-3 rounded-xl bg-slate-100 dark:bg-slate-800 mb-2 mt-2">
+                    <i class="fa-solid fa-file text-brand-middle"></i>
+                    <span class="text-xs">Скачать</span>
                 </a>
                 {% elif m.media_type == 'video' %}
-                <video src="{{ m.media_url }}" muted></video>
+                <div class="mb-2 mt-2 rounded-xl overflow-hidden">
+                    <video src="{{ m.media_url }}" muted class="w-full max-w-[200px]"></video>
+                </div>
                 {% elif m.media_type == 'voice' %}
-                <div class="voice-msg">
-                    <button class="play-voice-btn" onclick="playVoice('{{ m.media_url }}', this)">
-                        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 mb-2 mt-2">
+                    <button class="w-8 h-8 rounded-full bg-brand-middle text-white flex items-center justify-center" onclick="playVoice('{{ m.media_url }}', this)">
+                        <i class="fa-solid fa-volume-high text-xs"></i>
                     </button>
-                    <div class="voice-wave"></div>
+                    <div class="voice-wave flex-1 h-8"></div>
                 </div>
                 {% if msg.transcription %}
-                <div class="voice-transcript-wrap">
-                    <button class="transcript-toggle" onclick="toggleTranscription('{{ msg.id }}')">Аа</button>
-                    <div class="voice-transcript" id="transcript-{{ msg.id }}" style="display: none;">
+                <div class="voice-transcript-wrap mb-2">
+                    <button class="text-xs text-brand-middle" onclick="toggleTranscription('{{ msg.id }}')">Аа</button>
+                    <div class="voice-transcript hidden text-xs mt-1 p-2 rounded-lg bg-slate-100 dark:bg-slate-800" id="transcript-{{ msg.id }}">
                         {{ msg.transcription }}
                     </div>
                 </div>
                 {% endif %}
                 {% else %}
-                <a href="{{ m.media_url }}" download>
-                    <img src="{{ m.media_url }}" alt="">
+                <a href="{{ m.media_url }}" download class="block mb-2 mt-2">
+                    <img src="{{ m.media_url }}" alt="" class="rounded-xl max-w-[180px] max-h-[180px] object-cover">
                 </a>
                 {% endif %}
                 {% endfor %}
                 
-                <span class="message-time">{{ msg.created_at.strftime('%H:%M') }}</span>
+                <div class="text-[10px] {% if msg.sender_id == current_user.id %}text-white/70{% else %}text-slate-400{% endif %} mt-1">{{ msg.created_at.strftime('%H:%M') }}</div>
             </div>
         </div>
         {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">💬</div>
-            <h3 class="empty-title">Начните общение</h3>
+        <div class="glass rounded-3xl p-12 text-center">
+            <div class="text-6xl mb-4">💬</div>
+            <h3 class="text-lg font-bold mb-2">Начните общение</h3>
         </div>
         {% endfor %}
     </div>
@@ -129,10 +140,45 @@
                 <span class="recording-dot"></span>
                 <span class="recording-time" id="recordingTime">0:00</span>
             </div>
-            <div class="recording-controls">
-                <button type="button" class="cancel-record" onclick="cancelRecording()">✕</button>
-                <button type="button" class="send-record" onclick="sendChatRecording()">➤</button>
+            <div class="recording-controls flex gap-2">
+                <button type="button" class="cancel-record px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-700" onclick="cancelRecording()">✕</button>
+                <button type="button" class="send-record px-3 py-1 rounded-lg bg-brand-middle text-white" onclick="sendChatRecording()">➤</button>
             </div>
+        </div>
+        
+        <form method="POST" action="" enctype="multipart/form-data" class="flex items-center gap-2" id="messageForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onclick="toggleAttachMenu()">
+                <i class="fa-solid fa-paperclip"></i>
+            </button>
+            
+            <div class="attach-menu hidden" id="attachMenu">
+                <label class="attach-option flex items-center gap-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
+                    <input type="file" name="media" accept="image/*,video/*" hidden onchange="handleFileSelect(this)">
+                    <i class="fa-solid fa-camera text-brand-middle"></i> Фото/видео
+                </label>
+                <label class="attach-option flex items-center gap-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
+                    <input type="file" name="media" accept="audio/*" hidden onchange="handleFileSelect(this)">
+                    <i class="fa-solid fa-music text-brand-middle"></i> Музыка
+                </label>
+                <label class="attach-option flex items-center gap-2 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
+                    <input type="file" name="file" hidden onchange="handleFileSelect(this)">
+                    <i class="fa-solid fa-paperclip text-brand-middle"></i> Файл
+                </label>
+            </div>
+            
+            <button type="button" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" id="micBtn" onclick="toggleRecording()">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
+            
+            <input type="text" name="body" placeholder="Сообщение..." class="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm">
+            <input type="file" name="media" id="attachedFile" hidden>
+            <button type="submit" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-start to-brand-middle text-white flex items-center justify-center hover:shadow-lg transition-all">
+                <i class="fa-solid fa-paper-plane text-sm"></i>
+            </button>
+        </form>
+    </footer>
+</div>
         </div>
         
         <form method="POST" action="" enctype="multipart/form-data" class="chat-form-row" id="messageForm">

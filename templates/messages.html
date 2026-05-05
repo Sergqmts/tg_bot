@@ -1,57 +1,71 @@
 {% extends "base.html" %}
-{% block title %}Сообщения - Social{% endblock %}
+{% block title %}Сообщения - Vibe{% endblock %}
 {% block content %}
-<div class="profile">
-    <div class="profile-header">
-        <div class="profile-info" style="padding: 20px;">
-            <div class="profile-title">
-                <h1 class="profile-username">Сообщения</h1>
-            </div>
-            <div class="profile-actions" style="justify-content: flex-end;">
-                <a href="{{ url_for('create_chat') }}" class="btn btn-primary">Новый чат</a>
-            </div>
-        </div>
+<div class="max-w-6xl mx-auto px-4 pt-24 pb-24 lg:pt-28">
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle">Сообщения</h1>
+        <a href="{{ url_for('create_chat') }}" class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl hover:shadow-lg transition-all text-sm font-medium">
+            Новый чат
+        </a>
     </div>
     
-    <div style="padding: 0 20px 20px;">
-        <input type="text" placeholder="Поиск..." style="width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text);">
+    <div class="mb-6">
+        <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" placeholder="Поиск сообщений..." class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-brand-middle transition-all outline-none text-sm">
+        </div>
     </div>
     
     {% if suggested_users %}
-    <div class="profile-header" style="padding: 20px; background: var(--surface); border-radius: 12px; margin: 0 20px 20px;">
-        <h3 style="margin-bottom: 16px; font-size: 14px; color: var(--text-secondary);">Написать</h3>
-        {% for user in suggested_users[:5] %}
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <a href="{{ url_for('user_profile', username=user.username) }}" class="avatar-placeholder">{{ user.username[0].upper() }}</a>
-                <a href="{{ url_for('user_profile', username=user.username) }}" style="color: var(--text); font-weight: 600;">{{ user.username }}</a>
+    <div class="glass rounded-3xl p-6 mb-8">
+        <h3 class="text-sm font-bold text-slate-500 mb-4">Написать</h3>
+        <div class="space-y-4">
+            {% for user in suggested_users[:5] %}
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="{{ url_for('user_profile', username=user.username) }}">
+                        {% set avatar_url = get_avatar_url(user) %}
+                        <div class="w-10 h-10 rounded-full {% if avatar_url %}overflow-hidden{% else %}bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-sm font-bold{% endif %}">
+                            {% if avatar_url %}
+                            <img src="{{ avatar_url }}" class="w-full h-full object-cover">
+                            {% else %}
+                            {{ user.username[0].upper() }}
+                            {% endif %}
+                        </div>
+                    </a>
+                    <a href="{{ url_for('user_profile', username=user.username) }}" class="font-bold text-sm">{{ user.username }}</a>
+                </div>
+                <a href="{{ url_for('conversation', username=user.username) }}" class="text-xs font-bold text-brand-middle hover:text-brand-end transition-colors">
+                    Написать
+                </a>
             </div>
-            <a href="{{ url_for('conversation', username=user.username) }}" class="btn btn-outline" style="padding: 8px 16px;">Написать</a>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
     {% endif %}
     
     {% if group_chats %}
-    <div style="padding: 0 20px;">
-        <h3 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Группы</h3>
+    <div class="mb-6">
+        <h3 class="text-sm font-bold text-slate-500 mb-4">Группы</h3>
     </div>
-    <div class="chat-list" style="margin-bottom: 20px;">
+    <div class="space-y-3 mb-8">
         {% for item in group_chats %}
-        <a href="{{ url_for('chat_view', chat_id=item.chat.id) }}" class="chat-item">
-            <div class="chat-avatar" style="background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);">
-                <span style="font-size: 20px;">👥</span>
+        <a href="{{ url_for('chat_view', chat_id=item.chat.id) }}" class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all group">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-brand-start via-brand-middle to-brand-end flex items-center justify-center text-white text-xl flex-shrink-0">
+                👥
             </div>
-            <div class="chat-info">
-                <div class="chat-name">{{ item.chat.name }}</div>
-                <div class="chat-preview">{{ item.last.body[:40] if item.last else 'Нет сообщений' }}</div>
+            <div class="flex-1 min-w-0">
+                <div class="font-bold text-sm truncate">{{ item.chat.name }}</div>
+                <div class="text-xs text-slate-500 truncate">{{ item.last.body[:40] if item.last else 'Нет сообщений' }}</div>
             </div>
-            <div class="chat-meta">
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
                 {% if item.last %}
-                <div class="chat-time">{{ item.last.created_at.strftime('%H:%M') }}</div>
+                <div class="text-[10px] text-slate-400">{{ item.last.created_at.strftime('%H:%M') }}</div>
                 {% endif %}
                 {% if item.unread > 0 %}
-                <div class="unread-badge">{{ item.unread }}</div>
+                <div class="w-5 h-5 bg-brand-middle text-white text-[10px] flex items-center justify-center rounded-full font-bold">{{ item.unread }}</div>
                 {% endif %}
             </div>
         </a>
@@ -59,121 +73,42 @@
     </div>
     {% endif %}
     
-    <div style="padding: 0 20px;">
-        <h3 style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">Личные сообщения</h3>
+    <div class="mb-6">
+        <h3 class="text-sm font-bold text-slate-500 mb-4">Личные сообщения</h3>
     </div>
     
-    <div class="chat-list" style="margin: 0 20px;">
+    <div class="space-y-3">
         {% for conv in conversations %}
-        <a href="{{ url_for('conversation', username=conv.user.username) }}" class="chat-item">
-            <div class="chat-avatar">
+        <a href="{{ url_for('conversation', username=conv.user.username) }}" class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all group">
+            <div class="w-12 h-12 rounded-full flex-shrink-0 {% if conv.user %}{% set avatar_url = get_avatar_url(conv.user) %}{% if avatar_url %}overflow-hidden{% else %}bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-sm font-bold{% endif %}{% else %}bg-slate-300{% endif %}">
                 {% if conv.user %}
-                {% set avatar_url = get_avatar_url(conv.user) %}
                 {% if avatar_url %}
-                <img src="{{ avatar_url }}" alt="">
+                <img src="{{ avatar_url }}" class="w-full h-full object-cover">
                 {% else %}
-                <div class="avatar-placeholder">{{ conv.user.username[0].upper() }}</div>
+                {{ conv.user.username[0].upper() }}
                 {% endif %}
                 {% else %}
-                <div class="avatar-placeholder">?</div>
+                ?
                 {% endif %}
             </div>
-            <div class="chat-info">
-                <div class="chat-name">{{ conv.user.username }}</div>
-                <div class="chat-preview">{{ conv.last.body[:40] }}</div>
+            <div class="flex-1 min-w-0">
+                <div class="font-bold text-sm truncate">{{ conv.user.username if conv.user else 'Unknown' }}</div>
+                <div class="text-xs text-slate-500 truncate">{{ conv.last.body[:40] }}</div>
             </div>
-            <div class="chat-meta">
-                <div class="chat-time">{{ conv.last.created_at.strftime('%H:%M') }}</div>
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                <div class="text-[10px] text-slate-400">{{ conv.last.created_at.strftime('%H:%M') }}</div>
                 {% if conv.unread > 0 %}
-                <div class="unread-badge">{{ conv.unread }}</div>
+                <div class="w-5 h-5 bg-brand-middle text-white text-[10px] flex items-center justify-center rounded-full font-bold">{{ conv.unread }}</div>
                 {% endif %}
             </div>
         </a>
         {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">💬</div>
-            <h3 class="empty-title">Нет сообщений</h3>
-            <p class="empty-text">Начните общение с кем-то</p>
+        <div class="glass rounded-3xl p-12 text-center">
+            <div class="text-6xl mb-4">💬</div>
+            <h3 class="text-lg font-bold mb-2">Нет сообщений</h3>
+            <p class="text-sm text-slate-500">Начните общение с кем-то</p>
         </div>
         {% endfor %}
     </div>
 </div>
-
-<style>
-.chat-list {
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-    border-radius: 12px;
-    overflow: hidden;
-}
-.chat-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-    text-decoration: none;
-    transition: background 0.2s;
-}
-.chat-item:last-child {
-    border-bottom: none;
-}
-.chat-item:hover {
-    background: var(--surface-elevated);
-}
-.chat-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: linear-gradient(45deg, #f09433, #bc1888);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.chat-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.chat-info {
-    flex: 1;
-    min-width: 0;
-}
-.chat-name {
-    font-weight: 600;
-    margin-bottom: 2px;
-}
-.chat-preview {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.chat-meta {
-    text-align: right;
-    flex-shrink: 0;
-}
-.chat-time {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    margin-bottom: 4px;
-}
-.unread-badge {
-    width: 22px;
-    height: 22px;
-    background: var(--primary);
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    color: #fff;
-    margin-left: auto;
-}
-</style>
 {% endblock %}
