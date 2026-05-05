@@ -1,440 +1,221 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>История {{ story.user.username }} - Social</title>
+    <title>История {{ story.user.username }} - Vibe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
-            document.documentElement.classList.add('light-mode');
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            start: '#FF3CAC',
+                            middle: '#784BA0',
+                            end: '#2B86C5',
+                        }
+                    }
+                }
+            }
         }
     </script>
     <style>
-        :root {
-            --ig-bg: #000;
-            --ig-text: #fff;
-            --ig-surface: rgba(255,255,255,0.15);
-            --ig-border: #262626;
-        }
-        .light-mode {
-            --ig-bg: #fff;
-            --ig-text: #000;
-            --ig-surface: rgba(0,0,0,0.1);
-            --ig-border: #dbdbdb;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { background: var(--ig-bg); height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        
-        .ig-story-viewer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--ig-bg);
-            z-index: 9999;
-        }
-        
-        .ig-story-container {
-            width: 100%;
-            height: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            position: relative;
-            background: var(--ig-bg);
-        }
-        
-        .ig-progress-segment {
-            flex: 1;
-            height: 2px;
-            background: var(--ig-surface);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        
-        .ig-progress-fill {
-            height: 100%;
-            background: var(--ig-text);
-            width: 0%;
-            animation: progressFill 5s linear forwards;
-        }
-        
-        .ig-progress-fill.completed { width: 100%; }
-        
-        @keyframes progressFill {
-            to { width: 100%; }
-        }
-        
-        .ig-story-header {
-            position: absolute;
-            top: 20px;
-            left: 8px;
-            right: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-            color: var(--ig-text);
-        }
-        
-.ig-story-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .ig-story-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #f09433, #bc1888);
-            overflow: hidden;
-        }
-        
-        .ig-story-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .ig-story-avatar .ig-avatar-initials {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, #f09433, #bc1888);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-        }
-        
-        .ig-story-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--ig-text);
-            text-decoration: none;
-        }
-        
-        .ig-story-time {
-            font-size: 12px;
-            color: var(--ig-surface);
-            margin-left: 8px;
-        }
-        
-        .ig-story-close {
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: var(--ig-text);
-            text-decoration: none;
-            cursor: pointer;
-            background: var(--ig-surface);
-            border-radius: 50%;
-        }
-        
-        .ig-story-media {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: var(--ig-bg);
-        }
-        
-        .ig-story-nav {
-            position: absolute;
-            top: 60px;
-            bottom: 80px;
-            width: 30%;
-            z-index: 50;
-            cursor: pointer;
-        }
-        
-        .ig-story-nav-left { left: 0; }
-        .ig-story-nav-right { right: 0; }
-        
-        .ig-story-viewers {
-            position: absolute;
-            bottom: 88px;
-            left: 12px;
-            color: var(--ig-surface);
-            font-size: 12px;
-            z-index: 100;
-        }
-        
-        .ig-story-reactions {
-            position: absolute;
-            bottom: 20px;
-            left: 12px;
-            right: 60px;
-            z-index: 100;
-        }
-        
-        .ig-reply-input {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            background: var(--ig-surface);
-            border-radius: 22px;
-            padding: 8px 16px;
-        }
-        
-        .ig-reply-input input {
-            flex: 1;
-            background: none;
-            border: none;
-            color: var(--ig-text);
-            font-size: 14px;
-            outline: none;
-        }
-        
-        .ig-reply-input input::placeholder {
-            color: var(--ig-surface);
-        }
-        
-        .ig-reply-input button {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: var(--ig-text);
-        }
-        
-        .ig-quick-reactions {
-            position: absolute;
-            bottom: 80px;
-            right: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 100;
-        }
-        
-        .ig-quick-reaction {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--ig-surface);
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-            transition: transform 0.15s ease;
-        }
-        
-        .ig-quick-reaction:hover { transform: scale(1.15); }
-        
-        .ig-story-menu-btn {
-            background: none;
-            border: none;
-            color: var(--ig-text);
-            font-size: 24px;
-            cursor: pointer;
-            padding: 4px 8px;
-        }
-        
-        .ig-story-menu {
-            position: absolute;
-            top: 50px;
-            right: 8px;
-            background: var(--ig-bg);
-            border: 1px solid var(--ig-border);
-            border-radius: 12px;
-            padding: 8px 0;
-            z-index: 200;
-            min-width: 180px;
-            display: none;
-        }
-        
-        .ig-story-menu.show { display: block; }
-        
-        .ig-story-menu button {
-            display: block;
-            width: 100%;
-            padding: 12px 16px;
-            background: none;
-            border: none;
-            color: var(--ig-text);
-            font-size: 14px;
-            text-align: left;
-            cursor: pointer;
-        }
-        
-        .ig-story-menu button:hover { background: var(--ig-surface); }
-        
-        .ig-story-menu .danger { color: #ff3b30; }
+        :root { --ig-bg: #000; --ig-text: #fff; --ig-surface: rgba(255,255,255,0.15); }
+        .light-mode { --ig-bg: #fff; --ig-text: #000; --ig-surface: rgba(0,0,0,0.1); }
+        html, body { background: var(--ig-bg); height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
+        .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
     </style>
 </head>
-<body>
-    <div class="ig-story-viewer" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event)">
-        <div class="ig-story-container">
-            <div class="ig-progress-group">
-                {% for s in all_stories %}
-                <div class="ig-progress-segment">
-                    <div class="ig-progress-fill {% if current_index > loop.index0 %}completed{% elif current_index == loop.index0 %}{% endif %}"></div>
-                </div>
-                {% endfor %}
-            </div>
-            
-            <div class="ig-story-header">
-                <div class="ig-story-user">
-                    <a href="{{ url_for('user_profile', username=story.user.username) }}" class="ig-story-avatar">
-                        {% set avatar_url = get_avatar_url(story.user) %}{% if avatar_url %}
-                            <img src="{{ avatar_url }}">
-                        {% else %}
-                            <div class="ig-avatar-initials">{{ story.user.username[0].upper() }}</div>
-                        {% endif %}
+<body class="bg-[#000] dark:bg-[#000] text-white">
+    <div class="fixed inset-0 z-[9999] bg-[#000]" id="storyViewer">
+        <div class="relative w-full h-full max-w-[480px] mx-auto bg-[#000]">
+            <div class="absolute top-5 left-2 right-2 flex items-center justify-between z-[100]">
+                <div class="flex items-center gap-3">
+                    <a href="{{ url_for('user_profile', username=story.user.username) }}" class="w-8 h-8 rounded-full overflow-hidden story-ring p-[2px]">
+                        <div class="w-full h-full rounded-full overflow-hidden bg-gradient-to-tr from-brand-start to-brand-end flex items-center justify-center text-white text-sm font-bold">
+                            {% set avatar_url = get_avatar_url(story.user) %}
+                            {% if avatar_url %}
+                            <img src="{{ avatar_url }}" class="w-full h-full object-cover">
+                            {% else %}
+                            {{ story.user.username[0].upper() }}
+                            {% endif %}
+                        </div>
                     </a>
-                    <div>
-                        <a href="{{ url_for('user_profile', username=story.user.username) }}" class="ig-story-name">{{ story.user.username }}</a>
-                        <span class="ig-story-time">{{ story.created_at.strftime('%-H:%M') }}</span>
-                    </div>
+                    <a href="{{ url_for('user_profile', username=story.user.username) }}" class="text-sm font-bold text-white no-underline">{{ story.user.username }}</a>
+                    <span class="text-[12px] text-white/50 ml-2">{{ story.created_at|timeago }}</span>
                 </div>
-                <button class="ig-story-close" onclick="closeStory()">×</button>
+                <a href="{{ url_for('index') }}" class="w-8 h-8 flex items-center justify-center text-white text-2xl no-underline bg-white/20 rounded-full hover:bg-white/30 transition-colors">×</a>
             </div>
             
-            <button class="ig-story-menu-btn" style="position: absolute; top: 18px; right: 40px; z-index: 101;" onclick="toggleMenu()">⋮</button>
-            
-            <div class="ig-story-menu" id="storyMenu">
-                <form method="POST" action="{{ url_for('save_story', story_id=story.id) }}"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit">📥 {% if story.is_saved %}Сохранено{% else %}Сохранить{% endif %}</button>
-                </form>
-                {% if current_user.id != story.user_id %}
-                <form method="POST" action="{{ url_for('hide_story', username=story.user.username) }}"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit">🚫 Скрыть</button>
-                </form>
-                {% endif %}
-                <form method="POST" action="{{ url_for('react_story', story_id=story.id) }}"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="emoji" value="🔄">
-                    <button type="submit">🔄 Повторить просмотр</button>
-                </form>
-                {% if current_user.id == story.user_id %}
-                <form method="POST" action="{{ url_for('delete_story', story_id=story.id) }}" onsubmit="return confirm('Удалить?')"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="danger">🗑️ Удалить</button>
-                </form>
-                {% endif %}
-            </div>
-            
-            <div class="ig-story-nav ig-story-nav-left" onclick="prevStory()"></div>
+            <div class="absolute top-[60px] bottom-[80px] w-[30%] left-0 z-[50] cursor-pointer" onclick="prevStory()"></div>
+            <div class="absolute top-[60px] bottom-[80px] w-[30%] right-0 z-[50] cursor-pointer" onclick="nextStory()"></div>
             
             {% if story.media_type == 'video' %}
-                <video src="{{ story.media_url }}" id="storyVideo" class="ig-story-media" autoplay muted playsinline></video>
-            {% elif story.media_type == 'audio' %}
-                <div class="ig-story-media" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <audio src="{{ story.media_url }}" controls style="max-width: 90%;"></audio>
-                </div>
+            <video class="w-full h-full object-contain bg-[#000]" id="storyMedia" src="{{ story.media_url }}" autoplay loop muted></video>
             {% else %}
-                {% if story.media_url.startswith('http') %}
-                    <img src="{{ story.media_url }}" class="ig-story-media">
-                {% else %}
-                    <img src="{{ url_for('uploaded_file', filename=story.media_url) }}" class="ig-story-media">
-                {% endif %}
+            <img class="w-full h-full object-contain bg-[#000]" src="{{ story.media_url }}" alt="">
             {% endif %}
             
-            <div class="ig-story-nav ig-story-nav-right" onclick="nextStory()"></div>
-            
-            <div class="ig-story-viewers">
-                👁️ {{ story.reactions.count() }} просмотров
+            <div class="absolute right-3 bottom-[80px] flex flex-col gap-5 items-center z-[100]">
+                <div class="flex flex-col items-center gap-1 text-white cursor-pointer p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors" onclick="toggleReactionPicker()">
+                    <i class="fa-solid fa-heart text-2xl"></i>
+                    <span class="text-[12px] font-bold">Нравится</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 text-white cursor-pointer p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors" onclick="focusReply()">
+                    <i class="fa-solid fa-paper-plane text-2xl"></i>
+                    <span class="text-[12px] font-bold">Ответить</span>
+                </div>
             </div>
             
-            <div class="ig-quick-reactions">
-                {% for emoji in ['❤️', '🔥', '😂', '😮', '😢'] %}
-                <button class="ig-quick-reaction" onclick="react('{{ emoji }}')">{{ emoji }}</button>
-                {% endfor %}
+            <div class="absolute bottom-5 left-3 right-[60px] z-[100]">
+                <div class="flex items-center bg-white/15 rounded-full px-4 py-3">
+                    <input type="text" id="replyInput" placeholder="Ответить..." class="flex-1 bg-transparent border-none text-white text-sm outline-none placeholder:text-white/50" onkeydown="handleReply(event)">
+                    <button onclick="sendReply()" class="text-brand-middle font-bold text-sm pl-3 cursor-pointer bg-transparent border-none">Отправить</button>
+                </div>
             </div>
             
-            <div class="ig-story-reactions">
-                <form method="POST" action="{{ url_for('comment_story', story_id=story.id) }}" class="ig-reply-form" id="replyForm"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="ig-reply-input">
-                        <input type="text" name="body" placeholder="Отправить сообщение..." id="replyInput">
-                        <button type="submit">➤</button>
-                    </div>
-                </form>
+            <div class="absolute bottom-[70px] left-3 bg-white/15 rounded-lg p-2 hidden gap-2" id="reactionPicker">
+                <div class="text-2xl p-2 cursor-pointer rounded-full bg-black/30 hover:bg-black/50 transition-colors" onclick="react('❤️')">❤️</div>
+                <div class="text-2xl p-2 cursor-pointer rounded-full bg-black/30 hover:bg-black/50 transition-colors" onclick="react('😂')">😂</div>
+                <div class="text-2xl p-2 cursor-pointer rounded-full bg-black/30 hover:bg-black/50 transition-colors" onclick="react('😮')">😮</div>
+                <div class="text-2xl p-2 cursor-pointer rounded-full bg-black/30 hover:bg-black/50 transition-colors" onclick="react('😢')">😢</div>
+                <div class="text-2xl p-2 cursor-pointer rounded-full bg-black/30 hover:bg-black/50 transition-colors" onclick="react('🔥')">🔥</div>
             </div>
+            
+            {% if viewers %}
+            <div class="absolute bottom-[88px] left-3 text-[12px] text-white/50 z-[100]">
+                Просмотров: {{ viewers.count() }}
+            </div>
+            {% endif %}
         </div>
     </div>
     
     <script>
-        let allStories = {{ all_stories|tojson }};
-        let currentIndex = {{ current_index }};
-        let isPaused = false;
-        let touchStartX = 0;
-        let touchEndX = 0;
+        let currentIndex = {{ index }};
+        const totalStories = {{ total }};
+        const storyDurations = {{ durations|safe }};
+        let progressInterval = null;
+        let currentProgress = 0;
+        const media = document.getElementById('storyMedia');
         
-        function closeStory() {
-            window.location.href = '{{ url_for("index") }}';
+        function startProgress() {
+            clearInterval(progressInterval);
+            currentProgress = 0;
+            updateProgressBars();
+            const duration = storyDurations[currentIndex] || 5000;
+            progressInterval = setInterval(() => {
+                currentProgress += 100;
+                if (currentProgress >= duration) {
+                    nextStory();
+                } else {
+                    updateProgressBars();
+                }
+            }, 100);
         }
         
-        function toggleMenu() {
-            document.getElementById('storyMenu').classList.toggle('show');
+        function updateProgressBars() {
+            const duration = storyDurations[currentIndex] || 5000;
+            const percent = (currentProgress / duration) * 100;
+            document.querySelectorAll('.ig-progress-fill').forEach((bar, idx) => {
+                if (idx < currentIndex) bar.style.width = '100%';
+                else if (idx === currentIndex) bar.style.width = percent + '%';
+                else bar.style.width = '0%';
+            });
+        }
+        
+        function createProgressBars() {
+            const header = document.querySelector('.absolute.top-5');
+            const existing = document.querySelector('.ig-progress-container');
+            if (existing) existing.remove();
+            
+            const progressDiv = document.createElement('div');
+            progressDiv.className = 'ig-progress-container absolute top-2 left-2 right-2 flex gap-1 z-[101]';
+            
+            for (let i = 0; i < totalStories; i++) {
+                const segment = document.createElement('div');
+                segment.className = 'ig-progress-segment flex-1 h-[2px] bg-white/20 rounded-full overflow-hidden';
+                const fill = document.createElement('div');
+                fill.className = 'ig-progress-fill h-full bg-white';
+                segment.appendChild(fill);
+                progressDiv.appendChild(segment);
+            }
+            
+            header.appendChild(progressDiv);
+            updateProgressBars();
+        }
+        
+        function nextStory() {
+            if (currentIndex < totalStories - 1) {
+                currentIndex++;
+                window.location.href = '/view_story/' + currentIndex;
+            } else {
+                window.location.href = '{{ url_for("index") }}';
+            }
         }
         
         function prevStory() {
             if (currentIndex > 0) {
                 currentIndex--;
-                window.location.href = '/story/' + allStories[currentIndex].id;
+                window.location.href = '/view_story/' + currentIndex;
             }
         }
         
-        function nextStory() {
-            if (currentIndex < allStories.length - 1) {
-                currentIndex++;
-                window.location.href = '/story/' + allStories[currentIndex].id;
-            } else {
-                closeStory();
-            }
+        function toggleReactionPicker() {
+            document.getElementById('reactionPicker').classList.toggle('hidden');
         }
         
         function react(emoji) {
-            fetch('{{ url_for("react_story", story_id=story.id) }}', {
+            fetch('/story/' + {{ story.id }} + '/react', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'emoji=' + encodeURIComponent(emoji)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ emoji: emoji })
+            }).then(() => {
+                document.getElementById('reactionPicker').classList.add('hidden');
             });
         }
         
-        function handleTouchStart(e) {
-            touchStartX = e.changedTouches[0].screenX;
+        function focusReply() {
+            document.getElementById('replyInput').focus();
         }
         
-        function handleTouchEnd(e) {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
+        function handleReply(e) {
+            if (e.key === 'Enter') sendReply();
         }
         
-        function handleSwipe() {
-            const diff = touchStartX - touchEndX;
-            if (Math.abs(diff) > 50) {
-                if (diff > 0) nextStory();
-                else prevStory();
+        function sendReply() {
+            const input = document.getElementById('replyInput');
+            if (!input.value.trim()) return;
+            fetch('/story/' + {{ story.id }} + '/reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ body: input.value })
+            }).then(() => {
+                input.value = '';
+            });
+        }
+        
+        function deleteStory() {
+            if (confirm('Удалить историю?')) {
+                window.location.href = '/story/' + {{ story.id }} + '/delete';
             }
         }
         
-        document.getElementById('storyVideo') && document.getElementById('storyVideo').addEventListener('click', function() {
-            if (this.paused) this.play();
-            else this.pause();
-        });
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'ArrowLeft') prevStory();
+        document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') nextStory();
-            if (e.key === 'Escape') closeStory();
+            if (e.key === 'ArrowLeft') prevStory();
+            if (e.key === 'Escape') window.location.href = '{{ url_for("index") }}';
         });
         
-        setTimeout(function() {
-            if (currentIndex < allStories.length - 1) {
-                nextStory();
-            } else {
-                closeStory();
+        window.addEventListener('load', () => {
+            createProgressBars();
+            startProgress();
+            if (media && media.tagName === 'VIDEO') {
+                media.play().catch(() => {});
+                media.onended = () => nextStory();
             }
-        }, 5000);
+        });
     </script>
 </body>
 </html>

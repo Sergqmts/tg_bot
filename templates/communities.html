@@ -1,48 +1,56 @@
 {% extends "base.html" %}
-{% block title %}Сообщества - Social{% endblock %}
+{% block title %}Сообщества - Vibe{% endblock %}
 {% block content %}
-    <div style="max-width: 600px; margin: 0 auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-            <h2>Сообщества</h2>
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('create_community') }}" class="btn btn-primary">Создать</a>
-            {% endif %}
-        </div>
-    
+<div class="max-w-6xl mx-auto px-4 pt-24 pb-24 lg:pt-28">
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle">Сообщества</h1>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('create_community') }}" class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl hover:shadow-lg transition-all text-sm font-medium">
+                Создать
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="max-w-2xl mx-auto space-y-3">
     {% for comm in communities %}
-<div class="card" style="display: flex; gap: 15px;">
-            <div class="avatar" style="width: 60px; height: 60px; font-size: 1.5em;">
-                {% if comm.image and comm.image.startswith('http') %}
-                <img src="{{ comm.image }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                {% elif comm.image and comm.image != 'community_default.png' %}
-                <img src="{{ url_for('uploaded_file', filename=comm.image) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
-                {% else %}
-                {{ comm.name[0].upper() }}
-                {% endif %}
-            </div>
-            <div style="flex: 1;">
-                <a href="{{ url_for('community', slug=comm.slug) }}" class="username" style="font-size: 1.1em;">{{ comm.name }}</a>
-                <div style="color: #65676b; font-size: 0.9em;">
-                    {{ comm.members.count() }} участников · {{ comm.posts.count() }} записей
-                </div>
-                {% if comm.description %}
-                    <p style="color: #65676b; font-size: 0.9em; margin-top: 5px;">{{ comm.description[:100] }}{% if comm.description|length > 100 %}...{% endif %}</p>
-                {% endif %}
-            </div>
-            {% if current_user.is_authenticated %}
-                {% if current_user.is_member(comm) %}
-                    <span class="btn btn-secondary" style="opacity: 0.7;">Участник</span>
-                {% else %}
-                    <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-primary">Вступить</button>
-                    </form>
-                {% endif %}
+    <div class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all group">
+        <div class="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center {% if comm.image %}overflow-hidden{% else %}bg-gradient-to-tr from-brand-start to-brand-middle text-white font-bold{% endif %}">
+            {% if comm.image and comm.image.startswith('http') %}
+            <img src="{{ comm.image }}" alt="" class="w-full h-full object-cover">
+            {% elif comm.image and comm.image != 'community_default.png' %}
+            <img src="{{ url_for('uploaded_file', filename=comm.image) }}" alt="" class="w-full h-full object-cover">
+            {% else %}
+            {{ comm.name[0].upper() }}
             {% endif %}
         </div>
-    {% else %}
-        <div class="card" style="text-align: center; color: #65676b;">
-            Пока нет сообществ. <a href="{{ url_for('create_community') }}">Создайте первое!</a>
+        <div class="flex-1 min-w-0">
+            <a href="{{ url_for('community', slug=comm.slug) }}" class="font-bold text-sm truncate block hover:text-brand-middle transition-colors">{{ comm.name }}</a>
+            <div class="text-[11px] text-slate-500 mt-1">
+                {{ comm.members.count() }} участников · {{ comm.posts.count() }} записей
+            </div>
+            {% if comm.description %}
+                <p class="text-xs text-slate-500 mt-1 truncate">{{ comm.description[:100] }}{% if comm.description|length > 100 %}...{% endif %}</p>
+            {% endif %}
         </div>
+        {% if current_user.is_authenticated %}
+            {% if current_user.is_member(comm) %}
+                <span class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 rounded-xl text-xs font-medium opacity-70">Участник</span>
+            {% else %}
+                <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="px-4 py-1.5 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-xl text-xs font-bold hover:shadow-lg transition-all cursor-pointer border-none">
+                        Вступить
+                    </button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="glass rounded-3xl p-12 text-center">
+        <div class="text-6xl mb-4">👥</div>
+        <p class="text-slate-500">Пока нет сообществ. <a href="{{ url_for('create_community') }}" class="text-brand-middle font-bold">Создайте первое!</a></p>
+    </div>
     {% endfor %}
+    </div>
+</div>
 {% endblock %}

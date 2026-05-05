@@ -1,100 +1,106 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Создать историю - Social</title>
+    <title>Создать историю - Vibe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
-            document.documentElement.classList.add('light-mode');
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            start: '#FF3CAC',
+                            middle: '#784BA0',
+                            end: '#2B86C5',
+                        }
+                    }
+                }
+            }
         }
     </script>
     <style>
-        :root { --bg: #000; --text: #fff; --surface: #262626; --border: #262626; }
-        .light-mode { --bg: #fff; --text: #000; --surface: #f0f0f0; --border: #dbdbdb; }
-        :root { --ig-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
-        
-        .ig-create-container { max-width: 420px; margin: 0 auto; padding: 20px; background: var(--bg); }
-        .ig-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-        .ig-header h1 { font-size: 20px; font-weight: 600; }
-        .ig-header a { color: #0095f6; font-size: 14px; font-weight: 600; text-decoration: none; }
-        
-        .ig-source-btns { display: flex; gap: 12px; margin-bottom: 16px; }
-        .ig-source-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 24px; background: var(--surface); border: none; border-radius: 8px; color: var(--text); font-size: 14px; cursor: pointer; }
-        
-        .ig-camera-section { display: none; margin-bottom: 16px; }
-        .ig-camera-section.active { display: block; }
-        .ig-video-preview { width: 100%; aspect-ratio: 9/16; max-height: 60vh; border-radius: 8px; object-fit: cover; background: var(--surface); }
-        
-        .ig-camera-controls { display: flex; justify-content: center; gap: 16px; margin-top: 12px; }
-        .ig-cam-btn { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--text); background: none; color: var(--text); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .ig-cam-btn.flip { transform: scaleX(-1); }
-        .ig-cam-btn.record { background: #ff3b30; border-color: #ff3b30; }
-        
-        .ig-preview-container { position: relative; width: 100%; aspect-ratio: 9/16; max-height: 60vh; border-radius: 8px; overflow: hidden; margin-bottom: 16px; display: none; }
-        .ig-preview-container.active { display: block; }
-        .ig-preview-img, .ig-preview-video { width: 100%; height: 100%; object-fit: contain; background: var(--surface); }
-        
-        .ig-submit-btn { width: 100%; padding: 14px; background: #0095f6; border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; display: none; margin-top: 16px; }
-        .ig-submit-btn.active { display: block; }
-        .ig-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .ig-filters-panel { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; display: none; }
-        .ig-filters-panel.active { display: flex; }
-        .ig-filter-btn { flex-shrink: 0; width: 56px; height: 56px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; cursor: pointer; }
-        .ig-filter-btn.active { border-color: #0095f6; }
+        :root { --bg: #000; --text: #fff; }
+        .light-mode { --bg: #fff; --text: #000; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+        .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
     </style>
 </head>
 <body>
-    <div class="ig-create-container">
-        <div class="ig-header">
-            <a href="{{ url_for('index') }}">← Назад</a>
-            <h1>Создать историю</h1>
-            <span></span>
+    <div class="max-w-md mx-auto min-h-screen bg-[#000] dark:bg-[#000] text-white">
+        <div class="sticky top-0 z-50 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+            <a href="{{ url_for('index') }}" class="text-white hover:text-gray-300 transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <h1 class="text-lg font-bold">Создать историю</h1>
+            <span class="w-6"></span>
         </div>
         
-        <div class="ig-source-btns">
-            <button class="ig-source-btn" onclick="openCamera()">
-                <span>📷</span> Камера
-            </button>
-            <button class="ig-source-btn" onclick="document.getElementById('fileInput').click()">
-                <span>🖼️</span> Галерея
-            </button>
-        </div>
-        
-        <div class="ig-camera-section" id="cameraSection">
-            <video id="video" class="ig-video-preview" autoplay playsinline muted></video>
-            <div class="ig-camera-controls">
-                <button class="ig-cam-btn flip" onclick="flipCamera()" title="Переключить">🔄</button>
-                <button class="ig-cam-btn" onclick="capturePhoto()" title="Снять">⚪</button>
-                <button class="ig-cam-btn record" onclick="toggleRecord()" title="Записать" id="recordBtn">⏺</button>
+        <div class="p-4 space-y-4">
+            <div class="flex gap-3">
+                <button class="flex-1 flex items-center justify-center gap-2 p-4 bg-slate-800 rounded-2xl hover:bg-slate-700 transition-all" onclick="openCamera()">
+                    <i class="fa-solid fa-camera text-brand-middle"></i>
+                    <span class="text-sm">Камера</span>
+                </button>
+                <button class="flex-1 flex items-center justify-center gap-2 p-4 bg-slate-800 rounded-2xl hover:bg-slate-700 transition-all" onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-images text-brand-middle"></i>
+                    <span class="text-sm">Галерея</span>
+                </button>
             </div>
-        </div>
-        
-        <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;" onchange="handleFile(this)">
-        
-        <div class="ig-preview-container" id="previewContainer">
-            <img id="previewImg" class="ig-preview-img" style="display: none;">
-            <video id="previewVideo" class="ig-preview-video" controls style="display: none;"></video>
             
-            <div class="ig-filters-panel" id="filtersPanel">
-                <button class="ig-filter-btn active" onclick="applyFilter('none')"><span style="display:block;padding:8px;font-size:11px;">Оригинал</span></button>
-                <button class="ig-filter-btn" onclick="applyFilter('grayscale(100%)')"><span style="filter:grayscale(1);display:block;height:32px;"></span></button>
-                <button class="ig-filter-btn" onclick="applyFilter('sepia(100%)')"><span style="filter:sepia(1);display:block;height:32px;background:#704214;"></span></button>
-                <button class="ig-filter-btn" onclick="applyFilter('saturate(200%)')"><span style="filter:saturate(2);display:block;height:32px;"></span></button>
-                <button class="ig-filter-btn" onclick="applyFilter('hue-rotate(90deg)')"><span style="filter:hue-rotate(90deg);display:block;height:32px;background:#809080;"></span></button>
-                <button class="ig-filter-btn" onclick="applyFilter('brightness(130%)')"><span style="filter:brightness(1.3);display:block;height:32px;"></span></button>
+            <div id="cameraSection" class="hidden">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-800" style="aspect-ratio: 9/16; max-height: 60vh;">
+                    <video id="video" class="w-full h-full object-cover" autoplay playsinline muted></video>
+                </div>
+                <div class="flex justify-center gap-4 mt-3">
+                    <button class="w-12 h-12 rounded-full border-2 border-white flex items-center justify-center text-white hover:bg-white/20 transition-all" onclick="flipCamera()" title="Переключить">
+                        <i class="fa-solid fa-rotate text-lg"></i>
+                    </button>
+                    <button class="w-12 h-12 rounded-full bg-white flex items-center justify-center hover:bg-gray-200 transition-all" onclick="capturePhoto()" title="Снять">
+                        <div class="w-8 h-8 rounded-full border-2 border-gray-800"></div>
+                    </button>
+                    <button class="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition-all" onclick="toggleRecord()" title="Записать" id="recordBtn">
+                        <i class="fa-solid fa-circle text-sm"></i>
+                    </button>
+                </div>
             </div>
+            
+            <input type="file" id="fileInput" accept="image/*,video/*" class="hidden" onchange="handleFile(this)">
+            
+            <div id="previewContainer" class="hidden">
+                <div class="relative rounded-2xl overflow-hidden bg-slate-800" style="aspect-ratio: 9/16; max-height: 60vh;">
+                    <img id="previewImg" class="w-full h-full object-contain hidden">
+                    <video id="previewVideo" class="w-full h-full object-contain hidden" controls></video>
+                </div>
+                
+                <div id="filtersPanel" class="hidden">
+                    <div class="flex gap-2 overflow-x-auto py-3">
+                        <button class="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 border-brand-middle" onclick="applyFilter('none')">
+                            <span class="block p-2 text-xs text-center">Оригинал</span>
+                        </button>
+                        <button class="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 border-transparent" onclick="applyFilter('grayscale(100%)')">
+                            <div class="w-full h-full bg-gray-500"></div>
+                        </button>
+                        <button class="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 border-transparent" onclick="applyFilter('sepia(100%)')">
+                            <div class="w-full h-full" style="background: #704214;"></div>
+                        </button>
+                        <button class="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 border-transparent" onclick="applyFilter('saturate(200%)')">
+                            <div class="w-full h-full bg-green-500"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <form method="POST" id="storyForm" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="media_data" id="mediaData">
+                <button type="submit" class="w-full p-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed" id="submitBtn" disabled>
+                    Опубликовать
+                </button>
+            </form>
         </div>
-        
-        <form method="POST" id="storyForm" enctype="multipart/form-data"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="media_data" id="mediaData">
-            <button type="submit" class="ig-submit-btn" id="submitBtn" disabled>Опубликовать</button>
-        </form>
     </div>
     
     <script>
@@ -113,7 +119,7 @@
                     audio: true
                 });
                 video.srcObject = stream;
-                document.getElementById('cameraSection').classList.add('active');
+                document.getElementById('cameraSection').classList.remove('hidden');
             } catch (err) {
                 alert('Не удалось открыть камеру: ' + err.message);
             }
@@ -151,12 +157,12 @@
                 };
                 mediaRecorder.start();
                 isRecording = true;
-                btn.textContent = '⏹';
-                setTimeout(() => { if (isRecording) { mediaRecorder.stop(); isRecording = false; btn.textContent = '⏺'; } }, 15000);
+                btn.innerHTML = '<i class="fa-solid fa-stop text-sm"></i>';
+                setTimeout(() => { if (isRecording) { mediaRecorder.stop(); isRecording = false; btn.innerHTML = '<i class="fa-solid fa-circle text-sm"></i>'; } }, 15000);
             } else {
                 mediaRecorder.stop();
                 isRecording = false;
-                btn.textContent = '⏺';
+                btn.innerHTML = '<i class="fa-solid fa-circle text-sm"></i>';
             }
         }
         
@@ -165,26 +171,26 @@
         }
         
         function showPreview(file) {
-            document.getElementById('cameraSection').classList.remove('active');
+            document.getElementById('cameraSection').classList.add('hidden');
             const container = document.getElementById('previewContainer');
             const img = document.getElementById('previewImg');
             const video = document.getElementById('previewVideo');
             const submitBtn = document.getElementById('submitBtn');
             const filtersPanel = document.getElementById('filtersPanel');
             
-            container.classList.add('active');
+            container.classList.remove('hidden');
             if (file.type.startsWith('image/')) {
-                filtersPanel.classList.add('active');
-                img.style.display = 'block';
-                video.style.display = 'none';
+                filtersPanel.classList.remove('hidden');
+                img.classList.remove('hidden');
+                video.classList.add('hidden');
                 img.src = URL.createObjectURL(file);
             } else {
-                filtersPanel.classList.remove('active');
-                img.style.display = 'none';
-                video.style.display = 'block';
+                filtersPanel.classList.add('hidden');
+                img.classList.add('hidden');
+                video.classList.remove('hidden');
                 video.src = URL.createObjectURL(file);
             }
-            submitBtn.classList.add('active');
+            submitBtn.classList.remove('disabled');
             submitBtn.disabled = false;
             
             const reader = new FileReader();
@@ -194,8 +200,8 @@
         
         function applyFilter(filter) {
             document.getElementById('previewImg').style.filter = filter;
-            document.querySelectorAll('.ig-filter-btn').forEach(b => b.classList.remove('active'));
-            event.target.closest('.ig-filter-btn').classList.add('active');
+            document.querySelectorAll('[onclick^="applyFilter"]').forEach(b => b.classList.remove('border-brand-middle'));
+            event.target.closest('button').classList.add('border-brand-middle');
         }
         
         document.getElementById('storyForm').onsubmit = async function(e) {
