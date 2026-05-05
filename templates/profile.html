@@ -20,6 +20,11 @@
                         <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                     </span>
                     {% endif %}
+                    {% if user.id in active_users %}
+                    <span class="online-badge" title="В сети">🟢</span>
+                    {% elif user.last_seen %}
+                    <span class="last-seen" title="Был(а) в сети">был(а) {{ moment(user.last_seen).fromNow() if moment else user.last_seen.strftime('%d.%m.%Y %H:%M') }}</span>
+                    {% endif %}
                 </div>
                 <div class="profile-stats">
                     <span><strong>{{ user.posts.count() }}</strong> постов</span>
@@ -125,6 +130,18 @@
         </div>
         {% endfor %}
     </div>
-    {% endif %}
+     {% endif %}
 </div>
+
+<style>
+.online-badge {
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+.last-seen {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+}
+</style>
 {% endblock %}

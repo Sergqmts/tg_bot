@@ -68,11 +68,12 @@ def inject_stories():
                 stories_list = []
             my_story = Story.query.filter(Story.user_id == current_user.id, Story.expires_at > datetime.utcnow()).order_by(Story.created_at.desc()).first()
             has_story = my_story is not None
-            return dict(top_stories=stories_list, my_story=my_story, user_has_story=has_story)
+            unread_notifications = Notification.query.filter_by(user_id=current_user.id, read=False).count()
+            return dict(top_stories=stories_list, my_story=my_story, user_has_story=has_story, unread_notifications=unread_notifications, active_users=active_users)
         except Exception as e:
             app.logger.error(f"Stories error: {e}")
-            return dict(top_stories=[], my_story=None, user_has_story=False)
-    return dict(top_stories=[], my_story=None, user_has_story=False)
+            return dict(top_stories=[], my_story=None, user_has_story=False, unread_notifications=0, active_users=active_users)
+    return dict(top_stories=[], my_story=None, user_has_story=False, unread_notifications=0, active_users=active_users)
 
 
 def get_avatar_url(user):
@@ -184,6 +185,11 @@ def handle_connect():
     from flask import request as flask_request
     if current_user.is_authenticated:
         active_users[current_user.id] = flask_request.sid
+        current_user.last_seen = datetime.utcnow()
+        try:
+            db.session.commit()
+        except:
+            pass
         emit('user_online', {'user_id': current_user.id}, broadcast=True)
 
 @socketio.on('disconnect')
@@ -246,6 +252,34 @@ def get_cloudinary_url(public_id, resource_type='image'):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+@app.before_request
+def update_last_seen():
+    if current_user.is_authenticated:
+        try:
+            current_user.last_seen = datetime.utcnow()
+            db.session.commit()
+        except:
+            pass
+
+
+def create_notification(user_id, sender_id, notif_type, post_id=None, comment_id=None, message_id=None):
+    try:
+        if user_id == sender_id:
+            return
+        notification = Notification(
+            user_id=user_id,
+            sender_id=sender_id,
+            type=notif_type,
+            post_id=post_id,
+            comment_id=comment_id,
+            message_id=message_id
+        )
+        db.session.add(notification)
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f"Notification error: {e}")
 
 
 _migration_done = False
@@ -455,6 +489,7 @@ class User(UserMixin, db.Model):
     avatar = db.Column(db.String(200), default='default.png')
     avatar_cloudinary_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     
     location = db.Column(db.String(100), nullable=True)
     website = db.Column(db.String(200), nullable=True)
@@ -641,6 +676,24 @@ class User(UserMixin, db.Model):
     def is_admin(self, community):
         member = CommunityMember.query.filter_by(user_id=self.id, community_id=community.id, status='approved').first()
         return member and member.role in ('admin', 'creator')
+
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    type = db.Column(db.String(50), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
+    message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)
+    read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', foreign_keys=[user_id], backref='notifications')
+    sender = db.relationship('User', foreign_keys=[sender_id])
+    post = db.relationship('Post', backref='notifications')
+    comment = db.relationship('Comment', backref='notifications')
+    message = db.relationship('Message', backref='notifications')
 
 
 class Story(db.Model):
@@ -1667,6 +1720,7 @@ def like(post_id):
         current_user.unlike_post(post)
     else:
         current_user.like_post(post)
+        create_notification(post.author_id, current_user.id, 'like', post_id=post.id)
     db.session.commit()
     return redirect(request.referrer or url_for('index'))
 
@@ -1705,6 +1759,7 @@ def add_comment(post_id):
             comment = Comment(body=body or '', author=current_user, post=post, media_url=media_url, media_type=media_type, reply_to_id=reply_to_comment_id)
             db.session.add(comment)
             db.session.commit()
+            create_notification(post.author_id, current_user.id, 'comment', post_id=post.id, comment_id=comment.id)
             app.logger.info(f"Comment added successfully")
         except Exception as e:
             app.logger.error(f"Comment error: {e}")
@@ -1837,10 +1892,14 @@ def follow(username):
     user = User.query.filter_by(username=username).first_or_404()
     if user != current_user:
         if user.approve_followers:
+            current_user.follow(user)
+            db.session.commit()
+            create_notification(user.id, current_user.id, 'follow_request')
             flash(f'Запрос на подписку отправлен {user.username}. Ожидайте одобрения.')
         else:
             current_user.follow(user)
             db.session.commit()
+            create_notification(user.id, current_user.id, 'follow')
             flash(f'Вы подписались на {user.username}')
     return redirect(url_for('user_profile', username=user.username))
 
@@ -1888,6 +1947,7 @@ def follower_requests():
 def approve_follower(username):
     user = User.query.filter_by(username=username).first_or_404()
     current_user.approve_follower(user)
+    create_notification(user.id, current_user.id, 'follow_approved')
     flash(f'Вы одобрили подписку {user.username}')
     return redirect(url_for('follower_requests'))
 
@@ -1899,6 +1959,32 @@ def reject_follower(username):
     current_user.reject_follower(user)
     flash(f'Запрос на подписку от {user.username} отклонён')
     return redirect(url_for('follower_requests'))
+
+
+@app.route('/notifications')
+@login_required
+def notifications():
+    page = request.args.get('page', 1, type=int)
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    unread_count = Notification.query.filter_by(user_id=current_user.id, read=False).count()
+    return render_template('notifications.html', notifications=notifications, unread_count=unread_count)
+
+
+@app.route('/notifications/read/<int:notification_id>', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    notification = Notification.query.filter_by(id=notification_id, user_id=current_user.id).first_or_404()
+    notification.read = True
+    db.session.commit()
+    return redirect(request.referrer or url_for('notifications'))
+
+
+@app.route('/notifications/read_all', methods=['POST'])
+@login_required
+def mark_all_read():
+    Notification.query.filter_by(user_id=current_user.id, read=False).update({'read': True})
+    db.session.commit()
+    return redirect(request.referrer or url_for('notifications'))
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])

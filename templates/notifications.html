@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Уведомления - Social{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="notifications-header">
+        <h2>Уведомления</h2>
+        {% if unread_count > 0 %}
+        <form method="POST" action="{{ url_for('mark_all_read') }}" style="display:inline">
+            <button type="submit" class="btn-link">Отметить все как прочитанные</button>
+        </form>
+        {% endif %}
+    </div>
+    
+    {% if notifications.items %}
+        <div class="notifications-list">
+            {% for notif in notifications.items %}
+            <div class="notification-item {% if not notif.read %}unread{% endif %}">
+                <a href="{% if notif.sender %}{{ url_for('user_profile', username=notif.sender.username) }}{% else %}#{% endif %}" class="notification-avatar">
+                    {% if notif.sender %}
+                    {% set ns = namespace(avatar_url=notif.sender.avatar_cloudinary_url) %}
+                    {% if not ns.avatar_url and notif.sender.avatar and notif.sender.avatar != 'default.png' %}
+                        {% set ns.avatar_url = url_for('uploaded_file', filename=notif.sender.avatar) %}
+                    {% endif %}
+                    {% if ns.avatar_url %}
+                        <img src="{{ ns.avatar_url }}">
+                    {% else %}
+                        {{ notif.sender.username[0].upper() }}
+                    {% endif %}
+                    {% endif %}
+                </a>
+                <div class="notification-content">
+                    <p>
+                        {% if notif.type == 'like' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> лайкнул ваш пост
+                        {% elif notif.type == 'comment' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> прокомментировал ваш пост
+                        {% elif notif.type == 'follow' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> подписался на вас
+                        {% elif notif.type == 'follow_request' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> хочет подписаться на вас
+                        {% elif notif.type == 'follow_approved' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> одобрил вашу подписку
+                        {% endif %}
+                    </p>
+                    <span class="notification-time">{{ notif.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+                {% if not notif.read %}
+                <form method="POST" action="{{ url_for('mark_notification_read', notification_id=notif.id) }}" style="display:inline">
+                    <button type="submit" class="btn-icon" title="Отметить как прочитанное">✓</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="pagination">
+            {% if notifications.has_prev %}
+                <a href="{{ url_for('notifications', page=notifications.prev_num) }}">← Назад</a>
+            {% endif %}
+            <span>Страница {{ notifications.page }} из {{ notifications.pages }}</span>
+            {% if notifications.has_next %}
+                <a href="{{ url_for('notifications', page=notifications.next_num) }}">Вперед →</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>У вас пока нет уведомлений</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.notifications-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+.notifications-list {
+    max-width: 600px;
+    margin: 0 auto;
+}
+.notification-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    gap: 1rem;
+}
+.notification-item.unread {
+    background: var(--bg-secondary);
+}
+.notification-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.notification-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.notification-content {
+    flex: 1;
+}
+.notification-content p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+.notification-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 1.25rem;
+    padding: 0.25rem;
+}
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    align-items: center;
+}
+.pagination a {
+    color: var(--accent);
+    text-decoration: none;
+}
+</style>
+{% endblock %}
