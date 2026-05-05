@@ -182,10 +182,6 @@
         </div>
     </nav>
     {% endif %}
-            </a>
-        </div>
-    </nav>
-    {% endif %}
 
     {% if not current_user.is_authenticated and request.endpoint not in ['login', 'register'] %}
     <div class="fixed top-4 right-4 z-50 flex gap-2">
