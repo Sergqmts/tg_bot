@@ -1,11 +1,37 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Social{% endblock %}</title>
+    <title>{% block title %}Vibe - Социальная сеть{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            start: '#FF3CAC',
+                            middle: '#784BA0',
+                            end: '#2B86C5',
+                        },
+                        dark: {
+                            bg: '#0F172A',
+                            card: '#1E293B',
+                            border: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         .notif-btn {
             position: relative;
@@ -25,27 +51,77 @@
             justify-content: center;
             font-weight: bold;
         }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass, .dark-mode .glass {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        body {
+            scrollbar-width: thin !important;
+            scrollbar-color: #bfc5ce transparent !important;
+        }
+        body::-webkit-scrollbar {
+            width: 6px !important;
+        }
+        body::-webkit-scrollbar-thumb {
+            background-color: #bfc5ce !important;
+            border-radius: 9999px !important;
+        }
+        body::-webkit-scrollbar-track {
+            background-color: transparent !important;
+            border-radius: 9999px !important;
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 dark:bg-dark-bg text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
     {% if request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
-    <header class="top-bar">
-        <a href="{{ url_for('index') }}" class="logo">Social</a>
-        <div class="top-bar-actions">
-            {% if current_user.is_authenticated %}
-            <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Сменить тему">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            </button>
-            <a href="{{ url_for('notifications') }}" class="icon-btn notif-btn" title="Уведомления">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                {% if unread_notifications > 0 %}
-                <span class="notif-badge">{{ unread_notifications }}</span>
+    <header class="fixed top-0 w-full z-50 glass border-b border-slate-200 dark:border-dark-border">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-gradient-to-tr from-brand-start via-brand-middle to-brand-end rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <i class="fa-solid fa-bolt-lightning text-xl"></i>
+                </div>
+                <span class="text-2xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle hidden sm:block">VIBE</span>
+            </div>
+            <div class="flex-1 max-w-md mx-8 hidden md:block">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <form method="GET" action="{{ url_for('explore') }}">
+                        <input type="text" name="q" placeholder="Поиск вдохновения..." class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-2 pl-10 pr-4 focus:ring-2 focus:ring-brand-middle transition-all outline-none text-sm">
+                    </form>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 sm:gap-6">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('notifications') }}" class="text-xl hover:text-brand-middle transition-colors relative">
+                    <i class="fa-regular fa-paper-plane"></i>
+                    {% if unread_notifications > 0 %}
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">{{ unread_notifications }}</span>
+                    {% endif %}
+                </a>
+                <button id="theme-toggle" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
+                </button>
+                <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 dark:border-dark-border cursor-pointer">
+                    {% set avatar_url = get_avatar_url(current_user) %}
+                    {% if avatar_url %}
+                    <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
+                        {{ current_user.username[0].upper() }}
+                    </div>
+                    {% endif %}
+                </div>
                 {% endif %}
-            </a>
-            <form method="GET" action="{{ url_for('explore') }}" class="search-form">
-                <input type="text" name="q" placeholder="Поиск" class="search-input">
-            </form>
-            {% endif %}
+            </div>
         </div>
     </header>
     {% endif %}
@@ -63,7 +139,7 @@
     </script>
     {% endif %}
 
-    <main class="main-content {% if request.endpoint == 'index' %}{% elif request.endpoint and 'community' in request.endpoint %}community-page{% else %}no-stories{% endif %}">
+    <main class="pt-20 pb-24 lg:pt-24 max-w-6xl mx-auto px-4">
         {% with messages = get_flashed_messages() %}
         {% for message in messages %}
         <div class="flash-message">{{ message }}</div>
@@ -73,45 +149,59 @@
     </main>
 
     {% if current_user.is_authenticated and request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
-    <nav class="bottom-nav">
-        <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        </a>
-        <a href="{{ url_for('explore') }}" class="nav-item {% if request.endpoint == 'explore' %}active{% endif %}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        </a>
-        <a href="{{ url_for('shorts') }}" class="nav-item {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}active{% endif %}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10l5-5v14l-5-5V5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v5z"/><path d="M7 3v4a1 1 0 0 1-1 1H3v6h3v4h4v-4h3"/></svg>
-        </a>
-        <a href="{{ url_for('messages') }}" class="nav-item {% if request.endpoint == 'messages' %}active{% endif %}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </a>
-        <a href="{{ url_for('communities') }}" class="nav-item {% if request.endpoint == 'communities' %}active{% endif %}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9l9 7 9-7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4zM3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4M9 22V11l6-4 6 4v11"/></svg>
-        </a>
-        <a href="{{ url_for('user_profile', username=current_user.username) }}" class="nav-item-profile {% if request.endpoint == 'user_profile' %}active{% endif %}">
-            <div class="nav-avatar{% set avatar_url = get_avatar_url(current_user) %}{% if avatar_url %} has-img{% endif %}">
-                {% set avatar_url = get_avatar_url(current_user) %}{% if avatar_url %}
-                <img src="{{ avatar_url }}">
+    <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border lg:hidden z-50">
+        <div class="flex items-center justify-around h-16">
+            <a href="{{ url_for('index') }}" class="text-2xl {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-house"></i>
+            </a>
+            <a href="{{ url_for('explore') }}" class="text-2xl {% if request.endpoint == 'explore' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </a>
+            <a href="{{ url_for('create') }}" class="text-3xl text-slate-400 hover:text-brand-middle transition-colors">
+                <i class="fa-regular fa-square-plus"></i>
+            </a>
+            <a href="{{ url_for('shorts') }}" class="text-2xl {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-clapperboard"></i>
+            </a>
+            <a href="{{ url_for('messages') }}" class="text-2xl {% if request.endpoint == 'messages' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-paper-plane"></i>
+            </a>
+            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="w-7 h-7 rounded-full overflow-hidden border border-slate-300">
+                {% set avatar_url = get_avatar_url(current_user) %}
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
                 {% else %}
-                {{ current_user.username[0].upper() }}
+                <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
+                    {{ current_user.username[0].upper() }}
+                </div>
                 {% endif %}
-            </div>
-        </a>
+            </a>
+        </div>
     </nav>
-    
-    {% if current_user.is_authenticated and request.endpoint == 'index' %}
-    <a href="{{ url_for('create') }}" class="fab-create" title="Новый пост">
-        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2"/></svg>
-    </a>
-    {% endif %}
     {% endif %}
 
     {% if not current_user.is_authenticated and request.endpoint not in ['login', 'register'] %}
-    <div class="auth-bar">
-        <a href="{{ url_for('login') }}" class="btn btn-outline">Войти</a>
-        <a href="{{ url_for('register') }}" class="btn btn-primary">Регистрация</a>
+    <div class="fixed top-4 right-4 z-50 flex gap-2">
+        <a href="{{ url_for('login') }}" class="px-4 py-2 border border-brand-middle text-brand-middle rounded-2xl hover:bg-brand-middle hover:text-white transition-all text-sm font-medium">Войти</a>
+        <a href="{{ url_for('register') }}" class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl hover:shadow-lg transition-all text-sm font-medium">Регистрация</a>
     </div>
     {% endif %}
+    
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            html.classList.add('dark');
+        }
+        
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                html.classList.toggle('dark');
+                const isDark = html.classList.contains('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+        }
+    </script>
 </body>
 </html>
