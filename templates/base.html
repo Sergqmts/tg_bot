@@ -148,9 +148,9 @@
         {% block content %}{% endblock %}
     </main>
 
-    {% if current_user.is_authenticated and request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
+    {% if current_user.is_authenticated %}
     <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border lg:hidden z-50">
-        <div class="flex items-center justify-around h-16">
+        <div class="flex items-center justify-around h-16 px-2">
             <a href="{{ url_for('index') }}" class="text-2xl {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-house"></i>
             </a>
@@ -178,6 +178,10 @@
                     {{ current_user.username[0].upper() }}
                 </div>
                 {% endif %}
+            </a>
+        </div>
+    </nav>
+    {% endif %}
             </a>
         </div>
     </nav>
