@@ -148,7 +148,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
     <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border z-50">
         <div class="flex items-center justify-around h-16 px-2">
             <a href="{{ url_for('index') }}" class="text-2xl {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
@@ -182,7 +182,7 @@
         </div>
     </nav>
     {% endif %}
-
+    
     {% if not current_user.is_authenticated and request.endpoint not in ['login', 'register'] %}
     <div class="fixed top-4 right-4 z-50 flex gap-2">
         <a href="{{ url_for('login') }}" class="px-4 py-2 border border-brand-middle text-brand-middle rounded-2xl hover:bg-brand-middle hover:text-white transition-all text-sm font-medium">Войти</a>
