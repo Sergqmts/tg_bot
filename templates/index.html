@@ -2,17 +2,17 @@
 {% block title %}Лента - Social{% endblock %}
 {% block content %}
 <div class="feed">
-    {% if top_stories %}
     <div class="stories-bar">
         <div class="stories-scroll">
             <div class="story-item story-add-desktop">
-                <a href="{{ url_for('create_story') }}" class="story-ring-add">
+                <a href="{{ url_for('create_story') }}" class="story-ring">
                     <div class="story-ring-inner">
                         <span class="plus-icon">+</span>
                     </div>
                 </a>
                 <span class="story-username">Ваша</span>
             </div>
+            {% if top_stories %}
             {% for story in top_stories %}
             {% if story and story.user_id != current_user.id %}
             <div class="story-item">
@@ -23,6 +23,15 @@
                         {% else %}
                         <div class="story-avatar-placeholder">{{ story.user.username[0].upper() }}</div>
                         {% endif %}
+                    </div>
+                </a>
+                <span class="story-username">{{ story.user.username[:8] }}</span>
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
                     </div>
                 </a>
                 <span class="story-username">{{ story.user.username[:8] }}</span>
