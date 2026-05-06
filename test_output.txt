@@ -1,0 +1,7 @@
+index: 302
+login: 200
+register: 200
+explore: 200
+shorts: 200
+messages: 302
+communities: 200
