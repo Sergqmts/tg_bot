@@ -3217,7 +3217,7 @@ def direct_edit(user_id):
         
         db.session.commit()
         flash('Фон чата обновлён')
-        return redirect(url_for('conversation', user_id=user_id))
+        return redirect(url_for('conversation', username=other_user.username))
     
     return render_template('direct_edit.html', chat=chat, other_user=other_user)
 
