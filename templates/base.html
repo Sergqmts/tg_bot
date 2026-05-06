@@ -125,26 +125,6 @@
         </div>
     </header>
     {% endif %}
-                </a>
-                <button id="theme-toggle" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                    <i class="fa-solid fa-moon dark:hidden"></i>
-                    <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
-                </button>
-                <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 dark:border-dark-border cursor-pointer">
-                    {% set avatar_url = get_avatar_url(current_user) %}
-                    {% if avatar_url %}
-                    <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
-                    {% else %}
-                    <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
-                        {{ current_user.username[0].upper() }}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </header>
-    {% endif %}
 
     {% if current_user.is_authenticated %}
     <script>

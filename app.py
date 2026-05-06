@@ -3878,6 +3878,31 @@ def avatar_url_filter(user):
         return url_for('uploaded_file', filename=user.avatar)
     return None
 
+@app.template_filter('timeago')
+def timeago_filter(dt):
+    if dt is None:
+        return ''
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        from datetime import timezone
+        dt = dt.replace(tzinfo=timezone.utc)
+    diff = now - dt
+    seconds = diff.total_seconds()
+    if seconds < 60:
+        return 'только что'
+    elif seconds < 3600:
+        minutes = int(seconds / 60)
+        return f'{minutes} мин назад'
+    elif seconds < 86400:
+        hours = int(seconds / 3600)
+        return f'{hours} ч назад'
+    elif seconds < 604800:
+        days = int(seconds / 86400)
+        return f'{days} дн назад'
+    else:
+        return dt.strftime('%d %b %Y')
+
 
 # Manually exempt specific AJAX endpoints from CSRF protection
 # These endpoints receive CSRF token in FormData from JavaScript
