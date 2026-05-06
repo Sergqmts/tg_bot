@@ -101,7 +101,7 @@
             <div class="flex items-center gap-2 sm:gap-6">
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('notifications') }}" class="text-xl hover:text-brand-middle transition-colors relative">
-                    <i class="fa-regular fa-paper-plane"></i>
+                    <i class="fa-regular fa-bell"></i>
                     {% if unread_notifications > 0 %}
                     <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">{{ unread_notifications }}</span>
                     {% endif %}
