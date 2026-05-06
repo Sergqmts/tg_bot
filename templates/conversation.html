@@ -144,7 +144,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
                 <!-- Attach button - less noticeable -->
-                <button type="button" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onclick="toggleAttachMenu()">
+                <button type="button" class="attach-btn w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onclick="toggleAttachMenu()">
                     <i class="fa-solid fa-paperclip text-sm"></i>
                 </button>
                 
@@ -191,7 +191,7 @@
 let selectedFile = null;
 
 function toggleAttachMenu() {
-    document.getElementById('attachMenu').classList.toggle('show');
+    document.getElementById('attachMenu').classList.toggle('hidden');
 }
 
 function toggleMessageMenu(btn, msgId) {
