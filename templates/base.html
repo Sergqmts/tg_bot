@@ -139,7 +139,7 @@
     </script>
     {% endif %}
 
-    <main class="pt-20 pb-24 lg:pt-28 max-w-6xl mx-auto px-4">
+    <main class="{% if request.endpoint in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}h-screen{% else %}pt-20 pb-24 lg:pt-28 max-w-6xl mx-auto px-4{% endif %}">
         {% with messages = get_flashed_messages() %}
         {% for message in messages %}
         <div class="flash-message">{{ message }}</div>

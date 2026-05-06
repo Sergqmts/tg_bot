@@ -2,8 +2,8 @@
 {% block title %}{{ other_user.username }} - Vibe{% endblock %}
 {% block content %}
 <div class="flex flex-col h-screen h-dvh" {% if chat and chat.background_type == 'color' %}style="background: {{ chat.background_value }};"{% elif chat and chat.background_type == 'gradient' %}style="background: {{ chat.background_value }};"{% elif chat and chat.background_type == 'image' and chat.background_value %}style="background: url('{% if chat.background_value.startswith('http') %}{{ chat.background_value }}{% else %}{{ url_for('uploaded_file', filename=chat.background_value) }}{% endif %}') center/cover;"{% endif %}>
-    <!-- Header - reduced padding, better text sizes -->
-    <header class="sticky top-0 z-50 glass border-b border-slate-200 dark:border-dark-border">
+    <!-- Header - fixed at top, reduced padding -->
+    <header class="flex-shrink-0 z-50 glass border-b border-slate-200 dark:border-dark-border">
         <div class="max-w-6xl mx-auto px-4 h-12 flex items-center gap-3">
             <a href="{{ url_for('messages') }}" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
                 <i class="fa-solid fa-arrow-left text-sm"></i>
@@ -31,8 +31,8 @@
         </div>
     </header>
     
-    <!-- Messages area - reduced gap -->
-    <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2" id="messagesArea">
+    <!-- Messages area - scrolls independently -->
+    <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2 scroll-smooth" id="messagesArea">
         {% for msg in messages %}
         <div class="flex {% if msg.sender_id == current_user.id %}justify-end{% else %}justify-start{% endif %} gap-2">
             {% if msg.sender_id != current_user.id %}
