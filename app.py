@@ -3344,7 +3344,10 @@ def chat_edit(chat_id):
         if bg_type in ['default', 'color', 'gradient', 'image']:
             chat.background_type = bg_type
             import json
-            bg_data = json.loads(chat.background_value) if chat.background_value else {}
+            try:
+                bg_data = json.loads(chat.background_value) if chat.background_value else {}
+            except json.JSONDecodeError:
+                bg_data = {}
             
             if bg_type == 'default':
                 bg_data = {"light": "chat-backgrounds/light.png", "dark": "chat-backgrounds/dark.png"}
