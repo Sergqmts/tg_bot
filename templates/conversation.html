@@ -22,10 +22,10 @@
                     <div class="text-[11px] text-brand-middle font-medium">online</div>
                 </div>
             </a>
-            <a href="{{ url_for('direct_shared_media', user_id=other_user.id) }}" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-slate-600" title="Медиа">
+            <a href="{{ url_for('direct_shared_media', user_id=other_user.id) }}" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300" title="Медиа">
                 <i class="fa-solid fa-paperclip text-sm"></i>
             </a>
-            <a href="{{ url_for('direct_edit', user_id=other_user.id) }}" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-slate-600" title="Настройки">
+            <a href="{{ url_for('direct_edit', user_id=other_user.id) }}" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300" title="Настройки">
                 <i class="fa-solid fa-gear text-sm"></i>
             </a>
         </div>
@@ -116,7 +116,7 @@
                 <div class="text-sm leading-snug">{{ msg.body }}</div>
                 {% endif %}
                 
-                <div class="text-[10px] {% if msg.sender_id == current_user.id %}text-white/70{% else %}text-slate-400{% endif %} mt-1">{{ msg.created_at.strftime('%H:%M') }}</div>
+                 <div class="text-[10px] {% if msg.sender_id == current_user.id %}text-white/70{% else %}text-slate-500 dark:text-slate-400{% endif %} mt-1">{{ msg.created_at.strftime('%H:%M') }}</div>
             </div>
         </div>
         {% endfor %}
@@ -144,7 +144,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
                 <!-- Attach button - less noticeable -->
-                <button type="button" class="attach-btn w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onclick="toggleAttachMenu()">
+                 <button type="button" class="attach-btn w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onclick="toggleAttachMenu()">
                     <i class="fa-solid fa-paperclip text-sm"></i>
                 </button>
                 
@@ -164,13 +164,13 @@
                 </div>
                 
                 <!-- Mic button -->
-                <button type="button" class="mic-btn w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" id="micBtn" onclick="toggleRecording()">
+                 <button type="button" class="mic-btn w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" id="micBtn" onclick="toggleRecording()">
                     <i class="fa-solid fa-microphone text-sm"></i>
                 </button>
                 
                 <!-- Input field with rounded background -->
                 <div class="flex-1 flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-brand-middle focus-within:border-brand-middle transition-all">
-                    <input type="text" name="body" placeholder="Напишите сообщение..." class="flex-1 bg-transparent outline-none text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400" id="messageInput">
+                     <input type="text" name="body" placeholder="Напишите сообщение..." class="flex-1 bg-transparent outline-none text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" id="messageInput">
                     <input type="file" name="media" id="attachedFile" hidden>
                     <!-- Send button INSIDE the input field -->
                     <button type="submit" class="w-8 h-8 rounded-full bg-brand-middle text-white flex items-center justify-center hover:shadow-lg transition-all ml-2 flex-shrink-0">
