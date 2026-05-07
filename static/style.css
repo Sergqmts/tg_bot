@@ -1658,17 +1658,9 @@ img, video {
     }
 }
 
-.story-add-mobile {
-    display: none;
-}
-
-.stories-gallery-wrap {
-    display: none;
-}
-
 @media (min-width: 769px) {
     .story-add-desktop {
-        display: flex;
+        display: flex !important;
     }
     
     .story-add-mobile {
@@ -1686,7 +1678,7 @@ img, video {
     }
     
     .story-add-mobile {
-        display: flex;
+        display: flex !important;
     }
     
     .stories-gallery-wrap {

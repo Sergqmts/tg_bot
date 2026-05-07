@@ -12,6 +12,14 @@
                 </a>
                 <span class="story-username">Ваша</span>
             </div>
+            <div class="story-item story-add-mobile">
+                <a href="{{ url_for('create_story') }}" class="story-ring">
+                    <div class="story-ring-inner">
+                        <span class="plus-icon">+</span>
+                    </div>
+                </a>
+                <span class="story-username">Ваша</span>
+            </div>
             {% if top_stories %}
             {% for story in top_stories %}
             {% if story and story.user_id != current_user.id %}
