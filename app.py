@@ -1373,7 +1373,7 @@ def video_editor():
     return render_template('video_editor.html', editing=True)
 
 
-@app.route('/post/<int:post_id>/repost', methods=['POST'])
+@app.route('/post/<int:post_id>/repost', methods=['GET', 'POST'])
 @login_required
 def repost(post_id):
     post = Post.query.get_or_404(post_id)
@@ -1741,11 +1741,11 @@ def forward_post(post_id):
     return render_template('forward_post.html', post=post, users=users, chats=chats)
 
 
-@app.route('/post/<int:post_id>/like', methods=['POST'])
+@app.route('/post/<int:post_id>/like', methods=['GET', 'POST'])
 @login_required
 def like(post_id):
     post = Post.query.get_or_404(post_id)
-    if post.liked_by(current_user):
+    if current_user.has_liked(post):
         current_user.unlike_post(post)
     else:
         current_user.like_post(post)
