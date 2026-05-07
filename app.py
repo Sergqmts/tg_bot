@@ -43,6 +43,15 @@ app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'pdf', 'doc', 'docx', 'txt'}
 
+# Custom Jinja2 filters
+@app.template_filter('from_json')
+def from_json_filter(value):
+    import json
+    try:
+        return json.loads(value) if value else {}
+    except:
+        return {}
+
 
 @app.context_processor
 def inject_stories():
@@ -1035,7 +1044,14 @@ class Chat(db.Model):
             return data.get(theme, '')
         except:
             return ''
-    
+
+    def get_background_data(self):
+        import json
+        try:
+            return json.loads(self.background_value) if self.background_value else {}
+        except:
+            return {}
+
     def set_background(self, light_val='', dark_val=''):
         import json
         data = {'light': light_val, 'dark': dark_val}
@@ -2573,7 +2589,7 @@ def conversation(username):
         app.logger.error(f"Load messages error: {e}")
         messages = []
     
-    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post, chat=chat)
+    return render_template('conversation.html', other_user=other_user, messages=messages, Post=Post, chat=chat, bg_data=chat.get_background_data() if chat else {})
 
 
 @app.route('/chat/create', methods=['GET', 'POST'])
@@ -2783,7 +2799,7 @@ def chat_view(chat_id):
     Message.query.filter_by(chat_id=chat_id).filter(Message.sender_id != current_user.id, Message.read == False).update({'read': True})
     db.session.commit()
     
-    return render_template('chat.html', chat=chat, messages=messages, Post=Post)
+    return render_template('chat.html', chat=chat, messages=messages, Post=Post, bg_data=chat.get_background_data() if chat else {})
 
 
 @app.route('/chat/<int:chat_id>/voice', methods=['POST'])
@@ -3378,7 +3394,7 @@ def chat_edit(chat_id):
         flash('Чат обновлён')
         return redirect(url_for('chat_view', chat_id=chat_id))
     
-    return render_template('chat_edit.html', chat=chat)
+    return render_template('chat_edit.html', chat=chat, bg_data=chat.get_background_data() if chat else {})
 
 
 @app.route('/communities')

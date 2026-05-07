@@ -48,7 +48,7 @@
                 </select>
             </div>
             
-            {% set bg_data = chat.background_value|from_json if chat.background_value else {} %}
+            {% set bg_data = bg_data if bg_data is defined else {} %}
             
             <div class="form-group" id="colorOption" style="display: none;">
                 <label class="form-label">Цвет фона (светлая тема)</label>

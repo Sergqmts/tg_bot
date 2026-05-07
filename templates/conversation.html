@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{{ other_user.username }} - Vibe{% endblock %}
 {% block content %}
-{% set bg_data = chat.background_value|from_json if chat and chat.background_value else {} %}
+{% set bg_data = bg_data if bg_data is defined else {} %}
 <div class="flex flex-col h-screen h-dvh" 
      {% if chat and chat.background_type == 'color' %}
-         style="background: {{ bg_data.light if bg_data.light else '#F8FAFC' }};"
-     {% elif chat and chat.background_type == 'gradient' %}
-         style="background: {{ bg_data.light if bg_data.light else '#F8FAFC' }};"
-     {% elif chat and chat.background_type == 'image' and bg_data.light %}
-         style="background: url('{% if bg_data.light.startswith('http') %}{{ bg_data.light }}{% else %}{{ url_for('uploaded_file', filename=bg_data.light) }}{% endif %}') center/cover;"
-     {% endif %}>
+          style="background: {{ bg_data.light if bg_data.light else '#F8FAFC' }};"
+      {% elif chat and chat.background_type == 'gradient' %}
+          style="background: {{ bg_data.light if bg_data.light else '#F8FAFC' }};"
+      {% elif chat and chat.background_type == 'image' and bg_data.light %}
+          style="background: url('{% if bg_data.light.startswith('http') %}{{ bg_data.light }}{% else %}{{ url_for('uploaded_file', filename=bg_data.light) }}{% endif %}') center/cover;"
+      {% endif %}>
     <!-- Header - fixed at top, reduced padding -->
     <header class="flex-shrink-0 z-50 glass border-b border-slate-200 dark:border-dark-border">
         <div class="max-w-6xl mx-auto px-4 h-12 flex items-center gap-3">
@@ -468,7 +468,7 @@ function updateChatBackground() {
     const bgType = '{{ chat.background_type if chat else "default" }}';
     if (bgType === 'default') return;
     
-    const bgData = {{ (chat.background_value|from_json) if chat else {} }};
+    const bgData = {{ bg_data|tojson }};
     if (!bgData || typeof bgData !== 'object') return;
     
     const isDark = document.documentElement.classList.contains('dark');
