@@ -114,8 +114,12 @@ function toggleBgOptions() {
     document.getElementById('imageOption').style.display = type === 'image' ? 'block' : 'none';
 }
 
-function selectGradient(value) {
-    document.getElementById('gradientInput').value = value;
+function selectGradient(theme, value) {
+    if (theme === 'light') {
+        document.getElementById('gradientInputLight').value = value;
+    } else {
+        document.getElementById('gradientInputDark').value = value;
+    }
 }
 
 // Init on load
