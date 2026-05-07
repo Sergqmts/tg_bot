@@ -57,7 +57,7 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .dark .glass, .dark-mode .glass {
+        .dark .glass {
             background: rgba(15, 23, 42, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -78,7 +78,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-dark-bg text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+<body class="font-sans transition-colors duration-300">
     {% if request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
     <header class="fixed top-0 w-full z-50 glass border-b border-slate-200 dark:border-dark-border">
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -126,7 +126,6 @@
     </header>
     {% endif %}
 
-    {% if current_user.is_authenticated %}
     <script>
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -138,7 +137,6 @@
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
     </script>
-    {% endif %}
 
     <main class="{% if request.endpoint in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}h-screen{% else %}pt-20 pb-24 lg:pt-28 max-w-6xl mx-auto px-4{% endif %}">
         {% with messages = get_flashed_messages() %}
@@ -193,17 +191,9 @@
     
     <script>
         const themeToggle = document.getElementById('theme-toggle');
-        const html = document.documentElement;
-        
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            html.classList.add('dark');
-        }
-        
         if (themeToggle) {
             themeToggle.addEventListener('click', () => {
-                html.classList.toggle('dark');
-                const isDark = html.classList.contains('dark');
-                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                toggleTheme();
             });
         }
     </script>

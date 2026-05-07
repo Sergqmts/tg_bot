@@ -5,20 +5,20 @@
     --brand-middle: #784BA0;
     --brand-end: #2B86C5;
     --brand-gradient: linear-gradient(135deg, #FF3CAC 0%, #784BA0 50%, #2B86C5 100%);
-    --bg: #0F172A;
-    --surface: #1E293B;
-    --surface-elevated: #334155;
-    --text: #F1F5F9;
-    --text-secondary: #94A3B8;
-    --text-muted: #64748B;
-    --border: #334155;
-    --border-light: #475569;
-    --accent-pink: #FFE4E8;
-    --accent-purple: #F0E6FF;
-    --accent-blue: #E6F4FF;
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --surface-elevated: #FFFFFF;
+    --text: #1E293B;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
+    --border: #E2E8F0;
+    --border-light: #F1F5F9;
+    --accent-pink: #FFF0F3;
+    --accent-purple: #F5F0FF;
+    --accent-blue: #F0F7FF;
     --glow: rgba(255, 60, 172, 0.15);
     --story-gradient: linear-gradient(45deg, #F09433 0%, #E6683C 25%, #DC2743 50%, #CC2366 75%, #BC1888 100%);
-    --story-viewed: #334155;
+    --story-viewed: #E2E8F0;
     --danger: #EF4444;
     --success: #10B981;
     --font-main: 'Inter', system-ui, -apple-system, sans-serif;
@@ -31,27 +31,27 @@
     --radius-3xl: 2rem;
     --radius-full: 50%;
     --transition: 0.3s ease;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.1);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
-    --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.light-mode {
-    --bg: #F8FAFC;
-    --surface: #FFFFFF;
-    --surface-elevated: #FFFFFF;
-    --text: #1E293B;
-    --text-secondary: #64748B;
-    --text-muted: #94A3B8;
-    --border: #E2E8F0;
-    --border-light: #F1F5F9;
-    --accent-pink: #FFF0F3;
-    --accent-purple: #F5F0FF;
-    --accent-blue: #F0F7FF;
-    --story-viewed: #E2E8F0;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
     --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.dark {
+    --bg: #0F172A;
+    --surface: #1E293B;
+    --surface-elevated: #334155;
+    --text: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --border: #334155;
+    --border-light: #475569;
+    --accent-pink: #FFE4E8;
+    --accent-purple: #F0E6FF;
+    --accent-blue: #E6F4FF;
+    --story-viewed: #334155;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
 }
 
 .glass {
@@ -1415,6 +1415,7 @@ img, video {
     border-bottom: 1px solid var(--border);
     margin-bottom: 12px;
     animation: fadeIn 0.3s ease;
+    color: var(--text);
 }
 
 .post-header {
