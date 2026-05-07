@@ -209,7 +209,10 @@ function showMessageMenu(event, msgId) {
     var menu = document.getElementById('menu-' + msgId);
     if (!menu) return;
     
-    document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.message-context-menu').forEach(m => {
+        m.classList.add('hidden');
+        m.style.display = '';
+    });
     
     var x = event.clientX;
     var y = event.clientY;
@@ -221,6 +224,7 @@ function showMessageMenu(event, msgId) {
     if (x + menuWidth > winWidth) x = winWidth - menuWidth - 10;
     if (y + menuHeight > winHeight) y = winHeight - menuHeight - 10;
     
+    menu.classList.remove('hidden');
     menu.style.display = 'block';
     menu.style.position = 'fixed';
     menu.style.left = x + 'px';
@@ -230,9 +234,12 @@ function showMessageMenu(event, msgId) {
 
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
-        document.getElementById('attachMenu').classList.remove('show');
+        document.getElementById('attachMenu').classList.add('hidden');
     }
-    document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
+    document.querySelectorAll('.message-context-menu').forEach(m => {
+        m.classList.add('hidden');
+        m.style.display = '';
+    });
 });
 
 document.addEventListener('contextmenu', function(e) {

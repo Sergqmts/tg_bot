@@ -196,16 +196,32 @@ function toggleAttachMenu() {
 
 function toggleMessageMenu(btn, msgId) {
     event.stopPropagation();
-    document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
-    document.getElementById('menu-' + msgId).classList.toggle('show');
+    var menu = document.getElementById('menu-' + msgId);
+    if (!menu) return;
+    
+    document.querySelectorAll('.message-menu.show').forEach(m => {
+        m.classList.remove('show');
+        m.classList.add('hidden');
+    });
+    
+    if (menu.classList.contains('show')) {
+        menu.classList.remove('show');
+        menu.classList.add('hidden');
+    } else {
+        menu.classList.remove('hidden');
+        menu.classList.add('show');
+    }
 }
 
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
-        document.getElementById('attachMenu').classList.remove('show');
+        document.getElementById('attachMenu').classList.add('hidden');
     }
     if (!e.target.closest('.message-more-btn') && !e.target.closest('.message-menu')) {
-        document.querySelectorAll('.message-menu.show').forEach(m => m.classList.remove('show'));
+        document.querySelectorAll('.message-menu.show').forEach(m => {
+            m.classList.remove('show');
+            m.classList.add('hidden');
+        });
     }
 });
 
