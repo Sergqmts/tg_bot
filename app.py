@@ -1749,7 +1749,7 @@ def like(post_id):
         current_user.unlike_post(post)
     else:
         current_user.like_post(post)
-        create_notification(post.author_id, current_user.id, 'like', post_id=post.id)
+        create_notification(post.user_id, current_user.id, 'like', post_id=post.id)
     db.session.commit()
     return redirect(request.referrer or url_for('index'))
 
@@ -1788,12 +1788,12 @@ def add_comment(post_id):
             comment = Comment(body=body or '', author=current_user, post=post, media_url=media_url, media_type=media_type, reply_to_id=reply_to_comment_id)
             db.session.add(comment)
             db.session.commit()
-            create_notification(post.author_id, current_user.id, 'comment', post_id=post.id, comment_id=comment.id)
+            create_notification(post.user_id, current_user.id, 'comment', post_id=post.id, comment_id=comment.id)
             # Notify parent comment author if this is a reply
             if reply_to_comment_id:
                 parent_comment = Comment.query.get(reply_to_comment_id)
-                if parent_comment and parent_comment.author_id != current_user.id:
-                    create_notification(parent_comment.author_id, current_user.id, 'reply', post_id=post.id, comment_id=comment.id)
+                if parent_comment and parent_comment.user_id != current_user.id:
+                    create_notification(parent_comment.user_id, current_user.id, 'reply', post_id=post.id, comment_id=comment.id)
             app.logger.info(f"Comment added successfully")
         except Exception as e:
             app.logger.error(f"Comment error: {e}")
