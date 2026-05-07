@@ -39,7 +39,7 @@
             </div>
             
             <div class="form-group">
-                <label class="form-label">Фон чата</label>
+                <label class="form-label">Тип фона</label>
                 <select name="background_type" class="form-input" id="bgTypeSelect" onchange="toggleBgOptions()">
                     <option value="default" {% if chat.background_type == 'default' %}selected{% endif %}>По умолчанию</option>
                     <option value="color" {% if chat.background_type == 'color' %}selected{% endif %}>Цвет</option>
@@ -48,31 +48,55 @@
                 </select>
             </div>
             
+            {% set bg_data = chat.background_value|from_json if chat.background_value else {} %}
+            
             <div class="form-group" id="colorOption" style="display: none;">
-                <label class="form-label">Цвет фона</label>
-                <input type="color" name="background_value" value="{% if chat.background_type == 'color' %}{{ chat.background_value }}{% else %}#0A0A0A{% endif %}" class="form-input">
+                <label class="form-label">Цвет фона (светлая тема)</label>
+                <input type="color" name="background_value_light" value="{{ bg_data.light if bg_data.light else '#F8FAFC' }}" class="form-input">
+                <label class="form-label" style="margin-top: 10px;">Цвет фона (тёмная тема)</label>
+                <input type="color" name="background_value_dark" value="{{ bg_data.dark if bg_data.dark else '#0F172A' }}" class="form-input">
             </div>
             
             <div class="form-group" id="gradientOption" style="display: none;">
-                <label class="form-label">Выберите градиент</label>
+                <label class="form-label">Выберите градиент (светлая тема)</label>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                    <div onclick="selectGradient('linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Instagram"></div>
-                    <div onclick="selectGradient('linear-gradient(135deg, #667eea, #764ba2)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Ocean Blue"></div>
-                    <div onclick="selectGradient('linear-gradient(135deg, #f093fb, #f5576c)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #f093fb, #f5576c); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Pink Sunset"></div>
-                    <div onclick="selectGradient('linear-gradient(135deg, #4facfe, #00f2fe)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #4facfe, #00f2fe); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Ocean"></div>
-                    <div onclick="selectGradient('linear-gradient(135deg, #43e97b, #38f9d7)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #43e97b, #38f9d7); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Green Mint"></div>
+                    <div onclick="selectGradient('light', 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Instagram"></div>
+                    <div onclick="selectGradient('light', 'linear-gradient(135deg, #667eea, #764ba2)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Ocean Blue"></div>
+                    <div onclick="selectGradient('light', 'linear-gradient(135deg, #f093fb, #f5576c)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #f093fb, #f5576c); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Pink Sunset"></div>
+                    <div onclick="selectGradient('light', 'linear-gradient(135deg, #4facfe, #00f2fe)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #4facfe, #00f2fe); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Ocean"></div>
+                    <div onclick="selectGradient('light', 'linear-gradient(135deg, #43e97b, #38f9d7)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #43e97b, #38f9d7); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Green Mint"></div>
                 </div>
-                <input type="text" id="gradientInput" name="background_value" placeholder="linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)" value="{% if chat.background_type == 'gradient' %}{{ chat.background_value }}{% endif %}" class="form-input">
-                <small style="color: var(--text-secondary);">Или введите свой CSS градиент</small>
+                <input type="text" id="gradientInputLight" name="background_value_light" placeholder="linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)" value="{{ bg_data.light if bg_data.light else '' }}" class="form-input">
+                <small style="color: var(--text-secondary);">Или введите свой CSS градиент для светлой темы</small>
+                
+                <label class="form-label" style="margin-top: 10px;">Градиент (тёмная тема)</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <div onclick="selectGradient('dark', 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Instagram"></div>
+                    <div onclick="selectGradient('dark', 'linear-gradient(135deg, #667eea, #764ba2)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Ocean Blue"></div>
+                    <div onclick="selectGradient('dark', 'linear-gradient(135deg, #f093fb, #f5576c)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #f093fb, #f5576c); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Pink Sunset"></div>
+                    <div onclick="selectGradient('dark', 'linear-gradient(135deg, #4facfe, #00f2fe)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #4facfe, #00f2fe); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Ocean"></div>
+                    <div onclick="selectGradient('dark', 'linear-gradient(135deg, #43e97b, #38f9d7)')" style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #43e97b, #38f9d7); cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.border='2px solid #fff'" onmouseout="this.style.border='2px solid transparent'" title="Green Mint"></div>
+                </div>
+                <input type="text" id="gradientInputDark" name="background_value_dark" placeholder="linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)" value="{{ bg_data.dark if bg_data.dark else '' }}" class="form-input">
+                <small style="color: var(--text-secondary);">Или введите свой CSS градиент для тёмной темы</small>
             </div>
             
             <div class="form-group" id="imageOption" style="display: none;">
-                <label class="form-label">Изображение фона</label>
-                <input type="file" name="background_image" accept="image/*" class="form-input">
-                {% if chat.background_type == 'image' and chat.background_value %}
+                <label class="form-label">Изображение фона (светлая тема)</label>
+                <input type="file" name="background_image_light" accept="image/*" class="form-input">
+                {% if chat.background_type == 'image' and bg_data.light %}
                 <div style="margin-top: 8px;">
-                    <small style="color: var(--text-secondary);">Текущий фон:</small>
-                    <img src="{% if chat.background_value.startswith('http') %}{{ chat.background_value }}{% else %}{{ url_for('uploaded_file', filename=chat.background_value) }}{% endif %}" style="max-width: 100px; border-radius: 8px; margin-top: 4px;">
+                    <small style="color: var(--text-secondary);">Текущий фон (светлая тема):</small>
+                    <img src="{{ bg_data.light }}" style="max-width: 100px; border-radius: 8px; margin-top: 4px;">
+                </div>
+                {% endif %}
+                
+                <label class="form-label" style="margin-top: 10px;">Изображение фона (тёмная тема)</label>
+                <input type="file" name="background_image_dark" accept="image/*" class="form-input">
+                {% if chat.background_type == 'image' and bg_data.dark %}
+                <div style="margin-top: 8px;">
+                    <small style="color: var(--text-secondary);">Текущий фон (тёмная тема):</small>
+                    <img src="{{ bg_data.dark }}" style="max-width: 100px; border-radius: 8px; margin-top: 4px;">
                 </div>
                 {% endif %}
             </div>

@@ -1020,11 +1020,26 @@ class Chat(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     avatar = db.Column(db.String(200), default='chat_default.png')
-    background_type = db.Column(db.String(20), default='default')  # default, color, gradient, image
-    background_value = db.Column(db.String(500), default='')  # color hex, gradient css, or image url
+    # background_type: 'default', 'color', 'gradient', 'image'
+    # background_value: JSON string {"light": "...", "dark": "..."}
+    background_type = db.Column(db.String(20), default='default')
+    background_value = db.Column(db.String(500), default='{"light": "", "dark": ""}')
     
     messages = db.relationship('Message', backref='chat', lazy='dynamic')
     members = db.relationship('ChatMember', backref='chat', lazy='dynamic', cascade='all, delete-orphan')
+    
+    def get_background(self, theme='light'):
+        import json
+        try:
+            data = json.loads(self.background_value) if self.background_value else {}
+            return data.get(theme, '')
+        except:
+            return ''
+    
+    def set_background(self, light_val='', dark_val=''):
+        import json
+        data = {'light': light_val, 'dark': dark_val}
+        self.background_value = json.dumps(data)
 
 
 class ChatMember(db.Model):
@@ -3309,25 +3324,43 @@ def chat_edit(chat_id):
         
         # Handle background
         bg_type = request.form.get('background_type', 'default')
-        bg_value = request.form.get('background_value', '').strip()
         
         if bg_type in ['default', 'color', 'gradient', 'image']:
             chat.background_type = bg_type
+            import json
+            bg_data = json.loads(chat.background_value) if chat.background_value else {}
+            
             if bg_type == 'default':
-                chat.background_value = ''
-            elif bg_type == 'image' and 'background_image' in request.files:
-                file = request.files['background_image']
-                if file.filename and allowed_file(file.filename):
-                    if cloudinary_configured:
-                        url = upload_to_cloudinary(file, folder='chat_backgrounds')
-                        if url:
-                            chat.background_value = url
-                    else:
-                        filename = secure_filename(f"bg_{datetime.now().timestamp()}_{file.filename}")
-                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                        chat.background_value = filename
+                bg_data = {"light": "", "dark": ""}
+            elif bg_type == 'image':
+                # Handle image uploads for both themes
+                for theme, field in [('light', 'background_image_light'), ('dark', 'background_image_dark')]:
+                    if field in request.files:
+                        file = request.files[field]
+                        if file.filename and allowed_file(file.filename):
+                            if cloudinary_configured:
+                                url = upload_to_cloudinary(file, folder='chat_backgrounds')
+                                if url:
+                                    bg_data[theme] = url
+                            else:
+                                filename = secure_filename(f"bg_{datetime.now().timestamp()}_{file.filename}")
+                                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                                bg_data[theme] = filename
+                # Fallback to text input for existing URLs
+                light_val = request.form.get('background_value_light', '').strip()
+                dark_val = request.form.get('background_value_dark', '').strip()
+                if light_val:
+                    bg_data['light'] = light_val
+                if dark_val:
+                    bg_data['dark'] = dark_val
             else:
-                chat.background_value = bg_value
+                # color or gradient
+                light_val = request.form.get('background_value_light', '').strip()
+                dark_val = request.form.get('background_value_dark', '').strip()
+                bg_data['light'] = light_val
+                bg_data['dark'] = dark_val
+            
+            chat.background_value = json.dumps(bg_data)
         
         if 'avatar' in request.files:
             file = request.files['avatar']
