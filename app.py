@@ -3347,7 +3347,7 @@ def chat_edit(chat_id):
             bg_data = json.loads(chat.background_value) if chat.background_value else {}
             
             if bg_type == 'default':
-                bg_data = {"light": "", "dark": ""}
+                bg_data = {"light": "chat-backgrounds/light.png", "dark": "chat-backgrounds/dark.png"}
             elif bg_type == 'image':
                 # Handle image uploads for both themes
                 for theme, field in [('light', 'background_image_light'), ('dark', 'background_image_dark')]:

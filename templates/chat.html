@@ -469,7 +469,9 @@ function updateChatBackground() {
     
     const bgType = '{{ chat.background_type if chat else "default" }}';
     if (bgType === 'default') {
-        chatDiv.style.background = '';
+        const isDark = document.documentElement.classList.contains('dark');
+        const bgFile = isDark ? 'dark.png' : 'light.png';
+        chatDiv.style.background = `url('/static/chat-backgrounds/${bgFile}') center / cover no-repeat`;
         return;
     }
     
