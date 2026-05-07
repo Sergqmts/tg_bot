@@ -2,14 +2,7 @@
 {% block title %}{{ other_user.username }} - Vibe{% endblock %}
 {% block content %}
 {% set bg_data = bg_data if bg_data is defined else {} %}
-<div class="flex flex-col h-screen h-dvh" 
-     {% if chat and chat.background_type == 'color' %}
-          style="background: {{ bg_data.light if bg_data.light else '#F8FAFC' }};"
-      {% elif chat and chat.background_type == 'gradient' %}
-          style="background: {{ bg_data.light if bg_data.light else '#F8FAFC' }};"
-      {% elif chat and chat.background_type == 'image' and bg_data.light %}
-          style="background: url('{% if bg_data.light.startswith('http') %}{{ bg_data.light }}{% else %}{{ url_for('uploaded_file', filename=bg_data.light) }}{% endif %}') center/cover;"
-      {% endif %}>
+<div class="flex flex-col h-screen h-dvh" id="chatContainer">
     <!-- Header - fixed at top, reduced padding -->
     <header class="flex-shrink-0 z-50 glass border-b border-slate-200 dark:border-dark-border">
         <div class="max-w-6xl mx-auto px-4 h-12 flex items-center gap-3">
@@ -462,28 +455,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Auto-switch chat background based on theme
 function updateChatBackground() {
-    const chatDiv = document.querySelector('.flex.flex-col.h-screen');
+    const chatDiv = document.getElementById('chatContainer');
     if (!chatDiv) return;
     
     const bgType = '{{ chat.background_type if chat else "default" }}';
-    if (bgType === 'default') return;
+    if (bgType === 'default') {
+        chatDiv.style.background = '';
+        return;
+    }
     
-    const bgData = {{ bg_data|tojson }};
+    const bgData = {{ (bg_data|tojson) if bg_data else {} }};
     if (!bgData || typeof bgData !== 'object') return;
     
     const isDark = document.documentElement.classList.contains('dark');
     const theme = isDark ? 'dark' : 'light';
     const value = bgData[theme] || '';
     
-    if (!value) return;
+    if (!value) {
+        chatDiv.style.background = '';
+        return;
+    }
     
     if (bgType === 'color') {
         chatDiv.style.background = value;
     } else if (bgType === 'gradient') {
         chatDiv.style.background = value;
     } else if (bgType === 'image') {
-        const url = value.startsWith('http') ? value : '/uploads/' + value;
-        chatDiv.style.background = `url('${url}') center/cover`;
+        const url = (value && value.startsWith('http')) ? value : '/uploads/' + value;
+        chatDiv.style.background = `url('${url}') center / cover no-repeat`;
     }
 }
 
