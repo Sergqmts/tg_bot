@@ -213,6 +213,7 @@ def handle_connect():
     from flask import request as flask_request
     if current_user.is_authenticated:
         active_users[current_user.id] = flask_request.sid
+        join_room(f'user_{current_user.id}')
         current_user.last_seen = datetime.utcnow()
         try:
             db.session.commit()
@@ -307,6 +308,10 @@ def create_notification(user_id, sender_id, notif_type, post_id=None, comment_id
         )
         db.session.add(notification)
         db.session.commit()
+
+        unread_count = Notification.query.filter_by(user_id=user_id, read=False).count()
+        if user_id in active_users:
+            socketio.emit('notification_count', {'count': unread_count}, room=f'user_{user_id}')
     except Exception as e:
         app.logger.error(f"Notification error: {e}")
 

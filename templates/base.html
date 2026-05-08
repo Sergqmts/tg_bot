@@ -104,7 +104,7 @@
                 <a href="{{ url_for('notifications') }}" class="text-xl hover:text-brand-middle transition-colors relative">
                     <i class="fa-regular fa-bell"></i>
                     {% if unread_notifications > 0 %}
-                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold">{{ unread_notifications }}</span>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold" id="notif-badge" {% if unread_notifications == 0 %}style="display:none"{% endif %}>{{ unread_notifications }}</span>
                     {% endif %}
                 </a>
                 <button id="theme-toggle" class="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
@@ -253,6 +253,22 @@
             });
         });
     });
+    </script>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        var socket = io();
+        socket.on('notification_count', function(data) {
+            var badge = document.getElementById('notif-badge');
+            if (badge) {
+                if (data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        });
     </script>
 </body>
 </html>
