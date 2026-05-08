@@ -2799,6 +2799,44 @@ def send_voice(username):
         return str(e), 500
 
 
+@app.route('/messages/<username>/video-message', methods=['POST'])
+@login_required
+def send_video_message(username):
+    other_user = User.query.filter_by(username=username).first_or_404()
+
+    if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
+        return 'Blocked', 403
+
+    if 'video_message' not in request.files:
+        return {'error': 'No video file'}, 400
+
+    video_file = request.files['video_message']
+    if not video_file.filename:
+        return {'error': 'No file'}, 400
+
+    ext = video_file.filename.rsplit('.', 1)[1].lower() if '.' in video_file.filename else 'webm'
+    if ext not in {'webm', 'mp4', 'mov'}:
+        return {'error': 'Invalid format'}, 400
+
+    try:
+        filename = secure_filename(f"vm_{int(datetime.now().timestamp())}_{current_user.id}.{ext}")
+        video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        media_url = '/media/' + filename
+
+        msg = Message(sender=current_user, recipient=other_user)
+        db.session.add(msg)
+        db.session.flush()
+
+        media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='video_message')
+        db.session.add(media)
+        db.session.commit()
+
+        return 'OK', 200
+    except Exception as e:
+        app.logger.error(f"Video message error: {e}")
+        return str(e), 500
+
+
 @app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
 @login_required
 def chat_view(chat_id):
@@ -2955,6 +2993,45 @@ def send_chat_voice(chat_id):
         app.logger.error(f"Chat voice message error: {e}")
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)
+        return str(e), 500
+
+
+@app.route('/chat/<int:chat_id>/video-message', methods=['POST'])
+@login_required
+def send_chat_video_message(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+
+    if not member:
+        return 'Not a member', 403
+
+    if 'video_message' not in request.files:
+        return {'error': 'No video file'}, 400
+
+    video_file = request.files['video_message']
+    if not video_file.filename:
+        return {'error': 'No file'}, 400
+
+    ext = video_file.filename.rsplit('.', 1)[1].lower() if '.' in video_file.filename else 'webm'
+    if ext not in {'webm', 'mp4', 'mov'}:
+        return {'error': 'Invalid format'}, 400
+
+    try:
+        filename = secure_filename(f"vm_{int(datetime.now().timestamp())}_{current_user.id}.{ext}")
+        video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        media_url = '/media/' + filename
+
+        msg = Message(sender=current_user, chat_id=chat_id)
+        db.session.add(msg)
+        db.session.flush()
+
+        media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='video_message')
+        db.session.add(media)
+        db.session.commit()
+
+        return 'OK', 200
+    except Exception as e:
+        app.logger.error(f"Chat video message error: {e}")
         return str(e), 500
 
 
