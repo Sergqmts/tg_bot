@@ -130,14 +130,11 @@
         {% endif %}
 
         <div class="post-actions">
-            <form method="POST" action="{{ url_for('like', post_id=post.id) }}" style="display:inline;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="action-btn like-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                    </svg>
-                </button>
-            </form>
+            <button class="action-btn like-btn" data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+            </button>
             <a href="{{ url_for('view_post', post_id=post.id) }}" class="action-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -220,6 +217,23 @@ function changeMedia(event, postId, mediaCount, direction) {
     const dots = container.querySelectorAll('.dot');
     dots.forEach((dot, i) => {
         dot.classList.toggle('active', i === currentIndex[postId]);
+    });
+}
+
+function toggleLike(btn) {
+    var postId = btn.dataset.postId;
+    var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    var formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+    fetch('/post/' + postId + '/like', {
+        method: 'POST',
+        body: formData,
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(function(r) { return r.json(); }).then(function(data) {
+        var svg = btn.querySelector('svg');
+        svg.setAttribute('fill', data.liked ? 'currentColor' : 'none');
+        var countSpan = btn.closest('.post-card').querySelector('.post-likes strong');
+        if (countSpan) countSpan.textContent = data.count;
     });
 }
 

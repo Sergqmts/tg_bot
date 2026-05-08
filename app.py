@@ -1779,12 +1779,16 @@ def forward_post(post_id):
 @login_required
 def like(post_id):
     post = Post.query.get_or_404(post_id)
+    liked = False
     if current_user.has_liked(post):
         current_user.unlike_post(post)
     else:
         current_user.like_post(post)
         create_notification(post.user_id, current_user.id, 'like', post_id=post.id)
+        liked = True
     db.session.commit()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'liked': liked, 'count': post.likes.count()})
     return redirect(request.referrer or url_for('index'))
 
 
