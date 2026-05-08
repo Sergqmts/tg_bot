@@ -82,10 +82,11 @@
     </div>
     {% else %}
     <div class="profile-tabs">
-        <button class="tab active">Посты</button>
+        <button class="tab active" onclick="switchTab('posts')">Посты</button>
+        <button class="tab" onclick="switchTab('shorts')">Shorts</button>
         <a href="{{ url_for('saved_posts') }}" class="tab">Сохранённые</a>
     </div>
-    <div class="posts-grid">
+    <div id="postsTab" class="posts-grid">
         {% for post in posts %}
         <a href="{{ url_for('view_post', post_id=post.id) }}" class="grid-item">
             {% set media = post.media.first() %}
@@ -130,6 +131,41 @@
         </div>
         {% endfor %}
     </div>
+    <div id="shortsTab" class="posts-grid" style="display: none;">
+        {% for s in user_shorts %}
+        <a href="{{ url_for('view_shorts', shorts_id=s.id) }}" class="grid-item">
+            <video src="{{ s.video_url }}" muted></video>
+            <div class="grid-overlay">
+                <span>▶ {{ s.views }}</span>
+                <span>❤️ {{ shorts_likes[s.id] }}</span>
+                <span>💬 {{ shorts_comments[s.id] }}</span>
+            </div>
+            {% if s.user_id == current_user.id %}
+            <form method="POST" action="{{ url_for('delete_shorts', shorts_id=s.id) }}" onsubmit="event.preventDefault(); confirm('Удалить шортс?') && this.submit()">
+                <button type="submit" class="delete-btn">×</button>
+            </form>
+            {% endif %}
+        </a>
+        {% else %}
+        <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-icon">🎬</div>
+            <h3 class="empty-title">Нет шортсов</h3>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+    function switchTab(tab) {
+        document.querySelectorAll('.profile-tabs .tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.posts-grid').forEach(function(g) { g.style.display = 'none'; });
+        if (tab === 'posts') {
+            document.querySelector('.profile-tabs .tab:first-child').classList.add('active');
+            document.getElementById('postsTab').style.display = 'grid';
+        } else {
+            document.querySelectorAll('.profile-tabs .tab')[1].classList.add('active');
+            document.getElementById('shortsTab').style.display = 'grid';
+        }
+    }
+    </script>
      {% endif %}
 </div>
 

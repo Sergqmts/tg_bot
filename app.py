@@ -1951,7 +1951,12 @@ def user_profile(username):
     is_blocked = current_user.is_authenticated and current_user.is_blocking(user)
     is_pending = current_user.is_authenticated and current_user.is_pending(user)
     pending_count = len(current_user.get_pending_followers()) if current_user.is_authenticated and user.id == current_user.id else 0
-    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count)
+    
+    user_shorts = Shorts.query.filter_by(user_id=user.id).order_by(Shorts.created_at.desc()).all()
+    shorts_likes = {s.id: s.likes.count() for s in user_shorts}
+    shorts_comments = {s.id: s.comments.count() for s in user_shorts}
+    
+    return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count, user_shorts=user_shorts, shorts_likes=shorts_likes, shorts_comments=shorts_comments)
 
 
 @app.route('/follow/<username>', methods=['POST'])
@@ -2310,6 +2315,26 @@ def react_shorts(shorts_id):
     
     db.session.commit()
     return jsonify({'status': 'ok'})
+
+
+@app.route('/shorts/<int:shorts_id>/delete', methods=['POST'])
+@login_required
+def delete_shorts(shorts_id):
+    shorts_video = Shorts.query.get_or_404(shorts_id)
+    if shorts_video.user_id != current_user.id:
+        abort(403)
+    try:
+        ShortsLike.query.filter_by(shorts_id=shorts_id).delete()
+        ShortsComment.query.filter_by(shorts_id=shorts_id).delete()
+        ShortsReaction.query.filter_by(shorts_id=shorts_id).delete()
+        db.session.delete(shorts_video)
+        db.session.commit()
+        flash('Shorts удалён')
+    except Exception as e:
+        app.logger.error(f"Delete shorts error: {e}")
+        db.session.rollback()
+        flash('Ошибка при удалении')
+    return redirect(request.referrer or url_for('user_profile', username=current_user.username))
 
 
 @app.route('/shorts/audio/upload', methods=['GET', 'POST'])
