@@ -2253,9 +2253,16 @@ def create_shorts():
         
         try:
             ext = video.filename.rsplit('.', 1)[-1].lower() if '.' in video.filename else 'mp4'
-            filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.{ext}'
-            video.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            video_url = url_for('uploaded_file', filename=filename)
+            if cloudinary_configured:
+                result = cloudinary.uploader.upload(
+                    video, folder='shorts', resource_type='video',
+                    timeout=30
+                )
+                video_url = result['secure_url']
+            else:
+                filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.{ext}'
+                video.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                video_url = url_for('uploaded_file', filename=filename)
             
             shorts = Shorts(
                 video_url=video_url,
@@ -2356,9 +2363,16 @@ def upload_shorts_audio():
         title = request.form.get('title', 'Original audio')
         
         if audio:
-            filename = f'saudio_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp3'
-            audio.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            audio_url = url_for('uploaded_file', filename=filename)
+            if cloudinary_configured:
+                result = cloudinary.uploader.upload(
+                    audio, folder='shorts_audio', resource_type='video',
+                    timeout=30
+                )
+                audio_url = result['secure_url']
+            else:
+                filename = f'saudio_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp3'
+                audio.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                audio_url = url_for('uploaded_file', filename=filename)
             
             shorts_audio = ShortsAudio(
                 title=title,
