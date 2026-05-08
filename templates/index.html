@@ -48,6 +48,10 @@
             <a href="{{ url_for('shorts') }}">Смотреть все →</a>
         </div>
         <div class="shorts-mini-scroll">
+            <a href="{{ url_for('create_shorts') }}" class="shorts-mini-item shorts-mini-add">
+                <span>+</span>
+                <span>Создать</span>
+            </a>
             {% for shorts in shorts_list %}
             <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-mini-item">
                 <video src="{{ shorts.video_url }}" muted></video>
@@ -56,10 +60,6 @@
                 </div>
             </a>
             {% endfor %}
-            <a href="{{ url_for('create_shorts') }}" class="shorts-mini-item shorts-mini-add">
-                <span>+</span>
-                <span>Создать</span>
-            </a>
         </div>
     </div>
     {% endif %}
