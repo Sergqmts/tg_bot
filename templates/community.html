@@ -93,8 +93,17 @@
                     {% if m.media_type == 'video' %}
                     <video src="{{ m.cloudinary_url }}" crossorigin="anonymous" muted playsinline></video>
                     {% elif m.media_type == 'audio' %}
-                    <div class="audio-player">
-                        <audio src="{{ m.cloudinary_url }}" controls></audio>
+                    <div class="audio-player" data-media-id="{{ m.id }}">
+                        <audio src="{{ m.cloudinary_url }}" preload="metadata"></audio>
+                        <div class="audio-player-content">
+                            <div class="audio-player-icon">🎵</div>
+                            <div class="audio-player-title">Аудиозапись</div>
+                            <div class="audio-player-controls">
+                                <button class="audio-player-play" onclick="toggleAudio(this)">▶</button>
+                                <input type="range" class="audio-player-progress" value="0" max="100" oninput="seekAudio(this)">
+                                <span class="audio-player-time">0:00</span>
+                            </div>
+                        </div>
                     </div>
                     {% else %}
                     <img src="{{ m.cloudinary_url }}" alt="Пост">
@@ -103,8 +112,17 @@
                     {% if m.media_type == 'video' %}
                     <video src="{{ url_for('uploaded_file', filename=m.filename) }}" muted playsinline></video>
                     {% elif m.media_type == 'audio' %}
-                    <div class="audio-player">
-                        <audio src="{{ url_for('uploaded_file', filename=m.filename) }}" controls></audio>
+                    <div class="audio-player" data-media-id="{{ m.id }}">
+                        <audio src="{{ url_for('uploaded_file', filename=m.filename) }}" preload="metadata"></audio>
+                        <div class="audio-player-content">
+                            <div class="audio-player-icon">🎵</div>
+                            <div class="audio-player-title">Аудиозапись</div>
+                            <div class="audio-player-controls">
+                                <button class="audio-player-play" onclick="toggleAudio(this)">▶</button>
+                                <input type="range" class="audio-player-progress" value="0" max="100" oninput="seekAudio(this)">
+                                <span class="audio-player-time">0:00</span>
+                            </div>
+                        </div>
                     </div>
                     {% else %}
                     <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Пост">

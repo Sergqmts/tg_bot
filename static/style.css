@@ -1892,6 +1892,179 @@ img, video {
     font-size: 2rem;
 }
 
+.audio-player {
+    width: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+}
+.audio-player::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+    pointer-events: none;
+}
+.audio-player audio {
+    display: none;
+}
+.audio-player-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.audio-player-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e94560 0%, #533483 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    box-shadow: 0 8px 32px rgba(233, 69, 96, 0.3);
+    animation: audioPulse 2s ease-in-out infinite;
+}
+@keyframes audioPulse {
+    0%, 100% { box-shadow: 0 8px 32px rgba(233, 69, 96, 0.3); }
+    50% { box-shadow: 0 8px 48px rgba(233, 69, 96, 0.5); }
+}
+.audio-player-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.audio-player-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 320px;
+}
+.audio-player-play {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #e94560;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s, background 0.2s;
+}
+.audio-player-play:hover {
+    transform: scale(1.05);
+    background: #ff5773;
+}
+.audio-player-play:active {
+    transform: scale(0.95);
+}
+.audio-player-progress {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+.audio-player-progress::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #e94560;
+    border: 2px solid #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.audio-player-progress::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #e94560;
+    border: 2px solid #fff;
+    cursor: pointer;
+}
+.audio-player-time {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    font-variant-numeric: tabular-nums;
+    min-width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.audio-player-full {
+    width: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 32px;
+    border-radius: var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+}
+.audio-player-full::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+    pointer-events: none;
+}
+.audio-player-full audio {
+    display: none;
+}
+.audio-player-full .audio-player-content {
+    gap: 16px;
+}
+.audio-player-full .audio-player-icon {
+    width: 100px;
+    height: 100px;
+    font-size: 40px;
+}
+.audio-player-full .audio-player-title {
+    font-size: 18px;
+}
+.audio-player-full .audio-player-controls {
+    max-width: 400px;
+}
+.audio-player-full .audio-player-play {
+    width: 56px;
+    height: 56px;
+    font-size: 22px;
+}
+.audio-player-full .audio-player-progress {
+    height: 6px;
+}
+.audio-player-full .audio-player-progress::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+}
+.audio-player-full .audio-player-time {
+    font-size: 13px;
+    min-width: 42px;
+}
+
 .remove-btn {
     position: absolute;
     top: 4px;

@@ -198,5 +198,61 @@
             });
         }
     </script>
+    <script>
+    /* Audio player */
+    function getAudioEl(btn) {
+        return btn.closest('.audio-player, .audio-player-full').querySelector('audio');
+    }
+    function toggleAudio(btn) {
+        var audio = getAudioEl(btn);
+        if (audio.paused) {
+            document.querySelectorAll('.audio-player audio, .audio-player-full audio').forEach(function(a) {
+                if (a !== audio && !a.paused) a.pause();
+            });
+            audio.play();
+        } else {
+            audio.pause();
+        }
+    }
+    function seekAudio(slider) {
+        var audio = getAudioEl(slider);
+        if (audio.duration) {
+            audio.currentTime = (slider.value / 100) * audio.duration;
+        }
+    }
+    function fmtTime(secs) {
+        if (!secs || isNaN(secs)) return '0:00';
+        var m = Math.floor(secs / 60);
+        var s = Math.floor(secs % 60);
+        return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.audio-player audio, .audio-player-full audio').forEach(function(audio) {
+            var container = audio.closest('.audio-player, .audio-player-full');
+            var playBtn = container.querySelector('.audio-player-play');
+            var progress = container.querySelector('.audio-player-progress');
+            var timeDisplay = container.querySelector('.audio-player-time');
+            audio.addEventListener('timeupdate', function() {
+                if (audio.duration) {
+                    progress.value = (audio.currentTime / audio.duration) * 100;
+                    timeDisplay.textContent = fmtTime(audio.currentTime);
+                }
+            });
+            audio.addEventListener('play', function() {
+                if (playBtn) playBtn.textContent = '⏸';
+            });
+            audio.addEventListener('pause', function() {
+                if (playBtn) playBtn.textContent = '▶';
+            });
+            audio.addEventListener('loadedmetadata', function() {
+                timeDisplay.textContent = fmtTime(audio.duration);
+            });
+            audio.addEventListener('ended', function() {
+                progress.value = 0;
+                timeDisplay.textContent = fmtTime(audio.duration);
+            });
+        });
+    });
+    </script>
 </body>
 </html>
