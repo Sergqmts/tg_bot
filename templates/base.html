@@ -255,20 +255,26 @@
     });
     </script>
 
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        var socket = io();
-        socket.on('notification_count', function(data) {
-            var badge = document.getElementById('notif-badge');
-            if (badge) {
-                if (data.count > 0) {
-                    badge.textContent = data.count;
-                    badge.style.display = 'flex';
-                } else {
-                    badge.style.display = 'none';
+    {% if current_user.is_authenticated %}
+    function updateNotifBadge() {
+        fetch('/api/unread-count')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var badge = document.getElementById('notif-badge');
+                if (badge) {
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
                 }
-            }
-        });
+            })
+            .catch(function() {});
+    }
+    setInterval(updateNotifBadge, 10000);
+    {% endif %}
     </script>
 </body>
 </html>

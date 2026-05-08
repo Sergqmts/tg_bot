@@ -204,9 +204,15 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите для доступа'
 
-socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False)
+socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False, async_mode='threading')
 
 active_users = {}  # user_id -> sid
+
+@app.route('/api/unread-count')
+@login_required
+def unread_notification_count():
+    count = Notification.query.filter_by(user_id=current_user.id, read=False).count()
+    return {'count': count}
 
 @socketio.on('connect')
 def handle_connect():
@@ -308,10 +314,6 @@ def create_notification(user_id, sender_id, notif_type, post_id=None, comment_id
         )
         db.session.add(notification)
         db.session.commit()
-
-        unread_count = Notification.query.filter_by(user_id=user_id, read=False).count()
-        if user_id in active_users:
-            socketio.emit('notification_count', {'count': unread_count}, room=f'user_{user_id}')
     except Exception as e:
         app.logger.error(f"Notification error: {e}")
 
