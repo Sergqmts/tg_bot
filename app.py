@@ -2823,7 +2823,7 @@ def send_video_message(username):
         video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         media_url = '/media/' + filename
 
-        msg = Message(sender=current_user, recipient=other_user)
+        msg = Message(sender=current_user, recipient=other_user, body='')
         db.session.add(msg)
         db.session.flush()
 
@@ -3021,7 +3021,7 @@ def send_chat_video_message(chat_id):
         video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         media_url = '/media/' + filename
 
-        msg = Message(sender=current_user, chat_id=chat_id)
+        msg = Message(sender=current_user, chat_id=chat_id, body='')
         db.session.add(msg)
         db.session.flush()
 
