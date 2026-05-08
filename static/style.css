@@ -1454,9 +1454,25 @@ img, video {
 }
 
 .post-author {
-    flex: 1;
     font-weight: 600;
     font-size: 0.9rem;
+}
+
+.post-author-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.post-author-sub {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.post-author-sub:hover {
+    text-decoration: underline;
 }
 
 .post-more {

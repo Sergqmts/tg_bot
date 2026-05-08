@@ -66,6 +66,21 @@
     {% for post in posts %}
     <article class="post-card" style="position: relative;">
         <div class="post-header">
+            {% if post.is_community_post and post.community %}
+            <a href="{{ url_for('community', slug=post.community.slug) }}" class="post-avatar">
+                {% if post.community.image and post.community.image.startswith('http') %}
+                <img src="{{ post.community.image }}" alt="">
+                {% elif post.community.image and post.community.image != 'community_default.png' %}
+                <img src="{{ url_for('uploaded_file', filename=post.community.image) }}" alt="">
+                {% else %}
+                <div class="post-avatar-placeholder">{{ post.community.name[0].upper() }}</div>
+                {% endif %}
+            </a>
+            <div class="post-author-group">
+                <a href="{{ url_for('community', slug=post.community.slug) }}" class="post-author">{{ post.community.name }}</a>
+                <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author-sub text-xs text-slate-500 hover:underline">{{ post.author.username }}</a>
+            </div>
+            {% else %}
             <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-avatar">
                 {% set avatar_url = get_avatar_url(post.author) %}
                 {% if avatar_url %}
@@ -75,6 +90,7 @@
                 {% endif %}
             </a>
             <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author">{{ post.author.username }}</a>
+            {% endif %}
             <span class="post-time">{{ post.created_at.strftime('%H:%M') }}</span>
             <button class="post-more">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
