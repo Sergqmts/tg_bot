@@ -2237,7 +2237,7 @@ def create_shorts():
             ext = video.filename.rsplit('.', 1)[-1].lower() if '.' in video.filename else 'mp4'
             filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.{ext}'
             video.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            video_url = f'/uploads/{filename}'
+            video_url = url_for('uploaded_file', filename=filename)
             
             shorts = Shorts(
                 video_url=video_url,
@@ -2320,7 +2320,7 @@ def upload_shorts_audio():
         if audio:
             filename = f'saudio_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp3'
             audio.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            audio_url = f'/uploads/{filename}'
+            audio_url = url_for('uploaded_file', filename=filename)
             
             shorts_audio = ShortsAudio(
                 title=title,
