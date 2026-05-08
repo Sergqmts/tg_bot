@@ -1902,6 +1902,12 @@ def delete(post_id):
         from sqlalchemy import text
         db.session.execute(text("UPDATE message SET post_id = NULL WHERE post_id = :post_id"), {'post_id': post_id})
         db.session.execute(text("DELETE FROM repost WHERE post_id = :post_id"), {'post_id': post_id})
+        db.session.execute(text("DELETE FROM post_tag WHERE post_id = :post_id"), {'post_id': post_id})
+        db.session.execute(text("DELETE FROM notification WHERE post_id = :post_id"), {'post_id': post_id})
+        db.session.execute(text("DELETE FROM saved_post WHERE post_id = :post_id"), {'post_id': post_id})
+        db.session.execute(text("DELETE FROM comment_media WHERE post_id = :post_id"), {'post_id': post_id})
+        db.session.execute(text("DELETE FROM comment_reaction WHERE comment_id IN (SELECT id FROM comment WHERE post_id = :post_id)"), {'post_id': post_id})
+        db.session.execute(text("UPDATE notification SET comment_id = NULL WHERE comment_id IN (SELECT id FROM comment WHERE post_id = :post_id)"), {'post_id': post_id})
         db.session.execute(text("UPDATE comment SET reply_to_id = NULL WHERE reply_to_id IN (SELECT id FROM comment WHERE post_id = :post_id)"), {'post_id': post_id})
     except: pass
     
