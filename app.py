@@ -106,6 +106,8 @@ if cloudinary_configured:
         secure=True
     )
 
+FREESOUND_API_KEY = os.environ.get('FREESOUND_API_KEY', '')
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
@@ -2332,6 +2334,69 @@ def upload_shorts_audio():
             return redirect(url_for('create_shorts'))
     
     return render_template('upload_shorts_audio.html')
+
+
+@app.route('/shorts/audio/search_freesound')
+@login_required
+def search_freesound():
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify({'results': []})
+    
+    import urllib.request
+    import urllib.parse
+    import json
+    
+    try:
+        url = f'https://freesound.org/apiv2/search/text/?query={urllib.parse.quote(query)}&token={FREESOUND_API_KEY}&page=1&page_size=12&fields=id,name,previews,duration,username,tags,description'
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        
+        results = []
+        for s in data.get('results', []):
+            previews = s.get('previews', {})
+            preview_url = previews.get('preview-hq-mp3') or previews.get('preview-lq-mp3')
+            if preview_url:
+                results.append({
+                    'id': s['id'],
+                    'name': s['name'],
+                    'username': s.get('username', ''),
+                    'duration': s.get('duration', 0),
+                    'preview_url': preview_url,
+                    'tags': s.get('tags', [])[:5],
+                    'description': s.get('description', '')[:200]
+                })
+        return jsonify({'results': results})
+    except Exception as e:
+        app.logger.error(f"FreeSound search error: {e}")
+        return jsonify({'error': str(e), 'results': []}), 500
+
+
+@app.route('/shorts/audio/add_freesound', methods=['POST'])
+@login_required
+def add_freesound_audio():
+    name = request.form.get('name', '').strip()
+    preview_url = request.form.get('preview_url', '').strip()
+    duration = request.form.get('duration', 0, type=int)
+    
+    if not name or not preview_url:
+        return jsonify({'error': 'Missing fields'}), 400
+    
+    existing = ShortsAudio.query.filter_by(audio_url=preview_url).first()
+    if existing:
+        return jsonify({'id': existing.id, 'title': existing.title, 'message': 'Уже добавлено'})
+    
+    audio = ShortsAudio(
+        title=name,
+        audio_url=preview_url,
+        duration=duration,
+        user_id=current_user.id
+    )
+    db.session.add(audio)
+    db.session.commit()
+    
+    return jsonify({'id': audio.id, 'title': audio.title, 'message': 'Добавлено!'})
 
 
 @app.route('/photos')
