@@ -1,53 +1,28 @@
 # Social Network
 
-Полноценная социальная сеть на Python с использованием Flask. Развёрнута на Railway: https://tgbot-production-c350.up.railway.app
+Социальная сеть на Flask + PostgreSQL + Tailwind CSS.
+Развёрнута на Railway: https://tgbot-production-c350.up.railway.app
 
-## 🚀 Быстрый старт
+**Ветка**: `main` (prod). Активная разработка: `feature/video-messages`
 
-### Локальная разработка
+## Основные фичи
+- Посты с медиа, лайки, комментарии, репосты
+- Личные и групповые чаты с голосовыми и видеосообщениями ("кружочки")
+- Сообщества (открытые/закрытые)
+- Shorts (вертикальные видео)
+- Stories (24h)
+- Уведомления (polling раз в 10с)
+- Профили, подписки, блокировка, приватность
 
+## Быстрый старт
 ```bash
-git clone https://github.com/Sergqmts/tg_bot.git
-cd tg_bot
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
+python app.py  # dev :5000
 ```
+Локально SQLite, продакшн PostgreSQL.
 
-### Деплой на Railway
+## Переменные окружения
+`SECRET_KEY`, `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
 
-1. [railway.app](https://railway.app) → Login через GitHub
-2. New Project → Deploy from GitHub repo
-3. Add PostgreSQL → Скопировать DATABASE_URL
-4. Variables: `DATABASE_URL`, `SECRET_KEY` (мин. 30 символов)
-5. Автоматический деплой
-
-## 📁 Структура
-
-```
-app.py              # Приложение, модели, маршруты
-requirements.txt   # Зависимости
-Procfile           # Railway
-static/uploads/   # Медиафайлы
-templates/          # HTML шаблоны
-```
-
-## ✅ Функции
-
-- Регистрация/вход
-- Посты с фото/видео
-- Лайки, комментарии (с раскрытием)
-- Личные сообщения
-- Сообщества
-- Профили пользователей
-- Подписки
-- Выпадающее меню навигации
-
-## ⚠️ Ограничения
-
-- Файлы стираются при деплое (нужен Cloudinary)
-
-## 📄 Подробнее
-
-См. [PROJECT.md](PROJECT.md)
+## Документация
+- [PROJECT.md](PROJECT.md) — полное описание
+- [MEMORY.md](MEMORY.md) — контекст для новой сессии

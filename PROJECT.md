@@ -2,244 +2,170 @@
 
 ## Описание
 Полноценная социальная сеть на Python с использованием Flask. Развёрнута на Railway.
+Ссылка: https://tgbot-production-c350.up.railway.app
 
 ## 🚀 Быстрый старт
 
 ### Локальная разработка
-
 ```bash
-# 1. Клонировать репозиторий
 git clone https://github.com/Sergqmts/tg_bot.git
 cd tg_bot
-
-# 2. Создать виртуальное окружение
 python -m venv .venv
 source .venv/bin/activate
-
-# 3. Установить зависимости
-pip install -r requirements.txt
-
-# 4. Запустить
+pip install -r requirements.txt  # создать если нет: pip freeze > requirements.txt
 python app.py
 ```
-
 Откройте http://127.0.0.1:5000
 
 ### Деплой на Railway
-
-1. Зайдите на [railway.app](https://railway.app)
-2. Login через GitHub
-3. New Project → Deploy from GitHub repo
-4. Добавьте PostgreSQL (New → Database → PostgreSQL)
-5. В Variables добавьте:
-   - `DATABASE_URL` = Connection string из PostgreSQL
-   - `SECRET_KEY` = любая случайная строка (мин. 30 символов)
-   - `CLOUDINARY_CLOUD_NAME` = ваш cloud name
-   - `CLOUDINARY_API_KEY` = ваш API key
-   - `CLOUDINARY_API_SECRET` = ваш API secret
-6. Deploy происходит автоматически
+1. [railway.app](https://railway.app) → Login через GitHub
+2. New Project → Deploy from GitHub repo
+3. Add PostgreSQL
+4. Variables: `DATABASE_URL`, `SECRET_KEY` (мин. 30 символов), `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+5. Auto-deploy
 
 ## 📁 Структура проекта
-
 ```
 tg_bot/
-├── app.py              # Основное приложение
-├── requirements.txt   # Зависимости Python
-├── Procfile           # Для Railway
-├── PROJECT.md         # Документация
-├── vercel.json        # Конфигурация Vercel
-├── migrations/        # Миграции Alembic
+├── app.py              # Всё приложение: routes, models, config (~4200 строк)
+├── Procfile            # gunicorn app:app
+├── README.md           # Краткое описание
+├── PROJECT.md          # Полная документация
+├── MEMORY.md           # Контекст для новой сессии
 ├── static/
-│   ├── style.css     # Стили (адаптивная верстка)
-│   └── uploads/      # Загруженные медиафайлы
+│   ├── style.css       # Все стили (2150+ строк)
+│   └── uploads/        # Локальные медиа (fallback без Cloudinary)
 └── templates/
-    ├── base.html           # Базовый шаблон
+    ├── base.html           # Хедер, навигация, аудиоплеер, Socket.IO
     ├── index.html          # Лента постов
     ├── login.html          # Вход
     ├── register.html       # Регистрация
-    ├── profile.html        # Профиль пользователя
+    ├── profile.html        # Профиль (посты, shorts, выход)
     ├── edit_profile.html   # Редактирование профиля
     ├── create.html         # Создание поста
-    ├── explore.html        # Поиск пользователей
-    ├── messages.html       # Список диалогов
-    ├── conversation.html   # Личный чат
-    ├── chat.html           # Групповой чат
-    ├── chat_members.html  # Участники чата
-    ├── chat_edit.html     # Редактирование чата
-    ├── chat_add_member.html # Добавление участника
+    ├── post.html           # Просмотр поста + комментарии
+    ├── explore.html        # Поиск людей/тегов/сообществ
+    ├── messages.html       # Список диалогов и групп
+    ├── conversation.html   # Личный чат (голосовые + видеосообщения)
+    ├── chat.html           # Групповой чат (голосовые + видеосообщения)
+    ├── notifications.html  # Уведомления
     ├── communities.html    # Список сообществ
     ├── community.html      # Страница сообщества
-    ├── create_community.html # Создание сообщества
     ├── community_members.html # Участники сообщества
-    └── forward_post.html   # Пересылка поста
+    ├── community_post.html # Создание поста в сообществе
+    ├── create_community.html # Создание сообщества
+    ├── shorts.html         # Shorts лента
+    ├── create_shorts.html  # Создание shorts + FreeSound поиск
+    └── ... (чаты, stories, video editor и др.)
 ```
 
-## 🗄️ База данных
+## 🗄️ База данных (SQLAlchemy + PostgreSQL/SQLite)
 
-### Модели (SQLAlchemy ORM)
-
-| Модель | Поля |
-|--------|------|
-| **User** | id, username, email, password_hash, bio, avatar, created_at, is_private, hide_followers, hide_following, approve_followers |
+### Модели
+| Модель | Ключевые поля |
+|--------|---------------|
+| **User** | id, username, email, password_hash, bio, avatar, avatar_cloudinary_url, is_private, hide_followers, approve_followers, last_seen |
 | **Post** | id, body, created_at, user_id, community_id, is_community_post |
-| **Media** | id, filename, cloudinary_url, media_type (image/video), post_id |
-| **Like** | id, user_id, post_id, created_at |
-| **Comment** | id, body, created_at, user_id, post_id |
-| **Repost** | id, user_id, post_id, created_at |
-| **Message** | id, body, created_at, read, sender_id, recipient_id, post_id, chat_id |
-| **MessageMedia** | id, message_id, media_url, media_type |
-| **Chat** | id, name, created_at, creator_id, avatar |
-| **ChatMember** | id, chat_id, user_id, role, joined_at |
+| **Media** | id, filename, cloudinary_url, media_type (image/video/audio), post_id |
+| **Comment** | id, body, created_at, user_id, post_id, reply_to_id |
+| **Message** | id, body, created_at, read, sender_id, recipient_id, post_id, chat_id, transcription |
+| **MessageMedia** | id, message_id, media_url, media_type (image/video/audio/voice/document/video_message) |
+| **Chat** | id, name, type (direct/group), avatar, background |
+| **Notification** | id, user_id, sender_id, type (like/comment/reply/follow/message/new_story), read |
 | **Community** | id, name, slug, description, image, creator_id, is_private |
-| **CommunityMember** | id, user_id, community_id, role, status, created_at |
+| **Shorts** | id, video_url, caption, views, user_id, audio_id |
+| **Story** | id, media_url, media_type, expires_at, user_id |
 
-### Связи
-- User → Post ← Community
-- Post → Media, Like, Comment, Repost
-- User ↔ User (followers с status: pending/approved)
-- User ↔ Community (via CommunityMember)
-- Message: User ↔ User (личные), Chat ↔ Message (групповые)
-- Chat ↔ ChatMember ↔ User
-
-## 🛣️ Маршруты (Routes)
+## 🛣️ Основные маршруты
 
 ### Аутентификация
-| URL | Метод | Описание |
-|-----|-------|----------|
+| URL | Методы | Описание |
+|-----|--------|----------|
 | `/register` | GET/POST | Регистрация |
 | `/login` | GET/POST | Вход |
 | `/logout` | GET | Выход |
 
 ### Посты
-| URL | Метод | Описание |
-|-----|-------|----------|
-| `/` | GET | Лента (только подписки) |
-| `/create` | GET/POST | Создание поста |
+| URL | Методы | Описание |
+|-----|--------|----------|
+| `/` | GET | Лента |
+| `/create` | GET | Форма создания |
+| `/create_post` | POST | Создать пост (ручной CSRF) |
 | `/post/<id>` | GET | Просмотр поста |
-| `/post/<id>/like` | POST | Лайк/убрать лайк |
+| `/post/<id>/like` | GET/POST | Лайк (AJAX+JSON) |
 | `/post/<id>/comment` | POST | Комментарий |
-| `/post/<id>/repost` | POST | Репост |
-| `/post/<id>/forward` | GET/POST | Переслать (личный/групповой/профиль) |
 | `/delete/<id>` | POST | Удалить пост |
 
-### Пользователи
-| URL | Метод | Описание |
-|-----|-------|----------|
-| `/user/<username>` | GET | Профиль |
-| `/edit_profile` | GET/POST | Редактирование |
-| `/explore` | GET | Поиск пользователей |
-| `/follow/<username>` | POST | Подписаться |
-| `/unfollow/<username>` | POST | Отписаться |
-| `/block/<username>` | POST | Заблокировать |
-| `/unblock/<username>` | POST | Разблокировать |
-| `/followers/requests` | GET | Заявки на подписку |
-| `/followers/approve/<username>` | POST | Одобрить |
-| `/followers/reject/<username>` | POST | Отклонить |
-
 ### Сообщения
-| URL | Метод | Описание |
-|-----|-------|----------|
-| `/messages` | GET | Список диалогов и групп |
+| URL | Методы | Описание |
+|-----|--------|----------|
+| `/messages` | GET | Список диалогов |
 | `/messages/<username>` | GET/POST | Личный чат |
-| `/message/<id>/forward` | GET/POST | Переслать сообщение |
-| `/message/<id>/delete` | POST | Удалить сообщение |
-| `/chat/create` | GET/POST | Создать групповой чат |
+| `/messages/<username>/voice` | POST | Голосовое (CSRF exempt) |
+| `/messages/<username>/video-message` | POST | Видеосообщение |
 | `/chat/<id>` | GET/POST | Групповой чат |
-| `/chat/<id>/members` | GET | Участники чата |
-| `/chat/<id>/add_member` | GET/POST | Добавить участника |
-| `/chat/<id>/remove_member/<user_id>` | POST | Удалить участника |
-| `/chat/<id>/make_admin/<user_id>` | POST | Назначить админа |
-| `/chat/<id>/edit` | GET/POST | Редактировать чат |
-| `/chat/<id>/leave` | POST | Покинуть чат |
+| `/chat/<id>/voice` | POST | Голосовое в группу |
+| `/chat/<id>/video-message` | POST | Видеосообщение в группу |
+
+### Уведомления
+| URL | Методы | Описание |
+|-----|--------|----------|
+| `/notifications` | GET | Список уведомлений |
+| `/notifications/read/<id>` | POST | Отметить прочитанным |
+| `/notifications/read_all` | POST | Все прочитаны |
+| `/api/unread-count` | GET | JSON {count} (для polling) |
+
+### Видеосообщения ("кружочки")
+- Запись: MediaRecorder + front camera (`facingMode: user`), 60s max
+- Хранение: Cloudinary (папка `video_messages`) или локально
+- Отображение: `<video> 140×140, rounded-full, object-cover`
+- Автовоспроизведение: IntersectionObserver (muted)
+- Тап: fullscreen с аудио
+- CSRF: включён (не exempt, в отличие от voice)
 
 ### Сообщества
-| URL | Метод | Описание |
-|-----|-------|----------|
-| `/communities` | GET | Список сообществ |
-| `/communities/create` | GET/POST | Создать сообщество |
-| `/community/<slug>` | GET | Страница сообщества |
-| `/community/<slug>/join` | POST | Вступить |
-| `/community/<slug>/leave` | POST | Покинуть |
-| `/community/<slug>/post` | GET/POST | Написать в сообщество |
+| URL | Методы | Описание |
+|-----|--------|----------|
+| `/communities` | GET | Список |
+| `/communities/create` | GET/POST | Создать |
+| `/community/<slug>` | GET | Страница |
+| `/community/<slug>/post` | GET/POST | Написать пост |
 | `/community/<slug>/members` | GET | Участники |
-| `/community/<slug>/delete` | POST | Удалить сообщество |
 
-### Медиа
-| URL | Метод | Описание |
-|-----|-------|----------|
-| `/photos` | GET | Мои фото |
-| `/uploads/<filename>` | GET | Скачать медиафайл |
-
-## 🧩 Реализованные функции
-
-### Приватность профиля
-- Закрытый профиль (`is_private`) — посты видят только подписчики
-- Скрыть подписчиков (`hide_followers`)
-- Скрыть подписки (`hide_following`)
-- Одобрение подписчиков (`approve_followers`)
-
-### Блокировка
-- Блокировка пользователей
-- Скрытие постов заблокированных из ленты
-- Запрет отправки сообщений заблокированным
-
-### Групповые чаты
-- Создание чата с выбором участников
-- Отправка текстовых сообщений
-- Отправка фото/видео (загружаются в Cloudinary)
-- Репост постов из ленты в чат
-- Управление участниками (добавить/удалить/назначить админа)
-- Редактирование названия и аватара чата
-- Выход из чата
-
-### Адаптивная верстка
-- Desktop (>768px): полная версия
-- Tablet (768px): упрощенная сетка
-- Mobile (480px): 2 колонки постов
-- Адаптивные чаты с клавиатурой
-
-### Сообщества
-- Открытые и закрытые сообщества
-- Заявки в закрытые сообщества
-- Посты от имени сообщества
-- Управление участниками
-
-### Пересылка сообщений
-- Пересылка сообщений в личные чаты
-- Пересылка сообщений в групповые чаты
-- Пересылка постов из ленты в чаты
-
-### Удаление сообщений
-- Удаление сообщения для себя (оставляет "[удалено]")
-- Удаление сообщения для всех (полное удаление)
-- Отображение удалённых сообщений
+## 🧩 Ключевые фичи
+- **Аудиоплеер**: кастомный с градиентом, прогресс-баром, pulse-анимацией (Apple Music-style)
+- **AJAX лайки**: без перезагрузки страницы, через fetch + JSON
+- **CSRF**: все POST формы (кроме voice) требуют токен; `<meta name="csrf-token">` для AJAX
+- **Cloudinary**: медиа посты, аватары, stories, голосовые, видео, shorts — всё в Cloudinary
+- **Whisper**: транскрипция голосовых сообщений (faster-whisper, base model, CPU)
+- **FreeSound API**: поиск аудио для shorts
+- **Shorts**: вертикальные видео, лайки, комментарии, реакции
+- **Stories**: 24h истории с фото/видео
+- **Приватность**: закрытые профили, одобрение подписчиков, блокировка
+- **Групповые чаты**: создание, управление участниками, админы
 
 ## 🧰 Технологии
-
-- Flask 3.x
-- Flask-Login (аутентификация)
-- Flask-SQLAlchemy (ORM)
-- Flask-WTF (формы)
+- Flask 3.x, Flask-Login, Flask-SQLAlchemy, Flask-WTF, Flask-SocketIO
 - PostgreSQL (Railway) / SQLite (локально)
-- Cloudinary (хранение медиа)
-- Gunicorn (deploy)
+- Cloudinary (CDN медиа)
+- Gunicorn (production)
+- Tailwind CSS (CDN)
+- faster-whisper (голос → текст)
+- Socket.IO (presence, отключен в production из-за sync workers)
 
-## 🚀 Переменные окружения для Railway
-
+## 🚀 Переменные окружения (Railway)
 ```
 DATABASE_URL=postgresql://...
-SECRET_KEY=your_secret_key
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+SECRET_KEY=<random 30+ chars>
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+PORT=8080
 ```
 
-## 📝 TODO
-
-- [x] Система уведомлений
-- [x] Время "был в сети"
-- [x] Онлайн статус
-
-## 📄 Лицензия
-
-MIT
+## ⚠️ Известные проблемы
+1. Socket.IO не работает с gunicorn sync workers — для реального времени нужен eventlet
+2. Нет requirements.txt — Railway автоопределяет, но при новых зависимостях создать вручную
+3. `Message.body NOT NULL` в PostgreSQL — всегда передавать `body=''`
+4. Whisper медленный на CPU (free Railway)
+5. Нет лимита размера файлов — большие аплоады могут вызвать 502
