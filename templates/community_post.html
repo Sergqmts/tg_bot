@@ -8,8 +8,8 @@
             <span>Запись в <strong>{{ community.name }}</strong></span>
         </div>
         
-        <form method="POST" enctype="multipart/form-data" id="postForm"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <form method="POST" enctype="multipart/form-data" id="postForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <textarea name="body" class="form-input create-textarea" placeholder="Что нового в сообществе?"></textarea>
             </div>
@@ -100,17 +100,8 @@
             input.files = dt.files;
         }
         
-        document.getElementById('postForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData
-            }).then(() => {
-                window.location.href = '{{ url_for("community", slug=community.slug) }}';
-            });
+        document.getElementById('postForm').addEventListener('submit', function() {
+            document.querySelector('#postForm button[type=submit]').disabled = true;
         });
     </script>
 </div>
