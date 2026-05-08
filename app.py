@@ -2778,10 +2778,18 @@ def send_voice(username):
         os.unlink(temp_path)
         temp_path = None
         
-        filename = secure_filename(f"voice_{datetime.now().timestamp()}.webm")
         voice_file.seek(0)
-        voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        media_url = '/media/' + filename
+        if cloudinary_configured:
+            result = cloudinary.uploader.upload(
+                voice_file, folder='voice', resource_type='video',
+                timeout=30
+            )
+            media_url = result['secure_url']
+        else:
+            filename = secure_filename(f"voice_{int(datetime.now().timestamp())}.webm")
+            voice_file.seek(0)
+            voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            media_url = '/media/' + filename
         
         msg = Message(body=transcription if transcription else '', sender=current_user, recipient=other_user, transcription=transcription)
         db.session.add(msg)
@@ -2819,9 +2827,16 @@ def send_video_message(username):
         return {'error': 'Invalid format'}, 400
 
     try:
-        filename = secure_filename(f"vm_{int(datetime.now().timestamp())}_{current_user.id}.{ext}")
-        video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        media_url = '/media/' + filename
+        if cloudinary_configured:
+            result = cloudinary.uploader.upload(
+                video_file, folder='video_messages', resource_type='video',
+                timeout=30
+            )
+            media_url = result['secure_url']
+        else:
+            filename = secure_filename(f"vm_{int(datetime.now().timestamp())}_{current_user.id}.{ext}")
+            video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            media_url = '/media/' + filename
 
         msg = Message(sender=current_user, recipient=other_user, body='')
         db.session.add(msg)
@@ -2975,10 +2990,18 @@ def send_chat_voice(chat_id):
         os.unlink(temp_path)
         temp_path = None
         
-        filename = secure_filename(f"voice_{datetime.now().timestamp()}.webm")
         voice_file.seek(0)
-        voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        media_url = '/media/' + filename
+        if cloudinary_configured:
+            result = cloudinary.uploader.upload(
+                voice_file, folder='voice', resource_type='video',
+                timeout=30
+            )
+            media_url = result['secure_url']
+        else:
+            filename = secure_filename(f"voice_{int(datetime.now().timestamp())}.webm")
+            voice_file.seek(0)
+            voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            media_url = '/media/' + filename
         
         msg = Message(body=transcription if transcription else '', sender=current_user, chat_id=chat_id, transcription=transcription)
         db.session.add(msg)
@@ -3017,9 +3040,16 @@ def send_chat_video_message(chat_id):
         return {'error': 'Invalid format'}, 400
 
     try:
-        filename = secure_filename(f"vm_{int(datetime.now().timestamp())}_{current_user.id}.{ext}")
-        video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        media_url = '/media/' + filename
+        if cloudinary_configured:
+            result = cloudinary.uploader.upload(
+                video_file, folder='video_messages', resource_type='video',
+                timeout=30
+            )
+            media_url = result['secure_url']
+        else:
+            filename = secure_filename(f"vm_{int(datetime.now().timestamp())}_{current_user.id}.{ext}")
+            video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            media_url = '/media/' + filename
 
         msg = Message(sender=current_user, chat_id=chat_id, body='')
         db.session.add(msg)
