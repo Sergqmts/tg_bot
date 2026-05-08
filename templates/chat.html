@@ -158,17 +158,20 @@
                 </div>
             </div>
 
-            <div class="video-recording hidden" id="videoRecording">
-                <div class="recording-indicator flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2">
-                    <span class="recording-dot w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                    <span class="recording-time text-sm font-medium" id="videoRecordingTime">0:00</span>
-                    <div class="video-preview-wrap w-10 h-10 rounded-full overflow-hidden bg-black ml-2 flex-shrink-0">
-                        <video id="videoPreview" class="w-full h-full object-cover" muted playsinline></video>
+            <div class="video-recording hidden" id="videoRecording" style="display: none; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0;">
+                <div class="w-[140px] h-[140px] rounded-full overflow-hidden bg-black relative flex-shrink-0 shadow-lg border-2 border-white dark:border-slate-700">
+                    <video id="videoPreview" class="w-full h-full object-cover" muted playsinline></video>
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
                     </div>
                 </div>
-                <div class="recording-controls flex gap-2 mt-2">
-                    <button type="button" class="cancel-record px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-sm" onclick="cancelVideoRecording()">✕</button>
-                    <button type="button" class="send-record px-3 py-1.5 rounded-lg bg-brand-middle text-white text-sm" onclick="sendChatVideoRecording()">➤</button>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium" id="videoRecordingTime">0:00</span>
+                    <span class="text-xs text-slate-400">/ 1:00</span>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-sm font-medium" onclick="cancelVideoRecording()">✕ Отмена</button>
+                    <button type="button" class="px-4 py-2 rounded-xl bg-brand-middle text-white text-sm font-medium" onclick="sendChatVideoRecording()">➤ Отправить</button>
                 </div>
             </div>
             
