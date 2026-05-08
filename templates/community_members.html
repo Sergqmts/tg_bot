@@ -1,30 +1,51 @@
 {% extends "base.html" %}
 {% block title %}{{ community.name }} - Участники{% endblock %}
 {% block content %}
-    <div class="card" style="margin-bottom: 20px;">
-        <a href="{{ url_for('community', slug=community.slug) }}" class="btn btn-secondary" style="margin-bottom: 15px;">← Назад</a>
-        <h2 style="margin-bottom: 5px;">{{ community.name }}</h2>
-        <p style="color: #65676b;">{{ members|length }} участников</p>
+<div class="max-w-2xl mx-auto px-4 pt-24 pb-24 lg:pt-28">
+    <div class="flex items-center gap-4 mb-8">
+        <a href="{{ url_for('community', slug=community.slug) }}" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0">
+            <svg class="w-4 h-4 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <div>
+            <h1 class="text-xl font-extrabold">{{ community.name }}</h1>
+            <p class="text-sm text-slate-500">{{ members|length }} {{ 'участник' if members|length == 1 else 'участника' if members|length < 5 else 'участников' }}</p>
+        </div>
     </div>
-    
-    <div class="card" style="padding: 0;">
+
+    <div class="space-y-3">
         {% for member in members %}
-            <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee;">
-                <div class="avatar" style="margin-right: 10px;">
-                    {% set avatar_url = get_avatar_url(member.user) %}{% if avatar_url %}
-                        <img src="{{ avatar_url }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+        <div class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all">
+            <a href="{{ url_for('user_profile', username=member.user.username) }}" class="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-sm font-bold">
+                {% set avatar_url = get_avatar_url(member.user) %}{% if avatar_url %}
+                <img src="{{ avatar_url }}" class="w-full h-full object-cover">
+                {% else %}
+                {{ member.user.username[0].upper() }}
+                {% endif %}
+            </a>
+            <div class="flex-1 min-w-0">
+                <a href="{{ url_for('user_profile', username=member.user.username) }}" class="font-bold text-sm hover:underline block truncate">{{ member.user.username }}</a>
+                <div class="flex items-center gap-2 mt-0.5">
+                    {% if member.role == 'creator' %}
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-brand-start to-brand-middle text-white">Создатель</span>
+                    {% elif member.role == 'admin' %}
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">Админ</span>
                     {% else %}
-                        {{ member.user.username[0].upper() }}
+                    <span class="text-[11px] text-slate-400">Участник</span>
                     {% endif %}
+                    <span class="text-[11px] text-slate-400">·</span>
+                    <span class="text-[11px] text-slate-400">{{ member.created_at.strftime('%d.%m.%Y') }}</span>
                 </div>
-                <div style="flex: 1;">
-                    <a href="{{ url_for('user_profile', username=member.user.username) }}" class="username">{{ member.user.username }}</a>
-                    <div style="color: #65676b; font-size: 0.85em;">
-                        {% if member.role == 'creator' %}Создатель{% elif member.role == 'admin' %}Админ{% else %}Участник{% endif %}
-                    </div>
-                </div>
-                <span style="color: #65676b; font-size: 0.85em;">{{ member.created_at.strftime('%d.%m.%Y') }}</span>
             </div>
+            {% if current_user.is_authenticated and member.user != current_user and member.role != 'creator' %}
+            <form method="POST" action="{{ url_for('follow' if not current_user.is_following(member.user) else 'unfollow', username=member.user.username) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-xl border border-brand-middle text-brand-middle hover:bg-brand-middle hover:text-white transition-all whitespace-nowrap">
+                    {{ 'Подписаться' if not current_user.is_following(member.user) else 'Отписаться' }}
+                </button>
+            </form>
+            {% endif %}
+        </div>
         {% endfor %}
     </div>
+</div>
 {% endblock %}
