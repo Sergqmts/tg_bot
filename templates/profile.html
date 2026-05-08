@@ -120,6 +120,7 @@
             </div>
             {% if post.author == current_user %}
             <form method="POST" action="{{ url_for('delete', post_id=post.id) }}" onsubmit="event.preventDefault(); confirm('Удалить?') && this.submit()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="delete-btn">×</button>
             </form>
             {% endif %}
