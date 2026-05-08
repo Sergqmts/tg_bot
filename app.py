@@ -2577,7 +2577,7 @@ def messages():
     group_chats = []
     for member in user_chats:
         chat = Chat.query.get(member.chat_id)
-        if chat:
+        if chat and chat.type == 'group':
             last_msg = chat.messages.order_by(Message.created_at.desc()).first()
             unread_count = Message.query.filter_by(chat_id=chat.id).filter(Message.sender_id != current_user.id, Message.read == False).count()
             group_chats.append({
@@ -2588,6 +2588,9 @@ def messages():
             })
     
     conversations = sorted(conversations.values(), key=lambda x: x['last'].created_at if x.get('last') else datetime.min, reverse=True)
+    
+    # Filter out conversations with deleted users
+    conversations = [c for c in conversations if c.get('user')]
     
     # Добавить себя в список диалогов
     self_messages = Message.query.filter(
