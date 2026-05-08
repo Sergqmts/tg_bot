@@ -8,6 +8,7 @@
         <h2>Уведомления</h2>
         {% if unread_count > 0 %}
         <form method="POST" action="{{ url_for('mark_all_read') }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn-link">Отметить все как прочитанные</button>
         </form>
         {% endif %}
@@ -54,6 +55,7 @@
                 </div>
                 {% if not notif.read %}
                 <form method="POST" action="{{ url_for('mark_notification_read', notification_id=notif.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn-icon" title="Отметить как прочитанное">✓</button>
                 </form>
                 {% endif %}
