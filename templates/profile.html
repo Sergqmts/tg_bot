@@ -142,6 +142,7 @@
             </div>
             {% if s.user_id == current_user.id %}
             <form method="POST" action="{{ url_for('delete_shorts', shorts_id=s.id) }}" onsubmit="event.preventDefault(); confirm('Удалить шортс?') && this.submit()">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="delete-btn">×</button>
             </form>
             {% endif %}
