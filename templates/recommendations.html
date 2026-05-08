@@ -19,13 +19,13 @@
                         {% for user in recommended_users %}
                             <div class="card" style="min-width: 180px; width: 180px; text-align: center; padding: 15px;">
                                 <div class="avatar" style="width: 60px; height: 60px; margin: 0 auto 10px;">
-                                    {% if user.avatar %}
-                                        {% if user.avatar.endswith('.gif') %}
+                                    {% set avatar_url = get_avatar_url(user) %}{% if avatar_url %}
+                                        {% if user.avatar_cloudinary_url or (not user.avatar.endswith(('.mp4', '.webm', '.gif'))) %}
+                                            <img src="{{ avatar_url }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                        {% elif user.avatar.endswith('.gif') %}
                                             <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                        {% elif user.avatar.endswith(('.mp4', '.webm')) %}
-                                            <video src="{{ url_for('uploaded_file', filename=user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" autoplay loop muted></video>
                                         {% else %}
-                                            <img src="{{ url_for('uploaded_file', filename=user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                            <video src="{{ url_for('uploaded_file', filename=user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" autoplay loop muted></video>
                                         {% endif %}
                                     {% else %}
                                         {{ user.username[0].upper() }}
@@ -89,13 +89,13 @@
                     <div class="card">
                         <div class="user-row" style="margin-bottom: 10px;">
                             <div class="avatar" style="width: 40px; height: 40px; font-size: 1em; margin-right: 10px;">
-                                {% if post.user.avatar %}
-                                    {% if post.user.avatar.endswith('.gif') %}
+                                {% set avatar_url = get_avatar_url(post.user) %}{% if avatar_url %}
+                                    {% if post.user.avatar_cloudinary_url or (not post.user.avatar.endswith(('.mp4', '.webm', '.gif'))) %}
+                                        <img src="{{ avatar_url }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                    {% elif post.user.avatar.endswith('.gif') %}
                                         <img src="{{ url_for('uploaded_file', filename=post.user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                    {% elif post.user.avatar.endswith(('.mp4', '.webm')) %}
-                                        <video src="{{ url_for('uploaded_file', filename=post.user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" autoplay loop muted></video>
                                     {% else %}
-                                        <img src="{{ url_for('uploaded_file', filename=post.user.avatar) }}" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                        <video src="{{ url_for('uploaded_file', filename=post.user.avatar) }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" autoplay loop muted></video>
                                     {% endif %}
                                 {% else %}
                                     {{ post.user.username[0].upper() }}

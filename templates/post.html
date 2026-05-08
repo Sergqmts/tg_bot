@@ -10,7 +10,7 @@
         <div class="post-header">
             <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-avatar">
                 {% set avatar_url = get_avatar_url(post.author) %}{% if avatar_url %}
-                <img src="{{ url_for('uploaded_file', filename=post.author.avatar) }}" alt="">
+                <img src="{{ avatar_url }}" alt="">
                 {% else %}
                 <div class="post-avatar-placeholder">{{ post.author.username[0].upper() }}</div>
                 {% endif %}
@@ -130,7 +130,7 @@
         <div class="comment-item">
             <a href="{{ url_for('user_profile', username=comment.author.username) }}" class="comment-avatar">
                 {% set avatar_url = get_avatar_url(comment.author) %}{% if avatar_url %}
-                <img src="{{ url_for('uploaded_file', filename=comment.author.avatar) }}" alt="">
+                <img src="{{ avatar_url }}" alt="">
                 {% else %}
                 <div class="comment-avatar-placeholder">{{ comment.author.username[0].upper() }}</div>
                 {% endif %}
