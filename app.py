@@ -254,6 +254,7 @@ def upload_to_cloudinary(file, folder='social'):
             file,
             folder=folder,
             resource_type='auto',
+            timeout=30,
             transformation=[{'quality': 'auto', 'fetch_format': 'auto'}]
         )
         return result['secure_url']
