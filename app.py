@@ -2226,7 +2226,7 @@ def user_profile(username):
         user_reposts = []
         can_view = False
     elif user.is_private and user != current_user:
-        can_view = current_user.is_authenticated and current_user.is_following(user)
+        can_view = current_user.is_authenticated and (current_user.is_following(user) or current_user.is_staff)
         if can_view:
             posts = user.posts.order_by(Post.created_at.desc()).all()
             user_reposts = Repost.query.filter_by(user_id=user.id).order_by(Repost.created_at.desc()).all()
@@ -3964,6 +3964,14 @@ def community(slug):
     is_member = current_user.is_authenticated and current_user.is_member(comm)
     is_admin = current_user.is_authenticated and current_user.is_admin(comm)
     is_pending = current_user.is_authenticated and current_user.is_pending(comm)
+    is_staff_view = current_user.is_authenticated and current_user.is_staff
+    
+    if comm.is_private and not is_member and not is_staff_view:
+        if current_user.is_authenticated:
+            flash('Это приватное сообщество')
+            return redirect(url_for('communities'))
+        return redirect(url_for('login'))
+    
     posts = comm.posts.order_by(Post.created_at.desc()).all()
     
     show_edit = request.args.get('edit') == '1' and is_admin
@@ -3988,7 +3996,7 @@ def community(slug):
             flash('Сообщество обновлено')
             return redirect(url_for('community', slug=comm.slug))
     
-    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin, is_pending=is_pending, show_edit=show_edit)
+    return render_template('community.html', community=comm, posts=posts, is_member=is_member, is_admin=is_admin, is_pending=is_pending, show_edit=show_edit, is_staff_view=is_staff_view)
 
 
 @app.route('/community/<slug>/join', methods=['POST'])
