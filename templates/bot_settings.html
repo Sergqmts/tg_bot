@@ -64,6 +64,12 @@
         </form>
     </div>
 
+    <div class="text-center">
+        <a href="{{ url_for('bot_docs') }}" class="text-sm text-brand-middle hover:underline">
+            <i class="fa-solid fa-book mr-1"></i> Полная документация Bot API
+        </a>
+    </div>
+
     <div class="glass rounded-2xl p-4">
         <h3 class="font-semibold text-red-500 mb-2">Опасная зона</h3>
         <form method="POST" onsubmit="return confirm('Вы уверены? Бот и все его данные будут удалены.')">

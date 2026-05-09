@@ -38,6 +38,11 @@
             </div>
             {{ form.submit(class="w-full bg-gradient-to-r from-brand-start to-brand-middle text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all cursor-pointer") }}
         </form>
+        <div class="mt-4 text-center">
+            <a href="{{ url_for('bot_docs') }}" class="text-sm text-brand-middle hover:underline">
+                <i class="fa-solid fa-book mr-1"></i> Полная документация Bot API
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}

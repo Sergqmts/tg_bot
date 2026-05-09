@@ -4168,6 +4168,11 @@ def my_bots():
     return render_template('bots.html', bots=bots)
 
 
+@app.route('/bot-docs')
+def bot_docs():
+    return render_template('bot_docs.html')
+
+
 @app.route('/bots/new', methods=['GET', 'POST'])
 @login_required
 def create_bot():
