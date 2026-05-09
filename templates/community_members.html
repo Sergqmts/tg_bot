@@ -23,7 +23,7 @@
                 {% endif %}
             </a>
             <div class="flex-1 min-w-0">
-                <a href="{{ url_for('user_profile', username=member.user.username) }}" class="font-bold text-sm hover:underline block truncate">{{ member.user.username }}</a>
+                <a href="{{ url_for('user_profile', username=member.user.username) }}" class="font-bold text-sm hover:underline block truncate">{% if member.user.is_bot %}🤖 {% endif %}{{ member.user.username }}</a>
                 <div class="flex items-center gap-2 mt-0.5">
                     {% if member.role == 'creator' %}
                     <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-brand-start to-brand-middle text-white">Создатель</span>

@@ -18,7 +18,7 @@
                         {% endif %}
                     </div>
                     <div>
-                        <a href="{{ url_for('user_profile', username=request.user.username) }}">{{ request.user.username }}</a>
+                        <a href="{{ url_for('user_profile', username=request.user.username) }}">{% if request.user.is_bot %}🤖 {% endif %}{{ request.user.username }}</a>
                         <div style="color: var(--text-light); font-size: 0.85rem;">
                             Заявка от {{ request.created_at.strftime('%d.%m.%Y %H:%M') }}
                         </div>

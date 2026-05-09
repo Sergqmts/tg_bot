@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Мои боты — Vibe{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">Мои боты</h1>
+        <a href="{{ url_for('create_bot') }}" class="bg-gradient-to-r from-brand-start to-brand-middle text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:shadow-lg transition-all">
+            <i class="fa-solid fa-robot mr-1"></i> Создать бота
+        </a>
+    </div>
+    {% if bots %}
+    <div class="space-y-3">
+        {% for bot in bots %}
+        <div class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all">
+            <div class="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-tr from-brand-start to-brand-middle flex-shrink-0 flex items-center justify-center text-white text-lg">
+                {% if bot.avatar_cloudinary_url or (bot.avatar and bot.avatar != 'default.png') %}
+                <img src="{{ bot.avatar_cloudinary_url or url_for('uploaded_file', filename=bot.avatar) }}" class="w-full h-full object-cover">
+                {% else %}
+                <i class="fa-solid fa-robot"></i>
+                {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="font-semibold truncate">{{ bot.bio or bot.username }}</div>
+                <div class="text-sm text-slate-500">@{{ bot.username }}</div>
+            </div>
+            <a href="{{ url_for('bot_settings', bot_id=bot.id) }}" class="text-sm text-brand-middle hover:underline flex-shrink-0">
+                <i class="fa-solid fa-gear"></i> Настройки
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass rounded-2xl p-8 text-center">
+        <div class="text-5xl mb-4">🤖</div>
+        <p class="text-slate-500">У вас пока нет ботов</p>
+        <a href="{{ url_for('create_bot') }}" class="inline-block mt-4 text-brand-middle hover:underline font-semibold">Создать первого бота</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -152,6 +152,28 @@ def init_db():
                 if not result.scalar():
                     conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
                     conn.commit()
+        
+        # Bot columns for User table
+        for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id']:
+            if not column_exists('user', col):
+                if is_postgres:
+                    type_map = {
+                        'is_bot': 'BOOLEAN DEFAULT FALSE',
+                        'bot_token': 'VARCHAR(64)',
+                        'bot_commands': 'TEXT DEFAULT \'[]\'',
+                        'can_join_groups': 'BOOLEAN DEFAULT TRUE',
+                        'privacy_mode': 'BOOLEAN DEFAULT TRUE',
+                        'webhook_url': 'VARCHAR(500)',
+                        'creator_id': 'INTEGER REFERENCES "user"(id)',
+                    }
+                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {type_map[col]}'))
+                else:
+                    col_type_map = {
+                        'creator_id': 'INTEGER',
+                    }
+                    col_type = col_type_map.get(col, 'TEXT')
+                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+                conn.commit()
     except Exception as e:
         app.logger.error(f"DB init error: {e}")
 
@@ -197,6 +219,12 @@ def get_table_columns(table_name):
     except:
         return []
 
+
+def generate_bot_token():
+    """Генерирует уникальный токен для бота в стиле Telegram"""
+    import secrets
+    return f"{secrets.randbelow(900000000) + 100000000}:{secrets.token_urlsafe(32)}"
+
 with app.app_context():
     init_db()
 
@@ -207,6 +235,16 @@ login_manager.login_message = 'Пожалуйста, войдите для до�
 socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False, async_mode='threading')
 
 active_users = {}  # user_id -> sid
+
+
+@app.after_request
+def process_webhooks(response):
+    if _webhook_queue:
+        import threading
+        t = threading.Thread(target=process_webhook_queue, daemon=True)
+        t.start()
+    return response
+
 
 @app.route('/api/unread-count')
 @login_required
@@ -542,6 +580,14 @@ class User(UserMixin, db.Model):
     phone_verified = db.Column(db.Boolean, default=False)
     phone_otp = db.Column(db.String(6), nullable=True)
     phone_otp_expires = db.Column(db.DateTime, nullable=True)
+    
+    is_bot = db.Column(db.Boolean, default=False)
+    bot_token = db.Column(db.String(64), unique=True, nullable=True)
+    bot_commands = db.Column(db.Text, default='[]')
+    can_join_groups = db.Column(db.Boolean, default=True)
+    privacy_mode = db.Column(db.Boolean, default=True)
+    webhook_url = db.Column(db.String(500), nullable=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
@@ -1022,6 +1068,82 @@ class Message(db.Model):
     medias = db.relationship('MessageMedia', backref='message')
 
 
+_webhook_queue = []
+
+
+def enqueue_webhook_dispatch(message_id):
+    _webhook_queue.append(message_id)
+
+
+def process_webhook_queue():
+    while _webhook_queue:
+        msg_id = _webhook_queue.pop(0)
+        try:
+            with app.app_context():
+                msg = Message.query.get(msg_id)
+                if not msg:
+                    continue
+                sender = User.query.get(msg.sender_id)
+                if sender and sender.is_bot:
+                    continue
+                chat = Chat.query.get(msg.chat_id) if msg.chat_id else None
+                if not chat and msg.recipient_id:
+                    recipient = User.query.get(msg.recipient_id)
+                    if recipient and recipient.is_bot and recipient.webhook_url:
+                        _send_webhook_payload(recipient, msg, sender, None, recipient=recipient)
+                    continue
+                if not chat:
+                    continue
+                bot_members = ChatMember.query.filter_by(chat_id=chat.id).all()
+                for member in bot_members:
+                    bot = User.query.get(member.user_id)
+                    if bot and bot.is_bot and bot.webhook_url and bot.id != msg.sender_id:
+                        _send_webhook_payload(bot, msg, sender, chat)
+        except Exception as e:
+            app.logger.error(f"Webhook dispatch error for msg {msg_id}: {e}")
+
+
+def _send_webhook_payload(bot, message, sender, chat, recipient=None):
+    import json, urllib.request, urllib.error
+    update = {
+        'update_id': message.id,
+        'message': {
+            'message_id': message.id,
+            'date': int(message.created_at.timestamp()) if message.created_at else 0,
+            'text': message.body or '',
+            'from': {
+                'id': sender.id,
+                'username': sender.username,
+                'is_bot': sender.is_bot if sender else False,
+            } if sender else None,
+            'chat': {
+                'id': chat.id if chat else (recipient.id if recipient else 0),
+                'type': chat.type if chat else 'private',
+                'name': chat.name if chat else (recipient.username if recipient else ''),
+            },
+        }
+    }
+    if chat is None and recipient:
+        update['message']['chat'] = {
+            'id': recipient.id,
+            'type': 'private',
+            'username': recipient.username,
+            'first_name': recipient.username,
+        }
+
+    payload = json.dumps(update).encode('utf-8')
+    try:
+        req = urllib.request.Request(
+            bot.webhook_url,
+            data=payload,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        app.logger.warning(f"Webhook to {bot.webhook_url} failed: {e}")
+
+
 class MessageReaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
@@ -1152,6 +1274,22 @@ class CommunityForm(FlaskForm):
         community = Community.query.filter_by(slug=slug).first()
         if community:
             raise ValidationError('Сообщество с таким названием уже существует')
+
+
+class BotForm(FlaskForm):
+    name = StringField('Имя бота', validators=[DataRequired(), Length(min=1, max=100)])
+    username = StringField('Username бота (без @)', validators=[DataRequired(), Length(min=3, max=50)])
+    description = TextAreaField('Описание', validators=[Length(max=500)])
+    avatar = FileField('Аватар', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
+    commands = TextAreaField('Команды (JSON, опционально)')
+    submit = SubmitField('Создать бота')
+
+    def validate_username(self, username):
+        if not username.data.endswith('bot'):
+            raise ValidationError('Username бота должен заканчиваться на "bot"')
+        user = User.query.filter_by(username=username.data).first()
+        if user:
+            raise ValidationError('Этот username занят')
 
 
 class CommunityPostForm(FlaskForm):
@@ -2692,6 +2830,7 @@ def conversation(username):
                     db.session.add(media)
                 
                 db.session.commit()
+                enqueue_webhook_dispatch(msg.id)
                 create_notification(other_user.id, current_user.id, 'message', message_id=msg.id)
                 app.logger.info(f"Message saved with media: {media_url}")
             except Exception as e:
@@ -2748,7 +2887,10 @@ def create_chat():
         return redirect(url_for('messages'))
     
     followed_ids = [u.id for u in current_user.followed]
-    users = User.query.filter(User.id.in_(followed_ids)).all()
+    bot_ids = [u.id for u in User.query.filter_by(is_bot=True).all()]
+    user_ids = set(followed_ids + bot_ids)
+    user_ids.discard(current_user.id)
+    users = User.query.filter(User.id.in_(user_ids)).all()
     return render_template('create_chat.html', users=users)
 
 
@@ -2822,6 +2964,7 @@ def send_voice(username):
         media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='voice')
         db.session.add(media)
         db.session.commit()
+        enqueue_webhook_dispatch(msg.id)
         
         return 'OK', 200
     except Exception as e:
@@ -2869,6 +3012,7 @@ def send_video_message(username):
         media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='video_message')
         db.session.add(media)
         db.session.commit()
+        enqueue_webhook_dispatch(msg.id)
 
         return 'OK', 200
     except Exception as e:
@@ -2968,6 +3112,7 @@ def chat_view(chat_id):
                     db.session.add(media)
                 
                 db.session.commit()
+                enqueue_webhook_dispatch(msg.id)
                 app.logger.warning(f"Message and media saved successfully!")
             except Exception as e:
                 app.logger.error(f"Chat message error: {e}")
@@ -3034,6 +3179,7 @@ def send_chat_voice(chat_id):
         media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='voice')
         db.session.add(media)
         db.session.commit()
+        enqueue_webhook_dispatch(msg.id)
         
         return 'OK', 200
     except Exception as e:
@@ -3082,6 +3228,7 @@ def send_chat_video_message(chat_id):
         media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='video_message')
         db.session.add(media)
         db.session.commit()
+        enqueue_webhook_dispatch(msg.id)
 
         return 'OK', 200
     except Exception as e:
@@ -3999,6 +4146,557 @@ with app.app_context():
     except Exception as e:
         db.session.rollback()
         app.logger.info(f"Error updating bodies: {e}")
+
+
+@app.route('/bots')
+@login_required
+def my_bots():
+    bots = User.query.filter_by(is_bot=True).all()
+    user_bots = [b for b in bots if b.id in [cm.user_id for cm in current_user.chat_memberships]]
+    return render_template('bots.html', bots=user_bots)
+
+
+@app.route('/bots/new', methods=['GET', 'POST'])
+@login_required
+def create_bot():
+    form = BotForm()
+    if form.validate_on_submit():
+        import json
+        bot = User(
+            username=form.username.data,
+            email=f"bot_{form.username.data}@localhost",
+            is_bot=True,
+            bot_token=generate_bot_token(),
+            bot_commands=form.commands.data or '[]',
+            bio=form.description.data,
+            creator_id=current_user.id,
+        )
+        bot.set_password(os.urandom(32).hex())
+        db.session.add(bot)
+        db.session.flush()
+
+        if form.avatar.data:
+            from werkzeug.utils import secure_filename
+            file = form.avatar.data
+            filename = f"bot_{bot.id}_{secure_filename(file.filename)}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            if cloudinary_configured:
+                try:
+                    upload = cloudinary.uploader.upload(filepath, folder='avatars')
+                    bot.avatar_cloudinary_url = upload['secure_url']
+                except:
+                    bot.avatar = filename
+            else:
+                bot.avatar = filename
+
+        db.session.commit()
+        flash(f'Бот @{bot.username} создан! Токен: {bot.bot_token}. Сохраните его — он больше не покажется.')
+        return redirect(url_for('bot_settings', bot_id=bot.id))
+
+    return render_template('create_bot.html', form=form)
+
+
+@app.route('/bots/<int:bot_id>/settings', methods=['GET', 'POST'])
+@login_required
+def bot_settings(bot_id):
+    bot = User.query.get_or_404(bot_id)
+    if not bot.is_bot or bot.creator_id != current_user.id:
+        abort(403)
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'regenerate_token':
+            bot.bot_token = generate_bot_token()
+            db.session.commit()
+            flash(f'Новый токен: {bot.bot_token}')
+        elif action == 'update':
+            bot.bio = request.form.get('description', bot.bio)
+            commands_raw = request.form.get('commands', '[]')
+            try:
+                json.loads(commands_raw)
+                bot.bot_commands = commands_raw
+            except:
+                flash('Ошибка в JSON команд')
+            bot.can_join_groups = bool(request.form.get('can_join_groups'))
+            bot.privacy_mode = bool(request.form.get('privacy_mode'))
+            bot.webhook_url = request.form.get('webhook_url', '') or None
+            db.session.commit()
+            flash('Настройки сохранены')
+        elif action == 'delete':
+            db.session.delete(bot)
+            db.session.commit()
+            flash('Бот удалён')
+            return redirect(url_for('my_bots'))
+        return redirect(url_for('bot_settings', bot_id=bot.id))
+
+    return render_template('bot_settings.html', bot=bot)
+
+
+# ─── Bot API ────────────────────────────────────────────────────────
+
+def bot_json_response(data, status=200):
+    return jsonify({"ok": status == 200, "result": data} if status == 200 else {"ok": False, "error_code": status, "description": data}), status
+
+
+def resolve_chat(chat_id):
+    """chat_id может быть int (id чата) или str с @ (username пользователя)"""
+    if isinstance(chat_id, str) and chat_id.startswith('@'):
+        user = User.query.filter_by(username=chat_id[1:]).first()
+        if not user:
+            return None, None
+        return None, user
+    chat = Chat.query.get(int(chat_id))
+    if chat:
+        return chat, None
+    user = User.query.get(int(chat_id))
+    if user:
+        return None, user
+    return None, None
+
+
+def get_or_create_dm(user_a, user_b):
+    """Находит или создаёт direct chat между двумя пользователями"""
+    from sqlalchemy.orm import aliased
+    cm2 = aliased(ChatMember)
+    chat = Chat.query.join(ChatMember).filter(ChatMember.user_id == user_a.id).join(cm2).filter(
+        cm2.user_id == user_b.id, Chat.type == 'direct'
+    ).first()
+    if not chat:
+        chat = Chat(name=f"DM", type='direct', creator_id=user_a.id)
+        db.session.add(chat)
+        db.session.flush()
+        for uid in [user_a.id, user_b.id]:
+            if not ChatMember.query.filter_by(chat_id=chat.id, user_id=uid).first():
+                db.session.add(ChatMember(chat_id=chat.id, user_id=uid, role='member'))
+    return chat
+
+
+@app.route('/bot<token>/<method>', methods=['GET', 'POST', 'DELETE'])
+@csrf.exempt
+def bot_api(token, method):
+    bot = User.query.filter_by(bot_token=token, is_bot=True).first()
+    if not bot:
+        return bot_json_response('Unauthorized: invalid bot token', 401)
+    if not bot.can_join_groups:
+        return bot_json_response('Bot is disabled', 403)
+
+    handlers = {
+        'getMe': bot_get_me,
+        'sendMessage': bot_send_message,
+        'sendPhoto': bot_send_photo,
+        'sendVideo': bot_send_video,
+        'sendVoice': bot_send_voice,
+        'sendDocument': bot_send_document,
+        'forwardMessage': bot_forward_message,
+        'deleteMessage': bot_delete_message,
+        'banChatMember': bot_ban_chat_member,
+        'unbanChatMember': bot_unban_chat_member,
+        'promoteChatMember': bot_promote_chat_member,
+        'getChat': bot_get_chat,
+        'getChatMembers': bot_get_chat_members,
+        'setWebhook': bot_set_webhook,
+        'deleteWebhook': bot_delete_webhook,
+        'getCommunity': bot_get_community,
+        'getCommunityMembers': bot_get_community_members,
+        'approveJoinRequest': bot_approve_join_request,
+        'denyJoinRequest': bot_deny_join_request,
+        'kickMember': bot_kick_member,
+        'promoteToAdmin': bot_promote_to_admin,
+        'deletePost': bot_delete_post,
+    }
+
+    handler = handlers.get(method)
+    if not handler:
+        return bot_json_response(f'Unknown method: {method}', 404)
+    return handler(bot)
+
+
+def bot_get_me(bot):
+    return bot_json_response({
+        'id': bot.id,
+        'username': bot.username,
+        'description': bot.bio,
+        'can_join_groups': bot.can_join_groups,
+        'privacy_mode': bot.privacy_mode,
+        'commands': bot.bot_commands,
+    })
+
+
+def bot_get_chat(bot):
+    chat_id = request.args.get('chat_id') or (request.json or {}).get('chat_id')
+    if not chat_id:
+        return bot_json_response('chat_id is required', 400)
+    result = resolve_chat(chat_id)
+    if not result or (result[0] is None and result[1] is None):
+        return bot_json_response('Chat not found', 404)
+    chat, target_user = result
+    if target_user:
+        return bot_json_response({
+            'id': target_user.id,
+            'name': target_user.username,
+            'type': 'private',
+            'username': target_user.username,
+        })
+    return bot_json_response({
+        'id': chat.id,
+        'name': chat.name,
+        'type': chat.type,
+        'members_count': ChatMember.query.filter_by(chat_id=chat.id).count(),
+    })
+
+
+def bot_get_chat_members(bot):
+    chat_id = request.args.get('chat_id') or (request.json or {}).get('chat_id')
+    if not chat_id:
+        return bot_json_response('chat_id is required', 400)
+    result = resolve_chat(chat_id)
+    if not result or (result[0] is None and result[1] is None):
+        return bot_json_response('Chat not found', 404)
+    chat, target_user = result
+    if target_user:
+        return bot_json_response([{
+            'user_id': target_user.id,
+            'username': target_user.username,
+            'role': 'member',
+        }])
+    members = ChatMember.query.filter_by(chat_id=chat.id).all()
+    return bot_json_response([{
+        'user_id': m.user_id,
+        'username': User.query.get(m.user_id).username if User.query.get(m.user_id) else 'deleted',
+        'role': m.role,
+    } for m in members])
+
+
+def bot_send_message(bot):
+    data = request.json or request.form
+    chat_id = data.get('chat_id')
+    text = data.get('text', '').strip()
+    if not chat_id or not text:
+        return bot_json_response('chat_id and text are required', 400)
+    result = resolve_chat(chat_id)
+    if not result or (result[0] is None and result[1] is None):
+        return bot_json_response('Chat not found', 404)
+    chat, target_user = result
+    if target_user:
+        chat = get_or_create_dm(bot, target_user)
+        msg = Message(body=text, sender_id=bot.id, recipient_id=target_user.id, chat_id=chat.id)
+    else:
+        msg = Message(body=text, sender_id=bot.id, chat_id=chat.id)
+    db.session.add(msg)
+    db.session.commit()
+    return bot_json_response({'message_id': msg.id, 'text': text, 'chat_id': chat.id})
+
+
+def bot_send_media(bot, media_field, folder, media_type):
+    data = request.json or request.form
+    chat_id = data.get('chat_id')
+    if not chat_id:
+        return bot_json_response('chat_id is required', 400)
+    result = resolve_chat(chat_id)
+    if not result or (result[0] is None and result[1] is None):
+        return bot_json_response('Chat not found', 404)
+    chat, target_user = result
+
+    file = request.files.get(media_field)
+    caption = data.get('caption', '')
+    media_url = None
+    if file and file.filename:
+        media_url = upload_to_cloudinary(file, folder=folder)
+    elif data.get(media_field):
+        media_url = data.get(media_field)
+
+    if not media_url:
+        return bot_json_response(f'{media_field} is required', 400)
+
+    if target_user:
+        chat = get_or_create_dm(bot, target_user)
+        msg = Message(body=caption, sender_id=bot.id, recipient_id=target_user.id, chat_id=chat.id)
+    else:
+        msg = Message(body=caption, sender_id=bot.id, chat_id=chat.id)
+    db.session.add(msg)
+    db.session.flush()
+    mm = MessageMedia(message_id=msg.id, media_url=media_url, media_type=media_type)
+    db.session.add(mm)
+    db.session.commit()
+    return bot_json_response({'message_id': msg.id, 'media_url': media_url, 'chat_id': chat.id})
+
+
+def bot_send_photo(bot):
+    return bot_send_media(bot, 'photo', 'bot_photos', 'image')
+
+
+def bot_send_video(bot):
+    return bot_send_media(bot, 'video', 'bot_videos', 'video')
+
+
+def bot_send_voice(bot):
+    return bot_send_media(bot, 'voice', 'bot_voice', 'voice')
+
+
+def bot_send_document(bot):
+    return bot_send_media(bot, 'document', 'bot_documents', 'document')
+
+
+def bot_forward_message(bot):
+    data = request.json or request.form
+    chat_id = data.get('chat_id')
+    from_chat_id = data.get('from_chat_id')
+    message_id = data.get('message_id')
+    if not all([chat_id, from_chat_id, message_id]):
+        return bot_json_response('chat_id, from_chat_id, message_id are required', 400)
+    original = Message.query.get(int(message_id))
+    if not original:
+        return bot_json_response('Message not found', 404)
+    target_result = resolve_chat(chat_id)
+    if not target_result or (target_result[0] is None and target_result[1] is None):
+        return bot_json_response('Target chat not found', 404)
+    target_chat, target_user = target_result
+    if target_user:
+        target_chat = get_or_create_dm(bot, target_user)
+        new_msg = Message(body=original.body, sender_id=bot.id, recipient_id=target_user.id, chat_id=target_chat.id)
+    else:
+        new_msg = Message(body=original.body, sender_id=bot.id, chat_id=target_chat.id)
+    db.session.add(new_msg)
+    db.session.flush()
+    for m in original.medias:
+        db.session.add(MessageMedia(message_id=new_msg.id, media_url=m.media_url, media_type=m.media_type))
+    db.session.commit()
+    return bot_json_response({'message_id': new_msg.id, 'chat_id': target_chat.id})
+
+
+def bot_delete_message(bot):
+    data = request.json or request.form
+    chat_id = data.get('chat_id')
+    message_id = data.get('message_id')
+    msg = Message.query.get(int(message_id))
+    if not msg:
+        return bot_json_response('Message not found', 404)
+    if msg.sender_id != bot.id:
+        return bot_json_response('Can only delete own messages', 403)
+    db.session.delete(msg)
+    db.session.commit()
+    return bot_json_response({'ok': True})
+
+
+def bot_ban_chat_member(bot):
+    data = request.json or request.form
+    chat_id = data.get('chat_id')
+    user_id = data.get('user_id')
+    if not all([chat_id, user_id]):
+        return bot_json_response('chat_id and user_id are required', 400)
+    result = resolve_chat(chat_id)
+    if not result or (result[0] is None and result[1] is None):
+        return bot_json_response('Chat not found', 404)
+    chat, _ = result
+    if not chat:
+        return bot_json_response('Cannot ban in private chat', 400)
+    member = ChatMember.query.filter_by(chat_id=chat.id, user_id=int(user_id)).first()
+    if not member:
+        return bot_json_response('User not in chat', 404)
+    db.session.delete(member)
+    db.session.commit()
+    return bot_json_response({'ok': True})
+
+
+def bot_unban_chat_member(bot):
+    data = request.json or request.form
+    chat_id = data.get('chat_id')
+    user_id = data.get('user_id')
+    if not all([chat_id, user_id]):
+        return bot_json_response('chat_id and user_id are required', 400)
+    result = resolve_chat(chat_id)
+    if not result or (result[0] is None and result[1] is None):
+        return bot_json_response('Chat not found', 404)
+    chat, _ = result
+    if not chat:
+        return bot_json_response('Cannot unban in private chat', 400)
+    existing = ChatMember.query.filter_by(chat_id=chat.id, user_id=int(user_id)).first()
+    if not existing:
+        member = ChatMember(chat_id=chat.id, user_id=int(user_id), role='member')
+        db.session.add(member)
+        db.session.commit()
+    return bot_json_response({'ok': True})
+
+
+def bot_promote_chat_member(bot):
+    data = request.json or request.form
+    chat_id = data.get('chat_id')
+    user_id = data.get('user_id')
+    if not all([chat_id, user_id]):
+        return bot_json_response('chat_id and user_id are required', 400)
+    result = resolve_chat(chat_id)
+    if not result or (result[0] is None and result[1] is None):
+        return bot_json_response('Chat not found', 404)
+    chat, _ = result
+    if not chat:
+        return bot_json_response('Cannot promote in private chat', 400)
+    member = ChatMember.query.filter_by(chat_id=chat.id, user_id=int(user_id)).first()
+    if not member:
+        return bot_json_response('User not in chat', 404)
+    member.role = 'admin'
+    db.session.commit()
+    return bot_json_response({'ok': True})
+
+
+def bot_set_webhook(bot):
+    data = request.json or request.form
+    url = data.get('url', '').strip()
+    if not url:
+        return bot_json_response('url is required', 400)
+    bot.webhook_url = url
+    db.session.commit()
+    return bot_json_response({'ok': True, 'url': url})
+
+
+def bot_delete_webhook(bot):
+    bot.webhook_url = None
+    db.session.commit()
+    return bot_json_response({'ok': True})
+
+
+def resolve_community(slug_or_id):
+    """community_id может быть slug (строка) или id (число)"""
+    if isinstance(slug_or_id, str) and not slug_or_id.isdigit():
+        return Community.query.filter_by(slug=slug_or_id).first()
+    return Community.query.get(int(slug_or_id))
+
+
+def bot_get_community(bot):
+    community_id = request.args.get('community_id') or (request.json or {}).get('community_id')
+    if not community_id:
+        return bot_json_response('community_id is required', 400)
+    comm = resolve_community(community_id)
+    if not comm:
+        return bot_json_response('Community not found', 404)
+    return bot_json_response({
+        'id': comm.id,
+        'name': comm.name,
+        'slug': comm.slug,
+        'description': comm.description,
+        'is_private': comm.is_private,
+        'members_count': CommunityMember.query.filter_by(community_id=comm.id, status='approved').count(),
+        'posts_count': comm.posts.count(),
+    })
+
+
+def bot_get_community_members(bot):
+    community_id = request.args.get('community_id') or (request.json or {}).get('community_id')
+    if not community_id:
+        return bot_json_response('community_id is required', 400)
+    comm = resolve_community(community_id)
+    if not comm:
+        return bot_json_response('Community not found', 404)
+    members = CommunityMember.query.filter_by(community_id=comm.id, status='approved').all()
+    return bot_json_response([{
+        'user_id': m.user_id,
+        'username': m.user.username,
+        'role': m.role,
+        'joined_at': m.created_at.isoformat() if m.created_at else None,
+    } for m in members])
+
+
+def bot_approve_join_request(bot):
+    data = request.json or request.form
+    community_id = data.get('community_id')
+    user_id = data.get('user_id')
+    if not all([community_id, user_id]):
+        return bot_json_response('community_id and user_id are required', 400)
+    comm = resolve_community(community_id)
+    if not comm:
+        return bot_json_response('Community not found', 404)
+    if not CommunityMember.query.filter(CommunityMember.community_id == comm.id, CommunityMember.user_id == bot.id, CommunityMember.role.in_(('admin', 'creator')), CommunityMember.status == 'approved').first():
+        return bot_json_response('Bot is not an admin of this community', 403)
+    member = CommunityMember.query.filter_by(community_id=comm.id, user_id=int(user_id), status='pending').first()
+    if not member:
+        return bot_json_response('User not found or not pending', 404)
+    member.status = 'approved'
+    db.session.commit()
+    return bot_json_response({'ok': True, 'user_id': int(user_id)})
+
+
+def bot_deny_join_request(bot):
+    data = request.json or request.form
+    community_id = data.get('community_id')
+    user_id = data.get('user_id')
+    if not all([community_id, user_id]):
+        return bot_json_response('community_id and user_id are required', 400)
+    comm = resolve_community(community_id)
+    if not comm:
+        return bot_json_response('Community not found', 404)
+    if not CommunityMember.query.filter(CommunityMember.community_id == comm.id, CommunityMember.user_id == bot.id, CommunityMember.role.in_(('admin', 'creator')), CommunityMember.status == 'approved').first():
+        return bot_json_response('Bot is not an admin of this community', 403)
+    member = CommunityMember.query.filter_by(community_id=comm.id, user_id=int(user_id), status='pending').first()
+    if not member:
+        return bot_json_response('User not found or not pending', 404)
+    db.session.delete(member)
+    db.session.commit()
+    return bot_json_response({'ok': True, 'user_id': int(user_id)})
+
+
+def bot_kick_member(bot):
+    data = request.json or request.form
+    community_id = data.get('community_id')
+    user_id = data.get('user_id')
+    if not all([community_id, user_id]):
+        return bot_json_response('community_id and user_id are required', 400)
+    comm = resolve_community(community_id)
+    if not comm:
+        return bot_json_response('Community not found', 404)
+    bot_member = CommunityMember.query.filter_by(community_id=comm.id, user_id=bot.id, status='approved').first()
+    if not bot_member or bot_member.role not in ('admin', 'creator'):
+        return bot_json_response('Bot is not an admin of this community', 403)
+    if int(user_id) == comm.creator_id:
+        return bot_json_response('Cannot kick the creator', 403)
+    member = CommunityMember.query.filter_by(community_id=comm.id, user_id=int(user_id), status='approved').first()
+    if not member:
+        return bot_json_response('User not in community', 404)
+    db.session.delete(member)
+    db.session.commit()
+    return bot_json_response({'ok': True})
+
+
+def bot_promote_to_admin(bot):
+    data = request.json or request.form
+    community_id = data.get('community_id')
+    user_id = data.get('user_id')
+    if not all([community_id, user_id]):
+        return bot_json_response('community_id and user_id are required', 400)
+    comm = resolve_community(community_id)
+    if not comm:
+        return bot_json_response('Community not found', 404)
+    bot_member = CommunityMember.query.filter_by(community_id=comm.id, user_id=bot.id, status='approved').first()
+    if not bot_member or bot_member.role not in ('admin', 'creator'):
+        return bot_json_response('Bot is not an admin of this community', 403)
+    member = CommunityMember.query.filter_by(community_id=comm.id, user_id=int(user_id), status='approved').first()
+    if not member:
+        return bot_json_response('User not in community', 404)
+    member.role = 'admin'
+    db.session.commit()
+    return bot_json_response({'ok': True})
+
+
+def bot_delete_post(bot):
+    data = request.json or request.form
+    post_id = data.get('post_id')
+    if not post_id:
+        return bot_json_response('post_id is required', 400)
+    post = Post.query.get(int(post_id))
+    if not post:
+        return bot_json_response('Post not found', 404)
+    if post.user_id == bot.id:
+        db.session.delete(post)
+        db.session.commit()
+        return bot_json_response({'ok': True})
+    if post.community_id:
+        comm = Community.query.get(post.community_id)
+        if comm:
+            bot_member = CommunityMember.query.filter_by(community_id=comm.id, user_id=bot.id, status='approved').first()
+            if bot_member and bot_member.role in ('admin', 'creator'):
+                db.session.delete(post)
+                db.session.commit()
+                return bot_json_response({'ok': True})
+    return bot_json_response('Cannot delete this post', 403)
 
 
 if __name__ == '__main__':

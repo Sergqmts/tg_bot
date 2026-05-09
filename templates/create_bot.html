@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Создать бота — Vibe{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="glass rounded-2xl p-6">
+        <div class="text-center mb-6">
+            <div class="text-5xl mb-3">🤖</div>
+            <h1 class="text-2xl font-bold">Создать бота</h1>
+            <p class="text-sm text-slate-500 mt-1">Как в BotFather — задайте имя и получите токен</p>
+        </div>
+        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+            {{ form.hidden_tag() }}
+            <div>
+                <label class="block text-sm font-medium mb-1">Имя бота</label>
+                {{ form.name(class="w-full rounded-xl border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-sm focus:ring-2 focus:ring-brand-middle outline-none", placeholder="My Super Bot") }}
+                {% for error in form.name.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Username бота</label>
+                <div class="flex items-center rounded-xl border-slate-200 dark:border-dark-border border bg-white dark:bg-dark-card px-4">
+                    <span class="text-slate-400 text-sm">@</span>
+                    {{ form.username(class="flex-1 py-3 text-sm bg-transparent outline-none", placeholder="my_super_bot") }}
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Должен заканчиваться на <strong>bot</strong></p>
+                {% for error in form.username.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Описание</label>
+                {{ form.description(class="w-full rounded-xl border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-sm focus:ring-2 focus:ring-brand-middle outline-none", rows=3, placeholder="Чем занимается этот бот...") }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Аватар</label>
+                {{ form.avatar(class="w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-start file:text-white hover:file:opacity-90") }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Команды (JSON, опционально)</label>
+                {{ form.commands(class="w-full rounded-xl border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-brand-middle outline-none", rows=4, placeholder='[{"command":"start","description":"Запуск"},{"command":"help","description":"Помощь"}]') }}
+            </div>
+            {{ form.submit(class="w-full bg-gradient-to-r from-brand-start to-brand-middle text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all cursor-pointer") }}
+        </form>
+    </div>
+</div>
+{% endblock %}

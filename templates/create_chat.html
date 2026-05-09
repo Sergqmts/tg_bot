@@ -32,7 +32,7 @@
                             {{ user.username[0].upper() }}
                             {% endif %}
                         </div>
-                        <span>{{ user.username }}</span>
+                        <span>{% if user.is_bot %}🤖 {% endif %}{{ user.username }}</span>
                     </label>
                     {% endfor %}
                 </div>

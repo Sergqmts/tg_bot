@@ -2,7 +2,7 @@
 
 ## Quick Overview
 Full-stack social network (Flask + PostgreSQL + Tailwind CSS). Deployed on Railway.
-Repo: `github.com/Sergqmts/tg_bot`, branch `main` (current active: `feature/video-messages`)
+Repo: `github.com/Sergqmts/tg_bot`, branch `main` (current active: `feature/bot-platform`)
 
 ## How to Run
 ```bash
@@ -18,26 +18,66 @@ python app.py  # dev on :5000
 - **No real-time** — Socket.IO was removed due to gunicorn sync worker incompatibility. Notification badge uses JS polling (`GET /api/unread-count` every 10s)
 - **No requirements.txt** — Railway auto-detects Python deps; add manually if needed
 - **Media serving**: `/media/<filename>` → `send_from_directory(UPLOAD_FOLDER)`. Cloudinary URLs used directly when configured.
+- **Bots = Users with `is_bot=True`**: Bot platform modelled after Telegram. Token auth via URL path (`/bot<token>/sendMessage`). Webhooks for outgoing events.
 
 ## Database
 - SQLite locally (`instance/social.db`), PostgreSQL on Railway
 - `Message.body` has `NOT NULL` in production (set explicit `body=''`)
-- Models: User, Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment
+- Models: User (+bot fields), Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment
 
 ## Branch History (recent)
 - `main` — production branch, Railway auto-deploys
-- `feature/video-messages` — current working branch (video кружочки, notification fixes)
+- `feature/video-messages` — merged into main (video кружочки, notification fixes)
+- `feature/bot-platform` — current: bot platform (User bot fields, create/manage bots, token auth)
 
-## Recent Changes (feature/video-messages)
-- **Video messages ("кружочки")**: New routes `send_video_message` (DM) and `send_chat_video_message` (group). MediaRecorder + front camera, 60s limit, circular display 140×140, autoplay on scroll (IntersectionObserver), tap for fullscreen with audio. CSRF not exempt (unlike voice).
-- **Voice/video/shorts persistence**: All uploads now go to Cloudinary when configured.
-- **Notifications**: Added `GET /api/unread-count` endpoint. Badge polls every 10s via `setInterval`.
-- **Messages page fix**: Filtered out `chat.type != 'group'` from groups section. Removed deleted-user conversations.
-- **Community post fix**: Removed AJAX fetch that swallowed validation errors.
-- **Community attribution**: Posts in communities show community icon/name with author as subtitle.
-- **Avatar fix**: All templates now use `get_avatar_url()` return value instead of hardcoded `url_for('uploaded_file', ...)`.
-- **Logout button**: Added to own profile page.
-- **Notifications CSRF fix**: Added missing `csrf_token` to mark-as-read forms.
+## Recent Changes (feature/bot-platform)
+- **Bot model**: Added `is_bot`, `bot_token`, `bot_commands`, `can_join_groups`, `privacy_mode`, `webhook_url`, `creator_id` fields to User model with auto-migration
+- **Token generation**: `generate_bot_token()` — случайный токен в стиле Telegram
+- **Bot management UI**: `/bots` (список), `/bots/new` (создание через BotForm), `/bots/<id>/settings` (настройки, сброс токена, webhook, команды)
+- **BotForm**: Валидация — username должен заканчиваться на `bot`
+- **Profile link**: Добавлен переход к ботам в профиле пользователя
+- **Bot API**: Полноценный REST API как в Telegram
+  - `POST /bot<token>/sendMessage` — текст в чат/диалог
+  - `POST /bot<token>/sendPhoto` — фото
+  - `POST /bot<token>/sendVideo` — видео
+  - `POST /bot<token>/sendVoice` — голосовое
+  - `POST /bot<token>/sendDocument` — документ
+  - `POST /bot<token>/forwardMessage` — переслать
+  - `POST /bot<token>/deleteMessage` — удалить своё сообщение
+  - `POST /bot<token>/banChatMember` — заблокировать участника
+  - `POST /bot<token>/unbanChatMember` — разблокировать
+  - `POST /bot<token>/promoteChatMember` — повысить до админа
+  - `GET /bot<token>/getChat` — инфо о чате
+  - `GET /bot<token>/getChatMembers` — список участников
+  - `GET /bot<token>/getMe` — инфо о боте
+  - `POST /bot<token>/setWebhook` — установить webhook
+  - `POST /bot<token>/deleteWebhook` — удалить webhook
+  - `chat_id` поддерживает: число (ID чата или пользователя), `@username`
+  - CSRF exempt (аутентификация через токен в URL)
+- **Вебхуки**: автоматическая отправка событий на `webhook_url` бота при новых сообщениях
+  - Срабатывает для сообщений в групповых чатах (где бот — участник) и DM (где получатель — бот)
+  - Не срабатывает на сообщения самого бота (защита от циклов)
+  - Асинхронные POST-запросы с Telegram-style JSON-payload
+  - Формат: `{"update_id": ..., "message": {"message_id": ..., "from": {...}, "chat": {...}, "text": "..."}}`
+- **Интеграция ботов с чатами**: боты отображаются в списке участников с иконкой 🤖
+  - Добавление бота в чат при создании (create_chat)
+  - Добавление бота через управление участниками (chat_add_member)
+  - 🤖 в списке диалогов, в шапке чата, в explore/search
+  - `create_chat` — боты доступны для выбора наравне с пользователями
+- **Интеграция ботов с сообществами**: управление сообществами через Bot API
+  - `getCommunity` — инфо о сообществе (по id или slug)
+  - `getCommunityMembers` — список участников
+  - `approveJoinRequest` — одобрить заявку
+  - `denyJoinRequest` — отклонить заявку
+  - `kickMember` — исключить участника
+  - `promoteToAdmin` — повысить до админа
+  - `deletePost` — удалить пост (свой или в сообществе где бот админ)
+  - 🤖 в списке участников сообщества, заявках, постах
+
+## Next Steps
+- Web UI для добавления ботов в сообщества (кнопка в community_members)
+- Privacy mode (бот видит только /команды и @упоминания)
+- Long polling getUpdates
 
 ## Known Issues
 1. **No requirements.txt** — if adding deps (e.g., eventlet), create `requirements.txt`
@@ -74,6 +114,15 @@ PORT=8080
 | `chat.html` | Group chat with voice/video recording |
 | `messages.html` | Chat list (DMs + groups) |
 | `notifications.html` | Notification list |
-| `profile.html` | User profile with tabs (posts, shorts) |
+| `profile.html` | User profile with tabs (posts, shorts) + link to bots |
 | `community.html` | Community page with posts |
 | `explore.html` | Search users/tags/posts |
+| **`bots.html`** | List of user's bots |
+| **`create_bot.html`** | Create bot form (BotFather-style) |
+| **`bot_settings.html`** | Bot settings (token, webhook, commands) |
+
+## Next Steps
+- API blueprint: `/bot<token>/sendMessage`, `/bot<token>/getMe`, etc.
+- Webhook delivery: POST events to `webhook_url` on new messages
+- Bot integration with chats: add bot as member, display bot indicator
+- Bot integration with communities: bot as admin/mod

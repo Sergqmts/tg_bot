@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if chat.type == 'direct' %}{% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}{% else %}{{ chat.name }}{% endif %} - Vibe{% endblock %}
+{% block title %}{% if chat.type == 'direct' %}{% for m in chat.members %}{% if m.user.id != current_user.id %}{{ m.user.username }}{% endif %}{% endfor %}{% else %}{{ chat.name }}{% endif %} - Vibe{% endblock %}
 {% block content %}
 {% set bg_data = bg_data if bg_data is defined else {} %}
 <div class="flex flex-col h-screen h-dvh" id="chatContainer">
@@ -19,14 +19,14 @@
                         {% endif %}
                     {% else %}
                         {% if chat.type == 'direct' %}
-                            {% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username[0].upper() }}{% endif %}{% endfor %}
+                        {% for member in chat.members %}{% if member.user.id != current_user.id %}{{ member.user.username[0].upper() }}{% endif %}{% endfor %}
                         {% else %}👥{% endif %}
                     {% endif %}
                 </div>
                 <div class="min-w-0">
-                    <a href="{% if chat.type == 'direct' %}{% for m in chat.members %}{% if m.id != current_user.id %}{{ url_for('conversation', username=m.username) }}{% endif %}{% endfor %}{% else %}{{ url_for('chat_view', chat_id=chat.id) }}{% endif %}" class="font-bold text-sm truncate block">
+                    <a href="{% if chat.type == 'direct' %}{% for m in chat.members %}{% if m.user.id != current_user.id %}{{ url_for('conversation', username=m.user.username) }}{% endif %}{% endfor %}{% else %}{{ url_for('chat_view', chat_id=chat.id) }}{% endif %}" class="font-bold text-sm truncate block">
                         {% if chat.type == 'direct' %}
-                            {% for member in chat.members %}{% if member.id != current_user.id %}{{ member.username }}{% endif %}{% endfor %}
+                            {% for m in chat.members %}{% if m.user.id != current_user.id %}{% if m.user.is_bot %}🤖 {% endif %}{{ m.user.username }}{% endif %}{% endfor %}
                         {% else %}
                             {{ chat.name }}
                         {% endif %}

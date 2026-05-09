@@ -64,6 +64,7 @@
                             {% endif %}
                         {% elif user.id == current_user.id %}
                         <a href="{{ url_for('edit_profile') }}" class="btn btn-outline">Редактировать</a>
+                        <a href="{{ url_for('my_bots') }}" class="btn btn-outline">🤖 Боты</a>
                         {% if pending_count > 0 %}
                         <a href="{{ url_for('follower_requests') }}" class="btn btn-primary">Заявки ({{ pending_count }})</a>
                         {% endif %}

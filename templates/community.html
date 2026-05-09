@@ -81,7 +81,7 @@
                 </a>
                 <div class="post-author-group">
                     <a href="{{ url_for('community', slug=community.slug) }}" class="post-author">{{ community.name }}</a>
-                    <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author-sub">{{ post.author.username }}</a>
+                    <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author-sub">{% if post.author.is_bot %}🤖 {% endif %}{{ post.author.username }}</a>
                 </div>
                 <span class="post-time">{{ post.created_at.strftime('%d.%m.%Y') }}</span>
             </div>

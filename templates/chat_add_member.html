@@ -20,7 +20,7 @@
                 <select name="user_id" required class="form-input">
                     <option value="">-- Выберите --</option>
                     {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.username }}</option>
+                    <option value="{{ user.id }}">{% if user.is_bot %}🤖 {% endif %}{{ user.username }}</option>
                     {% endfor %}
                 </select>
             </div>

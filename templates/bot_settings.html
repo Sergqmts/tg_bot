@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Настройки бота — Vibe{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto space-y-6">
+    <div class="flex items-center gap-3 mb-2">
+        <a href="{{ url_for('my_bots') }}" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-arrow-left"></i></a>
+        <h1 class="text-2xl font-bold">Настройки бота</h1>
+    </div>
+
+    <div class="glass rounded-2xl p-6">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-2xl">
+                {% if bot.avatar_cloudinary_url or (bot.avatar and bot.avatar != 'default.png') %}
+                <img src="{{ bot.avatar_cloudinary_url or url_for('uploaded_file', filename=bot.avatar) }}" class="w-full h-full object-cover">
+                {% else %}
+                <i class="fa-solid fa-robot"></i>
+                {% endif %}
+            </div>
+            <div>
+                <div class="text-xl font-bold">{{ bot.bio or bot.username }}</div>
+                <div class="text-sm text-slate-500">@{{ bot.username }}</div>
+            </div>
+        </div>
+
+        <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 mb-6">
+            <div class="text-xs text-slate-400 uppercase font-semibold mb-1">Токен</div>
+            <div class="font-mono text-sm break-all" id="bot-token">{{ bot.bot_token }}</div>
+            <form method="POST" class="mt-2">
+                <input type="hidden" name="action" value="regenerate_token">
+                <button type="submit" class="text-sm text-red-500 hover:underline" onclick="return confirm('Сбросить токен? Старый перестанет работать.')">
+                    <i class="fa-solid fa-rotate"></i> Сбросить токен
+                </button>
+            </form>
+        </div>
+
+        <form method="POST" class="space-y-4">
+            <input type="hidden" name="action" value="update">
+            <div>
+                <label class="block text-sm font-medium mb-1">Описание</label>
+                <textarea name="description" rows="3" class="w-full rounded-xl border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-sm focus:ring-2 focus:ring-brand-middle outline-none">{{ bot.bio or '' }}</textarea>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Webhook URL</label>
+                <input type="url" name="webhook_url" value="{{ bot.webhook_url or '' }}" placeholder="https://example.com/webhook" class="w-full rounded-xl border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-sm focus:ring-2 focus:ring-brand-middle outline-none">
+                <p class="text-xs text-slate-400 mt-1">События будут отправляться на этот URL</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Команды (JSON)</label>
+                <textarea name="commands" rows="4" class="w-full rounded-xl border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card px-4 py-3 text-sm font-mono focus:ring-2 focus:ring-brand-middle outline-none">{{ bot.bot_commands or '[]' }}</textarea>
+            </div>
+            <div class="flex items-center gap-6">
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="can_join_groups" value="1" {% if bot.can_join_groups %}checked{% endif %} class="rounded text-brand-middle focus:ring-brand-middle">
+                    Разрешить добавление в группы
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="privacy_mode" value="1" {% if bot.privacy_mode %}checked{% endif %} class="rounded text-brand-middle focus:ring-brand-middle">
+                    Privacy mode
+                </label>
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-brand-start to-brand-middle text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all">
+                <i class="fa-solid fa-floppy-disk mr-1"></i> Сохранить
+            </button>
+        </form>
+    </div>
+
+    <div class="glass rounded-2xl p-4">
+        <h3 class="font-semibold text-red-500 mb-2">Опасная зона</h3>
+        <form method="POST" onsubmit="return confirm('Вы уверены? Бот и все его данные будут удалены.')">
+            <input type="hidden" name="action" value="delete">
+            <button type="submit" class="w-full bg-red-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-red-600 transition-all">
+                <i class="fa-solid fa-trash mr-1"></i> Удалить бота
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
