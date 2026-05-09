@@ -103,6 +103,10 @@
                 <div class="mb-1 mt-1 rounded-xl overflow-hidden">
                     <video src="{{ m.media_url }}" muted class="w-full max-w-[180px]"></video>
                 </div>
+                {% elif m.media_type == 'video_message' %}
+                <div class="video-message mb-1 mt-1">
+                    <video src="{{ m.media_url }}" muted loop playsinline class="video-message-player w-[140px] h-[140px] rounded-full object-cover bg-black cursor-pointer" data-video-msg></video>
+                </div>
                 {% elif m.media_type == 'voice' %}
                 <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 mb-1 mt-1">
                     <button class="w-7 h-7 rounded-full bg-brand-middle text-white flex items-center justify-center" onclick="playVoice('{{ m.media_url }}', this)">
@@ -153,6 +157,23 @@
                     <button type="button" class="send-record px-3 py-1.5 rounded-lg bg-brand-middle text-white text-sm" onclick="sendChatRecording()">➤</button>
                 </div>
             </div>
+
+            <div class="video-recording hidden" id="videoRecording" style="display: none; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0;">
+                <div class="w-[140px] h-[140px] rounded-full overflow-hidden bg-black relative flex-shrink-0 shadow-lg border-2 border-white dark:border-slate-700">
+                    <video id="videoPreview" class="w-full h-full object-cover" muted playsinline></video>
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium" id="videoRecordingTime">0:00</span>
+                    <span class="text-xs text-slate-400">/ 1:00</span>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-sm font-medium" onclick="cancelVideoRecording()">✕ Отмена</button>
+                    <button type="button" class="px-4 py-2 rounded-xl bg-brand-middle text-white text-sm font-medium" onclick="sendChatVideoRecording()">➤ Отправить</button>
+                </div>
+            </div>
             
             <form method="POST" action="" enctype="multipart/form-data" class="flex items-center gap-2" id="messageForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -176,6 +197,11 @@
                         <i class="fa-solid fa-paperclip text-brand-middle"></i> <span class="text-sm">Файл</span>
                     </label>
                 </div>
+                
+                <!-- Camera button -->
+                 <button type="button" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" id="camBtn" onclick="toggleChatVideoRecording()">
+                    <i class="fa-solid fa-video text-sm"></i>
+                </button>
                 
                 <!-- Mic button -->
                  <button type="button" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" id="micBtn" onclick="toggleRecording()">
@@ -507,5 +533,172 @@ if (typeof originalToggleTheme === 'function') {
 }
 
 document.addEventListener('DOMContentLoaded', updateChatBackground);
+
+/* Video messages */
+let chatVmRecorder;
+let chatVmChunks = [];
+let chatVmTimer;
+let chatVmSeconds = 0;
+let chatVmBlob = null;
+let chatVmPromise;
+let chatVmResolve;
+let chatVmStream = null;
+
+async function toggleChatVideoRecording() {
+    const camBtn = document.getElementById('camBtn');
+    const videoRecording = document.getElementById('videoRecording');
+    const messageForm = document.getElementById('messageForm');
+
+    if (chatVmRecorder && chatVmRecorder.state === 'recording') {
+        stopChatVideoRecording();
+    } else {
+        try {
+            chatVmStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 320 } }, audio: true });
+            const preview = document.getElementById('videoPreview');
+            preview.srcObject = chatVmStream;
+            preview.play();
+
+            chatVmRecorder = new MediaRecorder(chatVmStream, { mimeType: 'video/webm;codecs=vp9' });
+            if (chatVmRecorder.state === 'inactive') {
+                chatVmRecorder = new MediaRecorder(chatVmStream, { mimeType: 'video/webm;codecs=vp8' });
+            }
+            if (chatVmRecorder.state === 'inactive') {
+                chatVmRecorder = new MediaRecorder(chatVmStream);
+            }
+            chatVmChunks = [];
+            chatVmBlob = null;
+            chatVmSeconds = 0;
+            chatVmPromise = new Promise(resolve => chatVmResolve = resolve);
+
+            chatVmRecorder.ondataavailable = e => chatVmChunks.push(e.data);
+            chatVmRecorder.onstop = () => {
+                chatVmBlob = new Blob(chatVmChunks, { type: 'video/webm' });
+                if (chatVmStream) chatVmStream.getTracks().forEach(t => t.stop());
+                if (chatVmResolve) chatVmResolve();
+            };
+
+            chatVmRecorder.start();
+            document.getElementById('videoRecordingTime').textContent = '0:00';
+            camBtn.classList.add('recording');
+            videoRecording.style.display = 'flex';
+            messageForm.style.display = 'none';
+
+            chatVmTimer = setInterval(() => {
+                chatVmSeconds++;
+                document.getElementById('videoRecordingTime').textContent = formatChatTime(chatVmSeconds);
+                if (chatVmSeconds >= 60) stopChatVideoRecording();
+            }, 1000);
+        } catch (err) {
+            console.error(err);
+            alert('Не удалось получить доступ к камере');
+        }
+    }
+}
+
+function stopChatVideoRecording() {
+    if (chatVmRecorder && chatVmRecorder.state === 'recording') {
+        chatVmRecorder.stop();
+    }
+    clearInterval(chatVmTimer);
+    document.getElementById('camBtn').classList.remove('recording');
+    const preview = document.getElementById('videoPreview');
+    if (preview.srcObject) {
+        preview.srcObject.getTracks().forEach(t => t.stop());
+        preview.srcObject = null;
+    }
+}
+
+function cancelVideoRecording() {
+    stopChatVideoRecording();
+    document.getElementById('videoRecording').style.display = 'none';
+    document.getElementById('messageForm').style.display = 'flex';
+    chatVmBlob = null;
+    chatVmChunks = [];
+    chatVmStream = null;
+}
+
+async function sendChatVideoRecording() {
+    const videoRecording = document.getElementById('videoRecording');
+    const messageForm = document.getElementById('messageForm');
+
+    stopChatVideoRecording();
+    videoRecording.innerHTML = '<span style="color: var(--text);">⏳ Отправка...</span>';
+    videoRecording.style.display = 'flex';
+
+    if (chatVmPromise) await chatVmPromise;
+
+    if (!chatVmBlob) {
+        videoRecording.style.display = 'none';
+        messageForm.style.display = 'flex';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('video_message', chatVmBlob, 'video_message.webm');
+    formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+    const chatId = {{ chat.id }};
+    const url = `/chat/${chatId}/video-message`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+        });
+        if (response.ok) {
+            location.reload();
+        } else {
+            videoRecording.style.display = 'none';
+            messageForm.style.display = 'flex';
+        }
+    } catch (err) {
+        videoRecording.style.display = 'none';
+        messageForm.style.display = 'flex';
+    }
+
+    chatVmBlob = null;
+    chatVmChunks = [];
+    chatVmStream = null;
+}
+
+/* Autoplay video messages on scroll */
+function setupVideoAutoplay() {
+    const players = document.querySelectorAll('[data-video-msg]');
+    if (!players.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const video = entry.target;
+            if (entry.isIntersecting) {
+                video.muted = true;
+                video.play().catch(() => {});
+            } else {
+                video.pause();
+            }
+        });
+    }, { threshold: 0.5 });
+
+    players.forEach(v => observer.observe(v));
+}
+
+/* Tap video message to toggle sound/fullscreen */
+document.addEventListener('click', function(e) {
+    const video = e.target.closest('[data-video-msg]');
+    if (video && video.tagName === 'VIDEO') {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            video.muted = false;
+            video.requestFullscreen().catch(() => {});
+            video.play().catch(() => {});
+        }
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupVideoAutoplay();
+    var area = document.getElementById('messagesArea');
+    if (area) area.scrollTop = area.scrollHeight;
+});
 </script>
 {% endblock %}

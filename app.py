@@ -204,15 +204,22 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите для доступа'
 
-socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False)
+socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False, async_mode='threading')
 
 active_users = {}  # user_id -> sid
+
+@app.route('/api/unread-count')
+@login_required
+def unread_notification_count():
+    count = Notification.query.filter_by(user_id=current_user.id, read=False).count()
+    return {'count': count}
 
 @socketio.on('connect')
 def handle_connect():
     from flask import request as flask_request
     if current_user.is_authenticated:
         active_users[current_user.id] = flask_request.sid
+        join_room(f'user_{current_user.id}')
         current_user.last_seen = datetime.utcnow()
         try:
             db.session.commit()
@@ -2253,9 +2260,16 @@ def create_shorts():
         
         try:
             ext = video.filename.rsplit('.', 1)[-1].lower() if '.' in video.filename else 'mp4'
-            filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.{ext}'
-            video.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            video_url = url_for('uploaded_file', filename=filename)
+            if cloudinary_configured:
+                result = cloudinary.uploader.upload(
+                    video, folder='shorts', resource_type='video',
+                    timeout=30
+                )
+                video_url = result['secure_url']
+            else:
+                filename = f'shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.{ext}'
+                video.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                video_url = url_for('uploaded_file', filename=filename)
             
             shorts = Shorts(
                 video_url=video_url,
@@ -2356,9 +2370,16 @@ def upload_shorts_audio():
         title = request.form.get('title', 'Original audio')
         
         if audio:
-            filename = f'saudio_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp3'
-            audio.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            audio_url = url_for('uploaded_file', filename=filename)
+            if cloudinary_configured:
+                result = cloudinary.uploader.upload(
+                    audio, folder='shorts_audio', resource_type='video',
+                    timeout=30
+                )
+                audio_url = result['secure_url']
+            else:
+                filename = f'saudio_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp3'
+                audio.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                audio_url = url_for('uploaded_file', filename=filename)
             
             shorts_audio = ShortsAudio(
                 title=title,
@@ -2563,7 +2584,7 @@ def messages():
     group_chats = []
     for member in user_chats:
         chat = Chat.query.get(member.chat_id)
-        if chat:
+        if chat and chat.type == 'group':
             last_msg = chat.messages.order_by(Message.created_at.desc()).first()
             unread_count = Message.query.filter_by(chat_id=chat.id).filter(Message.sender_id != current_user.id, Message.read == False).count()
             group_chats.append({
@@ -2574,6 +2595,9 @@ def messages():
             })
     
     conversations = sorted(conversations.values(), key=lambda x: x['last'].created_at if x.get('last') else datetime.min, reverse=True)
+    
+    # Filter out conversations with deleted users
+    conversations = [c for c in conversations if c.get('user')]
     
     # Добавить себя в список диалогов
     self_messages = Message.query.filter(
@@ -2778,10 +2802,18 @@ def send_voice(username):
         os.unlink(temp_path)
         temp_path = None
         
-        filename = secure_filename(f"voice_{datetime.now().timestamp()}.webm")
         voice_file.seek(0)
-        voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        media_url = '/media/' + filename
+        if cloudinary_configured:
+            result = cloudinary.uploader.upload(
+                voice_file, folder='voice', resource_type='video',
+                timeout=30
+            )
+            media_url = result['secure_url']
+        else:
+            filename = secure_filename(f"voice_{int(datetime.now().timestamp())}.webm")
+            voice_file.seek(0)
+            voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            media_url = '/media/' + filename
         
         msg = Message(body=transcription if transcription else '', sender=current_user, recipient=other_user, transcription=transcription)
         db.session.add(msg)
@@ -2796,6 +2828,51 @@ def send_voice(username):
         app.logger.error(f"Voice message error: {e}")
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)
+        return str(e), 500
+
+
+@app.route('/messages/<username>/video-message', methods=['POST'])
+@login_required
+def send_video_message(username):
+    other_user = User.query.filter_by(username=username).first_or_404()
+
+    if current_user.is_blocking(other_user) or other_user.is_blocking(current_user):
+        return 'Blocked', 403
+
+    if 'video_message' not in request.files:
+        return {'error': 'No video file'}, 400
+
+    video_file = request.files['video_message']
+    if not video_file.filename:
+        return {'error': 'No file'}, 400
+
+    ext = video_file.filename.rsplit('.', 1)[1].lower() if '.' in video_file.filename else 'webm'
+    if ext not in {'webm', 'mp4', 'mov'}:
+        return {'error': 'Invalid format'}, 400
+
+    try:
+        if cloudinary_configured:
+            result = cloudinary.uploader.upload(
+                video_file, folder='video_messages', resource_type='video',
+                timeout=30
+            )
+            media_url = result['secure_url']
+        else:
+            filename = secure_filename(f"vm_{int(datetime.now().timestamp())}_{current_user.id}.{ext}")
+            video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            media_url = '/media/' + filename
+
+        msg = Message(sender=current_user, recipient=other_user, body='')
+        db.session.add(msg)
+        db.session.flush()
+
+        media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='video_message')
+        db.session.add(media)
+        db.session.commit()
+
+        return 'OK', 200
+    except Exception as e:
+        app.logger.error(f"Video message error: {e}")
         return str(e), 500
 
 
@@ -2937,10 +3014,18 @@ def send_chat_voice(chat_id):
         os.unlink(temp_path)
         temp_path = None
         
-        filename = secure_filename(f"voice_{datetime.now().timestamp()}.webm")
         voice_file.seek(0)
-        voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        media_url = '/media/' + filename
+        if cloudinary_configured:
+            result = cloudinary.uploader.upload(
+                voice_file, folder='voice', resource_type='video',
+                timeout=30
+            )
+            media_url = result['secure_url']
+        else:
+            filename = secure_filename(f"voice_{int(datetime.now().timestamp())}.webm")
+            voice_file.seek(0)
+            voice_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            media_url = '/media/' + filename
         
         msg = Message(body=transcription if transcription else '', sender=current_user, chat_id=chat_id, transcription=transcription)
         db.session.add(msg)
@@ -2955,6 +3040,52 @@ def send_chat_voice(chat_id):
         app.logger.error(f"Chat voice message error: {e}")
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)
+        return str(e), 500
+
+
+@app.route('/chat/<int:chat_id>/video-message', methods=['POST'])
+@login_required
+def send_chat_video_message(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
+
+    if not member:
+        return 'Not a member', 403
+
+    if 'video_message' not in request.files:
+        return {'error': 'No video file'}, 400
+
+    video_file = request.files['video_message']
+    if not video_file.filename:
+        return {'error': 'No file'}, 400
+
+    ext = video_file.filename.rsplit('.', 1)[1].lower() if '.' in video_file.filename else 'webm'
+    if ext not in {'webm', 'mp4', 'mov'}:
+        return {'error': 'Invalid format'}, 400
+
+    try:
+        if cloudinary_configured:
+            result = cloudinary.uploader.upload(
+                video_file, folder='video_messages', resource_type='video',
+                timeout=30
+            )
+            media_url = result['secure_url']
+        else:
+            filename = secure_filename(f"vm_{int(datetime.now().timestamp())}_{current_user.id}.{ext}")
+            video_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            media_url = '/media/' + filename
+
+        msg = Message(sender=current_user, chat_id=chat_id, body='')
+        db.session.add(msg)
+        db.session.flush()
+
+        media = MessageMedia(message_id=msg.id, media_url=media_url, media_type='video_message')
+        db.session.add(media)
+        db.session.commit()
+
+        return 'OK', 200
+    except Exception as e:
+        app.logger.error(f"Chat video message error: {e}")
         return str(e), 500
 
 
