@@ -4317,6 +4317,7 @@ def bot_api(token, method):
         'kickMember': bot_kick_member,
         'promoteToAdmin': bot_promote_to_admin,
         'deletePost': bot_delete_post,
+        'sendPost': bot_send_post,
     }
 
     handler = handlers.get(method)
@@ -4687,6 +4688,52 @@ def bot_promote_to_admin(bot):
     member.role = 'admin'
     db.session.commit()
     return bot_json_response({'ok': True})
+
+
+def bot_send_post(bot):
+    data = request.json or request.form
+    community_id = data.get('community_id')
+    body = data.get('body', '').strip()
+    if not community_id:
+        return bot_json_response('community_id is required', 400)
+    comm = resolve_community(community_id)
+    if not comm:
+        return bot_json_response('Community not found', 404)
+    bot_member = CommunityMember.query.filter_by(community_id=comm.id, user_id=bot.id, status='approved').first()
+    if not bot_member or bot_member.role not in ('admin', 'creator'):
+        return bot_json_response('Bot is not an admin of this community', 403)
+    post = Post(body=body, author=bot, community=comm, is_community_post=True)
+    db.session.add(post)
+    db.session.flush()
+    files = request.files.getlist('media')
+    for file in files:
+        if file.filename and allowed_file(file.filename):
+            try:
+                if cloudinary_configured:
+                    url = upload_to_cloudinary(file, folder='posts')
+                    if url:
+                        filename = url.split('/')[-1].split('.')[0]
+                        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'audio' if ext in {'mp3', 'wav', 'ogg'} else 'image'
+                        media = Media(filename=filename, cloudinary_url=url, media_type=media_type, post=post)
+                        db.session.add(media)
+                else:
+                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'audio' if ext in {'mp3', 'wav', 'ogg'} else 'image'
+                    media = Media(filename=filename, media_type=media_type, post=post)
+                    db.session.add(media)
+            except Exception as e:
+                app.logger.error(f"Bot sendPost media upload error: {e}")
+    db.session.commit()
+    return bot_json_response({
+        'post_id': post.id,
+        'body': post.body,
+        'community_id': comm.id,
+        'community_name': comm.name,
+        'created_at': post.created_at.isoformat() if post.created_at else None,
+    })
 
 
 def bot_delete_post(bot):
