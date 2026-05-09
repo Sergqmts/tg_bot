@@ -302,7 +302,7 @@ def get_moderation_bot():
 
 
 def moderate_post(body, author, community=None):
-    if author.is_bot and author.username == MODERATION_BOT_USERNAME:
+    if author.is_bot and author.creator_id is None:
         return None
     if author.is_banned:
         return 'USER_BANNED'
