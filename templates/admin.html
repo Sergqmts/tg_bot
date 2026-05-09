@@ -169,6 +169,15 @@
                                 <button type="submit" class="text-xs text-red-500 hover:underline">Ban</button>
                             </form>
                             {% endif %}
+                            {% if u.is_staff and u.username != 'botadmin' %}
+                            <form method="POST" class="inline" action="{{ url_for('admin_toggle_staff', user_id=u.id) }}">
+                                <button type="submit" class="text-xs text-orange-500 hover:underline ml-1">Demote</button>
+                            </form>
+                            {% elif not u.is_staff and not u.is_bot %}
+                            <form method="POST" class="inline" action="{{ url_for('admin_toggle_staff', user_id=u.id) }}">
+                                <button type="submit" class="text-xs text-blue-500 hover:underline ml-1">Make staff</button>
+                            </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

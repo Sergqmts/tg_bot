@@ -4378,6 +4378,20 @@ def admin_toggle_community_ban(community_id):
     return redirect(url_for('admin_panel'))
 
 
+@app.route('/admin/toggle-staff/<int:user_id>', methods=['POST'])
+@login_required
+@staff_required
+def admin_toggle_staff(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.is_bot:
+        flash('Cannot make bots staff')
+        return redirect(url_for('admin_panel'))
+    user.is_staff = not user.is_staff
+    db.session.commit()
+    flash(f'User @{user.username} {"promoted to staff" if user.is_staff else "demoted"}')
+    return redirect(url_for('admin_panel'))
+
+
 @app.route('/report', methods=['POST'])
 @login_required
 def submit_report():
@@ -5170,6 +5184,15 @@ with app.app_context():
             app.logger.info("Promoted botadmin to staff")
     except Exception as e:
         app.logger.info(f"Staff promotion: {e}")
+
+    try:
+        user = User.query.filter_by(username='Sergqmts').first()
+        if user and not user.is_staff:
+            user.is_staff = True
+            db.session.commit()
+            app.logger.info("Promoted Sergqmts to staff")
+    except Exception as e:
+        app.logger.info(f"Staff promotion Sergqmts: {e}")
 
 
 @app.context_processor
