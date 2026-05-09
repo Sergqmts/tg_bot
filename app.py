@@ -1326,38 +1326,7 @@ def index():
         query = Post.query
         if blocked_ids:
             query = query.filter(~Post.user_id.in_(blocked_ids))
-        all_candidates = query.all()
-        
-        scored_posts = []
-        for p in all_candidates:
-            score = 0
-            
-            if p.user_id == current_user.id:
-                score += 100
-            
-            if p.user_id in followed_ids:
-                score += 50
-            
-            if p.user_id in likers and p.user_id in followed_ids:
-                score += 25
-            
-            if p.community_id in member_communities:
-                score += 40
-            
-            post_interests = set(p.author.interests.lower().split()) if p.author.interests else set()
-            if user_interests & post_interests:
-                score += len(user_interests & post_interests) * 10
-            
-            if p.likes.count() > 10:
-                score += min(p.likes.count() // 2, 30)
-            
-            if p.comments.count() > 5:
-                score += min(p.comments.count(), 20)
-                
-            scored_posts.append((score, p))
-        
-        scored_posts.sort(key=lambda x: x[0], reverse=True)
-        posts = [p for _, p in scored_posts[:100]]
+        posts = query.order_by(Post.created_at.desc()).limit(100).all()
         
         repost_counts = {p.id: Repost.query.filter_by(post_id=p.id).count() for p in posts}
         
