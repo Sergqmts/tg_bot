@@ -165,7 +165,7 @@ def init_db():
                         conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
                         conn.commit()
 
-                for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id']:
+                for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id', 'is_banned']:
                     if not column_exists_conn(conn, 'user', col):
                         if is_postgres:
                             type_map = {
@@ -176,13 +176,20 @@ def init_db():
                                 'privacy_mode': 'BOOLEAN DEFAULT TRUE',
                                 'webhook_url': 'VARCHAR(500)',
                                 'creator_id': 'INTEGER REFERENCES "user"(id)',
+                                'is_banned': 'BOOLEAN DEFAULT FALSE',
                             }
                             conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {type_map[col]}'))
                         else:
-                            col_type_map = {'creator_id': 'INTEGER'}
+                            col_type_map = {'creator_id': 'INTEGER', 'is_banned': 'BOOLEAN'}
                             col_type = col_type_map.get(col, 'TEXT')
                             conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
                         conn.commit()
+                if not column_exists_conn(conn, 'community', 'is_banned'):
+                    if is_postgres:
+                        conn.execute(text('ALTER TABLE community ADD COLUMN is_banned BOOLEAN DEFAULT FALSE'))
+                    else:
+                        conn.execute(text('ALTER TABLE community ADD COLUMN is_banned BOOLEAN'))
+                    conn.commit()
             app.logger.info("DB init completed successfully")
             return
         except Exception as e:
@@ -234,9 +241,111 @@ def get_table_columns(table_name):
 
 
 def generate_bot_token():
-    """Генерирует уникальный токен для бота в стиле Telegram"""
     import secrets
     return f"{secrets.randbelow(900000000) + 100000000}:{secrets.token_urlsafe(32)}"
+
+
+NSFW_KEYWORDS = [
+    'порно', 'porn', 'секс', 'sex', 'xxx', '18+', 'nsfw', 'эротика', 'erotica',
+    'писька', 'писюн', 'член', 'хуй', 'хуя', 'пизда', 'пизд', 'ебал', 'ебат',
+    'ебля', 'выеб', 'заеб', 'нахуй', 'похуй', 'сосать', 'соси', 'минета',
+    'минет', 'анал', 'anus', 'asshole', 'bdsm', 'биде', 'вагина', 'vagin',
+    'гениталии', 'genital', 'грудь', 'tits', 'titty', 'сиськи', 'сиськ',
+    'дрочить', 'дрочк', 'дупа', 'жопа', 'жоп', 'залупа', 'извращ',
+    'клитор', 'clitor', 'конча', 'кончить', 'лижут', 'лизать', 'мастурб',
+    'masturb', 'мошонк', 'мудак', 'мудил', 'мужлан', 'негр', 'ниггер',
+    'naked', 'nude', 'обнажен', 'оголен', 'орал', 'oral', 'оргазм', 'orgasm',
+    'педик', 'петух', 'петуша', 'попка', 'попа', 'проститут', 'prostitut',
+    'pubic', 'разврат', 'секс-', 'slut', 'сперм', 'sperm', 'squirt',
+    'страпон', 'stripper', 'strip', 'сука', 'сучар', 'трахат', 'трахн',
+    'траx', 'фистинг', 'fisting', 'фетиш', 'fetish', 'fuck', 'fucking',
+    'fucked', 'handjob', 'blowjob', 'cum', 'cock', 'cocks', 'dick',
+    'dildo', 'domina', 'ejacul', 'erotic', 'escort', 'gangbang',
+    'hentai', 'horny', 'incest', 'jerk', 'kink', 'kinky', 'lesbian',
+    'licking', 'milf', 'nipple', 'nudity', 'orgy', 'penis', 'pornstar',
+    'pussy', 'rape', 'rapist', 'seduce', 'semen', 'sex toy', 'sexting',
+    'sexual', 'slave', 'sucking', 'threesome', 'urethra', 'vibrator',
+    'voyeur', 'whore', 'wank', 'шалава', 'шлюха', 'щель',
+]
+
+
+def check_nsfw_text(text):
+    if not text:
+        return None
+    text_lower = text.lower()
+    for kw in NSFW_KEYWORDS:
+        if kw in text_lower:
+            return kw
+    return None
+
+
+MODERATION_BOT_USERNAME = 'ModeratorBot'
+WARNING_LIMIT = 5
+
+
+def get_moderation_bot():
+    bot = User.query.filter_by(username=MODERATION_BOT_USERNAME, is_bot=True).first()
+    if not bot:
+        bot = User(
+            username=MODERATION_BOT_USERNAME,
+            email=f'bot_{MODERATION_BOT_USERNAME}@localhost',
+            is_bot=True,
+            bot_token=generate_bot_token(),
+            bot_commands='[]',
+            bio='Content Moderation Bot — проверяет контент на нарушения',
+            creator_id=None,
+        )
+        bot.set_password(os.urandom(32).hex())
+        db.session.add(bot)
+        db.session.flush()
+    return bot
+
+
+def moderate_post(body, author, community=None):
+    if author.is_bot and author.username == MODERATION_BOT_USERNAME:
+        return None
+    if author.is_banned:
+        return 'USER_BANNED'
+
+    matched = check_nsfw_text(body)
+    if not matched:
+        return None
+
+    warning_count = ModerationLog.query.filter_by(user_id=author.id).count() + 1
+    log = ModerationLog(
+        user_id=author.id,
+        community_id=community.id if community else None,
+        post_id=None,
+        reason=f'NSFW content detected (keyword: {matched})',
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    bot = get_moderation_bot()
+    dm = get_or_create_dm(author, bot)
+    msg = (
+        f'⚠️ Warning #{warning_count}/{WARNING_LIMIT}\n\n'
+        f'Your post was rejected: NSFW content detected.\n'
+        f'Reason: inappropriate language ("{matched}")\n\n'
+    )
+    if warning_count >= WARNING_LIMIT:
+        author.is_banned = True
+        db.session.commit()
+        msg += '🚫 Your account has been permanently banned for repeated violations.'
+    else:
+        msg += f'After {WARNING_LIMIT} warnings your account will be permanently banned.'
+
+    message = Message(
+        sender_id=bot.id,
+        recipient_id=author.id,
+        chat_id=dm.id,
+        body=msg,
+    )
+    db.session.add(message)
+    db.session.commit()
+
+    return 'BLOCKED'
+
 
 with app.app_context():
     init_db()
@@ -601,6 +710,7 @@ class User(UserMixin, db.Model):
     privacy_mode = db.Column(db.Boolean, default=True)
     webhook_url = db.Column(db.String(500), nullable=True)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    is_banned = db.Column(db.Boolean, default=False)
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
@@ -628,6 +738,10 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def warning_count(self):
+        return ModerationLog.query.filter_by(user_id=self.id).count()
 
     def like_post(self, post):
         if not self.has_liked(post):
@@ -860,6 +974,7 @@ class Community(db.Model):
     is_private = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_banned = db.Column(db.Boolean, default=False)
     
     creator = db.relationship('User', backref='created_communities')
     posts = db.relationship('Post', backref='community', lazy='dynamic', cascade='all, delete-orphan')
@@ -880,6 +995,19 @@ class CommunityMember(db.Model):
     user = db.relationship('User', backref=db.backref('community_memberships', lazy='dynamic'))
     
     __table_args__ = (db.UniqueConstraint('user_id', 'community_id', name='unique_membership'),)
+
+
+class ModerationLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    reason = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    offender = db.relationship('User', foreign_keys=[user_id], backref='moderation_warnings')
+    post = db.relationship('Post', backref='moderation_logs')
+    community = db.relationship('Community', foreign_keys=[community_id], backref='moderation_warnings')
 
 
 class CommunityEvent(db.Model):
@@ -1362,6 +1490,9 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.check_password(form.password.data):
+            if user.is_banned:
+                flash('Ваш аккаунт заблокирован за нарушение правил')
+                return render_template('login.html', form=form)
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('index'))
@@ -1382,6 +1513,15 @@ def create():
     if request.method == 'POST':
         try:
             body = request.form.get('body', '').strip()
+            
+            result = moderate_post(body, current_user)
+            if result == 'USER_BANNED':
+                flash('Ваш аккаунт заблокирован за нарушение правил')
+                return redirect(url_for('index'))
+            if result == 'BLOCKED':
+                flash('Пост отклонён: обнаружен неприемлемый контент. Проверьте личные сообщения.')
+                return redirect(url_for('index'))
+            
             media_data = request.form.get('media_data')
             
             post = Post(body=body, author=current_user)
@@ -3987,10 +4127,22 @@ def community_post(slug):
     if not current_user.is_admin(comm):
         flash('Только создатель может публиковать записи')
         return redirect(url_for('community', slug=slug))
-    
+    if comm.is_banned:
+        flash('Сообщество заблокировано за нарушение правил')
+        return redirect(url_for('community', slug=slug))
+
     form = CommunityPostForm()
     if form.validate_on_submit():
-        post = Post(body=form.body.data or '', author=current_user, community=comm, is_community_post=True)
+        body = form.body.data or ''
+        result = moderate_post(body, current_user, community=comm)
+        if result == 'USER_BANNED':
+            flash('Ваш аккаунт заблокирован за нарушение правил')
+            return redirect(url_for('community', slug=slug))
+        if result == 'BLOCKED':
+            flash('Пост отклонён: обнаружен неприемлемый контент. Проверьте личные сообщения.')
+            return redirect(url_for('community', slug=slug))
+
+        post = Post(body=body, author=current_user, community=comm, is_community_post=True)
         db.session.add(post)
         db.session.flush()
         
@@ -4695,9 +4847,18 @@ def bot_send_post(bot):
     comm = resolve_community(community_id)
     if not comm:
         return bot_json_response('Community not found', 404)
+    if comm.is_banned:
+        return bot_json_response('Community is banned for violations', 403)
     bot_member = CommunityMember.query.filter_by(community_id=comm.id, user_id=bot.id, status='approved').first()
     if not bot_member or bot_member.role not in ('admin', 'creator'):
         return bot_json_response('Bot is not an admin of this community', 403)
+
+    result = moderate_post(body, bot, community=comm)
+    if result == 'USER_BANNED':
+        return bot_json_response('Bot is banned for violations', 403)
+    if result == 'BLOCKED':
+        return bot_json_response('Post rejected: NSFW content detected', 403)
+
     post = Post(body=body, author=bot, community=comm, is_community_post=True)
     db.session.add(post)
     db.session.flush()
