@@ -39,6 +39,7 @@ if not app.config['SECRET_KEY']:
     app.config['SECRET_KEY'] = secrets.token_hex(32)
     app.logger.warning("SECRET_KEY not set - generating random key. Sessions will reset on restart.")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'pdf', 'doc', 'docx', 'txt'}
@@ -113,88 +114,100 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db = SQLAlchemy(app)
 
 def init_db():
-    try:
-        from sqlalchemy import text, inspect
-        with db.engine.connect() as conn:
-            # Определяем тип БД
-            db_url = str(db.engine.url)
-            is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
-            
+    from sqlalchemy import text
+    db_url = str(db.engine.url)
+    is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+
+    def column_exists_conn(conn, table, column):
+        try:
             if is_postgres:
-                # PostgreSQL - используем information_schema
-                result = conn.execute(text("""
-                    SELECT COUNT(*) FROM information_schema.columns 
-                    WHERE table_name = 'message' AND column_name = 'transcription'
-                """))
-                if not result.scalar():
-                    conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
-                    conn.commit()
-                
-                # Добавляем last_seen если его нет
-                result = conn.execute(text("""
-                    SELECT COUNT(*) FROM information_schema.columns 
-                    WHERE table_name = 'user' AND column_name = 'last_seen'
-                """))
-                if not result.scalar():
-                    conn.execute(text('ALTER TABLE "user" ADD COLUMN last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP'))
-                    conn.commit()
-                
-                # Создаем таблицу notification если её нет
-                result = conn.execute(text("""
-                    SELECT COUNT(*) FROM information_schema.tables 
-                    WHERE table_name = 'notification'
-                """))
-                if not result.scalar():
-                    db.create_all()
+                result = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                    "WHERE table_name = :table AND column_name = :column"
+                ), {'table': table, 'column': column})
             else:
-                # SQLite - используем pragma_table_info
-                result = conn.execute(text("SELECT COUNT(*) FROM pragma_table_info('message') WHERE name='transcription'"))
-                if not result.scalar():
-                    conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
-                    conn.commit()
-        
-        # Bot columns for User table
-        for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id']:
-            if not column_exists('user', col):
+                result = conn.execute(text(
+                    "SELECT COUNT(*) FROM pragma_table_info(:table) WHERE name=:column"
+                ), {'table': table, 'column': column})
+            return result.scalar() > 0
+        except:
+            return False
+
+    for attempt in range(3):
+        try:
+            with db.engine.connect() as conn:
                 if is_postgres:
-                    type_map = {
-                        'is_bot': 'BOOLEAN DEFAULT FALSE',
-                        'bot_token': 'VARCHAR(64)',
-                        'bot_commands': 'TEXT DEFAULT \'[]\'',
-                        'can_join_groups': 'BOOLEAN DEFAULT TRUE',
-                        'privacy_mode': 'BOOLEAN DEFAULT TRUE',
-                        'webhook_url': 'VARCHAR(500)',
-                        'creator_id': 'INTEGER REFERENCES "user"(id)',
-                    }
-                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {type_map[col]}'))
+                    result = conn.execute(text("""
+                        SELECT COUNT(*) FROM information_schema.columns 
+                        WHERE table_name = 'message' AND column_name = 'transcription'
+                    """))
+                    if not result.scalar():
+                        conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
+                        conn.commit()
+                    
+                    result = conn.execute(text("""
+                        SELECT COUNT(*) FROM information_schema.columns 
+                        WHERE table_name = 'user' AND column_name = 'last_seen'
+                    """))
+                    if not result.scalar():
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP'))
+                        conn.commit()
+                    
+                    result = conn.execute(text("""
+                        SELECT COUNT(*) FROM information_schema.tables 
+                        WHERE table_name = 'notification'
+                    """))
+                    if not result.scalar():
+                        db.create_all()
                 else:
-                    col_type_map = {
-                        'creator_id': 'INTEGER',
-                    }
-                    col_type = col_type_map.get(col, 'TEXT')
-                    conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
-                conn.commit()
-    except Exception as e:
-        app.logger.error(f"DB init error: {e}")
+                    result = conn.execute(text("SELECT COUNT(*) FROM pragma_table_info('message') WHERE name='transcription'"))
+                    if not result.scalar():
+                        conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
+                        conn.commit()
+
+                for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id']:
+                    if not column_exists_conn(conn, 'user', col):
+                        if is_postgres:
+                            type_map = {
+                                'is_bot': 'BOOLEAN DEFAULT FALSE',
+                                'bot_token': 'VARCHAR(64)',
+                                'bot_commands': "TEXT DEFAULT '[]'",
+                                'can_join_groups': 'BOOLEAN DEFAULT TRUE',
+                                'privacy_mode': 'BOOLEAN DEFAULT TRUE',
+                                'webhook_url': 'VARCHAR(500)',
+                                'creator_id': 'INTEGER REFERENCES "user"(id)',
+                            }
+                            conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {type_map[col]}'))
+                        else:
+                            col_type_map = {'creator_id': 'INTEGER'}
+                            col_type = col_type_map.get(col, 'TEXT')
+                            conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
+                        conn.commit()
+            app.logger.info("DB init completed successfully")
+            return
+        except Exception as e:
+            app.logger.warning(f"DB init attempt {attempt+1} failed: {e}")
+            import time
+            time.sleep(2)
 
 
 def column_exists(table_name, column_name):
     """Проверяет, существует ли колонка в таблице (совместимо с SQLite и PostgreSQL)"""
     from sqlalchemy import text
-    db_url = str(db.engine.url)
-    is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
-    
     try:
-        if is_postgres:
-            result = db.session.execute(text("""
-                SELECT COUNT(*) FROM information_schema.columns 
-                WHERE table_name = :table AND column_name = :column
-            """), {'table': table_name, 'column': column_name})
-        else:
-            result = db.session.execute(text("""
-                SELECT COUNT(*) FROM pragma_table_info(:table) WHERE name=:column
-            """), {'table': table_name, 'column': column_name})
-        return result.scalar() > 0
+        with db.engine.connect() as conn:
+            db_url = str(db.engine.url)
+            is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+            if is_postgres:
+                result = conn.execute(text("""
+                    SELECT COUNT(*) FROM information_schema.columns 
+                    WHERE table_name = :table AND column_name = :column
+                """), {'table': table_name, 'column': column_name})
+            else:
+                result = conn.execute(text("""
+                    SELECT COUNT(*) FROM pragma_table_info(:table) WHERE name=:column
+                """), {'table': table_name, 'column': column_name})
+            return result.scalar() > 0
     except:
         return False
 
