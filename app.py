@@ -4164,9 +4164,8 @@ with app.app_context():
 @app.route('/bots')
 @login_required
 def my_bots():
-    bots = User.query.filter_by(is_bot=True).all()
-    user_bots = [b for b in bots if b.id in [cm.user_id for cm in current_user.chat_memberships]]
-    return render_template('bots.html', bots=user_bots)
+    bots = User.query.filter_by(is_bot=True, creator_id=current_user.id).all()
+    return render_template('bots.html', bots=bots)
 
 
 @app.route('/bots/new', methods=['GET', 'POST'])
@@ -4318,6 +4317,7 @@ def bot_api(token, method):
         'promoteToAdmin': bot_promote_to_admin,
         'deletePost': bot_delete_post,
         'sendPost': bot_send_post,
+        'joinCommunity': bot_join_community,
     }
 
     handler = handlers.get(method)
@@ -4688,6 +4688,28 @@ def bot_promote_to_admin(bot):
     member.role = 'admin'
     db.session.commit()
     return bot_json_response({'ok': True})
+
+
+def bot_join_community(bot):
+    data = request.json or request.form
+    community_id = data.get('community_id')
+    if not community_id:
+        return bot_json_response('community_id is required', 400)
+    comm = resolve_community(community_id)
+    if not comm:
+        return bot_json_response('Community not found', 404)
+    existing = CommunityMember.query.filter_by(user_id=bot.id, community_id=comm.id).first()
+    if existing:
+        if existing.status == 'approved':
+            return bot_json_response({'ok': True, 'status': 'already_member'})
+        existing.status = 'approved'
+        existing.role = 'admin'
+        db.session.commit()
+        return bot_json_response({'ok': True, 'status': 'approved'})
+    member = CommunityMember(user_id=bot.id, community_id=comm.id, status='approved', role='admin')
+    db.session.add(member)
+    db.session.commit()
+    return bot_json_response({'ok': True, 'status': 'joined'})
 
 
 def bot_send_post(bot):
