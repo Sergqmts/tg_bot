@@ -165,7 +165,7 @@ def init_db():
                         conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
                         conn.commit()
 
-                for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id', 'is_banned']:
+                for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id', 'is_banned', 'is_staff']:
                     if not column_exists_conn(conn, 'user', col):
                         if is_postgres:
                             type_map = {
@@ -177,10 +177,11 @@ def init_db():
                                 'webhook_url': 'VARCHAR(500)',
                                 'creator_id': 'INTEGER REFERENCES "user"(id)',
                                 'is_banned': 'BOOLEAN DEFAULT FALSE',
+                                'is_staff': 'BOOLEAN DEFAULT FALSE',
                             }
                             conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {type_map[col]}'))
                         else:
-                            col_type_map = {'creator_id': 'INTEGER', 'is_banned': 'BOOLEAN'}
+                            col_type_map = {'creator_id': 'INTEGER', 'is_banned': 'BOOLEAN', 'is_staff': 'BOOLEAN'}
                             col_type = col_type_map.get(col, 'TEXT')
                             conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
                         conn.commit()
@@ -711,6 +712,7 @@ class User(UserMixin, db.Model):
     webhook_url = db.Column(db.String(500), nullable=True)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     is_banned = db.Column(db.Boolean, default=False)
+    is_staff = db.Column(db.Boolean, default=False)
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
@@ -1008,6 +1010,20 @@ class ModerationLog(db.Model):
     offender = db.relationship('User', foreign_keys=[user_id], backref='moderation_warnings')
     post = db.relationship('Post', backref='moderation_logs')
     community = db.relationship('Community', foreign_keys=[community_id], backref='moderation_warnings')
+
+
+class Report(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    target_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    target_post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
+    reason = db.Column(db.String(500), nullable=False)
+    status = db.Column(db.String(20), default='pending')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    reporter = db.relationship('User', foreign_keys=[reporter_id], backref='reports_made')
+    target_user = db.relationship('User', foreign_keys=[target_user_id], backref='reports_received')
+    target_post = db.relationship('Post', backref='reports')
 
 
 class CommunityEvent(db.Model):
@@ -4294,6 +4310,98 @@ def bot_docs():
     return render_template('bot_docs.html')
 
 
+def staff_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_staff:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route('/admin')
+@login_required
+@staff_required
+def admin_panel():
+    bots = User.query.filter_by(is_bot=True, creator_id=None).all()
+    reports = Report.query.order_by(Report.created_at.desc()).all()
+    pending_reports = Report.query.filter_by(status='pending').count()
+    users = User.query.filter_by(is_bot=False).order_by(User.created_at.desc()).all()
+    communities = Community.query.order_by(Community.created_at.desc()).all()
+    return render_template('admin.html', bots=bots, reports=reports,
+                           pending_reports=pending_reports, users=users, communities=communities)
+
+
+@app.route('/admin/report/<int:report_id>/resolve', methods=['POST'])
+@login_required
+@staff_required
+def admin_approve_report(report_id):
+    report = Report.query.get_or_404(report_id)
+    action = request.form.get('action')
+    if action == 'ban_user' and report.target_user_id:
+        user = User.query.get(report.target_user_id)
+        if user:
+            user.is_banned = True
+            report.status = 'approved'
+            db.session.commit()
+            flash(f'User @{user.username} banned')
+    elif action == 'dismiss':
+        report.status = 'dismissed'
+        db.session.commit()
+        flash('Report dismissed')
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/toggle-ban/<int:user_id>', methods=['POST'])
+@login_required
+@staff_required
+def admin_toggle_ban(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.is_staff:
+        flash('Cannot ban staff members')
+        return redirect(url_for('admin_panel'))
+    user.is_banned = not user.is_banned
+    db.session.commit()
+    flash(f'User @{user.username} {"banned" if user.is_banned else "unbanned"}')
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/toggle-community-ban/<int:community_id>', methods=['POST'])
+@login_required
+@staff_required
+def admin_toggle_community_ban(community_id):
+    comm = Community.query.get_or_404(community_id)
+    comm.is_banned = not comm.is_banned
+    db.session.commit()
+    flash(f'Community "{comm.name}" {"banned" if comm.is_banned else "unbanned"}')
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/report', methods=['POST'])
+@login_required
+def submit_report():
+    target_user_id = request.form.get('target_user_id', type=int)
+    target_post_id = request.form.get('target_post_id', type=int)
+    reason = request.form.get('reason', '').strip()
+    if not reason:
+        flash('Please provide a reason')
+        return redirect(request.referrer or url_for('index'))
+    if not target_user_id and not target_post_id:
+        flash('No target specified')
+        return redirect(request.referrer or url_for('index'))
+    report = Report(
+        reporter_id=current_user.id,
+        target_user_id=target_user_id,
+        target_post_id=target_post_id,
+        reason=reason,
+    )
+    db.session.add(report)
+    db.session.commit()
+    flash('Report submitted. Thank you!')
+    return redirect(request.referrer or url_for('index'))
+
+
 @app.route('/bots/new', methods=['GET', 'POST'])
 @login_required
 def create_bot():
@@ -5053,6 +5161,15 @@ with app.app_context():
             db.session.commit()
     except Exception as e:
         app.logger.info(f"Migration avatar_cloudinary_url: {e}")
+    
+    try:
+        admin = User.query.filter_by(username='botadmin').first()
+        if admin and not admin.is_staff:
+            admin.is_staff = True
+            db.session.commit()
+            app.logger.info("Promoted botadmin to staff")
+    except Exception as e:
+        app.logger.info(f"Staff promotion: {e}")
 
 
 @app.context_processor
