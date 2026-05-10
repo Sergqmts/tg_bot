@@ -5643,6 +5643,15 @@ with app.app_context():
     except Exception as e:
         app.logger.info(f"Staff promotion Sergqmts: {e}")
 
+    try:
+        info = db.session.execute(text('SELECT data_type FROM information_schema.columns WHERE table_name = \'music_track\' AND column_name = \'deezer_id\'')).fetchone()
+        if info and info[0] == 'integer':
+            db.session.execute(text('ALTER TABLE music_track ALTER COLUMN deezer_id TYPE BIGINT'))
+            db.session.commit()
+            app.logger.info("Migrated music_track.deezer_id from INTEGER to BIGINT")
+    except Exception as e:
+        app.logger.info(f"Migration deezer_id BIGINT: {e}")
+
 
 @app.context_processor
 def inject_utils():
