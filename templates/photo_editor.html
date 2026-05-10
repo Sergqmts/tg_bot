@@ -375,12 +375,19 @@ let state = {
 };
 
 function initEditor() {
-  state.canvas = document.getElementById('mainCanvas');
-  state.ctx = state.canvas.getContext('2d');
-  initFilterGrid();
-  initFrameGrid();
-  initCollageGrid();
-  initEmojiGrid();
+  try {
+    state.canvas = document.getElementById('mainCanvas');
+    state.ctx = state.canvas.getContext('2d');
+    initFilterGrid();
+    initFrameGrid();
+    initCollageGrid();
+    initEmojiGrid();
+    var t = '{{ target }}';
+    if (t === 'story') {
+      state.crop.aspect = '9:16';
+      document.querySelector('input[name="saveTarget"][value="story"]').checked = true;
+    }
+  } catch(e) { console.error('Editor init error:', e); }
 }
 
 function initFilterGrid() {
@@ -515,6 +522,10 @@ function render() {
     ctx.lineWidth = 4;
     ctx.strokeRect(2,2,w-4,h-4);
     ctx.restore();
+  }
+  
+  if (state.drawLayer) {
+    ctx.drawImage(state.drawLayer, 0, 0);
   }
 }
 
@@ -676,15 +687,13 @@ function switchTool(tool) {
 function applyFilter(name) {
   state.filter = name;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
   render();
 }
 
 function toggleEffect(name) {
   state.effects[name] = !state.effects[name];
-  if (event && event.currentTarget) {
-    event.currentTarget.classList.toggle('active');
-  }
+  if (event && event.currentTarget) event.currentTarget.classList.toggle('active');
   render();
 }
 
@@ -713,7 +722,7 @@ function resetAdjust() {
 function setAspect(aspect) {
   state.crop.aspect = aspect;
   document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
   if (state.crop.active) updateCropBox();
 }
 
@@ -1179,7 +1188,7 @@ function applyPortrait(type) {
 function applyFrame(idx) {
   state.frameStyle = FRAMES[idx];
   document.querySelectorAll('.frame-item').forEach(b => b.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
   render();
 }
 
@@ -1193,7 +1202,7 @@ let selectedCollage = null;
 function selectCollage(idx) {
   selectedCollage = idx;
   document.querySelectorAll('.collage-item').forEach(b => b.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
 }
 
 function loadCollageImages(files) {
@@ -1260,7 +1269,7 @@ function toggleAnimation(type) {
   }
   state.animType = type;
   document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
   animateLoop();
 }
 
@@ -1419,19 +1428,7 @@ function resetAll() {
 
 function renderWithDraw() {
   render();
-  if (state.drawLayer) {
-    state.ctx.drawImage(state.drawLayer, 0, 0);
-  }
 }
-
-// Override render to include draw layer
-const origRender = render;
-render = function() {
-  origRender.call(this);
-  if (state.drawLayer) {
-    state.ctx.drawImage(state.drawLayer, 0, 0);
-  }
-};
 
 function showSaveDialog() {
   if (!state.image) return;

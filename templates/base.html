@@ -160,6 +160,9 @@
             <a href="{{ url_for('create') }}" class="text-3xl text-slate-400 hover:text-brand-middle transition-colors">
                 <i class="fa-regular fa-square-plus"></i>
             </a>
+            <a href="{{ url_for('photo_editor') }}" class="text-2xl {% if request.endpoint == 'photo_editor' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </a>
             <a href="{{ url_for('shorts') }}" class="text-2xl {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-clapperboard"></i>
             </a>

@@ -1645,6 +1645,7 @@ def create():
 @login_required
 def photo_editor():
     draft_id = request.args.get('draft')
+    target = request.args.get('target', 'feed')
     editing = draft_id is not None
     if draft_id:
         draft = Draft.query.get_or_404(draft_id)
@@ -1652,7 +1653,7 @@ def photo_editor():
             abort(403)
     else:
         draft = None
-    return render_template('photo_editor.html', editing=editing, draft=draft)
+    return render_template('photo_editor.html', editing=editing, draft=draft, target=target)
 
 
 @app.route('/drafts')

@@ -38,6 +38,10 @@
         
         <div class="p-4 space-y-4">
             <div class="flex gap-3">
+                <a href="{{ url_for('photo_editor', target='story') }}" class="flex-1 flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl hover:opacity-90 transition-all">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span class="text-sm font-bold">Редактор</span>
+                </a>
                 <button class="flex-1 flex items-center justify-center gap-2 p-4 bg-slate-800 rounded-2xl hover:bg-slate-700 transition-all" onclick="openCamera()">
                     <i class="fa-solid fa-camera text-brand-middle"></i>
                     <span class="text-sm">Камера</span>
