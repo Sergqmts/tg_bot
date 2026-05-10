@@ -5010,6 +5010,59 @@ def get_or_create_dm(user_a, user_b):
     return chat
 
 
+@app.route('/github-webhook', methods=['POST'])
+@csrf.exempt
+def github_webhook():
+    secret = os.environ.get('GITHUB_WEBHOOK_SECRET', '')
+    if secret:
+        sig = request.headers.get('X-Hub-Signature-256', '')
+        if not sig:
+            return 'missing signature', 403
+        import hmac, hashlib
+        expected = 'sha256=' + hmac.new(secret.encode(), request.data, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, sig):
+            return 'invalid signature', 403
+    event = request.headers.get('X-GitHub-Event')
+    if event != 'push':
+        return 'ok', 200
+    payload = request.json
+    ref = payload.get('ref', '')
+    if 'main' not in ref and 'master' not in ref:
+        return 'ok', 200
+    commits = payload.get('commits', [])
+    if not commits:
+        return 'ok', 200
+    repo_name = payload.get('repository', {}).get('full_name', 'project')
+    pusher = payload.get('pusher', {}).get('name', 'unknown')
+    messages = []
+    for c in commits:
+        msg = c.get('message', '').split('\n')[0][:100]
+        author = c.get('author', {}).get('username', c.get('committer', {}).get('username', ''))
+        if author:
+            messages.append(f'• {msg} (@{author})')
+        else:
+            messages.append(f'• {msg}')
+    body = f'''🚀 Новое обновление VIBE!
+
+Загружено {len(commits)} коммит(ов) в {repo_name}:
+
+{chr(10).join(messages)}
+
+#обновление #фича'''
+    bot = User.query.filter_by(username='NewsBot').first()
+    comm = Community.query.filter_by(slug='news').first()
+    if bot and comm:
+        try:
+            post = Post(body=body, author=bot, community=comm, is_community_post=True)
+            db.session.add(post)
+            db.session.commit()
+            app.logger.info(f"github-webhook: posted update #{post.id}")
+        except Exception as e:
+            app.logger.error(f"github-webhook: post error: {e}")
+            db.session.rollback()
+    return 'ok', 200
+
+
 @app.route('/bot<token>/<method>', methods=['GET', 'POST', 'DELETE'])
 @csrf.exempt
 def bot_api(token, method):
@@ -5688,6 +5741,43 @@ with app.app_context():
             app.logger.info("Migrated: added post.music_track_id")
     except Exception as e:
         app.logger.info(f"Migration post.music_track_id: {e}")
+
+    try:
+        if not User.query.filter_by(username='NewsBot').first():
+            bot = User(
+                username='NewsBot',
+                email='newsbot@vibe.local',
+                password='', is_bot=True,
+                bot_token='657313327:peqDnhI7QJEPa3yHzwH_ycugww-0BgNgHbvCyBiTd_A',
+                bot_commands='sendPost', can_join_groups=True,
+                is_staff=True, email_confirmed=True
+            )
+            db.session.add(bot)
+            db.session.flush()
+            app.logger.info("Created NewsBot user")
+        else:
+            bot = User.query.filter_by(username='NewsBot').first()
+    except Exception as e:
+        app.logger.info(f"NewsBot creation: {e}")
+        bot = None
+
+    try:
+        if bot:
+            news = Community.query.filter_by(slug='news').first()
+            if not news:
+                news = Community(name='Новости проекта', slug='news', description='Обновления и нововведения VIBE', creator_id=bot.id, is_private=False)
+                db.session.add(news)
+                db.session.flush()
+                app.logger.info("Created news community")
+            member = CommunityMember.query.filter_by(community_id=news.id, user_id=bot.id).first()
+            if not member:
+                member = CommunityMember(community_id=news.id, user_id=bot.id, role='admin', status='approved')
+                db.session.add(member)
+                db.session.flush()
+                app.logger.info("Added NewsBot as admin of news community")
+            db.session.commit()
+    except Exception as e:
+        app.logger.info(f"News community setup: {e}")
 
 
 @app.context_processor
