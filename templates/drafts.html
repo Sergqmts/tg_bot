@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Черновики{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:0 auto;">
+  <h2 style="margin-bottom:16px;">📝 Черновики</h2>
+  {% if drafts %}
+    {% for draft in drafts %}
+      <div class="card" style="margin-bottom:12px;display:flex;gap:12px;align-items:center;">
+        {% if draft.media_data %}
+          <img src="{{ draft.media_data }}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;">
+        {% endif %}
+        <div style="flex:1;">
+          <p style="font-size:13px;color:var(--text-light);">{{ draft.caption[:100] or 'Нет подписи' }}</p>
+          <p style="font-size:11px;color:var(--text-muted);">{{ draft.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <a href="{{ url_for('photo_editor', draft=draft.id) }}" class="btn btn-primary" style="font-size:12px;padding:6px 12px;">Редактировать</a>
+          <form method="POST" action="{{ url_for('delete_draft', draft_id=draft.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-secondary" style="font-size:12px;padding:6px 12px;background:#e74c3c;color:#fff;">✕</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card" style="text-align:center;padding:40px;color:var(--text-light);">
+      <p style="font-size:40px;margin-bottom:12px;">📝</p>
+      <p>Нет черновиков</p>
+      <a href="{{ url_for('photo_editor') }}" class="btn btn-primary" style="margin-top:12px;">Создать</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

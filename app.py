@@ -1099,6 +1099,14 @@ class SavedPost(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class Draft(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    media_data = db.Column(db.Text, nullable=True)
+    caption = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
@@ -1530,6 +1538,15 @@ def create():
         try:
             body = request.form.get('body', '').strip()
             
+            is_draft = request.args.get('draft') == '1'
+            if is_draft:
+                media_data = request.form.get('media_data')
+                draft = Draft(user_id=current_user.id, media_data=media_data, caption=body)
+                db.session.add(draft)
+                db.session.commit()
+                flash('Черновик сохранён')
+                return redirect(url_for('drafts'))
+            
             result = moderate_post(body, current_user)
             if result == 'USER_BANNED':
                 flash('Ваш аккаунт заблокирован за нарушение правил')
@@ -1627,9 +1644,34 @@ def create():
 @app.route('/photo_editor', methods=['GET', 'POST'])
 @login_required
 def photo_editor():
-    if request.method == 'POST':
-        return redirect(url_for('create'))
-    return render_template('photo_editor.html', editing=False)
+    draft_id = request.args.get('draft')
+    editing = draft_id is not None
+    if draft_id:
+        draft = Draft.query.get_or_404(draft_id)
+        if draft.user_id != current_user.id:
+            abort(403)
+    else:
+        draft = None
+    return render_template('photo_editor.html', editing=editing, draft=draft)
+
+
+@app.route('/drafts')
+@login_required
+def drafts():
+    user_drafts = Draft.query.filter_by(user_id=current_user.id).order_by(Draft.created_at.desc()).all()
+    return render_template('drafts.html', drafts=user_drafts)
+
+
+@app.route('/drafts/<int:draft_id>/delete', methods=['POST'])
+@login_required
+def delete_draft(draft_id):
+    draft = Draft.query.get_or_404(draft_id)
+    if draft.user_id != current_user.id:
+        abort(403)
+    db.session.delete(draft)
+    db.session.commit()
+    flash('Черновик удалён')
+    return redirect(url_for('drafts'))
 
 
 @app.route('/photo_transform', methods=['POST'])
@@ -2527,8 +2569,28 @@ def shorts():
 def create_shorts():
     if request.method == 'POST':
         video = request.files.get('video')
-        caption = request.form.get('caption', '')
+        media_data = request.form.get('media_data')
+        caption = request.form.get('body') or request.form.get('caption', '')
         audio_id = request.form.get('audio_id')
+        
+        if media_data:
+            import base64, io
+            from werkzeug.datastructures import FileStorage
+            header, data = media_data.split(',', 1)
+            binary = base64.b64decode(data)
+            file = FileStorage(io.BytesIO(binary), filename=f'shorts_{datetime.now().timestamp()}.jpg', content_type='image/jpeg')
+            if cloudinary_configured:
+                url = upload_to_cloudinary(file, folder='shorts')
+            else:
+                filename = secure_filename(f"shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.jpg")
+                with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'wb') as f:
+                    f.write(binary)
+                url = url_for('uploaded_file', filename=filename, _external=True)
+            shorts = Shorts(video_url=url, caption=caption, user_id=current_user.id, audio_id=int(audio_id) if audio_id else None)
+            db.session.add(shorts)
+            db.session.commit()
+            flash('Shorts опубликован!')
+            return redirect(url_for('shorts'))
         
         if not video or video.filename == '':
             flash('Выберите видео')
