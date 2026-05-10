@@ -1138,7 +1138,7 @@ class MusicTrack(db.Model):
     duration = db.Column(db.Integer, default=0)
     preview_url = db.Column(db.String(500))
     cover_url = db.Column(db.String(500))
-    deezer_id = db.Column(db.Integer, unique=True, nullable=True)
+    deezer_id = db.Column(db.BigInteger, unique=True, nullable=True)
     deezer_url = db.Column(db.String(500))
     source = db.Column(db.String(20), default='deezer')
     file_url = db.Column(db.String(500))
