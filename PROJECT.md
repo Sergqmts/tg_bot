@@ -27,36 +27,26 @@ python app.py
 ## 📁 Структура проекта
 ```
 tg_bot/
-├── app.py              # Всё приложение: routes, models, config (~4200 строк)
+├── app.py              # Всё приложение: routes, models, config (~5300 строк)
+├── api/announce.py     # Скрипт для публикации новостей через NewsBot
 ├── Procfile            # gunicorn app:app
 ├── README.md           # Краткое описание
 ├── PROJECT.md          # Полная документация
 ├── MEMORY.md           # Контекст для новой сессии
 ├── static/
-│   ├── style.css       # Все стили (2150+ строк)
+│   ├── style.css       # Все стили (2169 строк)
 │   └── uploads/        # Локальные медиа (fallback без Cloudinary)
 └── templates/
-    ├── base.html           # Хедер, навигация, аудиоплеер, Socket.IO
-    ├── index.html          # Лента постов
-    ├── login.html          # Вход
-    ├── register.html       # Регистрация
-    ├── profile.html        # Профиль (посты, shorts, выход)
-    ├── edit_profile.html   # Редактирование профиля
-    ├── create.html         # Создание поста
-    ├── post.html           # Просмотр поста + комментарии
-    ├── explore.html        # Поиск людей/тегов/сообществ
-    ├── messages.html       # Список диалогов и групп
-    ├── conversation.html   # Личный чат (голосовые + видеосообщения)
-    ├── chat.html           # Групповой чат (голосовые + видеосообщения)
-    ├── notifications.html  # Уведомления
-    ├── communities.html    # Список сообществ
-    ├── community.html      # Страница сообщества
-    ├── community_members.html # Участники сообщества
-    ├── community_post.html # Создание поста в сообществе
-    ├── create_community.html # Создание сообщества
-    ├── shorts.html         # Shorts лента
-    ├── create_shorts.html  # Создание shorts + FreeSound поиск
-    └── ... (чаты, stories, video editor и др.)
+    ├── base.html           # Хедер, навигация, нижнее меню с popup «Ещё»
+    ├── photo_editor.html   # Полноценный фоторедактор (1555 строк, Canvas2D)
+    ├── create_story.html   # Создание stories + ссылка на редактор
+    ├── drafts.html         # Черновики
+    ├── admin.html          # Админ-панель (staff only)
+    ├── bot_docs.html       # Документация Bot API
+    ├── create_bot.html     # Создание бота
+    ├── bot_settings.html   # Настройки бота
+    ├── bots.html           # Список ботов
+    └── ... (все старые шаблоны)
 ```
 
 ## 🗄️ База данных (SQLAlchemy + PostgreSQL/SQLite)

@@ -2,7 +2,7 @@
 
 ## Quick Overview
 Full-stack social network (Flask + PostgreSQL + Tailwind CSS). Deployed on Railway.
-Repo: `github.com/Sergqmts/tg_bot`, branch `main` (current active: `feature/bot-platform`)
+Repo: `github.com/Sergqmts/tg_bot`, branch `main`.
 
 ## How to Run
 ```bash
@@ -11,81 +11,82 @@ python app.py  # dev on :5000
 ```
 
 ## Key Architecture Decisions
-- **Single-file app**: `app.py` contains ALL routes, models, config (~4200 lines)
+- **Single-file app**: `app.py` contains ALL routes, models, config (~5300 lines)
 - **Flask-WTF CSRFProtect** for CSRF on all POST forms (except voice routes which are exempt)
-- **Manual CSRF** for some routes (`/create_post`) via `session['csrf_token']` — Flask-WTF CSRF had issues with fresh sessions
 - **Cloudinary** for media persistence across deploys (fallback to local `/static/uploads/`)
 - **No real-time** — Socket.IO was removed due to gunicorn sync worker incompatibility. Notification badge uses JS polling (`GET /api/unread-count` every 10s)
-- **No requirements.txt** — Railway auto-detects Python deps; add manually if needed
 - **Media serving**: `/media/<filename>` → `send_from_directory(UPLOAD_FOLDER)`. Cloudinary URLs used directly when configured.
 - **Bots = Users with `is_bot=True`**: Bot platform modelled after Telegram. Token auth via URL path (`/bot<token>/sendMessage`). Webhooks for outgoing events.
 
 ## Database
 - SQLite locally (`instance/social.db`), PostgreSQL on Railway
 - `Message.body` has `NOT NULL` in production (set explicit `body=''`)
-- Models: User (+bot fields), Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment
+- Models: User (+bot fields), Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment, Draft, ModerationLog, Report, Reaction, Tag, PostTag
 
 ## Branch History (recent)
 - `main` — production branch, Railway auto-deploys
-- `feature/video-messages` — merged into main (video кружочки, notification fixes)
-- `feature/bot-platform` — current: bot platform (User bot fields, create/manage bots, token auth)
+- `feature/bot-platform` — merged into main (bot platform, content moderation, admin panel, staff system)
+- `feature/photo-editor` — merged into main (comprehensive photo editor, navigation redesign, drafts)
 
-## Recent Changes (feature/bot-platform)
-- **Bot model**: Added `is_bot`, `bot_token`, `bot_commands`, `can_join_groups`, `privacy_mode`, `webhook_url`, `creator_id` fields to User model with auto-migration
-- **Token generation**: `generate_bot_token()` — случайный токен в стиле Telegram
-- **Bot management UI**: `/bots` (список), `/bots/new` (создание через BotForm), `/bots/<id>/settings` (настройки, сброс токена, webhook, команды)
-- **BotForm**: Валидация — username должен заканчиваться на `bot`
-- **Profile link**: Добавлен переход к ботам в профиле пользователя
-- **Bot API**: Полноценный REST API как в Telegram
-  - `POST /bot<token>/sendMessage` — текст в чат/диалог
-  - `POST /bot<token>/sendPhoto` — фото
-  - `POST /bot<token>/sendVideo` — видео
-  - `POST /bot<token>/sendVoice` — голосовое
-  - `POST /bot<token>/sendDocument` — документ
-  - `POST /bot<token>/forwardMessage` — переслать
-  - `POST /bot<token>/deleteMessage` — удалить своё сообщение
-  - `POST /bot<token>/banChatMember` — заблокировать участника
-  - `POST /bot<token>/unbanChatMember` — разблокировать
-  - `POST /bot<token>/promoteChatMember` — повысить до админа
-  - `GET /bot<token>/getChat` — инфо о чате
-  - `GET /bot<token>/getChatMembers` — список участников
-  - `GET /bot<token>/getMe` — инфо о боте
-  - `POST /bot<token>/setWebhook` — установить webhook
-  - `POST /bot<token>/deleteWebhook` — удалить webhook
-  - `chat_id` поддерживает: число (ID чата или пользователя), `@username`
-  - CSRF exempt (аутентификация через токен в URL)
-- **Вебхуки**: автоматическая отправка событий на `webhook_url` бота при новых сообщениях
-  - Срабатывает для сообщений в групповых чатах (где бот — участник) и DM (где получатель — бот)
-  - Не срабатывает на сообщения самого бота (защита от циклов)
-  - Асинхронные POST-запросы с Telegram-style JSON-payload
-  - Формат: `{"update_id": ..., "message": {"message_id": ..., "from": {...}, "chat": {...}, "text": "..."}}`
-- **Интеграция ботов с чатами**: боты отображаются в списке участников с иконкой 🤖
-  - Добавление бота в чат при создании (create_chat)
-  - Добавление бота через управление участниками (chat_add_member)
-  - 🤖 в списке диалогов, в шапке чата, в explore/search
-  - `create_chat` — боты доступны для выбора наравне с пользователями
-- **Интеграция ботов с сообществами**: управление сообществами через Bot API
-  - `getCommunity` — инфо о сообществе (по id или slug)
-  - `getCommunityMembers` — список участников
-  - `approveJoinRequest` — одобрить заявку
-  - `denyJoinRequest` — отклонить заявку
-  - `kickMember` — исключить участника
-  - `promoteToAdmin` — повысить до админа
-  - `deletePost` — удалить пост (свой или в сообществе где бот админ)
-  - 🤖 в списке участников сообщества, заявках, постах
+## Features
 
-## Next Steps
-- Web UI для добавления ботов в сообщества (кнопка в community_members)
-- Privacy mode (бот видит только /команды и @упоминания)
-- Long polling getUpdates
+### Bot Platform (Telegram-style)
+- **Bot model**: `is_bot`, `bot_token`, `bot_commands`, `can_join_groups`, `privacy_mode`, `webhook_url`, `creator_id` fields on User
+- **Token generation**: `generate_bot_token()` — Telegram-style (`id:secret`)
+- **Bot management UI**: `/bots`, `/bots/new`, `/bots/<id>/settings`
+- **BotForm**: username must end with `bot`
+- **Bot API (25 methods)**: sendMessage, sendPhoto, sendVideo, sendVoice, sendDocument, forwardMessage, deleteMessage, banChatMember, unbanChatMember, promoteChatMember, getChat, getChatMembers, getMe, setWebhook, deleteWebhook, getCommunity, getCommunityMembers, approveJoinRequest, denyJoinRequest, kickMember, promoteToAdmin, deletePost, sendPost, joinCommunity, getUpdates
+- **Webhooks**: async POST to `bot.webhook_url` on new messages (skips bot's own messages)
+- CSRF exempt for all bot API routes
+- Bot indicator 🤖 in all relevant templates
 
-## Known Issues
-1. **No requirements.txt** — if adding deps (e.g., eventlet), create `requirements.txt`
-2. **Secret key** — must be set on Railway (`SECRET_KEY` env var), else sessions reset per restart
-3. **Socket.IO** — not usable with gunicorn sync workers. If real-time needed, switch to eventlet workers: `gunicorn -k eventlet -w 1 app:app` and add eventlet to deps
-4. **faster-whisper** — heavy CPU model on free Railway tier (voice transcription slow)
-5. **Message.body NOT NULL** — production PostgreSQL has NOT NULL constraint, always pass `body=''`
-6. **No file size limits** — large uploads can cause 502 timeout. Cloudinary has 30s timeout set.
+### Content Moderation
+- `ModerationLog` model for tracking violations
+- `ModeratorBot` — system bot created on startup (`creator_id=None`)
+- NSFW detection: 150+ keywords (RU/EN) via `check_nsfw_text()`
+- `moderate_post()` — rejects post, sends DM warning, auto-bans after 5 violations
+- Hooks into `/create`, community post, and Bot API `sendPost`
+
+### Admin Panel (`/admin`)
+- `Report` model for user complaints (target_user, target_post, reason, status)
+- Staff-only access (`staff_required` decorator, `User.is_staff`)
+- Sections: System Bots, Reports, Users (ban/unban/make staff), Communities (ban/unban)
+- Report button (🚩) on every post
+- Auto-promotes `botadmin` and `Sergqmts` to staff on startup
+
+### Photo Editor (`/photo_editor`)
+Full-featured in-browser photo editor with 11 tool panels:
+1. **Crop** — free + 8 aspect ratio presets (1:1, 4:5, 9:16, 16:9, 3:2, 4:3, 2:3, 21:9), rotate, flip, straighten
+2. **Adjust** — brightness, contrast, saturation, exposure, sharpness, shadows, highlights, temperature, tint, noise, vignette
+3. **Filters** — 25 Instagram-style presets with live canvas thumbnails
+4. **Effects** — vintage, B&W, LOMO, glitter, glow, grain, HDR, dramatic, soft
+5. **Text** — fonts, size, color, bold/italic/underline, shadow, alignment, layer list
+6. **Stickers** — 32 emoji + custom image upload
+7. **Drawing** — marker, brush, spray, eraser with size/color/opacity
+8. **Portrait** — skin smooth, teeth whiten, eye enhance, blemish remove, makeup, face slim
+9. **Frames** — 6 decorative styles (thin, double, polaroid, neon, gold, VHS)
+10. **Collage** — 6 layout templates (up to 6 photos)
+11. **Animation** — sparkles, hearts, bubbles, stars, rainbow, glitch + GIF upload
+- **Save to**: feed, stories, shorts, or draft
+- **Quality**: 60/80/92/100%
+- **History**: undo/redo (up to 50 steps)
+- **Draft model** (`Draft`) with `/drafts` route for listing/resuming
+
+### Navigation
+- Bottom nav: Главная | Шортсы | Сообщения | Сообщества | ⋯ (ещё)
+- "Ещё" popup: профиль, создать пост, фоторедактор, поиск, уведомления, черновики, админка (staff)
+
+### Other
+- **Feed sorting**: `Post.created_at.desc()` (newest first)
+- **Draft system**: `/drafts`, `/drafts/<id>/delete`, create with `?draft=1`
+- **Staff bypass**: staff can view private profiles and communities without joining
+- **Favicon**: SVG route at `/favicon.ico`
+- **init_db() fix**: `pool_pre_ping: True` + `with db.engine.connect()` context manager for Railway PostgreSQL
+
+## Bot API NewsBot
+- Token: `657313327:peqDnhI7QJEPa3yHzwH_ycugww-0BgNgHbvCyBiTd_A`
+- Community: `/community/news`
+- Script: `api/announce.py` — `python announce.py <title> <body>`
 
 ## Key Environment Variables
 ```
@@ -97,32 +98,28 @@ CLOUDINARY_API_SECRET=...
 PORT=8080
 ```
 
-## Design Languages
+## Design
 - Tailwind CSS via CDN (no build step)
-- Custom CSS in `static/style.css` (2153 lines)
+- Custom CSS in `static/style.css` (2169 lines)
 - Dark mode with `class="dark"` on `<html>`
-- Glass-morphism cards: `class="glass rounded-2xl p-4 hover:shadow-md transition-all"`
+- Glass-morphism cards
 - Brand gradient: `from-brand-start (#FF3CAC) via-brand-middle (#784BA0) to-brand-end (#2B86C5)`
 
 ## Critical Templates
 | File | Purpose |
 |------|---------|
-| `base.html` | Layout, nav, notification badge, audio player JS, theme toggle |
-| `index.html` | Feed with custom audio player, AJAX like |
-| `post.html` | Post detail with comments |
-| `conversation.html` | DM chat with voice/video recording |
-| `chat.html` | Group chat with voice/video recording |
-| `messages.html` | Chat list (DMs + groups) |
-| `notifications.html` | Notification list |
-| `profile.html` | User profile with tabs (posts, shorts) + link to bots |
-| `community.html` | Community page with posts |
-| `explore.html` | Search users/tags/posts |
-| **`bots.html`** | List of user's bots |
-| **`create_bot.html`** | Create bot form (BotFather-style) |
-| **`bot_settings.html`** | Bot settings (token, webhook, commands) |
+| `base.html` | Layout, nav, notification badge, audio player JS, theme toggle, bottom nav with "more" menu |
+| `photo_editor.html` | Full photo editor (1555 lines, Canvas2D) |
+| `create_story.html` | Story creation with camera + link to photo editor |
+| `drafts.html` | Draft list with edit/delete |
+| `admin.html` | Admin panel dashboard |
+| `bot_docs.html` | Bot API documentation |
+| `bot_settings.html` | Bot settings |
 
-## Next Steps
-- API blueprint: `/bot<token>/sendMessage`, `/bot<token>/getMe`, etc.
-- Webhook delivery: POST events to `webhook_url` on new messages
-- Bot integration with chats: add bot as member, display bot indicator
-- Bot integration with communities: bot as admin/mod
+## Railway
+- Project: `8f4bd177-1f4e-4afa-a55a-1ac415f7ee7b`
+- Service: `a7eb91a7-a672-484f-a6ad-7f8149a850dd`
+- Env: `d5f79170-1b9e-429b-bb25-d633a8b51c8c`
+- URL: `socnet.up.railway.app`
+- Deploy: GraphQL `githubRepoDeploy` mutation with projectId, repo, branch, environmentId
+- Token: `2dffee3b-d944-4281-8d4f-84cc6eb686f2`
