@@ -154,15 +154,6 @@
             <a href="{{ url_for('index') }}" class="text-2xl {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-house"></i>
             </a>
-            <a href="{{ url_for('explore') }}" class="text-2xl {% if request.endpoint == 'explore' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </a>
-            <a href="{{ url_for('create') }}" class="text-3xl text-slate-400 hover:text-brand-middle transition-colors">
-                <i class="fa-regular fa-square-plus"></i>
-            </a>
-            <a href="{{ url_for('photo_editor') }}" class="text-2xl {% if request.endpoint == 'photo_editor' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-            </a>
             <a href="{{ url_for('shorts') }}" class="text-2xl {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-clapperboard"></i>
             </a>
@@ -172,23 +163,62 @@
             <a href="{{ url_for('communities') }}" class="text-2xl {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-users"></i>
             </a>
-            {% if current_user.is_staff %}
-            <a href="{{ url_for('admin_panel') }}" class="text-2xl {% if request.endpoint == 'admin_panel' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
-                <i class="fa-solid fa-shield-halved"></i>
-            </a>
-            {% endif %}
-            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="w-7 h-7 rounded-full overflow-hidden border-2 border-slate-300 hover:border-brand-middle transition-all">
-                {% set avatar_url = get_avatar_url(current_user) %}
-                {% if avatar_url %}
-                <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
-                {% else %}
-                <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
-                    {{ current_user.username[0].upper() }}
+            <div class="relative" id="moreMenuContainer">
+                <button onclick="toggleMoreMenu()" class="text-2xl text-slate-400 hover:text-brand-middle transition-colors p-2">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+                <div id="moreMenu" class="absolute bottom-16 right-0 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[200px] hidden" style="z-index:100;">
+                    <a href="{{ url_for('user_profile', username=current_user.username) }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm">
+                        {% set avatar_url = get_avatar_url(current_user) %}
+                        {% if avatar_url %}
+                        <img src="{{ avatar_url }}" class="w-8 h-8 rounded-full object-cover">
+                        {% else %}
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">{{ current_user.username[0].upper() }}</div>
+                        {% endif %}
+                        <span class="font-medium">{{ current_user.username }}</span>
+                    </a>
+                    <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+                    <a href="{{ url_for('create') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                        <i class="fa-regular fa-square-plus text-lg w-6"></i> Создать пост
+                    </a>
+                    <a href="{{ url_for('photo_editor') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                        <i class="fa-solid fa-wand-magic-sparkles text-lg w-6"></i> Фоторедактор
+                    </a>
+                    <a href="{{ url_for('explore') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                        <i class="fa-solid fa-magnifying-glass text-lg w-6"></i> Поиск
+                    </a>
+                    <a href="{{ url_for('notifications') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                        <i class="fa-regular fa-bell text-lg w-6"></i> Уведомления
+                        {% if unread_notifications > 0 %}
+                        <span class="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{{ unread_notifications }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('drafts') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                        <i class="fa-regular fa-file-lines text-lg w-6"></i> Черновики
+                    </a>
+                    {% if current_user.is_staff %}
+                    <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+                    <a href="{{ url_for('admin_panel') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-amber-600">
+                        <i class="fa-solid fa-shield-halved text-lg w-6"></i> Админ-панель
+                    </a>
+                    {% endif %}
                 </div>
-                {% endif %}
-            </a>
+            </div>
         </div>
     </nav>
+    <script>
+    function toggleMoreMenu() {
+        var menu = document.getElementById('moreMenu');
+        menu.classList.toggle('hidden');
+    }
+    document.addEventListener('click', function(e) {
+        var container = document.getElementById('moreMenuContainer');
+        var menu = document.getElementById('moreMenu');
+        if (!container.contains(e.target) && !menu.classList.contains('hidden')) {
+            menu.classList.add('hidden');
+        }
+    });
+    </script>
     {% endif %}
     
     {% if not current_user.is_authenticated and request.endpoint not in ['login', 'register'] %}
