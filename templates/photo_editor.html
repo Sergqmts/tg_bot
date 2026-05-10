@@ -443,35 +443,45 @@ function setupCanvas() {
   const wrap = document.getElementById('canvasWrap');
   const maxW = wrap.clientWidth - 32;
   const maxH = wrap.clientHeight - 32;
+  if (maxW <= 0 || maxH <= 0) { setTimeout(setupCanvas, 50); return; }
   const scale = Math.min(maxW / state.width, maxH / state.height, 1);
   state.zoom = scale;
   state.canvas.width = state.width;
   state.canvas.height = state.height;
   state.canvas.style.width = (state.width * scale) + 'px';
   state.canvas.style.height = (state.height * scale) + 'px';
+  if (state.image) {
+    state.ctx.drawImage(state.image, 0, 0);
+  }
   render();
 }
 
 function render() {
   const ctx = state.ctx;
+  if (!ctx || !state.canvas) return;
   const w = state.canvas.width;
   const h = state.canvas.height;
+  if (!w || !h) return;
   ctx.clearRect(0, 0, w, h);
   
   if (state.image) {
-    ctx.save();
-    let filterStr = '';
-    const a = state.adjust;
-    const b = 1 + a.brightness / 100;
-    const c = 1 + a.contrast / 100;
-    const s = 1 + a.saturate / 100;
-    const e = 1 + a.exposure / 100;
-    filterStr = `brightness(${b}) contrast(${c}) saturate(${s}) brightness(${e})`;
-    if (state.filter && FILTERS[state.filter]) filterStr += ' ' + FILTERS[state.filter];
-    ctx.filter = filterStr.trim();
-    ctx.drawImage(state.image, 0, 0, w, h);
-    ctx.filter = 'none';
-    ctx.restore();
+    try {
+      let f = '';
+      const a = state.adjust;
+      if (a.brightness) f += ` brightness(${1 + a.brightness / 100})`;
+      if (a.contrast) f += ` contrast(${1 + a.contrast / 100})`;
+      if (a.saturate) f += ` saturate(${1 + a.saturate / 100})`;
+      if (a.exposure) f += ` brightness(${1 + a.exposure / 100})`;
+      if (state.filter && FILTERS[state.filter]) f += ' ' + FILTERS[state.filter];
+      if (f.trim()) {
+        ctx.save();
+        ctx.filter = f.trim();
+        ctx.drawImage(state.image, 0, 0, w, h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(state.image, 0, 0, w, h);
+      }
+    } catch(e) { console.error('Render image error:', e); }
   }
   
   if (state.effects.vintage) applyEffectVintage(ctx, w, h);
