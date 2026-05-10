@@ -2018,6 +2018,8 @@ def music_player():
     tracks = [h.track for h in history if h.track]
     queue = [{'id': t.id, 'title': t.title, 'artist': t.artist, 'preview_url': t.preview_url or '', 'file_url': t.file_url or '', 'cover_url': t.cover_url or '', 'duration': t.duration} for t in tracks]
     return jsonify({'queue': queue})
+
+@app.route('/photo_editor', methods=['GET', 'POST'])
 @login_required
 def photo_editor():
     draft_id = request.args.get('draft')
