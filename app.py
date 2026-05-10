@@ -954,6 +954,8 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     community_id = db.Column(db.Integer, db.ForeignKey('community.id'), nullable=True)
     is_community_post = db.Column(db.Boolean, default=False)
+    music_track_id = db.Column(db.Integer, db.ForeignKey('music_track.id'), nullable=True)
+    music_track = db.relationship('MusicTrack', backref='posts')
     likes = db.relationship('Like', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     media = db.relationship('Media', backref='post', lazy='dynamic', cascade='all, delete-orphan')
@@ -1616,8 +1618,13 @@ def create():
                 return redirect(url_for('index'))
             
             media_data = request.form.get('media_data')
+            music_track_id = request.form.get('music_track_id', type=int)
             
             post = Post(body=body, author=current_user)
+            if music_track_id:
+                track = MusicTrack.query.get(music_track_id)
+                if track:
+                    post.music_track = track
             db.session.add(post)
             db.session.flush()
             
@@ -2018,6 +2025,28 @@ def music_player():
     tracks = [h.track for h in history if h.track]
     queue = [{'id': t.id, 'title': t.title, 'artist': t.artist, 'preview_url': t.preview_url or '', 'file_url': t.file_url or '', 'cover_url': t.cover_url or '', 'duration': t.duration} for t in tracks]
     return jsonify({'queue': queue})
+
+
+@app.route('/music/my_tracks')
+@login_required
+def music_my_tracks():
+    favs = FavoriteTrack.query.filter_by(user_id=current_user.id).order_by(FavoriteTrack.created_at.desc()).limit(20).all()
+    fav_tracks = [f.track for f in favs if f.track]
+    uploads = MusicTrack.query.filter_by(uploaded_by=current_user.id, source='upload').order_by(MusicTrack.created_at.desc()).limit(20).all()
+    seen = set()
+    tracks = []
+    for t in fav_tracks + uploads:
+        if t.id not in seen:
+            seen.add(t.id)
+            tracks.append({
+                'id': t.id,
+                'title': t.title,
+                'artist': t.artist,
+                'cover_url': t.cover_url or '',
+                'duration': t.duration
+            })
+    return jsonify({'tracks': tracks})
+
 
 @app.route('/photo_editor', methods=['GET', 'POST'])
 @login_required
@@ -5651,6 +5680,14 @@ with app.app_context():
             app.logger.info("Migrated music_track.deezer_id from INTEGER to BIGINT")
     except Exception as e:
         app.logger.info(f"Migration deezer_id BIGINT: {e}")
+
+    try:
+        if not column_exists('post', 'music_track_id'):
+            db.session.execute(text('ALTER TABLE post ADD COLUMN music_track_id INTEGER REFERENCES music_track(id)'))
+            db.session.commit()
+            app.logger.info("Migrated: added post.music_track_id")
+    except Exception as e:
+        app.logger.info(f"Migration post.music_track_id: {e}")
 
 
 @app.context_processor

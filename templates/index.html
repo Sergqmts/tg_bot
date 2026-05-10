@@ -163,6 +163,22 @@
         </div>
         {% endif %}
 
+        {% if post.music_track %}
+        {% set t = post.music_track %}
+        <div class="music-attachment" onclick="event.stopPropagation();playMusicFromPost({{ t.id }})">
+            {% if t.cover_url %}
+            <img src="{{ t.cover_url }}" class="music-attachment-cover">
+            {% else %}
+            <div class="music-attachment-cover-placeholder">🎵</div>
+            {% endif %}
+            <div class="music-attachment-info">
+                <div class="music-attachment-title">{{ t.title }}</div>
+                <div class="music-attachment-artist">{{ t.artist }}</div>
+            </div>
+            <button class="music-attachment-play" onclick="event.stopPropagation();playMusicFromPost({{ t.id }})">▶</button>
+        </div>
+        {% endif %}
+
         <div class="post-actions">
             <button class="action-btn like-btn" data-post-id="{{ post.id }}" onclick="toggleLike(this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -283,6 +299,11 @@ function toggleLike(btn) {
     });
 }
 
+function playMusicFromPost(trackId) {
+    fetch('/music/local/' + trackId)
+        .then(r => r.json())
+        .then(d => { if (!d.error) playMusic(d); });
+}
 function showShareMenu(postId) {
     var menu = document.getElementById('shareMenu' + postId);
     menu.style.display = menu.style.display === 'none' ? 'block' : 'none';

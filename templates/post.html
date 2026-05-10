@@ -86,6 +86,22 @@
         </div>
         {% endfor %}
 
+        {% if post.music_track %}
+        {% set t = post.music_track %}
+        <div class="music-attachment" onclick="playMusicFromPost({{ t.id }})">
+            {% if t.cover_url %}
+            <img src="{{ t.cover_url }}" class="music-attachment-cover">
+            {% else %}
+            <div class="music-attachment-cover-placeholder">🎵</div>
+            {% endif %}
+            <div class="music-attachment-info">
+                <div class="music-attachment-title">{{ t.title }}</div>
+                <div class="music-attachment-artist">{{ t.artist }}</div>
+            </div>
+            <button class="music-attachment-play" onclick="event.stopPropagation();playMusicFromPost({{ t.id }})">▶</button>
+        </div>
+        {% endif %}
+
         <div class="post-actions">
             {% if current_user.is_authenticated %}
             <form method="POST" action="{{ url_for('like', post_id=post.id) }}">
@@ -171,6 +187,11 @@
 </div>
 
 <script>
+function playMusicFromPost(trackId) {
+    fetch('/music/local/' + trackId)
+        .then(r => r.json())
+        .then(d => { if (!d.error) playMusic(d); });
+}
 function showReactions(postId) {
     alert('Выберите реакцию');
 }

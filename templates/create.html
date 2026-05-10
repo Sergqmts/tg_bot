@@ -24,6 +24,16 @@
                     <svg class="attach-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                     Редактор фото
                 </a>
+                <button type="button" class="attach-label" onclick="openMusicSelector()" style="border:none;cursor:pointer;">
+                    <svg class="attach-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                    Музыка
+                </button>
+            </div>
+
+            <input type="hidden" name="music_track_id" id="musicTrackInput" value="">
+            <div id="selectedTrackBadge" class="selected-track-badge" style="display:none;">
+                <span id="selectedTrackName"></span>
+                <button type="button" onclick="removeMusicTrack()">✕</button>
             </div>
             
             <div class="form-actions">
@@ -106,4 +116,65 @@
 
     </script>
 </div>
+
+<div class="music-selector-overlay" id="musicSelectorOverlay">
+    <div class="music-selector-modal">
+        <h3>🎵 Выберите трек</h3>
+        <div id="musicSelectorList" style="min-height:60px;color:var(--text-muted);text-align:center;padding:20px;">Загрузка...</div>
+        <button class="music-selector-close" onclick="closeMusicSelector()">Отмена</button>
+    </div>
+</div>
+
+<script>
+let selectedTrackId = null;
+function openMusicSelector() {
+    const overlay = document.getElementById('musicSelectorOverlay');
+    overlay.style.display = 'flex';
+    fetch('/music/my_tracks')
+        .then(r => r.json())
+        .then(data => {
+            const list = document.getElementById('musicSelectorList');
+            if (!data.tracks || data.tracks.length === 0) {
+                list.innerHTML = '<p style="color:var(--text-muted);padding:20px;">Нет треков. Сначала добавьте музыку в избранное или загрузите свои.</p>';
+                return;
+            }
+            list.innerHTML = '';
+            data.tracks.forEach(t => {
+                const div = document.createElement('div');
+                div.className = 'music-selector-track';
+                div.onclick = function() { selectTrack(t.id, t.title, t.artist); };
+                div.innerHTML = (t.cover_url ? '<img src="' + t.cover_url + '">' : '<div style="width:40px;height:40px;border-radius:6px;background:var(--brand-gradient);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🎵</div>') +
+                    '<div><div class="title">' + escapeHtml(t.title) + '</div><div class="artist">' + escapeHtml(t.artist) + '</div></div>';
+                list.appendChild(div);
+            });
+        })
+        .catch(function() {
+            document.getElementById('musicSelectorList').innerHTML = '<p style="color:red;padding:20px;">Ошибка загрузки</p>';
+        });
+}
+function closeMusicSelector() {
+    document.getElementById('musicSelectorOverlay').style.display = 'none';
+}
+function selectTrack(id, title, artist) {
+    selectedTrackId = id;
+    document.getElementById('musicTrackInput').value = id;
+    document.getElementById('selectedTrackName').textContent = '🎵 ' + title + ' — ' + artist;
+    document.getElementById('selectedTrackBadge').style.display = 'inline-flex';
+    closeMusicSelector();
+}
+function removeMusicTrack() {
+    selectedTrackId = null;
+    document.getElementById('musicTrackInput').value = '';
+    document.getElementById('selectedTrackBadge').style.display = 'none';
+}
+function escapeHtml(s) {
+    if (!s) return '';
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+}
+document.getElementById('musicSelectorOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeMusicSelector();
+});
+</script>
 {% endblock %}
