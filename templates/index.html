@@ -41,17 +41,19 @@
         </div>
     </div>
     
-    {% if shorts_list %}
     <div class="shorts-mini-feed">
         <div class="shorts-mini-header">
             <span>Shorts</span>
+            {% if shorts_list %}
             <a href="{{ url_for('shorts') }}">Смотреть все →</a>
+            {% endif %}
         </div>
         <div class="shorts-mini-scroll">
             <a href="{{ url_for('create_shorts') }}" class="shorts-mini-item shorts-mini-add">
                 <span>+</span>
                 <span>Создать</span>
             </a>
+            {% if shorts_list %}
             {% for shorts in shorts_list %}
             <a href="{{ url_for('view_shorts', shorts_id=shorts.id) }}" class="shorts-mini-item">
                 <video src="{{ shorts.video_url }}" muted></video>
@@ -60,9 +62,9 @@
                 </div>
             </a>
             {% endfor %}
+            {% endif %}
         </div>
     </div>
-    {% endif %}
     {% for post in posts %}
     <article class="post-card" style="position: relative;">
         <div class="post-header">
