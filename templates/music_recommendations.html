@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Рекомендации{% endblock %}
+{% block content %}
+<div style="padding-bottom:80px;">
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:16px;">🎯 Рекомендации</h2>
+  {% if recs %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for d in recs %}
+        {% set track = track_from_deezer(d) %}
+        <div class="music-track-item" onclick="playTrack({{ track.id }}, 'deezer', {{ d.id }})" data-track-id="{{ track.id }}">
+          <img src="{{ d.get('album', {}).get('cover_small', '') }}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;" loading="lazy">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.get('title', '') }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ d.get('artist', {}).get('name', '') }}</div>
+          </div>
+          <span style="font-size:12px;color:var(--text-muted);">{{ (d.get('duration', 0) // 60) }}:{{ '%02d' % (d.get('duration', 0) % 60) }}</span>
+          <button class="btn-music-like" onclick="event.stopPropagation();toggleLike({{ track.id }})" style="font-size:18px;background:none;border:none;cursor:pointer;">♡</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="text-align:center;color:var(--text-muted);padding:60px 20px;">Нет рекомендаций. Послушайте несколько треков, чтобы мы могли подобрать что-то.</p>
+  {% endif %}
+</div>
+<script>
+function playTrack(trackId, source, deezerId) {
+  fetch('/music/track/' + deezerId + '/play').then(r=>r.json()).then(d=>{ if(!d.error) playMusic(d); });
+}
+function toggleLike(trackId) {
+  fetch('/music/favorite/' + trackId, {method:'POST'}).then(()=>location.reload());
+}
+</script>
+{% endblock %}

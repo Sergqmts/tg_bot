@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ artist.get('name', 'Исполнитель') }}{% endblock %}
+{% block content %}
+<div style="padding-bottom:80px;">
+  <div style="display:flex;gap:16px;margin-bottom:24px;align-items:center;">
+    <img src="{{ artist.get('picture_medium', '') }}" style="width:120px;height:120px;border-radius:50%;object-fit:cover;">
+    <div>
+      <h2 style="font-size:24px;font-weight:700;">{{ artist.get('name', '') }}</h2>
+      <p style="color:var(--text-muted);font-size:13px;">{{ artist.get('nb_fan', 0) }} подписчиков</p>
+    </div>
+  </div>
+  <h3 style="font-size:18px;font-weight:600;margin-bottom:12px;">Популярные треки</h3>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    {% for t in top_tracks %}
+      {% set track = track_from_deezer(t) %}
+      <div class="music-track-item" onclick="playTrack({{ track.id }}, 'deezer', {{ t.id }})">
+        <img src="{{ t.get('album', {}).get('cover_small', '') }}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;" loading="lazy">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.get('title', '') }}</div>
+          <div style="font-size:12px;color:var(--text-muted);">{{ t.get('artist', {}).get('name', '') }}</div>
+        </div>
+        <span style="font-size:12px;color:var(--text-muted);">{{ (t.get('duration', 0) // 60) }}:{{ '%02d' % (t.get('duration', 0) % 60) }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+<script>
+function playTrack(trackId, source, deezerId) {
+  fetch('/music/track/' + deezerId + '/play').then(r=>r.json()).then(d=>{ if(!d.error) playMusic(d); });
+}
+</script>
+{% endblock %}

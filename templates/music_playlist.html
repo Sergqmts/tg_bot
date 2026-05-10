@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ playlist.name }}{% endblock %}
+{% block content %}
+<div style="padding-bottom:80px;">
+  <div style="display:flex;gap:16px;margin-bottom:24px;align-items:center;">
+    <div style="width:140px;height:140px;background:var(--brand-gradient);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:56px;flex-shrink:0;">🎵</div>
+    <div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:4px;">{{ playlist.name }}</h2>
+      <p style="color:var(--text-secondary);font-size:13px;">{{ playlist.tracks.count() }} треков</p>
+      {% if playlist.description %}<p style="color:var(--text-muted);font-size:13px;margin-top:4px;">{{ playlist.description }}</p>{% endif %}
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <form method="POST" action="{{ url_for('music_playlist_delete', playlist_id=playlist.id) }}" onsubmit="return confirm('Удалить плейлист?')">
+          <button type="submit" class="btn btn-secondary" style="font-size:12px;padding:6px 12px;background:#e74c3c;color:#fff;">Удалить</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    {% for item in playlist.tracks %}
+      {% set t = item.track %}
+      {% if t %}
+      <div class="music-track-item" onclick="playLocal({{ t.id }})">
+        {% if t.cover_url %}<img src="{{ t.cover_url }}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;">{% endif %}
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.title }}</div>
+          <div style="font-size:12px;color:var(--text-muted);">{{ t.artist }}</div>
+        </div>
+        <span style="font-size:12px;color:var(--text-muted);">{{ (t.duration // 60) }}:{{ '%02d' % (t.duration % 60) }}</span>
+        <form method="POST" action="{{ url_for('music_playlist_remove', playlist_id=playlist.id, item_id=item.id) }}" style="display:inline;">
+          <button type="submit" style="font-size:16px;background:none;border:none;cursor:pointer;color:var(--text-muted);">✕</button>
+        </form>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+<script>
+function playLocal(trackId) {
+  fetch('/music/local/' + trackId).then(r=>r.json()).then(d=>{ if(!d.error) playMusic(d); });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Загрузить музыку{% endblock %}
+{% block content %}
+<div style="padding-bottom:80px;">
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:20px;">📤 Загрузить трек</h2>
+  <form method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:16px;max-width:400px;">
+    <div>
+      <label style="font-size:14px;font-weight:500;color:var(--text-secondary);">Название</label>
+      <input type="text" name="title" required placeholder="Название трека..." style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;margin-top:4px;">
+    </div>
+    <div>
+      <label style="font-size:14px;font-weight:500;color:var(--text-secondary);">Исполнитель</label>
+      <input type="text" name="artist" placeholder="Имя исполнителя..." style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;margin-top:4px;">
+    </div>
+    <div>
+      <label style="font-size:14px;font-weight:500;color:var(--text-secondary);">MP3 файл</label>
+      <input type="file" name="file" accept=".mp3,.wav,.ogg,.m4a,.aac" required style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:14px;margin-top:4px;">
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);">Максимальный размер: 100 MB</p>
+    <button type="submit" class="btn btn-primary" style="padding:12px 24px;">Загрузить</button>
+  </form>
+</div>
+{% endblock %}

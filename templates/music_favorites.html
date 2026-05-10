@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Избранные треки{% endblock %}
+{% block content %}
+<div style="padding-bottom:80px;">
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:16px;">♥ Избранные треки</h2>
+  {% if favs %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for f in favs %}
+        {% set t = f.track %}
+        {% if t %}
+        <div class="music-track-item" onclick="playLocal({{ t.id }})" data-track-id="{{ t.id }}">
+          {% if t.cover_url %}<img src="{{ t.cover_url }}" style="width:48px;height:48px;border-radius:6px;object-fit:cover;">{% endif %}
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.title }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ t.artist }}</div>
+          </div>
+          <span style="font-size:12px;color:var(--text-muted);">{{ (t.duration // 60) }}:{{ '%02d' % (t.duration % 60) }}</span>
+          <button class="btn-music-like" onclick="event.stopPropagation();toggleLike({{ t.id }})" style="font-size:18px;background:none;border:none;cursor:pointer;">♥</button>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="text-align:center;color:var(--text-muted);padding:60px 20px;">У вас нет избранных треков</p>
+  {% endif %}
+</div>
+<script>
+function playLocal(trackId) {
+  fetch('/music/local/' + trackId).then(r=>r.json()).then(d=>{ if(!d.error) playMusic(d); });
+}
+function toggleLike(trackId) {
+  fetch('/music/favorite/' + trackId, {method:'POST'}).then(()=>location.reload());
+}
+</script>
+{% endblock %}

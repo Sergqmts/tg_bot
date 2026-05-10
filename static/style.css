@@ -2135,6 +2135,145 @@ img, video {
     flex: 1;
 }
 
+/* ─── Music Player ─────────────────────────────────────────── */
+.music-track-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.music-track-item:hover {
+    background: rgba(128,128,128,0.1);
+}
+.btn-music-like {
+    font-size: 18px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: transform 0.2s;
+    color: var(--text-muted);
+}
+.btn-music-like:hover {
+    transform: scale(1.2);
+}
+.btn-music-like.liked {
+    color: #e74c3c;
+}
+
+/* Player Bar */
+.player-bar {
+    position: fixed;
+    bottom: 64px;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: var(--surface, #fff);
+    border-top: 1px solid var(--border);
+    z-index: 45;
+    display: none;
+    transition: transform 0.3s;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+.dark .player-bar {
+    background: #1E293B;
+    border-color: #334155;
+}
+.player-bar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.player-bar-cover {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.player-bar-info {
+    flex: 1;
+    min-width: 0;
+}
+.player-bar-title {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.player-bar-artist {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.player-bar-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.player-bar-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--text);
+    padding: 6px;
+    border-radius: 50%;
+    transition: background 0.2s;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.player-bar-btn:hover {
+    background: rgba(128,128,128,0.15);
+}
+.player-bar-progress-wrap {
+    width: 120px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+}
+.player-bar-progress {
+    height: 100%;
+    background: var(--brand-gradient, linear-gradient(90deg, #FF3CAC, #784BA0));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s;
+}
+.player-bar-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-width: 35px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.player-bar-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-muted);
+    padding: 4px;
+    flex-shrink: 0;
+}
+
 /* FAB Create Button */
 .fab-create {
     position: fixed;

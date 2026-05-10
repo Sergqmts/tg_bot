@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Создать плейлист{% endblock %}
+{% block content %}
+<div style="padding-bottom:80px;">
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:20px;">📂 Новый плейлист</h2>
+  <form method="POST" style="display:flex;flex-direction:column;gap:16px;max-width:400px;">
+    <div>
+      <label style="font-size:14px;font-weight:500;color:var(--text-secondary);">Название</label>
+      <input type="text" name="name" required placeholder="Введите название..." style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;margin-top:4px;">
+    </div>
+    <div>
+      <label style="font-size:14px;font-weight:500;color:var(--text-secondary);">Описание (необязательно)</label>
+      <textarea name="description" rows="3" placeholder="Описание плейлиста..." style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:15px;margin-top:4px;resize:vertical;"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary" style="padding:12px 24px;">Создать</button>
+  </form>
+</div>
+{% endblock %}

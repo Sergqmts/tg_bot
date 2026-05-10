@@ -149,6 +149,27 @@
     </main>
 
     {% if current_user.is_authenticated and request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
+    <!-- Music Player Bar -->
+    <div id="playerBar" class="player-bar">
+        <div class="player-bar-inner">
+            <img id="playerCover" class="player-bar-cover" src="" style="display:none;">
+            <div class="player-bar-info">
+                <div id="playerTitle" class="player-bar-title"></div>
+                <div id="playerArtist" class="player-bar-artist"></div>
+            </div>
+            <div class="player-bar-controls">
+                <button class="player-bar-btn" onclick="prevTrack()" title="Предыдущий"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="playerPlayBtn" class="player-bar-btn" onclick="togglePlayer()" title="Play/Pause"><i class="fa-solid fa-play"></i></button>
+                <button class="player-bar-btn" onclick="nextTrack()" title="Следующий"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+            <div class="player-bar-progress-wrap" onclick="seekPlayer(event)">
+                <div id="playerProgress" class="player-bar-progress"></div>
+            </div>
+            <span id="playerTime" class="player-bar-time">0:00</span>
+            <button class="player-bar-close" onclick="closePlayer()" title="Закрыть"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <audio id="playerAudio" style="display:none;"></audio>
+    </div>
     <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border z-50">
         <div class="flex items-center justify-around h-16 px-2">
             <a href="{{ url_for('index') }}" class="text-2xl {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
@@ -289,6 +310,127 @@
                 progress.value = 0;
                 timeDisplay.textContent = fmtTime(audio.duration);
             });
+        });
+    });
+    </script>
+
+    <script>
+    /* Music Player */
+    var playerQueue = [];
+    var playerIndex = -1;
+
+    function playMusic(data) {
+        var bar = document.getElementById('playerBar');
+        var cover = document.getElementById('playerCover');
+        var title = document.getElementById('playerTitle');
+        var artist = document.getElementById('playerArtist');
+        var audio = document.getElementById('playerAudio');
+        var main = document.querySelector('main');
+
+        if (data.cover_url) {
+            cover.src = data.cover_url;
+            cover.style.display = 'block';
+        } else {
+            cover.style.display = 'none';
+        }
+        title.textContent = data.title || '';
+        artist.textContent = data.artist || '';
+        bar.style.display = 'block';
+        if (main && main.classList.contains('pb-24')) {
+            main.classList.remove('pb-24');
+            main.classList.add('pb-40');
+        }
+
+        var src = data.preview_url || data.file_url || '';
+        if (src) {
+            audio.src = src;
+            audio.play().catch(function(){});
+        }
+    }
+
+    function togglePlayer() {
+        var audio = document.getElementById('playerAudio');
+        var btn = document.getElementById('playerPlayBtn');
+        if (audio.paused) {
+            audio.play().catch(function(){});
+            btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        } else {
+            audio.pause();
+            btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        }
+    }
+
+    function closePlayer() {
+        var audio = document.getElementById('playerAudio');
+        audio.pause();
+        audio.src = '';
+        document.getElementById('playerBar').style.display = 'none';
+        document.getElementById('playerPlayBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+        var main = document.querySelector('main');
+        if (main && main.classList.contains('pb-40')) {
+            main.classList.remove('pb-40');
+            main.classList.add('pb-24');
+        }
+    }
+
+    function seekPlayer(e) {
+        var wrap = e.currentTarget;
+        var rect = wrap.getBoundingClientRect();
+        var pct = (e.clientX - rect.left) / rect.width;
+        var audio = document.getElementById('playerAudio');
+        if (audio.duration) {
+            audio.currentTime = pct * audio.duration;
+        }
+    }
+
+    function prevTrack() {
+        if (playerQueue.length && playerIndex > 0) {
+            playerIndex--;
+            var data = playerQueue[playerIndex];
+            playMusic(data);
+        }
+    }
+
+    function nextTrack() {
+        if (playerQueue.length && playerIndex < playerQueue.length - 1) {
+            playerIndex++;
+            var data = playerQueue[playerIndex];
+            playMusic(data);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var audio = document.getElementById('playerAudio');
+        var progress = document.getElementById('playerProgress');
+        var timeDisplay = document.getElementById('playerTime');
+        var playBtn = document.getElementById('playerPlayBtn');
+
+        audio.addEventListener('timeupdate', function() {
+            if (audio.duration) {
+                progress.style.width = (audio.currentTime / audio.duration * 100) + '%';
+                var m = Math.floor(audio.currentTime / 60);
+                var s = Math.floor(audio.currentTime % 60);
+                timeDisplay.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+            }
+        });
+        audio.addEventListener('play', function() {
+            if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        });
+        audio.addEventListener('pause', function() {
+            if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        });
+        audio.addEventListener('ended', function() {
+            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            progress.style.width = '0%';
+            timeDisplay.textContent = '0:00';
+            if (playerQueue.length && playerIndex < playerQueue.length - 1) {
+                nextTrack();
+            }
+        });
+        audio.addEventListener('loadedmetadata', function() {
+            var m = Math.floor(audio.duration / 60);
+            var s = Math.floor(audio.duration % 60);
+            timeDisplay.textContent = m + ':' + (s < 10 ? '0' : '') + s;
         });
     });
     </script>
