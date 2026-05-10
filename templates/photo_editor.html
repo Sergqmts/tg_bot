@@ -98,10 +98,11 @@
       <div style="font-size:64px;margin-bottom:16px;">📷</div>
       <p style="font-size:18px;margin-bottom:8px;">Перетащите фото сюда</p>
       <p style="font-size:13px;color:#555;">или нажмите чтобы выбрать</p>
-      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="loadFile(this.files[0])">
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
       <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()" style="margin-top:12px;">Выбрать фото</button>
     </div>
     <canvas id="mainCanvas" style="display:none;"></canvas>
+    <img id="fallbackImg" style="display:none;max-width:100%;max-height:100%;object-fit:contain;">
     <div id="cropOverlay" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:5;">
       <div id="cropBox" style="position:absolute;border:2px dashed #fff;cursor:move;box-shadow:0 0 0 9999px rgba(0,0,0,.5);"></div>
     </div>
@@ -418,41 +419,53 @@ function initEmojiGrid() {
 
 function loadFile(file) {
   if (!file) return;
-  const reader = new FileReader();
+  var reader = new FileReader();
   reader.onload = function(e) {
-    const img = new Image();
+    var dataUrl = e.target.result;
+    var img = new Image();
     img.onload = function() {
       state.originalImage = img;
       state.image = img;
       state.width = img.naturalWidth;
       state.height = img.naturalHeight;
       document.getElementById('uploadZone').style.display = 'none';
-      state.canvas.style.display = 'block';
-      document.getElementById('historyBar').style.display = 'flex';
-      setupCanvas();
-      saveHistory();
-      switchTool('crop');
-      setTimeout(generateThumbs, 100);
+      try {
+        state.canvas.style.display = 'block';
+        state.ctx.drawImage(img, 0, 0);
+        document.getElementById('historyBar').style.display = 'flex';
+        setupCanvas();
+        saveHistory();
+        switchTool('crop');
+        setTimeout(generateThumbs, 200);
+      } catch(err) {
+        console.error('Canvas draw failed, using img fallback:', err);
+        var fb = document.getElementById('fallbackImg');
+        fb.src = dataUrl;
+        fb.style.display = 'block';
+        state.canvas.style.display = 'none';
+      }
     };
-    img.src = e.target.result;
+    img.onerror = function() { console.error('Image load error'); };
+    img.src = dataUrl;
   };
+  reader.onerror = function() { console.error('FileReader error'); };
   reader.readAsDataURL(file);
 }
 
 function setupCanvas() {
-  const wrap = document.getElementById('canvasWrap');
-  const maxW = wrap.clientWidth - 32;
-  const maxH = wrap.clientHeight - 32;
-  if (maxW <= 0 || maxH <= 0) { setTimeout(setupCanvas, 50); return; }
-  const scale = Math.min(maxW / state.width, maxH / state.height, 1);
+  if (!state.canvas || !state.ctx) return;
+  var wrap = document.getElementById('canvasWrap');
+  var maxW = wrap.clientWidth - 32;
+  var maxH = wrap.clientHeight - 32;
+  if (maxW <= 5 || maxH <= 5) { setTimeout(setupCanvas, 100); return; }
+  var scale = Math.min(maxW / state.width, maxH / state.height, 1);
+  if (scale <= 0) { setTimeout(setupCanvas, 100); return; }
   state.zoom = scale;
   state.canvas.width = state.width;
   state.canvas.height = state.height;
-  state.canvas.style.width = (state.width * scale) + 'px';
-  state.canvas.style.height = (state.height * scale) + 'px';
-  if (state.image) {
-    state.ctx.drawImage(state.image, 0, 0);
-  }
+  state.canvas.style.width = Math.round(state.width * scale) + 'px';
+  state.canvas.style.height = Math.round(state.height * scale) + 'px';
+  state.ctx.drawImage(state.image, 0, 0, state.width, state.height);
   render();
 }
 
@@ -1561,5 +1574,8 @@ function flash(msg) {
 })();
 
 initEditor();
+document.getElementById('fileInput').addEventListener('change', function() {
+  if (this.files && this.files[0]) loadFile(this.files[0]);
+});
 </script>
 {% endblock %}
