@@ -738,14 +738,14 @@ def register_routes(app):
                         if url:
                             filename = url.split('/')[-1].split('.')[0]
                             ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-                            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'audio' if ext in {'mp3', 'wav', 'ogg'} else 'image'
+                            media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'audio' if ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'} else 'document' if ext in {'pdf', 'doc', 'docx', 'txt'} else 'image'
                             media = Media(filename=filename, cloudinary_url=url, media_type=media_type, post=post)
                             db.session.add(media)
                     else:
                         filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                         file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                         ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'audio' if ext in {'mp3', 'wav', 'ogg'} else 'image'
+                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'audio' if ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'} else 'document' if ext in {'pdf', 'doc', 'docx', 'txt'} else 'image'
                         media = Media(filename=filename, media_type=media_type, post=post)
                         db.session.add(media)
                 except Exception as e:

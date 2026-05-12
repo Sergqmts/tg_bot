@@ -372,6 +372,10 @@ def register_routes(app):
                                 if media_url:
                                     ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
                                     media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                                    if ext in {'pdf', 'doc', 'docx', 'txt'}:
+                                        media_type = 'document'
+                                    elif ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'}:
+                                        media_type = 'audio'
                             else:
                                 current_app.logger.warning("Cloudinary not configured, using local storage")
 
@@ -393,6 +397,10 @@ def register_routes(app):
                                 current_app.logger.info(f"Generated URL: {media_url}")
                                 ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                                 media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                                if ext in {'pdf', 'doc', 'docx', 'txt'}:
+                                    media_type = 'document'
+                                elif ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'}:
+                                    media_type = 'audio'
                             current_app.logger.info(f"Media URL: {media_url}, type: {media_type}")
                         except Exception as e:
                             current_app.logger.error(f"Media upload error: {e}")
