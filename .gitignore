@@ -1,2 +1,5 @@
 .DS_Store
 static/.DS_Store
+instance/social.db
+__pycache__/
+*.pyc
