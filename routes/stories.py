@@ -34,7 +34,7 @@ def register_routes(app):
                 filename = f'story_{datetime.now().timestamp()}.{ext}'
                 file = FileStorage(io.BytesIO(binary), filename=filename, content_type=f'image/{ext}' if media_type == 'image' else f'video/{ext}')
                 
-                from app import cloudinary_configured, upload_to_cloudinary, create_notification
+                from helpers import cloudinary_configured, upload_to_cloudinary, create_notification
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='stories')
                     if url:
@@ -69,7 +69,7 @@ def register_routes(app):
                     return redirect(url_for('index'))
             
             file = request.files.get('media')
-            from app import allowed_file
+            from helpers import allowed_file
             if file and allowed_file(file.filename):
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='stories')

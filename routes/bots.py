@@ -7,7 +7,7 @@ def register_routes(app):
     from datetime import datetime
     from extensions import db, csrf
     from models import User, Chat, ChatMember, Message, MessageMedia, Post, Media, Community, CommunityMember, Report, BotForm
-    from app import moderate_post, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary, generate_bot_token, process_webhooks, enqueue_webhook_dispatch
+    from helpers import moderate_post, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary, generate_bot_token, enqueue_webhook_dispatch
     import cloudinary
     import cloudinary.uploader
 

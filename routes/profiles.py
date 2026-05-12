@@ -4,7 +4,7 @@ def register_routes(app):
     from flask_login import login_required, current_user
     from werkzeug.utils import secure_filename
     from datetime import datetime, timedelta
-    from extensions import db
+    from extensions import db, csrf
     from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsAudio, Notification, Tag, Community, Media, SavedPost, EditProfileForm
 
     @app.route('/user/<username>')
@@ -47,10 +47,11 @@ def register_routes(app):
 
     @app.route('/follow/<username>', methods=['POST'])
     @login_required
+    @csrf.exempt
     def follow(username):
         user = User.query.filter_by(username=username).first_or_404()
         if user != current_user:
-            from app import create_notification
+            from helpers import create_notification
             if user.approve_followers:
                 current_user.follow(user)
                 db.session.commit()
@@ -66,6 +67,7 @@ def register_routes(app):
 
     @app.route('/unfollow/<username>', methods=['POST'])
     @login_required
+    @csrf.exempt
     def unfollow(username):
         user = User.query.filter_by(username=username).first_or_404()
         current_user.unfollow(user)
@@ -76,6 +78,7 @@ def register_routes(app):
 
     @app.route('/block/<username>', methods=['POST'])
     @login_required
+    @csrf.exempt
     def block_user(username):
         user = User.query.filter_by(username=username).first_or_404()
         if user != current_user:
@@ -87,6 +90,7 @@ def register_routes(app):
 
     @app.route('/unblock/<username>', methods=['POST'])
     @login_required
+    @csrf.exempt
     def unblock_user(username):
         user = User.query.filter_by(username=username).first_or_404()
         current_user.unblock(user)
@@ -107,7 +111,7 @@ def register_routes(app):
     def approve_follower(username):
         user = User.query.filter_by(username=username).first_or_404()
         current_user.approve_follower(user)
-        from app import create_notification
+        from helpers import create_notification
         create_notification(user.id, current_user.id, 'follow_approved')
         flash(f'Вы одобрили подписку {user.username}')
         return redirect(url_for('follower_requests'))
@@ -173,7 +177,7 @@ def register_routes(app):
 
             if form.avatar.data:
                 file = form.avatar.data
-                from app import cloudinary_configured, upload_to_cloudinary
+                from helpers import cloudinary_configured, upload_to_cloudinary
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='avatars')
                     if url:
@@ -331,7 +335,7 @@ def register_routes(app):
                 header, data = media_data.split(',', 1)
                 binary = base64.b64decode(data)
                 file = FileStorage(io.BytesIO(binary), filename=f'shorts_{datetime.now().timestamp()}.jpg', content_type='image/jpeg')
-                from app import cloudinary_configured, upload_to_cloudinary
+                from helpers import cloudinary_configured, upload_to_cloudinary
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='shorts')
                 else:
@@ -351,7 +355,7 @@ def register_routes(app):
 
             try:
                 ext = video.filename.rsplit('.', 1)[-1].lower() if '.' in video.filename else 'mp4'
-                from app import cloudinary_configured, upload_to_cloudinary
+                from helpers import cloudinary_configured, upload_to_cloudinary
                 if cloudinary_configured:
                     result = cloudinary.uploader.upload(
                         video, folder='shorts', resource_type='video',
@@ -462,7 +466,7 @@ def register_routes(app):
             title = request.form.get('title', 'Original audio')
 
             if audio:
-                from app import cloudinary_configured, upload_to_cloudinary
+                from helpers import cloudinary_configured, upload_to_cloudinary
                 if cloudinary_configured:
                     result = cloudinary.uploader.upload(
                         audio, folder='shorts_audio', resource_type='video',
@@ -498,7 +502,7 @@ def register_routes(app):
         import json
 
         try:
-            from app import FREESOUND_API_KEY
+            from helpers import FREESOUND_API_KEY
             url = f'https://freesound.org/apiv2/search/text/?query={urllib.parse.quote(query)}&token={FREESOUND_API_KEY}&page=1&page_size=12&fields=id,name,previews,duration,username,tags,description'
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=10) as resp:

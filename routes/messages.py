@@ -20,7 +20,7 @@ def register_routes(app):
     from datetime import datetime
     from extensions import db
     from models import Message, MessageMedia, Chat, ChatMember, User, Post
-    from app import enqueue_webhook_dispatch, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary
+    from helpers import enqueue_webhook_dispatch, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary
 
     @app.route('/messages')
     @login_required

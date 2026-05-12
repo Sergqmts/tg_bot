@@ -9,7 +9,7 @@ def register_routes(app):
     from flask_login import login_required, current_user
     from extensions import db
     from models import MusicTrack, ListeningHistory, FavoriteTrack, Playlist, PlaylistItem, User
-    from app import cloudinary_configured, upload_to_cloudinary, allowed_file, moderate_post, create_notification
+    from helpers import cloudinary_configured, upload_to_cloudinary, allowed_file, moderate_post, create_notification
     import cloudinary
     import cloudinary.uploader
 

@@ -12,6 +12,14 @@ import tempfile
 import io
 
 from extensions import db, login_manager, socketio, csrf
+from helpers import (
+    cloudinary_configured, FREESOUND_API_KEY,
+    allowed_file, upload_to_cloudinary, get_cloudinary_url, get_avatar_url,
+    generate_bot_token, check_nsfw_text, get_moderation_bot,
+    moderate_post, get_or_create_dm, create_notification,
+    column_exists, get_table_columns,
+    _webhook_queue, enqueue_webhook_dispatch, process_webhook_queue,
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -82,18 +90,9 @@ def inject_stories():
     return dict(top_stories=[], my_story=None, user_has_story=False, unread_notifications=0, active_users=active_users)
 
 
-def get_avatar_url(user):
-    if user.avatar_cloudinary_url:
-        return user.avatar_cloudinary_url
-    if user.avatar and user.avatar != 'default.png':
-        return url_for('uploaded_file', filename=user.avatar)
-    return None
-
-
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
 cloud_secret = os.environ.get('CLOUDINARY_API_SECRET')
-cloudinary_configured = cloud_name and cloud_key
 app.logger.info(f"Cloudinary config: cloud_name={cloud_name}, has_key=bool(cloud_key), has_secret=bool(cloud_secret)")
 if cloudinary_configured:
     cloudinary.config(
@@ -102,8 +101,6 @@ if cloudinary_configured:
         api_secret=cloud_secret,
         secure=True
     )
-
-FREESOUND_API_KEY = os.environ.get('FREESOUND_API_KEY', '')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -196,169 +193,6 @@ def init_db():
             time.sleep(2)
 
 
-def column_exists(table_name, column_name):
-    """Проверяет, существует ли колонка в таблице (совместимо с SQLite и PostgreSQL)"""
-    from sqlalchemy import text
-    try:
-        with db.engine.connect() as conn:
-            db_url = str(db.engine.url)
-            is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
-            if is_postgres:
-                result = conn.execute(text("""
-                    SELECT COUNT(*) FROM information_schema.columns 
-                    WHERE table_name = :table AND column_name = :column
-                """), {'table': table_name, 'column': column_name})
-            else:
-                result = conn.execute(text("""
-                    SELECT COUNT(*) FROM pragma_table_info(:table) WHERE name=:column
-                """), {'table': table_name, 'column': column_name})
-            return result.scalar() > 0
-    except:
-        return False
-
-
-def get_table_columns(table_name):
-    """Возвращает список колонок таблицы (совместимо с SQLite и PostgreSQL)"""
-    from sqlalchemy import text
-    db_url = str(db.engine.url)
-    is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
-    
-    try:
-        if is_postgres:
-            result = db.session.execute(text("""
-                SELECT column_name FROM information_schema.columns 
-                WHERE table_name = :table
-            """), {'table': table_name})
-        else:
-            result = db.session.execute(text("""
-                SELECT name FROM pragma_table_info(:table)
-            """), {'table': table_name})
-        return [row[0] for row in result]
-    except:
-        return []
-
-
-def generate_bot_token():
-    import secrets
-    return f"{secrets.randbelow(900000000) + 100000000}:{secrets.token_urlsafe(32)}"
-
-
-NSFW_KEYWORDS = [
-    'порно', 'porn', 'секс', 'sex', 'xxx', '18+', 'nsfw', 'эротика', 'erotica',
-    'писька', 'писюн', 'член', 'хуй', 'хуя', 'пизда', 'пизд', 'ебал', 'ебат',
-    'ебля', 'выеб', 'заеб', 'нахуй', 'похуй', 'сосать', 'соси', 'минета',
-    'минет', 'анал', 'anus', 'asshole', 'bdsm', 'биде', 'вагина', 'vagin',
-    'гениталии', 'genital', 'грудь', 'tits', 'titty', 'сиськи', 'сиськ',
-    'дрочить', 'дрочк', 'дупа', 'жопа', 'жоп', 'залупа', 'извращ',
-    'клитор', 'clitor', 'конча', 'кончить', 'лижут', 'лизать', 'мастурб',
-    'masturb', 'мошонк', 'мудак', 'мудил', 'мужлан', 'негр', 'ниггер',
-    'naked', 'nude', 'обнажен', 'оголен', 'орал', 'oral', 'оргазм', 'orgasm',
-    'педик', 'петух', 'петуша', 'попка', 'попа', 'проститут', 'prostitut',
-    'pubic', 'разврат', 'секс-', 'slut', 'сперм', 'sperm', 'squirt',
-    'страпон', 'stripper', 'strip', 'сука', 'сучар', 'трахат', 'трахн',
-    'траx', 'фистинг', 'fisting', 'фетиш', 'fetish', 'fuck', 'fucking',
-    'fucked', 'handjob', 'blowjob', 'cum', 'cock', 'cocks', 'dick',
-    'dildo', 'domina', 'ejacul', 'erotic', 'escort', 'gangbang',
-    'hentai', 'horny', 'incest', 'jerk', 'kink', 'kinky', 'lesbian',
-    'licking', 'milf', 'nipple', 'nudity', 'orgy', 'penis', 'pornstar',
-    'pussy', 'rape', 'rapist', 'seduce', 'semen', 'sex toy', 'sexting',
-    'sexual', 'slave', 'sucking', 'threesome', 'urethra', 'vibrator',
-    'voyeur', 'whore', 'wank', 'шалава', 'шлюха', 'щель',
-]
-
-
-def check_nsfw_text(text):
-    if not text:
-        return None
-    text_lower = text.lower()
-    for kw in NSFW_KEYWORDS:
-        if kw in text_lower:
-            return kw
-    return None
-
-
-MODERATION_BOT_USERNAME = 'ModeratorBot'
-WARNING_LIMIT = 5
-
-
-def get_moderation_bot():
-    bot = User.query.filter_by(username=MODERATION_BOT_USERNAME, is_bot=True).first()
-    if not bot:
-        bot = User(
-            username=MODERATION_BOT_USERNAME,
-            email=f'bot_{MODERATION_BOT_USERNAME}@localhost',
-            is_bot=True,
-            bot_token=generate_bot_token(),
-            bot_commands='[]',
-            bio='Content Moderation Bot — проверяет контент на нарушения',
-            creator_id=None,
-        )
-        bot.set_password(os.urandom(32).hex())
-        db.session.add(bot)
-        db.session.flush()
-    return bot
-
-
-def moderate_post(body, author, community=None):
-    if author.is_bot and author.creator_id is None:
-        return None
-    if author.is_banned:
-        return 'USER_BANNED'
-
-    matched = check_nsfw_text(body)
-    if not matched:
-        return None
-
-    warning_count = ModerationLog.query.filter_by(user_id=author.id).count() + 1
-    log = ModerationLog(
-        user_id=author.id,
-        community_id=community.id if community else None,
-        post_id=None,
-        reason=f'NSFW content detected (keyword: {matched})',
-    )
-    db.session.add(log)
-    db.session.commit()
-
-    bot = get_moderation_bot()
-    dm = get_or_create_dm(author, bot)
-    msg = (
-        f'⚠️ Warning #{warning_count}/{WARNING_LIMIT}\n\n'
-        f'Your post was rejected: NSFW content detected.\n'
-        f'Reason: inappropriate language ("{matched}")\n\n'
-    )
-    if warning_count >= WARNING_LIMIT:
-        author.is_banned = True
-        db.session.commit()
-        msg += '🚫 Your account has been permanently banned for repeated violations.'
-    else:
-        msg += f'After {WARNING_LIMIT} warnings your account will be permanently banned.'
-
-    message = Message(
-        sender_id=bot.id,
-        recipient_id=author.id,
-        chat_id=dm.id,
-        body=msg,
-    )
-    db.session.add(message)
-    db.session.commit()
-
-    return 'BLOCKED'
-
-
-def get_or_create_dm(user_a, user_b):
-    from sqlalchemy.orm import aliased
-    cm2 = aliased(ChatMember)
-    chat = Chat.query.join(ChatMember).filter(ChatMember.user_id == user_a.id).join(cm2).filter(
-        cm2.user_id == user_b.id, Chat.type == 'direct'
-    ).first()
-    if not chat:
-        chat = Chat(name=f"DM", type='direct', creator_id=user_a.id)
-        db.session.add(chat)
-        db.session.flush()
-        for uid in [user_a.id, user_b.id]:
-            if not ChatMember.query.filter_by(chat_id=chat.id, user_id=uid).first():
-                db.session.add(ChatMember(chat_id=chat.id, user_id=uid, role='member'))
-    return chat
 
 
 with app.app_context():
@@ -371,80 +205,6 @@ login_manager.login_message = 'Пожалуйста, войдите для до�
 socketio.init_app(app, cors_allowed_origins="*", manage_session=False, async_mode='threading')
 
 active_users = {}  # user_id -> sid
-_webhook_queue = []
-
-
-def enqueue_webhook_dispatch(message_id):
-    _webhook_queue.append(message_id)
-
-
-def process_webhook_queue():
-    while _webhook_queue:
-        msg_id = _webhook_queue.pop(0)
-        try:
-            with app.app_context():
-                msg = Message.query.get(msg_id)
-                if not msg:
-                    continue
-                sender = User.query.get(msg.sender_id)
-                if sender and sender.is_bot:
-                    continue
-                chat = Chat.query.get(msg.chat_id) if msg.chat_id else None
-                if not chat and msg.recipient_id:
-                    recipient = User.query.get(msg.recipient_id)
-                    if recipient and recipient.is_bot and recipient.webhook_url:
-                        _send_webhook_payload(recipient, msg, sender, None, recipient=recipient)
-                    continue
-                if not chat:
-                    continue
-                bot_members = ChatMember.query.filter_by(chat_id=chat.id).all()
-                for member in bot_members:
-                    bot = User.query.get(member.user_id)
-                    if bot and bot.is_bot and bot.webhook_url and bot.id != msg.sender_id:
-                        _send_webhook_payload(bot, msg, sender, chat)
-        except Exception as e:
-            app.logger.error(f"Webhook dispatch error for msg {msg_id}: {e}")
-
-
-def _send_webhook_payload(bot, message, sender, chat, recipient=None):
-    import json, urllib.request, urllib.error
-    update = {
-        'update_id': message.id,
-        'message': {
-            'message_id': message.id,
-            'date': int(message.created_at.timestamp()) if message.created_at else 0,
-            'text': message.body or '',
-            'from': {
-                'id': sender.id,
-                'username': sender.username,
-                'is_bot': sender.is_bot if sender else False,
-            } if sender else None,
-            'chat': {
-                'id': chat.id if chat else (recipient.id if recipient else 0),
-                'type': chat.type if chat else 'private',
-                'name': chat.name if chat else (recipient.username if recipient else ''),
-            },
-        }
-    }
-    if chat is None and recipient:
-        update['message']['chat'] = {
-            'id': recipient.id,
-            'type': 'private',
-            'username': recipient.username,
-            'first_name': recipient.username,
-        }
-
-    payload = json.dumps(update).encode('utf-8')
-    try:
-        req = urllib.request.Request(
-            bot.webhook_url,
-            data=payload,
-            headers={'Content-Type': 'application/json'},
-            method='POST'
-        )
-        urllib.request.urlopen(req, timeout=5)
-    except Exception as e:
-        app.logger.warning(f"Webhook to {bot.webhook_url} failed: {e}")
 
 
 @app.after_request
@@ -499,39 +259,6 @@ def handle_message(data):
 csrf.init_app(app)
 
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
-
-
-def upload_to_cloudinary(file, folder='social'):
-    if not file.filename:
-        return None
-    if cloudinary_configured:
-        result = cloudinary.uploader.upload(
-            file,
-            folder=folder,
-            resource_type='auto',
-            timeout=30,
-            transformation=[{'quality': 'auto', 'fetch_format': 'auto'}]
-        )
-        return result['secure_url']
-    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    return filename
-
-
-def get_cloudinary_url(public_id, resource_type='image'):
-    if not public_id:
-        return None
-    if cloudinary_configured:
-        return cloudinary.CloudinaryImage(public_id).build_url(
-            width=800,
-            crop='scale',
-            quality='auto',
-            fetch_format='auto'
-        )
-    return '/media/' + public_id
-
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -547,23 +274,6 @@ def update_last_seen():
         except:
             pass
 
-
-def create_notification(user_id, sender_id, notif_type, post_id=None, comment_id=None, message_id=None):
-    try:
-        if user_id == sender_id:
-            return
-        notification = Notification(
-            user_id=user_id,
-            sender_id=sender_id,
-            type=notif_type,
-            post_id=post_id,
-            comment_id=comment_id,
-            message_id=message_id
-        )
-        db.session.add(notification)
-        db.session.commit()
-    except Exception as e:
-        app.logger.error(f"Notification error: {e}")
 
 
 _migration_done = False

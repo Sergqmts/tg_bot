@@ -9,7 +9,7 @@ def register_routes(app):
     from extensions import db
     from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog, CommunityMember, CommunityEvent, EventAttendee, CommunityForm, CommunityPostForm
 
-    from app import moderate_post, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary
+    from helpers import moderate_post, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary
 
     @app.route('/communities')
     def communities():

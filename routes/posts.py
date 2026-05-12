@@ -52,7 +52,7 @@ def register_routes(app):
                     flash('Черновик сохранён')
                     return redirect(url_for('drafts'))
                 
-                from app import moderate_post
+                from helpers import moderate_post
                 result = moderate_post(body, current_user)
                 if result == 'USER_BANNED':
                     flash('Ваш аккаунт заблокирован за нарушение правил')
@@ -97,7 +97,7 @@ def register_routes(app):
                     binary = base64.b64decode(data)
                     file = FileStorage(io.BytesIO(binary), filename=f'photo.{ext}', content_type=f'image/{ext}')
                     
-                    from app import cloudinary_configured, upload_to_cloudinary
+                    from helpers import cloudinary_configured, upload_to_cloudinary
                     if cloudinary_configured:
                         url = upload_to_cloudinary(file, folder='posts')
                         if url:
@@ -115,7 +115,7 @@ def register_routes(app):
                 app.logger.info(f"Files count: {len(files)}")
                 for file in files:
                     app.logger.info(f"Processing file: {file.filename}")
-                    from app import allowed_file
+                    from helpers import allowed_file
                     if file.filename and allowed_file(file.filename):
                         ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
                         if ext in {'mp4', 'webm', 'mov'}:
@@ -356,7 +356,7 @@ def register_routes(app):
             current_user.unlike_post(post)
         else:
             current_user.like_post(post)
-            from app import create_notification
+            from helpers import create_notification
             create_notification(post.user_id, current_user.id, 'like', post_id=post.id)
             liked = True
         db.session.commit()
@@ -376,7 +376,7 @@ def register_routes(app):
         
         if 'media' in request.files:
             file = request.files['media']
-            from app import allowed_file, cloudinary_configured, upload_to_cloudinary
+            from helpers import allowed_file, cloudinary_configured, upload_to_cloudinary
             if file.filename and allowed_file(file.filename):
                 try:
                     if cloudinary_configured:
@@ -399,7 +399,7 @@ def register_routes(app):
                 comment = Comment(body=body or '', author=current_user, post=post, media_url=media_url, media_type=media_type, reply_to_id=reply_to_comment_id)
                 db.session.add(comment)
                 db.session.commit()
-                from app import create_notification
+                from helpers import create_notification
                 create_notification(post.user_id, current_user.id, 'comment', post_id=post.id, comment_id=comment.id)
                 if reply_to_comment_id:
                     parent_comment = Comment.query.get(reply_to_comment_id)
