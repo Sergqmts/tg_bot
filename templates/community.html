@@ -29,7 +29,7 @@
                 {% endif %}
                 <div class="profile-actions">
                     {% if current_user.is_authenticated %}
-                        {% if is_member %}
+                        {% if is_member or is_staff_view %}
                         <form method="POST" action="{{ url_for('leave_community', slug=community.slug) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-outline">Покинуть</button>
@@ -42,7 +42,7 @@
                             <button type="submit" class="btn btn-primary">Вступить</button>
                         </form>
                         {% endif %}
-                        {% if is_member %}
+                        {% if is_member or is_staff_view %}
                         <a href="{{ url_for('community_post', slug=community.slug) }}" class="btn btn-primary">Написать</a>
                         {% endif %}
                         {% if is_admin %}
@@ -65,7 +65,7 @@
         {% endif %}
     </div>
     
-    {% if is_member or not community.is_private %}
+    {% if is_member or is_staff_view or not community.is_private %}
     <div class="feed">
         {% for post in posts %}
         <article class="post-card">

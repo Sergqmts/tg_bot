@@ -98,12 +98,18 @@ def register_routes(app):
         elif current_user.is_pending(comm):
             flash('Ваша заявка на рассмотрении')
         else:
-            current_user.join_community(comm)
-            db.session.commit()
-            if comm.is_private:
-                flash('Заявка отправлена на рассмотрение')
+            if comm.is_private and current_user.is_staff:
+                member = CommunityMember(user_id=current_user.id, community_id=comm.id, status='approved', role='admin')
+                db.session.add(member)
+                db.session.commit()
+                flash(f'Вы вступили в сообщество "{comm.name}" как администратор')
             else:
-                flash(f'Вы вступили в сообщество "{comm.name}"')
+                current_user.join_community(comm)
+                db.session.commit()
+                if comm.is_private:
+                    flash('Заявка отправлена на рассмотрение')
+                else:
+                    flash(f'Вы вступили в сообщество "{comm.name}"')
         return redirect(url_for('community', slug=slug))
 
     @app.route('/community/<slug>/events', methods=['GET', 'POST'])
