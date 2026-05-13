@@ -49,7 +49,7 @@
     <!-- Messages area - scrolls independently -->
     <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2 scroll-smooth" id="messagesArea">
         {% for msg in messages %}
-        <div class="flex {% if msg.sender_id == current_user.id %}justify-end{% else %}justify-start{% endif %} gap-2">
+        <div class="flex {% if msg.sender_id == current_user.id %}justify-end{% else %}justify-start{% endif %} gap-1 group">
             {% if msg.sender_id != current_user.id %}
             <a href="{{ url_for('user_profile', username=msg.sender.username) }}" class="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mt-1">
                 {% set avatar_url = get_avatar_url(msg.sender) %}
@@ -63,8 +63,14 @@
             </a>
             {% endif %}
             
+            {% if msg.sender_id != current_user.id %}
+            <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="self-center w-6 h-6 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                <i class="fa-solid fa-reply text-[10px] rotate-180"></i>
+            </a>
+            {% endif %}
+
             <!-- Message bubble - distinct own/other styling -->
-            <div class="{% if msg.sender_id == current_user.id %}bg-brand-middle text-white rounded-2xl rounded-br-md{% else %}bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl rounded-bl-md shadow-sm{% endif %} px-3 py-2 max-w-[75%] relative group">
+            <div class="{% if msg.sender_id == current_user.id %}bg-brand-middle text-white rounded-2xl rounded-br-md{% else %}bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl rounded-bl-md shadow-sm{% endif %} px-3 py-2 max-w-[75%] relative">
                 <button class="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-full {% if msg.sender_id == current_user.id %}bg-white/20{% else %}bg-slate-100 dark:bg-slate-700{% endif %} opacity-0 group-hover:opacity-100 transition-opacity" onclick="showMessageMenu(event, {{ msg.id }}); return false;">
                     <i class="fa-solid fa-ellipsis text-[10px]"></i>
                 </button>
@@ -137,6 +143,12 @@
                 
                  <div class="text-[10px] {% if msg.sender_id == current_user.id %}text-white/70{% else %}text-slate-500 dark:text-slate-400{% endif %} mt-1">{{ msg.created_at.strftime('%H:%M') }}</div>
             </div>
+
+            {% if msg.sender_id == current_user.id %}
+            <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="self-center w-6 h-6 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                <i class="fa-solid fa-reply text-[10px] rotate-180"></i>
+            </a>
+            {% endif %}
         </div>
         {% else %}
         <div class="glass rounded-3xl p-8 text-center">
