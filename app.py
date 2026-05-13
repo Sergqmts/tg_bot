@@ -267,17 +267,6 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-@app.before_request
-def update_last_seen():
-    if current_user.is_authenticated:
-        try:
-            current_user.last_seen = datetime.utcnow()
-            db.session.commit()
-        except:
-            pass
-
-
-
 _migration_done = False
 
 @app.before_request
@@ -469,16 +458,14 @@ def run_migrations():
         app.logger.info(f"Chat migration: {e}")
 
 
-
-
-
-
-
-
-
-
-
-
+@app.before_request
+def update_last_seen():
+    if current_user.is_authenticated:
+        try:
+            current_user.last_seen = datetime.utcnow()
+            db.session.commit()
+        except:
+            pass
 
 
 @app.route('/favicon.ico')
