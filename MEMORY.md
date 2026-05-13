@@ -11,7 +11,7 @@ python app.py  # dev on :5000
 ```
 
 ## Key Architecture Decisions
-- **Single-file app**: `app.py` contains ALL routes, models, config (~5300 lines)
+- **Modular app**: `app.py` + `routes/*.py` + `models.py` + `extensions.py` + `helpers.py`
 - **Flask-WTF CSRFProtect** for CSRF on all POST forms (except voice routes which are exempt)
 - **Cloudinary** for media persistence across deploys (fallback to local `/static/uploads/`)
 - **No real-time** — Socket.IO was removed due to gunicorn sync worker incompatibility. Notification badge uses JS polling (`GET /api/unread-count` every 10s)
@@ -21,12 +21,13 @@ python app.py  # dev on :5000
 ## Database
 - SQLite locally (`instance/social.db`), PostgreSQL on Railway
 - `Message.body` has `NOT NULL` in production (set explicit `body=''`)
-- Models: User (+bot fields), Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment, Draft, ModerationLog, Report, Reaction, Tag, PostTag
+- Models: User (+bot +google_id fields), Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment, Draft, ModerationLog, Report, Reaction, Tag, PostTag
 
 ## Branch History (recent)
 - `main` — production branch, Railway auto-deploys
 - `feature/bot-platform` — merged into main (bot platform, content moderation, admin panel, staff system)
 - `feature/photo-editor` — merged into main (comprehensive photo editor, navigation redesign, drafts)
+- `refactor/extract-models` — merged into main (models/routes refactor, Google OAuth login)
 
 ## Features
 
@@ -72,6 +73,14 @@ Full-featured in-browser photo editor with 11 tool panels:
 - **History**: undo/redo (up to 50 steps)
 - **Draft model** (`Draft`) with `/drafts` route for listing/resuming
 
+### Google OAuth Login
+- **Google OAuth** via `authlib` — `/login/google` and `/login/google/callback` routes in `routes/auth.py`
+- `google_id` field on User model for linking Google accounts
+- Existing email match links Google account to existing user
+- New Google users get auto-generated username with fallback on conflict
+- Registration form validates email uniqueness across all users (incl. Google-created)
+- Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+
 ### Navigation
 - Bottom nav: Главная | Шортсы | Сообщения | Сообщества | ⋯ (ещё)
 - "Ещё" popup: профиль, создать пост, фоторедактор, поиск, уведомления, черновики, админка (staff)
@@ -95,6 +104,8 @@ SECRET_KEY=<random 30+ chars>
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 PORT=8080
 ```
 
