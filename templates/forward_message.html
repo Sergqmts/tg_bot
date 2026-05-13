@@ -23,7 +23,7 @@
                 {% if message.body %}
                 <p class="preview-text">{{ message.body[:80] }}{% if message.body|length > 80 %}...{% endif %}</p>
                 {% endif %}
-                {% if message.medias.count() > 0 %}
+                {% if message.medias|length > 0 %}
                 <div class="preview-media">
                     {% for m in message.medias[:3] %}
                         {% if m.media_type == 'image' %}
