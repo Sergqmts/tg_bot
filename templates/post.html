@@ -199,10 +199,7 @@
                 <div class="comment-actions">
                     <button type="button" class="reply-btn" onclick="replyTo('{{ comment.author.username }}', {{ comment.id }})">Ответить</button>
                     {% if comment.author == current_user or current_user.is_staff %}
-                    <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" onsubmit="return confirm('Удалить комментарий?')" style="display:inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="delete-btn text-red-500 hover:text-red-700 text-xs ml-2">Удалить</button>
-                    </form>
+                    <button onclick="if(confirm('Удалить комментарий?')){fetch('{{ url_for('delete_comment', comment_id=comment.id) }}',{method:'POST',headers:{'X-CSRFToken':document.querySelector('input[name=csrf_token]').value}}).then(function(r){if(r.ok)location.reload()})}" class="delete-btn text-red-400 hover:text-red-300 text-xs ml-2 bg-transparent border-none cursor-pointer">Удалить</button>
                     {% endif %}
                 </div>
                 {% endif %}
