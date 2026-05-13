@@ -635,8 +635,10 @@ class Message(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=True)
     transcription = db.Column(db.Text, nullable=True)
+    forwarded_from_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     
     medias = db.relationship('MessageMedia', backref='message')
+    forwarded_from = db.relationship('User', foreign_keys=[forwarded_from_id])
 
 
 class MessageReaction(db.Model):

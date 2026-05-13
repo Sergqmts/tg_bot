@@ -482,9 +482,9 @@ def register_routes(app):
         target_chat, target_user = target_result
         if target_user:
             target_chat = get_or_create_dm(bot, target_user)
-            new_msg = Message(body=original.body, sender_id=bot.id, recipient_id=target_user.id, chat_id=target_chat.id)
+            new_msg = Message(body=original.body, sender_id=bot.id, recipient_id=target_user.id, chat_id=target_chat.id, forwarded_from_id=original.sender_id)
         else:
-            new_msg = Message(body=original.body, sender_id=bot.id, chat_id=target_chat.id)
+            new_msg = Message(body=original.body, sender_id=bot.id, chat_id=target_chat.id, forwarded_from_id=original.sender_id)
         db.session.add(new_msg)
         db.session.flush()
         for m in original.medias:

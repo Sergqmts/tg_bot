@@ -606,7 +606,8 @@ def register_routes(app):
                             body=forward_body,
                             sender_id=current_user.id,
                             chat_id=chat.id,
-                            post_id=message.post_id
+                            post_id=message.post_id,
+                            forwarded_from_id=message.sender_id
                         )
                         db.session.add(new_msg)
                         db.session.flush()
@@ -636,7 +637,8 @@ def register_routes(app):
                         body=forward_body,
                         sender_id=current_user.id,
                         recipient_id=user.id,
-                        post_id=message.post_id
+                        post_id=message.post_id,
+                        forwarded_from_id=message.sender_id
                     )
                     db.session.add(new_msg)
                     db.session.flush()
@@ -689,7 +691,8 @@ def register_routes(app):
                         body=forward_body,
                         sender_id=current_user.id,
                         chat_id=chat.id,
-                        post_id=message.post_id
+                        post_id=message.post_id,
+                        forwarded_from_id=message.sender_id
                     )
                     db.session.add(new_msg)
                     db.session.flush()
@@ -719,7 +722,8 @@ def register_routes(app):
                     body=forward_body,
                     sender_id=current_user.id,
                     recipient_id=user.id,
-                    post_id=message.post_id
+                    post_id=message.post_id,
+                    forwarded_from_id=message.sender_id
                 )
                 db.session.add(new_msg)
                 db.session.flush()

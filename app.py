@@ -440,6 +440,12 @@ def run_migrations():
                 db.session.commit()
             except:
                 pass
+        if 'forwarded_from_id' not in columns:
+            try:
+                db.session.execute(text("ALTER TABLE message ADD COLUMN forwarded_from_id INTEGER REFERENCES user(id)"))
+                db.session.commit()
+            except:
+                pass
         
         try:
             story_cols = get_table_columns('story')
