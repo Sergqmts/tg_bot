@@ -111,7 +111,7 @@
                     <span class="text-[11px]">Скачать</span>
                 </a>
                 {% elif m.media_type == 'video' %}
-                <div class="mb-1 mt-1 rounded-xl overflow-hidden">
+                <div class="mb-1 mt-1 rounded-xl overflow-hidden cursor-pointer" onclick="openModal('{{ m.media_url }}')">
                     <video src="{{ m.media_url }}" muted class="w-full max-w-[180px]"></video>
                 </div>
                 {% elif m.media_type == 'video_message' %}
@@ -134,8 +134,8 @@
                 </div>
                 {% endif %}
                 {% else %}
-                <a href="{{ m.media_url }}" download class="block mb-1 mt-1">
-                    <img src="{{ m.media_url }}" alt="" class="rounded-xl max-w-[160px] max-h-[160px] object-cover">
+                <a href="javascript:void(0)" onclick="openModal('{{ m.media_url }}')" class="block mb-1 mt-1">
+                    <img src="{{ m.media_url }}" alt="" class="rounded-xl max-w-[160px] max-h-[160px] object-cover cursor-pointer">
                 </a>
                 {% endif %}
                 {% endfor %}
@@ -237,6 +237,17 @@
             </form>
         </div>
     </footer>
+
+    <div class="modal hidden" id="imageModal" onclick="closeModal()">
+        <div class="absolute top-4 right-4 flex items-center gap-4 z-10">
+            <a id="modalDownloadBtn" href="#" download class="text-white text-xl hover:text-brand-middle transition-colors" title="Скачать">
+                <i class="fa-solid fa-download"></i>
+            </a>
+            <span class="text-white text-3xl cursor-pointer hover:text-brand-middle transition-colors">&times;</span>
+        </div>
+        <img id="modalImg" class="max-h-[90vh] max-w-[90vw] object-contain hidden">
+        <video id="modalVideo" class="max-h-[90vh] max-w-[90vw] object-contain hidden" controls autoplay></video>
+    </div>
 </div>
 
 <script>
@@ -717,5 +728,36 @@ document.addEventListener('DOMContentLoaded', function() {
     var area = document.getElementById('messagesArea');
     if (area) area.scrollTop = area.scrollHeight;
 });
+
+function openModal(src) {
+    var modal = document.getElementById('imageModal');
+    var img = document.getElementById('modalImg');
+    var video = document.getElementById('modalVideo');
+    var downloadBtn = document.getElementById('modalDownloadBtn');
+
+    downloadBtn.href = src;
+
+    if (src.match(/\.(mp4|webm|mov)(\?|$)/i)) {
+        img.classList.add('hidden');
+        video.classList.remove('hidden');
+        video.src = src;
+        video.play();
+    } else {
+        video.classList.add('hidden');
+        video.pause();
+        video.src = '';
+        img.classList.remove('hidden');
+        img.src = src;
+    }
+
+    modal.classList.add('show');
+}
+function closeModal() {
+    var modal = document.getElementById('imageModal');
+    var video = document.getElementById('modalVideo');
+    video.pause();
+    video.src = '';
+    modal.classList.remove('show');
+}
 </script>
 {% endblock %}
