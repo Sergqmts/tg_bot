@@ -376,7 +376,9 @@ let state = {
   selectedLayer: -1,
   draggingLayer: false,
   dragOffsetX: 0,
-  dragOffsetY: 0
+  dragOffsetY: 0,
+  resizingLayer: false,
+  selBounds: null
 };
 
 function initEditor() {
@@ -551,6 +553,7 @@ function render() {
   
   if (state.selectedLayer >= 0 && state.layers[state.selectedLayer]) {
     const l = state.layers[state.selectedLayer];
+    const ctx2 = state.ctx;
     ctx.save();
     ctx.strokeStyle = '#405de6';
     ctx.lineWidth = 2;
@@ -575,11 +578,16 @@ function render() {
       bx = l.x - bw / 2;
       by = l.y - bh / 2;
     }
+    state.selBounds = { bx, by, bw, bh };
     if (bw) {
       ctx.strokeRect(bx, by, bw, bh);
+      ctx.setLineDash([]);
       ctx.fillStyle = '#405de6';
-      ctx.fillRect(bx + bw - 8, by + bh - 8, 8, 8);
-      ctx.fillRect(bx, by, 8, 8);
+      const hs = 8;
+      ctx.fillRect(bx - hs/2, by - hs/2, hs, hs);
+      ctx.fillRect(bx + bw - hs/2, by - hs/2, hs, hs);
+      ctx.fillRect(bx - hs/2, by + bh - hs/2, hs, hs);
+      ctx.fillRect(bx + bw - hs/2, by + bh - hs/2, hs, hs);
     }
     ctx.restore();
   }
@@ -1099,10 +1107,25 @@ function hitTestLayer(pos, layer, ctx) {
   return false;
 }
 
+function hitTestResizeHandle(pos) {
+  if (!state.selBounds) return false;
+  const { bx, by, bw, bh } = state.selBounds;
+  const hs = 12;
+  const handles = [
+    { x: bx + bw, y: by + bh }
+  ];
+  for (const h of handles) {
+    if (Math.abs(pos.x - h.x) <= hs && Math.abs(pos.y - h.y) <= hs) return true;
+  }
+  return false;
+}
+
 function selectLayerAt(pos) {
   const ctx = state.ctx;
   if (!ctx) return;
+  if (state.selectedLayer >= 0 && hitTestResizeHandle(pos)) return;
   state.selectedLayer = -1;
+  state.selBounds = null;
   for (let i = state.layers.length - 1; i >= 0; i--) {
     if (hitTestLayer(pos, state.layers[i], ctx)) {
       state.selectedLayer = i;
@@ -1123,8 +1146,14 @@ function initCanvasEvents() {
       state.lastDrawPos = pos;
       drawAt(pos.x, pos.y);
     } else if (state.image) {
-      selectLayerAt(pos);
-      if (state.selectedLayer >= 0) state.draggingLayer = true;
+      if (state.selectedLayer >= 0 && hitTestResizeHandle(pos)) {
+        state.resizingLayer = true;
+        state.dragOffsetX = pos.x;
+        state.dragOffsetY = pos.y;
+      } else {
+        selectLayerAt(pos);
+        if (state.selectedLayer >= 0) state.draggingLayer = true;
+      }
     }
   });
   state.canvas.addEventListener('mousemove', function(e) {
@@ -1132,15 +1161,35 @@ function initCanvasEvents() {
     if (state.isDrawing && state.lastDrawPos) {
       drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
       state.lastDrawPos = pos;
+    } else if (state.resizingLayer && state.selectedLayer >= 0) {
+      const l = state.layers[state.selectedLayer];
+      const dx = pos.x - state.dragOffsetX;
+      const dy = pos.y - state.dragOffsetY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (l.type === 'image_sticker') {
+        const ratio = l.w / l.h;
+        const newW = Math.max(20, l.w + dx);
+        l.w = newW;
+        l.h = newW / ratio;
+      } else {
+        const newSize = Math.max(8, (l.size || 48) + dx * 0.5);
+        l.size = newSize;
+      }
+      state.dragOffsetX = pos.x;
+      state.dragOffsetY = pos.y;
+      state.selBounds = null;
+      render();
     } else if (state.draggingLayer && state.selectedLayer >= 0) {
       const l = state.layers[state.selectedLayer];
       l.x = pos.x - state.dragOffsetX;
       l.y = pos.y - state.dragOffsetY;
+      state.selBounds = null;
       render();
     }
   });
   state.canvas.addEventListener('mouseup', function() {
-    if (state.draggingLayer) {
+    if (state.resizingLayer || state.draggingLayer) {
+      state.resizingLayer = false;
       state.draggingLayer = false;
       if (state.selectedLayer >= 0) saveHistory();
     }
@@ -1155,8 +1204,14 @@ function initCanvasEvents() {
       drawAt(pos.x, pos.y);
     } else if (state.image) {
       const pos = getCanvasCoords(e);
-      selectLayerAt(pos);
-      if (state.selectedLayer >= 0) state.draggingLayer = true;
+      if (state.selectedLayer >= 0 && hitTestResizeHandle(pos)) {
+        state.resizingLayer = true;
+        state.dragOffsetX = pos.x;
+        state.dragOffsetY = pos.y;
+      } else {
+        selectLayerAt(pos);
+        if (state.selectedLayer >= 0) state.draggingLayer = true;
+      }
     }
   });
   state.canvas.addEventListener('touchmove', function(e) {
@@ -1165,17 +1220,38 @@ function initCanvasEvents() {
       const pos = getCanvasCoords(e);
       drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
       state.lastDrawPos = pos;
+    } else if (state.resizingLayer && state.selectedLayer >= 0) {
+      e.preventDefault();
+      const pos = getCanvasCoords(e);
+      const l = state.layers[state.selectedLayer];
+      const dx = pos.x - state.dragOffsetX;
+      const dy = pos.y - state.dragOffsetY;
+      if (l.type === 'image_sticker') {
+        const ratio = l.w / l.h;
+        const newW = Math.max(20, l.w + dx);
+        l.w = newW;
+        l.h = newW / ratio;
+      } else {
+        const newSize = Math.max(8, (l.size || 48) + dx * 0.5);
+        l.size = newSize;
+      }
+      state.dragOffsetX = pos.x;
+      state.dragOffsetY = pos.y;
+      state.selBounds = null;
+      render();
     } else if (state.draggingLayer && state.selectedLayer >= 0) {
       e.preventDefault();
       const pos = getCanvasCoords(e);
       const l = state.layers[state.selectedLayer];
       l.x = pos.x - state.dragOffsetX;
       l.y = pos.y - state.dragOffsetY;
+      state.selBounds = null;
       render();
     }
   });
   state.canvas.addEventListener('touchend', function() {
-    if (state.draggingLayer) {
+    if (state.resizingLayer || state.draggingLayer) {
+      state.resizingLayer = false;
       state.draggingLayer = false;
       if (state.selectedLayer >= 0) saveHistory();
     }
