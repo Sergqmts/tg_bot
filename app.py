@@ -46,6 +46,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
+app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', '')
+app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'pdf', 'doc', 'docx', 'txt'}
 
 # Custom Jinja2 filters
@@ -312,6 +314,12 @@ def run_migrations():
                     db.session.commit()
                 except:
                     db.session.rollback()
+        if 'google_id' not in existing:
+            try:
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN google_id VARCHAR(200) UNIQUE'))
+                db.session.commit()
+            except:
+                db.session.rollback()
     except Exception as e:
         app.logger.info(f"User migration: {e}")
     
