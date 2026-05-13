@@ -151,6 +151,11 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" name="body" class="comment-input" placeholder="Добавить комментарий...">
             <input type="hidden" name="reply_to_comment_id" id="replyToCommentId" value="">
+            <label class="comment-attach" title="Прикрепить фото/видео">
+                <input type="file" name="media" accept="image/*,video/*" hidden onchange="this.form.querySelector('.comment-file-name').textContent = this.files[0] ? this.files[0].name : ''">
+                <i class="fa-solid fa-paperclip"></i>
+            </label>
+            <span class="comment-file-name text-xs text-slate-400 max-w-[100px] truncate"></span>
             <button type="submit" class="btn btn-primary btn-small">Отправить</button>
         </form>
         <div id="replyIndicator" class="reply-indicator" style="display: none;">
@@ -174,6 +179,22 @@
                     <span class="comment-time">{{ comment.created_at.strftime('%d %b') }}</span>
                 </div>
                 <div class="comment-text">{{ comment.body }}</div>
+                {% if comment.media_url %}
+                <div class="comment-media mt-2">
+                    {% if comment.media_type == 'video' %}
+                    <video src="{{ comment.media_url }}" controls class="rounded-xl max-w-full max-h-64"></video>
+                    {% elif comment.media_type == 'audio' %}
+                    <audio src="{{ comment.media_url }}" controls class="w-full"></audio>
+                    {% elif comment.media_type == 'document' %}
+                    <a href="{{ comment.media_url }}" download class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm">
+                        <i class="fa-solid fa-file text-brand-middle"></i>
+                        <span>Скачать файл</span>
+                    </a>
+                    {% else %}
+                    <img src="{{ comment.media_url }}" alt="" class="rounded-xl max-w-full max-h-64 object-cover cursor-pointer" onclick="openCommentModal(this.src)">
+                    {% endif %}
+                </div>
+                {% endif %}
                 {% if current_user.is_authenticated %}
                 <div class="comment-actions">
                     <button type="button" class="reply-btn" onclick="replyTo('{{ comment.author.username }}', {{ comment.id }})">Ответить</button>
@@ -218,5 +239,52 @@ document.addEventListener('click', function(e) {
         }
     });
 });
+
+function openCommentModal(src) {
+    var modal = document.getElementById('commentImageModal');
+    var img = document.getElementById('commentModalImg');
+    var video = document.getElementById('commentModalVideo');
+    var link = document.getElementById('commentModalDownload');
+    link.href = src;
+    if (src.match(/\.(mp4|webm|mov)(\?|$)/i)) {
+        img.classList.add('hidden');
+        video.classList.remove('hidden');
+        video.src = src;
+        video.play();
+    } else {
+        video.classList.add('hidden');
+        video.pause();
+        video.src = '';
+        img.classList.remove('hidden');
+        img.src = src;
+    }
+    modal.classList.remove('hidden');
+}
+function closeCommentModal() {
+    var modal = document.getElementById('commentImageModal');
+    var video = document.getElementById('commentModalVideo');
+    if (video) { video.pause(); video.src = ''; }
+    modal.classList.add('hidden');
+}
 </script>
+
+<div class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center hidden" id="commentImageModal" onclick="closeCommentModal()">
+    <div class="absolute top-4 right-4 flex items-center gap-4 z-10">
+        <a id="commentModalDownload" href="#" download class="text-white text-xl hover:text-brand-middle transition-colors" title="Скачать">
+            <i class="fa-solid fa-download"></i>
+        </a>
+        <span class="text-white text-3xl cursor-pointer hover:text-brand-middle transition-colors">&times;</span>
+    </div>
+    <img id="commentModalImg" class="max-h-[90vh] max-w-[90vw] object-contain hidden">
+    <video id="commentModalVideo" class="max-h-[90vh] max-w-[90vw] object-contain hidden" controls autoplay></video>
+</div>
+
+<style>
+.comment-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.comment-input { flex: 1; min-width: 120px; }
+.comment-attach { cursor: pointer; padding: 6px 8px; border-radius: 8px; color: #8e8e9e; transition: all .2s; }
+.comment-attach:hover { background: rgba(255,255,255,.08); color: #fff; }
+.comment-media { margin-top: 6px; }
+.comment-file-name { font-size: 11px; color: #8e8e9e; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
 {% endblock %}
