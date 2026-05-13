@@ -389,6 +389,7 @@ function initEditor() {
       initFrameGrid();
       initCollageGrid();
       initEmojiGrid();
+      initCanvasEvents();
     }
     if (t === 'story') {
       state.crop.aspect = '9:16';
@@ -1042,40 +1043,43 @@ function getCanvasCoords(e) {
   return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
 }
 
-state.canvas.addEventListener('mousedown', function(e) {
-  if (!state.isDrawing || !state.drawLayer) return;
-  const pos = getCanvasCoords(e);
-  state.lastDrawPos = pos;
-  drawAt(pos.x, pos.y);
-});
-state.canvas.addEventListener('mousemove', function(e) {
-  if (!state.isDrawing || !state.lastDrawPos) return;
-  const pos = getCanvasCoords(e);
-  drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
-  state.lastDrawPos = pos;
-});
-state.canvas.addEventListener('mouseup', function() {
-  state.lastDrawPos = null;
-  if (state.isDrawing) { saveHistory(); render(); }
-});
-state.canvas.addEventListener('touchstart', function(e) {
-  if (!state.isDrawing || !state.drawLayer) return;
-  e.preventDefault();
-  const pos = getCanvasCoords(e);
-  state.lastDrawPos = pos;
-  drawAt(pos.x, pos.y);
-});
-state.canvas.addEventListener('touchmove', function(e) {
-  if (!state.isDrawing || !state.lastDrawPos) return;
-  e.preventDefault();
-  const pos = getCanvasCoords(e);
-  drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
-  state.lastDrawPos = pos;
-});
-state.canvas.addEventListener('touchend', function() {
-  state.lastDrawPos = null;
-  if (state.isDrawing) { saveHistory(); render(); }
-});
+function initCanvasEvents() {
+  if (!state.canvas) { console.warn('[editor] initCanvasEvents: no canvas'); return; }
+  state.canvas.addEventListener('mousedown', function(e) {
+    if (!state.isDrawing || !state.drawLayer) return;
+    const pos = getCanvasCoords(e);
+    state.lastDrawPos = pos;
+    drawAt(pos.x, pos.y);
+  });
+  state.canvas.addEventListener('mousemove', function(e) {
+    if (!state.isDrawing || !state.lastDrawPos) return;
+    const pos = getCanvasCoords(e);
+    drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
+    state.lastDrawPos = pos;
+  });
+  state.canvas.addEventListener('mouseup', function() {
+    state.lastDrawPos = null;
+    if (state.isDrawing) { saveHistory(); render(); }
+  });
+  state.canvas.addEventListener('touchstart', function(e) {
+    if (!state.isDrawing || !state.drawLayer) return;
+    e.preventDefault();
+    const pos = getCanvasCoords(e);
+    state.lastDrawPos = pos;
+    drawAt(pos.x, pos.y);
+  });
+  state.canvas.addEventListener('touchmove', function(e) {
+    if (!state.isDrawing || !state.lastDrawPos) return;
+    e.preventDefault();
+    const pos = getCanvasCoords(e);
+    drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
+    state.lastDrawPos = pos;
+  });
+  state.canvas.addEventListener('touchend', function() {
+    state.lastDrawPos = null;
+    if (state.isDrawing) { saveHistory(); render(); }
+  });
+}
 
 function drawAt(x, y) {
   if (!state.drawLayer) return;
