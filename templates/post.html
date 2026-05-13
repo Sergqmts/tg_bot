@@ -149,12 +149,12 @@
         {% if current_user.is_authenticated %}
         <form method="POST" action="{{ url_for('add_comment', post_id=post.id) }}" class="comment-form" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="text" name="body" class="comment-input" placeholder="Добавить комментарий...">
             <input type="hidden" name="reply_to_comment_id" id="replyToCommentId" value="">
             <label class="comment-attach" title="Прикрепить фото/видео">
                 <input type="file" name="media" accept="image/*,video/*" hidden onchange="this.form.querySelector('.comment-file-name').textContent = this.files[0] ? this.files[0].name : ''">
                 <i class="fa-solid fa-paperclip"></i>
             </label>
+            <input type="text" name="body" class="comment-input" placeholder="Добавить комментарий...">
             <span class="comment-file-name text-xs text-slate-400 max-w-[100px] truncate"></span>
             <button type="submit" class="btn btn-primary btn-small">Отправить</button>
         </form>
