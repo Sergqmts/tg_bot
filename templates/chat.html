@@ -238,7 +238,7 @@
         </div>
     </footer>
 
-    <div class="modal hidden" id="imageModal" onclick="closeModal()">
+    <div class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center hidden" id="imageModal" onclick="closeModal()">
         <div class="absolute top-4 right-4 flex items-center gap-4 z-10">
             <a id="modalDownloadBtn" href="#" download class="text-white text-xl hover:text-brand-middle transition-colors" title="Скачать">
                 <i class="fa-solid fa-download"></i>
@@ -750,14 +750,14 @@ function openModal(src) {
         img.src = src;
     }
 
-    modal.classList.add('show');
+    modal.classList.remove('hidden');
 }
 function closeModal() {
     var modal = document.getElementById('imageModal');
     var video = document.getElementById('modalVideo');
     video.pause();
     video.src = '';
-    modal.classList.remove('show');
+    modal.classList.add('hidden');
 }
 </script>
 {% endblock %}
