@@ -49,9 +49,8 @@
             </a>
             {% endif %}
             
-            <!-- Forward button - outside bubble, aligned with edge -->
-            {% if msg.sender_id != current_user.id %}
-            <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="self-center w-6 h-6 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            {% if msg.sender_id == current_user.id %}
+            <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="self-center w-6 h-6 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                 <i class="fa-solid fa-reply text-[10px] rotate-180"></i>
             </a>
             {% endif %}
@@ -62,7 +61,6 @@
                     <i class="fa-solid fa-ellipsis text-[10px]"></i>
                 </button>
                 <div class="message-menu hidden" id="menu-{{ msg.id }}">
-                    <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="menu-item">📤 Переслать</a>
                     {% if msg.sender_id == current_user.id %}
                     <form method="POST" action="{{ url_for('delete_message', message_id=msg.id) }}" onsubmit="return confirm('Удалить сообщение для всех?')">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -137,8 +135,8 @@
                  <div class="text-[10px] {% if msg.sender_id == current_user.id %}text-white/70{% else %}text-slate-500 dark:text-slate-400{% endif %} mt-1">{{ msg.created_at.strftime('%H:%M') }}</div>
             </div>
 
-            {% if msg.sender_id == current_user.id %}
-            <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="self-center w-6 h-6 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            {% if msg.sender_id != current_user.id %}
+            <a href="{{ url_for('forward_message', message_id=msg.id) }}" class="self-center w-6 h-6 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                 <i class="fa-solid fa-reply text-[10px] rotate-180"></i>
             </a>
             {% endif %}
