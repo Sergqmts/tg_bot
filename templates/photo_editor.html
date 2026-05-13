@@ -490,12 +490,12 @@ function render() {
   const w = state.canvas.width;
   const h = state.canvas.height;
   if (!w || !h) return;
+  const a = state.adjust;
   ctx.clearRect(0, 0, w, h);
   
   if (state.image) {
     try {
       let f = '';
-      const a = state.adjust;
       if (a.brightness) f += ` brightness(${1 + a.brightness / 100})`;
       if (a.contrast) f += ` contrast(${1 + a.contrast / 100})`;
       if (a.saturate) f += ` saturate(${1 + a.saturate / 100})`;
