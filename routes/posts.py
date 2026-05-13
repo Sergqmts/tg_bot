@@ -417,7 +417,7 @@ def register_routes(app):
     @login_required
     def delete_comment(comment_id):
         comment = Comment.query.get_or_404(comment_id)
-        if comment.author != current_user:
+        if comment.author != current_user and not current_user.is_staff:
             abort(403)
         db.session.delete(comment)
         db.session.commit()

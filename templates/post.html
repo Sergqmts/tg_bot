@@ -198,6 +198,12 @@
                 {% if current_user.is_authenticated %}
                 <div class="comment-actions">
                     <button type="button" class="reply-btn" onclick="replyTo('{{ comment.author.username }}', {{ comment.id }})">Ответить</button>
+                    {% if comment.author == current_user or current_user.is_staff %}
+                    <form method="POST" action="{{ url_for('delete_comment', comment_id=comment.id) }}" onsubmit="return confirm('Удалить комментарий?')" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="delete-btn text-red-500 hover:text-red-700 text-xs ml-2">Удалить</button>
+                    </form>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>
