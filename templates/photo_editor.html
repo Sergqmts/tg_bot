@@ -372,7 +372,11 @@ let state = {
   time: 0,
   collageMode: false,
   collageImages: [],
-  frameStyle: null
+  frameStyle: null,
+  selectedLayer: -1,
+  draggingLayer: false,
+  dragOffsetX: 0,
+  dragOffsetY: 0
 };
 
 function initEditor() {
@@ -543,6 +547,41 @@ function render() {
       try { ctx.drawImage(layer.img, layer.x - layer.w/2, layer.y - layer.h/2, layer.w, layer.h); } catch(e) {}
       ctx.restore();
     }
+  }
+  
+  if (state.selectedLayer >= 0 && state.layers[state.selectedLayer]) {
+    const l = state.layers[state.selectedLayer];
+    ctx.save();
+    ctx.strokeStyle = '#405de6';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    let bx, by, bw, bh;
+    if (l.type === 'text') {
+      ctx.font = `${l.style||'normal'} ${l.size}px "${l.font||'Arial'}"`;
+      const m = ctx.measureText(l.text);
+      bw = m.width + 16;
+      bh = l.size + 16;
+      bx = l.x - bw / 2;
+      by = l.y - bh / 2;
+    } else if (l.type === 'sticker') {
+      const s = (l.size || 48) * 0.7;
+      bw = s * 2 + 16;
+      bh = s * 2 + 16;
+      bx = l.x - bw / 2;
+      by = l.y - bh / 2;
+    } else if (l.type === 'image_sticker') {
+      bw = l.w + 16;
+      bh = l.h + 16;
+      bx = l.x - bw / 2;
+      by = l.y - bh / 2;
+    }
+    if (bw) {
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.fillStyle = '#405de6';
+      ctx.fillRect(bx + bw - 8, by + bh - 8, 8, 8);
+      ctx.fillRect(bx, by, 8, 8);
+    }
+    ctx.restore();
   }
   
   if (state.effects.glitter) applyEffectGlitter(ctx, w, h);
@@ -720,6 +759,7 @@ function switchTool(tool) {
   else cancelCrop();
   if (tool === 'draw' && !state.drawing) activateDrawLayer();
   if (tool !== 'draw' && state.drawing) deactivateDrawLayer();
+  if (state.selectedLayer >= 0) { state.selectedLayer = -1; render(); }
 }
 
 function applyFilter(name) {
@@ -1043,39 +1083,102 @@ function getCanvasCoords(e) {
   return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
 }
 
+function hitTestLayer(pos, layer, ctx) {
+  if (layer.type === 'text') {
+    ctx.font = `${layer.style||'normal'} ${layer.size}px "${layer.font||'Arial'}"`;
+    const m = ctx.measureText(layer.text);
+    const lw = m.width;
+    const lh = layer.size * 1.2;
+    return Math.abs(pos.x - layer.x) <= lw/2 + 10 && Math.abs(pos.y - layer.y) <= lh/2 + 10;
+  } else if (layer.type === 'sticker') {
+    const s = (layer.size || 48) * 0.6;
+    return Math.abs(pos.x - layer.x) <= s + 10 && Math.abs(pos.y - layer.y) <= s + 10;
+  } else if (layer.type === 'image_sticker') {
+    return Math.abs(pos.x - layer.x) <= layer.w/2 + 10 && Math.abs(pos.y - layer.y) <= layer.h/2 + 10;
+  }
+  return false;
+}
+
+function selectLayerAt(pos) {
+  const ctx = state.ctx;
+  if (!ctx) return;
+  state.selectedLayer = -1;
+  for (let i = state.layers.length - 1; i >= 0; i--) {
+    if (hitTestLayer(pos, state.layers[i], ctx)) {
+      state.selectedLayer = i;
+      const l = state.layers[i];
+      state.dragOffsetX = pos.x - l.x;
+      state.dragOffsetY = pos.y - l.y;
+      break;
+    }
+  }
+  render();
+}
+
 function initCanvasEvents() {
   if (!state.canvas) { console.warn('[editor] initCanvasEvents: no canvas'); return; }
   state.canvas.addEventListener('mousedown', function(e) {
-    if (!state.isDrawing || !state.drawLayer) return;
     const pos = getCanvasCoords(e);
-    state.lastDrawPos = pos;
-    drawAt(pos.x, pos.y);
+    if (state.isDrawing && state.drawLayer) {
+      state.lastDrawPos = pos;
+      drawAt(pos.x, pos.y);
+    } else if (state.image) {
+      selectLayerAt(pos);
+      if (state.selectedLayer >= 0) state.draggingLayer = true;
+    }
   });
   state.canvas.addEventListener('mousemove', function(e) {
-    if (!state.isDrawing || !state.lastDrawPos) return;
     const pos = getCanvasCoords(e);
-    drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
-    state.lastDrawPos = pos;
+    if (state.isDrawing && state.lastDrawPos) {
+      drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
+      state.lastDrawPos = pos;
+    } else if (state.draggingLayer && state.selectedLayer >= 0) {
+      const l = state.layers[state.selectedLayer];
+      l.x = pos.x - state.dragOffsetX;
+      l.y = pos.y - state.dragOffsetY;
+      render();
+    }
   });
   state.canvas.addEventListener('mouseup', function() {
+    if (state.draggingLayer) {
+      state.draggingLayer = false;
+      if (state.selectedLayer >= 0) saveHistory();
+    }
     state.lastDrawPos = null;
     if (state.isDrawing) { saveHistory(); render(); }
   });
   state.canvas.addEventListener('touchstart', function(e) {
-    if (!state.isDrawing || !state.drawLayer) return;
-    e.preventDefault();
-    const pos = getCanvasCoords(e);
-    state.lastDrawPos = pos;
-    drawAt(pos.x, pos.y);
+    if (state.isDrawing && state.drawLayer) {
+      e.preventDefault();
+      const pos = getCanvasCoords(e);
+      state.lastDrawPos = pos;
+      drawAt(pos.x, pos.y);
+    } else if (state.image) {
+      const pos = getCanvasCoords(e);
+      selectLayerAt(pos);
+      if (state.selectedLayer >= 0) state.draggingLayer = true;
+    }
   });
   state.canvas.addEventListener('touchmove', function(e) {
-    if (!state.isDrawing || !state.lastDrawPos) return;
-    e.preventDefault();
-    const pos = getCanvasCoords(e);
-    drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
-    state.lastDrawPos = pos;
+    if (state.isDrawing && state.lastDrawPos) {
+      e.preventDefault();
+      const pos = getCanvasCoords(e);
+      drawLine(state.lastDrawPos.x, state.lastDrawPos.y, pos.x, pos.y);
+      state.lastDrawPos = pos;
+    } else if (state.draggingLayer && state.selectedLayer >= 0) {
+      e.preventDefault();
+      const pos = getCanvasCoords(e);
+      const l = state.layers[state.selectedLayer];
+      l.x = pos.x - state.dragOffsetX;
+      l.y = pos.y - state.dragOffsetY;
+      render();
+    }
   });
   state.canvas.addEventListener('touchend', function() {
+    if (state.draggingLayer) {
+      state.draggingLayer = false;
+      if (state.selectedLayer >= 0) saveHistory();
+    }
     state.lastDrawPos = null;
     if (state.isDrawing) { saveHistory(); render(); }
   });
@@ -1592,6 +1695,16 @@ function flash(msg) {
 })();
 
 initEditor();
+document.addEventListener('keydown', function(e) {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedLayer >= 0 && !e.target.closest('input,textarea,select')) {
+    state.layers.splice(state.selectedLayer, 1);
+    state.selectedLayer = -1;
+    updateTextList();
+    saveHistory();
+    render();
+    e.preventDefault();
+  }
+});
 console.warn('[editor] script bottom, adding fileInput listener');
 var fi = document.getElementById('fileInput');
 console.warn('[editor] fileInput element:', fi);
