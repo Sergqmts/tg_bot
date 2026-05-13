@@ -107,30 +107,19 @@ def register_routes(app):
             db.session.rollback()
 
         if request.method == 'POST':
-            import logging
-            log = logging.getLogger('upload_debug')
-
             body = request.form.get('body', '').strip()
             media_url = None
             media_type = None
 
-            log.warning(f"POST to conversation: form.keys={list(request.form.keys())}, files.keys={list(request.files.keys())}")
-            log.warning(f"request.files type={type(request.files)}")
-            for k in request.files:
-                f = request.files[k]
-                log.warning(f"  file field={k}, filename={f.filename}, content_type={f.content_type}")
+            current_app.logger.info(f"POST conversation: form={list(request.form.keys())}, files={list(request.files.keys())}")
 
             if 'media' in request.files:
                 file = request.files['media']
                 file_len = file.seek(0, 2)
                 file.seek(0)
-                log.warning(f"media field: filename='{file.filename}', size={file_len}, content_type={file.content_type}")
-                log.warning(f"allowed_file result: {allowed_file(file.filename) if file.filename else 'NO FILENAME'}")
                 if file.filename and file_len > 0 and allowed_file(file.filename):
                     if cloudinary_configured:
-                        log.warning("cloudinary_configured=True, uploading...")
                         media_url = upload_to_cloudinary(file, folder='messages')
-                        log.warning(f"cloudinary result: '{media_url}'")
                         if media_url:
                             ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
                             if ext in {'mp4', 'webm', 'mov'}:
@@ -142,13 +131,8 @@ def register_routes(app):
                             else:
                                 media_type = 'image'
                     else:
-                        log.warning("cloudinary_configured=False, saving locally")
                         filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
-                        save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                        file.save(save_path)
-                        exists = os.path.exists(save_path)
-                        size = os.path.getsize(save_path) if exists else 0
-                        log.warning(f"local save: path={save_path}, exists={exists}, size={size}")
+                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                         media_url = '/media/' + filename
                         ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                         if ext in {'mp4', 'webm', 'mov'}:
@@ -159,13 +143,9 @@ def register_routes(app):
                             media_type = 'document'
                         else:
                             media_type = 'image'
-                    log.warning(f"Media result: url='{media_url}', type='{media_type}'")
+                    current_app.logger.info(f"Media: {media_url}, type: {media_type}")
                 else:
-                    log.warning(f"File skipped: filename='{file.filename if hasattr(file,'filename') else '?'}', len={file_len}")
-            else:
-                log.warning(f"'media' NOT in request.files. All files keys: {list(request.files.keys())}")
-
-            log.warning(f"Final: body='{body}' media_url='{media_url}' media_type='{media_type}'")
+                    current_app.logger.warning(f"File skipped: filename='{file.filename}', size={file_len}")
 
             if body or media_url:
                 try:
@@ -180,9 +160,9 @@ def register_routes(app):
                     db.session.commit()
                     enqueue_webhook_dispatch(msg.id)
                     create_notification(other_user.id, current_user.id, 'message', message_id=msg.id)
-                    log.warning(f"Message saved id={msg.id} with media: {media_url}")
+                    current_app.logger.info(f"Message saved with media: {media_url}")
                 except Exception as e:
-                    log.error(f"Message save error: {e}", exc_info=True)
+                    current_app.logger.error(f"Message error: {e}", exc_info=True)
                     db.session.rollback()
 
         try:
@@ -365,24 +345,17 @@ def register_routes(app):
             return redirect(url_for('messages'))
 
         if request.method == 'POST':
-            import logging
-            log = logging.getLogger('upload_debug')
-
             body = request.form.get('body', '').strip()
             post_id = request.form.get('post_id')
             media_url = None
             media_type = None
 
-            log.warning(f"POST to chat_view: form.keys={list(request.form.keys())}, files.keys={list(request.files.keys())}")
-            for k in request.files:
-                f = request.files[k]
-                log.warning(f"  file field={k}, filename={f.filename}, content_type={f.content_type}")
+            current_app.logger.info(f"POST chat: form={list(request.form.keys())}, files={list(request.files.keys())}")
 
             if 'media' in request.files:
                     file = request.files['media']
                     file_len = file.seek(0, 2)
                     file.seek(0)
-                    log.warning(f"chat media: filename='{file.filename}', content_type={file.content_type}, size={file_len}, allowed={allowed_file(file.filename) if file.filename else False}")
                     if file.filename and file_len > 0 and allowed_file(file.filename):
                         try:
                             media_url = None
@@ -395,9 +368,7 @@ def register_routes(app):
                                 media_type = 'document'
 
                             if cloudinary_configured:
-                                log.warning("chat cloudinary_configured=True, uploading...")
                                 media_url = upload_to_cloudinary(file, folder='messages')
-                                log.warning(f"chat cloudinary result: {media_url}")
                                 if media_url:
                                     ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
                                     media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
@@ -405,41 +376,24 @@ def register_routes(app):
                                         media_type = 'document'
                                     elif ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'}:
                                         media_type = 'audio'
-                            else:
-                                log.warning("chat cloudinary_configured=False, using local storage")
-
-                            log.warning(f"chat before local save check, media_url: {media_url}")
 
                             if not media_url:
-                                log.warning("chat entering local save block")
                                 filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
-                                full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                                log.warning(f"chat saving to: {full_path}")
-                                try:
-                                    file.save(full_path)
-                                    exists = os.path.exists(full_path)
-                                    size = os.path.getsize(full_path) if exists else 0
-                                    log.warning(f"chat saved: exists={exists}, size={size}")
-                                except Exception as e:
-                                    log.error(f"chat save error: {e}", exc_info=True)
+                                file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                                 media_url = '/media/' + filename
-                                log.warning(f"chat generated URL: {media_url}")
                                 ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                                 media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
                                 if ext in {'pdf', 'doc', 'docx', 'txt'}:
                                     media_type = 'document'
                                 elif ext in {'mp3', 'wav', 'ogg', 'm4a', 'aac'}:
                                     media_type = 'audio'
-                            log.warning(f"chat final media: url={media_url}, type={media_type}")
+                            current_app.logger.info(f"Media: {media_url}, type: {media_type}")
                         except Exception as e:
-                            log.error(f"chat media upload error: {e}", exc_info=True)
+                            current_app.logger.error(f"Media upload error: {e}", exc_info=True)
                     else:
-                        log.warning(f"chat file not allowed or empty: filename='{file.filename}', size={file_len}")
-
-            log.warning(f"chat body: '{body}', media_url: {media_url}, post_id: {post_id}")
+                        current_app.logger.warning(f"File not allowed or empty: filename='{file.filename}', size={file_len}")
 
             has_content = body or media_url or post_id
-            log.warning(f"chat has_content={has_content} (body={bool(body)}, media_url={bool(media_url)}, post_id={bool(post_id)})")
 
             if has_content:
                 try:
