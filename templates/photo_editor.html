@@ -430,8 +430,9 @@ function loadFile(file) {
       state.height = img.naturalHeight;
       document.getElementById('uploadZone').style.display = 'none';
       try {
+        state.canvas.width = state.width;
+        state.canvas.height = state.height;
         state.canvas.style.display = 'block';
-        state.ctx.drawImage(img, 0, 0);
         document.getElementById('historyBar').style.display = 'flex';
         setupCanvas();
         saveHistory();
