@@ -270,7 +270,7 @@ function showPreview(file) {
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            item.innerHTML = '<img src="' + e.target.result + '">';
+            item.innerHTML = '<img src="' + e.target.result + '" class="rounded-xl max-w-[160px] max-h-[160px] object-cover">';
         };
         reader.readAsDataURL(file);
     } else if (file.type.startsWith('video/')) {
