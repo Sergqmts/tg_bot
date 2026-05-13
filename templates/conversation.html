@@ -179,7 +179,7 @@
                 </div>
             </div>
             
-            <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="flex items-center gap-2" id="messageForm">
+            <form method="POST" action="{{ url_for('conversation', username=other_user.username) }}" enctype="multipart/form-data" class="flex items-center gap-2" id="messageForm" onsubmit="return attachFileToForm(this)">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
                 <!-- Attach button - less noticeable -->
