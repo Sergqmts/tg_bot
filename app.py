@@ -442,7 +442,7 @@ def run_migrations():
                 db.session.rollback()
         if 'forwarded_from_id' not in columns:
             try:
-                db.session.execute(text("ALTER TABLE message ADD COLUMN forwarded_from_id INTEGER REFERENCES user(id)"))
+                db.session.execute(text('ALTER TABLE message ADD COLUMN forwarded_from_id INTEGER REFERENCES "user"(id)'))
                 db.session.commit()
             except:
                 db.session.rollback()
