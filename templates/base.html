@@ -405,6 +405,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         var audio = document.getElementById('playerAudio');
+        if (!audio) return;
         var progress = document.getElementById('playerProgress');
         var timeDisplay = document.getElementById('playerTime');
         var playBtn = document.getElementById('playerPlayBtn');
