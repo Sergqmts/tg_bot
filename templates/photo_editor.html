@@ -376,19 +376,25 @@ let state = {
 };
 
 function initEditor() {
+  console.warn('[editor] initEditor called');
   try {
     state.canvas = document.getElementById('mainCanvas');
-    state.ctx = state.canvas.getContext('2d');
-    initFilterGrid();
-    initFrameGrid();
-    initCollageGrid();
-    initEmojiGrid();
+    console.warn('[editor] mainCanvas:', state.canvas);
+    state.ctx = state.canvas ? state.canvas.getContext('2d') : null;
+    console.warn('[editor] ctx:', state.ctx ? 'ok' : 'null');
     var t = '{{ target }}';
+    console.warn('[editor] target:', t);
+    if (state.ctx) {
+      initFilterGrid();
+      initFrameGrid();
+      initCollageGrid();
+      initEmojiGrid();
+    }
     if (t === 'story') {
       state.crop.aspect = '9:16';
       document.querySelector('input[name="saveTarget"][value="story"]').checked = true;
     }
-  } catch(e) { console.error('Editor init error:', e); }
+  } catch(e) { console.error('[editor] initEditor error:', e); }
 }
 
 function initFilterGrid() {
@@ -418,12 +424,15 @@ function initEmojiGrid() {
 }
 
 function loadFile(file) {
-  if (!file) return;
+  console.warn('[editor] loadFile called:', file ? file.name : 'null', file ? file.type : '', file ? file.size : 0);
+  if (!file) { console.warn('[editor] loadFile: no file'); return; }
   var reader = new FileReader();
   reader.onload = function(e) {
+    console.warn('[editor] FileReader onload, dataUrl length:', e.target.result.length);
     var dataUrl = e.target.result;
     var img = new Image();
     img.onload = function() {
+      console.warn('[editor] Image onload:', img.naturalWidth, 'x', img.naturalHeight);
       state.originalImage = img;
       state.image = img;
       state.width = img.naturalWidth;
@@ -432,6 +441,7 @@ function loadFile(file) {
       try {
         state.canvas.width = state.width;
         state.canvas.height = state.height;
+        console.warn('[editor] canvas set to:', state.width, 'x', state.height);
         state.canvas.style.display = 'block';
         document.getElementById('historyBar').style.display = 'flex';
         setupCanvas();
@@ -439,33 +449,36 @@ function loadFile(file) {
         switchTool('crop');
         setTimeout(generateThumbs, 200);
       } catch(err) {
-        console.error('Canvas draw failed, using img fallback:', err);
+        console.error('[editor] Canvas draw failed, using img fallback:', err);
         var fb = document.getElementById('fallbackImg');
         fb.src = dataUrl;
         fb.style.display = 'block';
         state.canvas.style.display = 'none';
       }
     };
-    img.onerror = function() { console.error('Image load error'); };
+    img.onerror = function() { console.error('[editor] Image load error from dataUrl'); };
     img.src = dataUrl;
   };
-  reader.onerror = function() { console.error('FileReader error'); };
+  reader.onerror = function() { console.error('[editor] FileReader error'); };
   reader.readAsDataURL(file);
 }
 
 function setupCanvas() {
-  if (!state.canvas || !state.ctx) return;
+  console.warn('[editor] setupCanvas called, state.canvas:', !!state.canvas, 'state.ctx:', !!state.ctx, 'state.width:', state.width, 'state.height:', state.height);
+  if (!state.canvas || !state.ctx) { console.warn('[editor] setupCanvas: no canvas/ctx'); return; }
   var wrap = document.getElementById('canvasWrap');
   var maxW = wrap.clientWidth - 32;
   var maxH = wrap.clientHeight - 32;
-  if (maxW <= 5 || maxH <= 5) { setTimeout(setupCanvas, 100); return; }
+  console.warn('[editor] canvasWrap:', maxW, 'x', maxH);
+  if (maxW <= 5 || maxH <= 5) { console.warn('[editor] setupCanvas: wrap too small, retrying'); setTimeout(setupCanvas, 100); return; }
   var scale = Math.min(maxW / state.width, maxH / state.height, 1);
-  if (scale <= 0) { setTimeout(setupCanvas, 100); return; }
+  if (scale <= 0) { console.warn('[editor] setupCanvas: scale <= 0, retrying'); setTimeout(setupCanvas, 100); return; }
   state.zoom = scale;
   state.canvas.width = state.width;
   state.canvas.height = state.height;
   state.canvas.style.width = Math.round(state.width * scale) + 'px';
   state.canvas.style.height = Math.round(state.height * scale) + 'px';
+  console.warn('[editor] canvas display:', state.canvas.style.width, 'x', state.canvas.style.height, 'scale:', scale);
   state.ctx.drawImage(state.image, 0, 0, state.width, state.height);
   render();
 }
@@ -1575,8 +1588,16 @@ function flash(msg) {
 })();
 
 initEditor();
-document.getElementById('fileInput').addEventListener('change', function() {
-  if (this.files && this.files[0]) loadFile(this.files[0]);
-});
+console.warn('[editor] script bottom, adding fileInput listener');
+var fi = document.getElementById('fileInput');
+console.warn('[editor] fileInput element:', fi);
+if (fi) {
+  fi.addEventListener('change', function() {
+    console.warn('[editor] fileInput change fired, files:', this.files ? this.files.length : 0);
+    if (this.files && this.files[0]) loadFile(this.files[0]);
+  });
+} else {
+  console.error('[editor] fileInput not found!');
+}
 </script>
 {% endblock %}
