@@ -250,8 +250,8 @@ def enqueue_webhook_dispatch(message_id):
 def process_webhook_queue():
     while _webhook_queue:
         msg_id = _webhook_queue.pop(0)
-        try:
-            with current_app.app_context():
+        with current_app.app_context():
+            try:
                 msg = Message.query.get(msg_id)
                 if not msg:
                     continue
@@ -271,8 +271,8 @@ def process_webhook_queue():
                     bot = User.query.get(member.user_id)
                     if bot and bot.is_bot and bot.webhook_url and bot.id != msg.sender_id:
                         _send_webhook_payload(bot, msg, sender, chat)
-        except Exception as e:
-            current_app.logger.error(f"Webhook dispatch error for msg {msg_id}: {e}")
+            except Exception as e:
+                current_app.logger.error(f"Webhook dispatch error for msg {msg_id}: {e}")
 
 
 def _send_webhook_payload(bot, message, sender, chat, recipient=None):
