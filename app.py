@@ -295,7 +295,7 @@ def run_migrations():
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
                 except:
-                    pass
+                    db.session.rollback()
         privacy_cols = [('is_private', 'BOOLEAN DEFAULT 0'), ('hide_followers', 'BOOLEAN DEFAULT 0'), ('hide_following', 'BOOLEAN DEFAULT 0'), ('approve_followers', 'BOOLEAN DEFAULT 0')]
         for col, typ in privacy_cols:
             if col not in existing:
@@ -303,7 +303,7 @@ def run_migrations():
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
                 except:
-                    pass
+                    db.session.rollback()
         phone_cols = [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT 0'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]
         for col, typ in phone_cols:
             if col not in existing:
@@ -311,7 +311,7 @@ def run_migrations():
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
                 except:
-                    pass
+                    db.session.rollback()
     except Exception as e:
         app.logger.info(f"User migration: {e}")
     
@@ -321,7 +321,7 @@ def run_migrations():
                 db.session.execute(text('ALTER TABLE community ADD COLUMN is_private BOOLEAN DEFAULT 0'))
                 db.session.commit()
             except:
-                pass
+                db.session.rollback()
     except Exception as e:
         app.logger.info(f"Community migration: {e}")
     
@@ -331,7 +331,7 @@ def run_migrations():
                 db.session.execute(text("ALTER TABLE community_member ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
                 db.session.commit()
             except:
-                pass
+                db.session.rollback()
     except Exception as e:
         app.logger.info(f"Member migration: {e}")
     
@@ -341,7 +341,7 @@ def run_migrations():
                 db.session.execute(text("ALTER TABLE post ADD COLUMN is_community_post BOOLEAN DEFAULT 0"))
                 db.session.commit()
             except:
-                pass
+                db.session.rollback()
     except Exception as e:
         app.logger.info(f"Post migration: {e}")
     
@@ -351,7 +351,7 @@ def run_migrations():
                 db.session.execute(text("ALTER TABLE followers ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
                 db.session.commit()
             except:
-                pass
+                db.session.rollback()
     except Exception as e:
         app.logger.info(f"Followers migration: {e}")
     
@@ -425,13 +425,13 @@ def run_migrations():
                 db.session.execute(text("ALTER TABLE chat ADD COLUMN background_type VARCHAR(20) DEFAULT 'default'"))
                 db.session.commit()
             except:
-                pass
+                db.session.rollback()
         if 'background_value' not in chat_columns:
             try:
                 db.session.execute(text("ALTER TABLE chat ADD COLUMN background_value VARCHAR(500) DEFAULT ''"))
                 db.session.commit()
             except:
-                pass
+                db.session.rollback()
         
         columns = get_table_columns('message')
         if 'chat_id' not in columns:
@@ -439,13 +439,13 @@ def run_migrations():
                 db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
                 db.session.commit()
             except:
-                pass
+                db.session.rollback()
         if 'forwarded_from_id' not in columns:
             try:
                 db.session.execute(text("ALTER TABLE message ADD COLUMN forwarded_from_id INTEGER REFERENCES user(id)"))
                 db.session.commit()
             except:
-                pass
+                db.session.rollback()
         
         try:
             story_cols = get_table_columns('story')
@@ -571,6 +571,7 @@ with app.app_context():
             db.session.execute(text('ALTER TABLE user ADD COLUMN avatar_cloudinary_url VARCHAR(500)'))
             db.session.commit()
     except Exception as e:
+        db.session.rollback()
         app.logger.info(f"Migration avatar_cloudinary_url: {e}")
     
     try:
@@ -598,6 +599,7 @@ with app.app_context():
             db.session.commit()
             app.logger.info("Migrated music_track.deezer_id from INTEGER to BIGINT")
     except Exception as e:
+        db.session.rollback()
         app.logger.info(f"Migration deezer_id BIGINT: {e}")
 
     try:
