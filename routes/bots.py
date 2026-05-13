@@ -265,7 +265,7 @@ def register_routes(app):
     @login_required
     def bot_settings(bot_id):
         bot = User.query.get_or_404(bot_id)
-        if not bot.is_bot or bot.creator_id != current_user.id:
+        if not bot.is_bot or (bot.creator_id != current_user.id and not current_user.is_staff):
             abort(403)
 
         if request.method == 'POST':
