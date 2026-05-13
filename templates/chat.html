@@ -78,7 +78,7 @@
                     {% endif %}
                 </div>
                 {% if msg.forwarded_from %}
-                <div class="flex items-center gap-1 {% if msg.sender_id == current_user.id %}text-white/60{% else %}text-slate-400 dark:text-slate-500{% endif %} text-[10px] font-semibold mb-1 pb-1 {% if msg.sender_id == current_user.id %}border-b border-white/15{% else %}border-b border-slate-200 dark:border-slate-700{% endif %}">
+                <div class="flex {% if msg.sender_id == current_user.id %}flex-row-reverse{% endif %} items-center gap-1 {% if msg.sender_id == current_user.id %}text-white/60{% else %}text-slate-400 dark:text-slate-500{% endif %} text-[10px] font-semibold mb-1 pb-1 {% if msg.sender_id == current_user.id %}border-b border-white/15{% else %}border-b border-slate-200 dark:border-slate-700{% endif %}">
                     <i class="fa-solid fa-reply text-[9px] rotate-180"></i>
                     <span>Forwarded from <a href="{{ url_for('user_profile', username=msg.forwarded_from.username) }}" class="{% if msg.sender_id == current_user.id %}text-white/90{% else %}text-brand-middle{% endif %} font-medium hover:underline">@{{ msg.forwarded_from.username }}</a></span>
                 </div>
