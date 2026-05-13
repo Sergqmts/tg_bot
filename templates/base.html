@@ -291,6 +291,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.audio-player audio, .audio-player-full audio').forEach(function(audio) {
             var container = audio.closest('.audio-player, .audio-player-full');
+            if (!container) return;
             var playBtn = container.querySelector('.audio-player-play');
             var progress = container.querySelector('.audio-player-progress');
             var timeDisplay = container.querySelector('.audio-player-time');
