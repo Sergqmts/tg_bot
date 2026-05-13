@@ -161,7 +161,7 @@ def init_db():
                         conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
                         conn.commit()
 
-                for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id', 'is_banned', 'is_staff']:
+                for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id', 'is_banned', 'is_staff', 'google_id']:
                     if not column_exists_conn(conn, 'user', col):
                         if is_postgres:
                             type_map = {
@@ -174,6 +174,7 @@ def init_db():
                                 'creator_id': 'INTEGER REFERENCES "user"(id)',
                                 'is_banned': 'BOOLEAN DEFAULT FALSE',
                                 'is_staff': 'BOOLEAN DEFAULT FALSE',
+                                'google_id': 'VARCHAR(200) UNIQUE',
                             }
                             conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {type_map[col]}'))
                         else:
