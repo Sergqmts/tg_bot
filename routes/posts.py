@@ -7,7 +7,7 @@ def register_routes(app):
     from datetime import datetime
     from PIL import Image, ImageEnhance, ImageFilter
     from extensions import db
-    from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog, PostView
+    from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, ShortsAudio, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog, PostView
 
     @app.route('/')
     def index():
@@ -228,10 +228,19 @@ def register_routes(app):
     @login_required
     def video_editor():
         if request.method == 'POST':
-            video_url = request.form.get('video_url')
-            if video_url:
-                return redirect(url_for('create') + '?video=' + video_url)
-        return render_template('video_editor.html', editing=True)
+            video = request.files.get('video')
+            if video and video.filename:
+                from helpers import cloudinary_configured, upload_to_cloudinary
+                if cloudinary_configured:
+                    url = upload_to_cloudinary(video, folder='shorts')
+                else:
+                    filename = secure_filename(f"shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp4")
+                    video.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    url = url_for('uploaded_file', filename=filename, _external=True)
+                return jsonify({'url': url, 'success': True})
+            return jsonify({'error': 'No video file', 'success': False}), 400
+        audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).all()
+        return render_template('video_editor.html', audios=audios)
 
     @app.route('/post/<int:post_id>/repost', methods=['GET', 'POST'])
     @login_required

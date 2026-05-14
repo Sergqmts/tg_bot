@@ -1,252 +1,561 @@
 {% extends "base.html" %}
-{% block title %}Видео редактор - Social{% endblock %}
+{% block title %}Видеоредактор{% endblock %}
 {% block content %}
-    <div style="max-width: 500px; margin: 0 auto;">
-        <div class="card">
-            <h2 style="margin-bottom: 15px;">Видео редактор</h2>
-            
-            {% if not editing %}
-            <div style="margin-bottom: 20px;">
-                <label for="video-input" style="display: block; padding: 40px; border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; color: var(--primary);">
-                    🎬 Загрузить видео
-                </label>
-                <input type="file" id="video-input" accept="video/*" style="display: none;" onchange="loadVideo(this.files[0])">
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('create_shorts') }}" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <h1 class="text-xl font-bold">Видеоредактор</h1>
+            <span id="ffmpegStatus" class="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">Загрузка FFmpeg...</span>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="exportVideo()" id="exportBtn" disabled class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50">
+                <i class="fa-solid fa-video"></i> Экспорт в Shorts
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div class="lg:col-span-3">
+            <div id="uploadZone" class="glass rounded-2xl flex flex-col items-center justify-center p-8 min-h-[400px] border-2 border-dashed border-slate-300 dark:border-slate-600 cursor-pointer hover:border-brand-middle transition-all" onclick="document.getElementById('videoInput').click()">
+                <i class="fa-solid fa-cloud-upload-alt text-5xl text-slate-300 dark:text-slate-600 mb-4"></i>
+                <p class="text-lg font-medium text-slate-500">Нажмите или перетащите видео</p>
+                <p class="text-sm text-slate-400 mt-1">MP4, WebM, MOV</p>
+                <input type="file" id="videoInput" accept="video/*" multiple class="hidden" onchange="handleFiles(this.files)">
             </div>
-            {% endif %}
-            
-            <div id="editor-area" style="{% if not editing %}display: none;{% endif %}">
-                <div style="position: relative; background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 15px;">
-                    <video id="video-preview" style="max-width: 100%; max-height: 300px; display: block; margin: 0 auto;" controls></video>
-                    <canvas id="video-canvas" style="display: none;"></canvas>
-                    <div id="video-text-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;"></div>
+            <div id="previewArea" class="hidden">
+                <div class="glass rounded-2xl overflow-hidden bg-black">
+                    <video id="previewVideo" class="w-full max-h-[500px] mx-auto" controls></video>
                 </div>
-                
-                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-secondary" onclick="togglePlay()" id="play-btn" style="padding: 10px;">▶</button>
-                    <span id="time-display" style="color: var(--text-light); font-size: 0.9rem;">0:00 / 0:00</span>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
-                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('none')" style="flex-shrink: 0; padding: 8px 12px;">Оригинал</button>
-                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('grayscale(100%)')" style="flex-shrink: 0; padding: 8px 12px;">Ч/Б</button>
-                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('sepia(100%)')" style="flex-shrink: 0; padding: 8px 12px;">Сепия</button>
-                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('contrast(150%)')" style="flex-shrink: 0; padding: 8px 12px;">Контраст</button>
-                    <button type="button" class="btn btn-secondary" onclick="setVideoFilter('brightness(130%)')" style="flex-shrink: 0; padding: 8px 12px;">Яркость</button>
-                </div>
-                
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="toggleVideoText()" style="padding: 10px;">Текст</button>
-                    <button type="button" class="btn btn-secondary" onclick="toggleTrim()" style="padding: 10px;">Обрезать</button>
-                </div>
-                
-                <div id="video-text-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
-                    <input type="text" id="video-text-input" placeholder="Введите текст..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px;">
-                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
-                        <input type="color" id="video-text-color" value="#ffffff" style="width: 40px; height: 40px; border: none; cursor: pointer;">
-                        <select id="video-text-size" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
-                            <option value="24">Маленький</option>
-                            <option value="36" selected>Обычный</option>
-                            <option value="48">Большой</option>
-                            <option value="64">Огромный</option>
-                        </select>
-                        <select id="video-text-pos" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius);">
-                            <option value="center">По центру</option>
-                            <option value="top">Сверху</option>
-                            <option value="bottom">Снизу</option>
-                        </select>
-                    </div>
-                    <div style="display: flex; gap: 5px; margin-bottom: 8px;">
-                        <label style="font-size: 0.85rem;">Начало:</label>
-                        <input type="number" id="video-text-start" value="0" min="0" style="width: 60px; padding: 5px;">
-                        <label style="font-size: 0.85rem;">Конец:</label>
-                        <input type="number" id="video-text-end" value="5" min="1" style="width: 60px; padding: 5px;">
-                        <span style="font-size: 0.85rem;">сек</span>
-                    </div>
-                    <button type="button" class="btn btn-primary" onclick="addVideoText()">Добавить</button>
-                </div>
-                
-                <div id="trim-tool" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg); border-radius: var(--radius);">
-                    <p style="margin-bottom: 10px;">Обрезать видео (секунды)</p>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div>
-                            <label style="font-size: 0.85rem;">Начало</label>
-                            <input type="number" id="trim-start" value="0" min="0" style="width: 80px; padding: 8px;">
-                        </div>
-                        <div>
-                            <label style="font-size: 0.85rem;">Конец</label>
-                            <input type="number" id="trim-end" value="10" min="1" style="width: 80px; padding: 8px;">
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button type="button" class="btn btn-primary" onclick="applyTrim()">Применить</button>
-                        <button type="button" class="btn btn-secondary" onclick="cancelTrim()">Отмена</button>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" class="btn btn-primary" onclick="saveVideo()" style="flex: 1;">Сохранить</button>
-                    <a href="{{ url_for('create') }}" class="btn btn-secondary">Отмена</a>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <div class="glass rounded-2xl p-4">
+                <h3 class="font-semibold text-sm mb-3">Клипы</h3>
+                <div id="clipList" class="space-y-2 max-h-[200px] overflow-y-auto"></div>
+            </div>
+
+            <div class="glass rounded-2xl p-4">
+                <h3 class="font-semibold text-sm mb-3">Инструменты</h3>
+                <div class="space-y-2">
+                    <button onclick="togglePanel('trimPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-scissors text-slate-400"></i> Обрезка
+                    </button>
+                    <button onclick="togglePanel('audioPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-music text-slate-400"></i> Аудио
+                    </button>
+                    <button onclick="togglePanel('textPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-font text-slate-400"></i> Текст
+                    </button>
+                    <button onclick="togglePanel('filterPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-palette text-slate-400"></i> Фильтры
+                    </button>
+                    <button onclick="togglePanel('speedPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-gauge-high text-slate-400"></i> Скорость
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-    
-    <script>
-        let videoEl = null;
-        let currentFilter = 'none';
-        let videoTexts = [];
-        let videoUrl = null;
-        let duration = 0;
-        
-        function loadVideo(file) {
-            if (!file) return;
-            
-            videoUrl = URL.createObjectURL(file);
-            videoEl = document.getElementById('video-preview');
-            videoEl.src = videoUrl;
-            
-            videoEl.onloadedmetadata = function() {
-                duration = videoEl.duration;
-                updateTimeDisplay();
-                document.getElementById('editor-area').style.display = 'block';
+
+    <div id="trimPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold">Обрезка</h3>
+            <button onclick="applyTrim()" class="px-3 py-1 text-sm bg-brand-middle text-white rounded-xl hover:bg-brand-middle/90 transition-all">Применить</button>
+        </div>
+        <div class="relative h-2 bg-slate-200 dark:bg-slate-700 rounded-full mb-4" id="timeline">
+            <div id="trimRange" class="absolute h-full bg-brand-middle/40 rounded-full" style="left:0%;right:0%;"></div>
+            <div id="trimStart" class="absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-brand-middle rounded-md cursor-ew-resize shadow-md -ml-2 flex items-center justify-center text-white text-[8px]">◀</div>
+            <div id="trimEnd" class="absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-brand-middle rounded-md cursor-ew-resize shadow-md -mr-2 flex items-center justify-center text-white text-[8px]" style="right:0;">▶</div>
+        </div>
+        <div class="flex gap-4 text-sm">
+            <div><span class="text-slate-400">Начало:</span> <span id="trimStartLabel">0:00</span></div>
+            <div><span class="text-slate-400">Конец:</span> <span id="trimEndLabel">0:00</span></div>
+            <div><span class="text-slate-400">Длительность:</span> <span id="trimDurationLabel">0:00</span></div>
+        </div>
+    </div>
+
+    <div id="audioPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold">Аудио</h3>
+            <div class="flex gap-2">
+                <button onclick="document.getElementById('audioUpload').click()" class="px-3 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Загрузить</button>
+                <input type="file" id="audioUpload" accept="audio/*" class="hidden" onchange="handleAudioUpload(this.files[0])">
+                <button id="removeAudioBtn" onclick="removeAudio()" class="px-3 py-1 text-sm border border-red-300 dark:border-red-800 text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all hidden">Убрать</button>
+            </div>
+        </div>
+        <div class="space-y-2 max-h-[200px] overflow-y-auto">
+            {% for audio in audios %}
+            <div class="audio-track-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-all" onclick="selectAudio({{ audio.id }}, '{{ audio.audio_url|e }}', '{{ audio.title|e }}')">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-music text-slate-400"></i>
+                    <span class="text-sm">{{ audio.title }}</span>
+                </div>
+                <span class="text-xs text-slate-400">{{ audio.duration }}с</span>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="selectedAudioInfo" class="hidden mt-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm flex items-center gap-2">
+            <i class="fa-solid fa-check-circle text-green-500"></i>
+            <span id="selectedAudioName"></span>
+        </div>
+    </div>
+
+    <div id="textPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold">Текст</h3>
+            <button onclick="addTextOverlay()" class="px-3 py-1 text-sm bg-brand-middle text-white rounded-xl hover:bg-brand-middle/90 transition-all">+ Добавить</button>
+        </div>
+        <div id="textList" class="space-y-2"></div>
+    </div>
+
+    <div id="filterPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
+        <h3 class="font-semibold mb-3">Фильтры</h3>
+        <div class="grid grid-cols-4 gap-2">
+            {% set filters = [
+                ('original', 'Оригинал'), ('grayscale', 'Ч/Б'), ('sepia', 'Сепия'),
+                ('vintage', 'Винтаж'), ('cinematic', 'Кино'), ('vivid', 'Яркий'),
+                ('cool', 'Холодный'), ('warm', 'Тёплый')
+            ] %}
+            {% for key, label in filters %}
+            <button onclick="selectFilter('{{ key }}')" class="filter-btn px-3 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all {% if key == 'original' %}bg-brand-middle text-white border-brand-middle{% endif %}" data-filter="{{ key }}">{{ label }}</button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="speedPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
+        <h3 class="font-semibold mb-3">Скорость</h3>
+        <div class="grid grid-cols-5 gap-2">
+            {% set speeds = [(0.25, '0.25x'), (0.5, '0.5x'), (1, '1x'), (1.5, '1.5x'), (2, '2x')] %}
+            {% for val, label in speeds %}
+            <button onclick="selectSpeed({{ val }})" class="speed-btn px-3 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all {% if val == 1 %}bg-brand-middle text-white border-brand-middle{% endif %}" data-speed="{{ val }}">{{ label }}</button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="progressOverlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-middle/20 flex items-center justify-center">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-brand-middle"></i>
+            </div>
+            <h3 class="font-semibold mb-2" id="progressTitle">Обработка видео...</h3>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-2">
+                <div id="progressBar" class="h-full bg-gradient-to-r from-brand-start to-brand-middle rounded-full transition-all" style="width:0%"></div>
+            </div>
+            <p class="text-sm text-slate-400" id="progressText">Пожалуйста, подождите</p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.min.js"></script>
+<script>
+const { FFmpeg } = FFmpegWASM;
+const { fetchFile, toBlobURL } = FFmpegUtil;
+
+let ffmpeg = null;
+let clips = [];
+let currentClipIdx = 0;
+let selectedAudioId = null;
+let selectedAudioUrl = null;
+let selectedAudioName = '';
+let trimStart = 0, trimEnd = 0, videoDuration = 0;
+let texts = [];
+let textIdCounter = 0;
+let selectedFilter = 'original';
+let selectedSpeed = 1;
+let isProcessing = false;
+
+async function initFFmpeg() {
+    const status = document.getElementById('ffmpegStatus');
+    try {
+        ffmpeg = new FFmpeg();
+        const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+        await ffmpeg.load({
+            coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
+            wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm'),
+        });
+        ffmpeg.on('progress', function(ev) {
+            updateProgress(ev.progress * 100);
+        });
+        status.textContent = 'FFmpeg готов';
+        status.className = 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400';
+    } catch (e) {
+        status.textContent = 'FFmpeg ошибка';
+        status.className = 'text-xs px-2 py-1 rounded-full bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400';
+        console.error(e);
+    }
+}
+
+function togglePanel(id) {
+    var panel = document.getElementById(id);
+    var hidden = panel.classList.contains('hidden');
+    document.querySelectorAll('.panel-content').forEach(function(p) { p.classList.add('hidden'); });
+    if (hidden) panel.classList.remove('hidden');
+}
+
+function handleFiles(files) {
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        var url = URL.createObjectURL(file);
+        var video = document.createElement('video');
+        video.preload = 'metadata';
+        video.onloadedmetadata = function(f, u) {
+            return function() {
+                clips.push({ file: f, url: u, duration: f.duration || video.duration, name: f.name });
+                updateClipList();
+                if (clips.length === 1) selectClip(0);
             };
-            
-            videoEl.ontimeupdate = function() {
-                updateTimeDisplay();
-                updateTextOverlay();
-            };
-        }
-        
-        function updateTimeDisplay() {
-            if (!videoEl) return;
-            const current = formatTime(videoEl.currentTime);
-            const total = formatTime(duration);
-            document.getElementById('time-display').textContent = current + ' / ' + total;
-        }
-        
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return mins + ':' + (secs < 10 ? '0' : '') + secs;
-        }
-        
-        function togglePlay() {
-            if (!videoEl) return;
-            if (videoEl.paused) {
-                videoEl.play();
-                document.getElementById('play-btn').textContent = '⏸';
-            } else {
-                videoEl.pause();
-                document.getElementById('play-btn').textContent = '▶';
+        }(file, url);
+        video.src = url;
+    }
+    document.getElementById('uploadZone').classList.add('hidden');
+    document.getElementById('previewArea').classList.remove('hidden');
+}
+
+function updateClipList() {
+    var list = document.getElementById('clipList');
+    list.innerHTML = '';
+    clips.forEach(function(c, i) {
+        var div = document.createElement('div');
+        div.className = 'flex items-center justify-between px-3 py-2 rounded-xl text-sm cursor-pointer transition-all ' + (i === currentClipIdx ? 'bg-brand-middle/10 border border-brand-middle/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800');
+        div.innerHTML = '<div class="flex items-center gap-2"><i class="fa-solid fa-film text-slate-400"></i><span class="truncate max-w-[120px]">' + (c.name || 'Клип ' + (i+1)) + '</span><span class="text-xs text-slate-400">' + formatTime(c.duration) + '</span></div><button onclick="removeClip(' + i + ')" class="text-red-400 hover:text-red-600 text-xs"><i class="fa-solid fa-xmark"></i></button>';
+        div.onclick = function(idx) { return function() { selectClip(idx); }; }(i);
+        list.appendChild(div);
+    });
+}
+
+function selectClip(idx) {
+    if (idx < 0 || idx >= clips.length) return;
+    currentClipIdx = idx;
+    var clip = clips[idx];
+    var video = document.getElementById('previewVideo');
+    video.src = clip.url;
+    video.load();
+    video.onloadedmetadata = function() {
+        videoDuration = video.duration;
+        trimStart = 0;
+        trimEnd = videoDuration;
+        updateTrimUI();
+        updateClipList();
+    };
+}
+
+function removeClip(idx) {
+    clips.splice(idx, 1);
+    if (currentClipIdx >= clips.length) currentClipIdx = Math.max(0, clips.length - 1);
+    updateClipList();
+    if (clips.length === 0) {
+        document.getElementById('uploadZone').classList.remove('hidden');
+        document.getElementById('previewArea').classList.add('hidden');
+    } else {
+        selectClip(currentClipIdx);
+    }
+}
+
+function formatTime(secs) {
+    if (!secs || isNaN(secs)) return '0:00';
+    var m = Math.floor(secs / 60);
+    var s = Math.floor(secs % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+document.addEventListener('DOMContentLoaded', initFFmpeg);
+
+document.getElementById('uploadZone').addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.classList.add('border-brand-middle');
+});
+document.getElementById('uploadZone').addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    this.classList.remove('border-brand-middle');
+});
+document.getElementById('uploadZone').addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.classList.remove('border-brand-middle');
+    handleFiles(e.dataTransfer.files);
+});
+
+var trimDragging = null;
+
+document.getElementById('timeline').addEventListener('mousedown', function(e) {
+    var rect = this.getBoundingClientRect();
+    var x = (e.clientX - rect.left) / rect.width;
+    var startLeft = trimStart / videoDuration;
+    var endRight = 1 - trimEnd / videoDuration;
+    if (Math.abs(x - startLeft) < 0.05) trimDragging = 'start';
+    else if (Math.abs(x - (1 - endRight)) < 0.05) trimDragging = 'end';
+    else trimDragging = null;
+});
+
+document.addEventListener('mousemove', function(e) {
+    if (!trimDragging || !videoDuration) return;
+    var rect = document.getElementById('timeline').getBoundingClientRect();
+    var x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    if (trimDragging === 'start') {
+        trimStart = Math.min(x * videoDuration, trimEnd - 0.5);
+    } else if (trimDragging === 'end') {
+        trimEnd = Math.max(x * videoDuration, trimStart + 0.5);
+    }
+    updateTrimUI();
+});
+
+document.addEventListener('mouseup', function() { trimDragging = null; });
+
+function updateTrimUI() {
+    var startPct = (trimStart / videoDuration * 100) || 0;
+    var endPct = (trimEnd / videoDuration * 100) || 100;
+    document.getElementById('trimRange').style.left = startPct + '%';
+    document.getElementById('trimRange').style.right = (100 - endPct) + '%';
+    document.getElementById('trimStart').style.left = startPct + '%';
+    document.getElementById('trimEnd').style.right = (100 - endPct) + '%';
+    document.getElementById('trimStartLabel').textContent = formatTime(trimStart);
+    document.getElementById('trimEndLabel').textContent = formatTime(trimEnd);
+    document.getElementById('trimDurationLabel').textContent = formatTime(trimEnd - trimStart);
+}
+
+function applyTrim() {
+    var video = document.getElementById('previewVideo');
+    video.currentTime = trimStart;
+    video.play();
+}
+
+function handleAudioUpload(file) {
+    if (!file) return;
+    var url = URL.createObjectURL(file);
+    selectedAudioUrl = url;
+    selectedAudioName = file.name;
+    selectedAudioId = null;
+    document.getElementById('selectedAudioName').textContent = file.name;
+    document.getElementById('selectedAudioInfo').classList.remove('hidden');
+    document.getElementById('removeAudioBtn').classList.remove('hidden');
+}
+
+function selectAudio(id, url, name) {
+    selectedAudioId = id;
+    selectedAudioUrl = url;
+    selectedAudioName = name;
+    document.getElementById('selectedAudioName').textContent = name;
+    document.getElementById('selectedAudioInfo').classList.remove('hidden');
+    document.getElementById('removeAudioBtn').classList.remove('hidden');
+    document.querySelectorAll('.audio-track-item').forEach(function(el) {
+        el.classList.remove('bg-brand-middle/10', 'border', 'border-brand-middle/30');
+    });
+    event.currentTarget.classList.add('bg-brand-middle/10', 'border', 'border-brand-middle/30');
+}
+
+function removeAudio() {
+    selectedAudioId = null;
+    selectedAudioUrl = null;
+    selectedAudioName = '';
+    document.getElementById('selectedAudioInfo').classList.add('hidden');
+    document.getElementById('removeAudioBtn').classList.add('hidden');
+    document.querySelectorAll('.audio-track-item').forEach(function(el) {
+        el.classList.remove('bg-brand-middle/10', 'border', 'border-brand-middle/30');
+    });
+}
+
+function addTextOverlay() {
+    var id = textIdCounter++;
+    texts.push({ id: id, text: 'Текст', x: 50, y: 50, size: 32, color: '#ffffff', start: 0, end: 5 });
+    renderTextList();
+}
+
+function renderTextList() {
+    var list = document.getElementById('textList');
+    list.innerHTML = '';
+    texts.forEach(function(t) {
+        var div = document.createElement('div');
+        div.className = 'p-3 rounded-xl bg-slate-50 dark:bg-slate-800 space-y-2';
+        div.innerHTML = '<div class="flex items-center gap-2"><input type="text" value="' + t.text.replace(/"/g, '&quot;') + '" onchange="updateText(' + t.id + ',\'text\',this.value)" class="flex-1 bg-transparent border-b border-slate-300 dark:border-slate-600 text-sm outline-none"><button onclick="removeText(' + t.id + ')" class="text-red-400 text-xs"><i class="fa-solid fa-xmark"></i></button></div><div class="flex gap-2 text-xs items-center"><span>Размер:</span><input type="range" min="12" max="96" value="' + t.size + '" onchange="updateText(' + t.id + ',\'size\',parseInt(this.value))" class="flex-1"><span class="w-8 text-right">' + t.size + '</span></div><div class="flex gap-2 text-xs items-center"><span>Цвет:</span><input type="color" value="' + t.color + '" onchange="updateText(' + t.id + ',\'color\',this.value)" class="w-8 h-8 rounded cursor-pointer"><span class="ml-2">Начало:</span><input type="number" min="0" step="0.5" value="' + t.start + '" onchange="updateText(' + t.id + ',\'start\',parseFloat(this.value))" class="w-14 bg-transparent border-b border-slate-300 dark:border-slate-600 outline-none text-center"><span>Конец:</span><input type="number" min="0" step="0.5" value="' + t.end + '" onchange="updateText(' + t.id + ',\'end\',parseFloat(this.value))" class="w-14 bg-transparent border-b border-slate-300 dark:border-slate-600 outline-none text-center"></div>';
+        list.appendChild(div);
+    });
+}
+
+function updateText(id, field, value) {
+    var t = texts.find(function(x) { return x.id === id; });
+    if (t) t[field] = value;
+}
+
+function removeText(id) {
+    texts = texts.filter(function(t) { return t.id !== id; });
+    renderTextList();
+}
+
+function selectFilter(name) {
+    selectedFilter = name;
+    document.querySelectorAll('.filter-btn').forEach(function(b) {
+        b.classList.remove('bg-brand-middle', 'text-white', 'border-brand-middle');
+        b.classList.add('border-slate-200', 'dark:border-slate-700');
+    });
+    var btn = document.querySelector('.filter-btn[data-filter="' + name + '"]');
+    if (btn) {
+        btn.classList.remove('border-slate-200', 'dark:border-slate-700');
+        btn.classList.add('bg-brand-middle', 'text-white', 'border-brand-middle');
+    }
+    applyFilterPreview(name);
+}
+
+function applyFilterPreview(name) {
+    var video = document.getElementById('previewVideo');
+    var filters = {
+        original: 'none',
+        grayscale: 'grayscale(1)',
+        sepia: 'sepia(0.8)',
+        vintage: 'sepia(0.5) contrast(0.8) brightness(0.9)',
+        cinematic: 'contrast(1.2) brightness(0.8) saturate(1.3)',
+        vivid: 'contrast(1.1) saturate(1.5) brightness(1.05)',
+        cool: 'hue-rotate(200deg) saturate(0.8)',
+        warm: 'sepia(0.3) saturate(1.2) hue-rotate(-10deg)',
+    };
+    video.style.filter = filters[name] || 'none';
+}
+
+function selectSpeed(val) {
+    selectedSpeed = val;
+    document.querySelectorAll('.speed-btn').forEach(function(b) {
+        b.classList.remove('bg-brand-middle', 'text-white', 'border-brand-middle');
+        b.classList.add('border-slate-200', 'dark:border-slate-700');
+    });
+    var btn = document.querySelector('.speed-btn[data-speed="' + val + '"]');
+    if (btn) {
+        btn.classList.remove('border-slate-200', 'dark:border-slate-700');
+        btn.classList.add('bg-brand-middle', 'text-white', 'border-brand-middle');
+    }
+    var video = document.getElementById('previewVideo');
+    video.playbackRate = val;
+}
+
+function showProgress(title, text) {
+    document.getElementById('progressOverlay').classList.remove('hidden');
+    document.getElementById('progressTitle').textContent = title || 'Обработка...';
+    document.getElementById('progressText').textContent = text || 'Пожалуйста, подождите';
+    document.getElementById('progressBar').style.width = '0%';
+}
+
+function updateProgress(pct) {
+    document.getElementById('progressBar').style.width = Math.min(pct, 99) + '%';
+}
+
+function hideProgress() {
+    document.getElementById('progressOverlay').classList.add('hidden');
+}
+
+async function exportVideo() {
+    if (isProcessing || !ffmpeg || clips.length === 0) return;
+    isProcessing = true;
+    document.getElementById('exportBtn').disabled = true;
+    showProgress('Экспорт видео...', 'Обработка через FFmpeg.wasm');
+
+    try {
+        var outName = 'output_' + Date.now() + '.mp4';
+        var filterParts = [];
+        var inputIdx = 0;
+        var inputNames = [];
+
+        for (var i = 0; i < clips.length; i++) {
+            var c = clips[i];
+            var inName = 'input' + i + '.mp4';
+            var data = await fetchFile(c.url);
+            await ffmpeg.writeFile(inName, data);
+            inputNames.push(inName);
+
+            var fltr = '';
+            if (selectedSpeed !== 1) {
+                fltr += '[0:v]setpts=' + (1/selectedSpeed) + '*PTS[v' + i + '];';
+            }
+            if (selectedFilter !== 'original') {
+                var fMap = { grayscale: 'colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3', sepia: 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131', vintage: 'curves=b=.3/.4', cinematic: 'eq=brightness=-0.1:contrast=1.3:saturation=1.4', vivid: 'eq=saturation=1.8:brightness=0.05', cool: 'hue=h=200', warm: 'hue=h=-10:saturation=1.2' };
+                var ff = fMap[selectedFilter];
+                if (ff) fltr += '[v' + i + ']' + ff + '[vf' + i + '];';
             }
         }
-        
-        function setVideoFilter(filter) {
-            currentFilter = filter;
-            videoEl.style.filter = filter;
+
+        var concatFile = 'concat_list.txt';
+        var concatContent = '';
+        for (var i = 0; i < clips.length; i++) {
+            concatContent += "file '" + inputNames[i] + "'\n";
         }
-        
-        function toggleVideoText() {
-            const tool = document.getElementById('video-text-tool');
-            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
-        }
-        
-        function addVideoText() {
-            const input = document.getElementById('video-text-input');
-            if (!input.value.trim()) return;
-            
-            videoTexts.push({
-                text: input.value,
-                color: document.getElementById('video-text-color').value,
-                size: parseInt(document.getElementById('video-text-size').value),
-                position: document.getElementById('video-text-pos').value,
-                start: parseFloat(document.getElementById('video-text-start').value),
-                end: parseFloat(document.getElementById('video-text-end').value)
-            });
-            
-            input.value = '';
-            updateTextOverlay();
-        }
-        
-        function updateTextOverlay() {
-            if (!videoEl) return;
-            
-            const overlay = document.getElementById('video-text-overlay');
-            overlay.innerHTML = '';
-            
-            const currentTime = videoEl.currentTime;
-            
-            videoTexts.forEach(t => {
-                if (currentTime >= t.start && currentTime <= t.end) {
-                    const div = document.createElement('div');
-                    div.textContent = t.text;
-                    div.style.cssText = `
-                        position: absolute;
-                        color: ${t.color};
-                        font-size: ${t.size}px;
-                        font-weight: bold;
-                        text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-                        font-family: sans-serif;
-                        ${t.position === 'center' ? 'top: 50%; left: 50%; transform: translate(-50%, -50%);' : ''}
-                        ${t.position === 'top' ? 'top: 10%; left: 50%; transform: translateX(-50%);' : ''}
-                        ${t.position === 'bottom' ? 'bottom: 10%; left: 50%; transform: translateX(-50%);' : ''}
-                    `;
-                    overlay.appendChild(div);
+        await ffmpeg.writeFile(concatFile, concatContent);
+
+        var args = ['-f', 'concat', '-safe', '0', '-i', concatFile];
+
+        if (trimStart > 0 || trimEnd < videoDuration) {
+            args = ['-ss', String(trimStart), '-i', inputNames[0]];
+            if (clips.length > 1) {
+                for (var i = 1; i < clips.length; i++) {
+                    args.push('-i', inputNames[i]);
                 }
-            });
+            }
+            var dur = trimEnd - trimStart;
+            args.push('-t', String(dur));
         }
-        
-        function toggleTrim() {
-            const tool = document.getElementById('trim-tool');
-            tool.style.display = tool.style.display === 'none' ? 'block' : 'none';
-            
-            if (tool.style.display === 'block') {
-                document.getElementById('trim-end').value = Math.floor(duration);
+
+        var filterComplex = '';
+        var hasFilter = selectedFilter !== 'original' || selectedSpeed !== 1 || texts.length > 0;
+
+        if (hasFilter && clips.length <= 1) {
+            var vfParts = [];
+            if (selectedSpeed !== 1) vfParts.push('setpts=' + (1/selectedSpeed) + '*PTS');
+            var fMap = { grayscale: 'colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3', sepia: 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131', vintage: 'curves=b=.3/.4', cinematic: 'eq=brightness=-0.1:contrast=1.3:saturation=1.4', vivid: 'eq=saturation=1.8:brightness=0.05', cool: 'hue=h=200', warm: 'hue=h=-10:saturation=1.2' };
+            if (selectedFilter !== 'original' && fMap[selectedFilter]) vfParts.push(fMap[selectedFilter]);
+
+            texts.forEach(function(t) {
+                var escaped = t.text.replace(/'/g, "'\\\\\\''").replace(/:/g, '\\:');
+                var dt = 'drawtext=text=\'' + escaped + '\':fontsize=' + t.size + ':fontcolor=' + t.color + ':x=(w-text_w)/2:y=(h-text_h)/2:enable=\'between(t,' + t.start + ',' + t.end + ')\'';
+                vfParts.push(dt);
+            });
+
+            if (vfParts.length > 0) {
+                args.push('-vf', vfParts.join(','));
             }
         }
-        
-        function applyTrim() {
-            if (!videoEl) return;
-            
-            const start = parseFloat(document.getElementById('trim-start').value);
-            const end = parseFloat(document.getElementById('trim-end').value);
-            
-            videoEl.currentTime = start;
-            videoEl.onended = function() {
-                videoEl.currentTime = start;
-            };
-            
-            videoEl.addEventListener('timeupdate', function checkTime() {
-                if (videoEl.currentTime >= end) {
-                    videoEl.pause();
-                    videoEl.currentTime = start;
-                    videoEl.removeEventListener('timeupdate', checkTime);
-                }
-            });
-            
-            document.getElementById('trim-tool').style.display = 'none';
-        }
-        
-        function cancelTrim() {
-            document.getElementById('trim-tool').style.display = 'none';
-        }
-        
-        function saveVideo() {
-            videoEl.pause();
-            
-            if (videoTexts.length > 0) {
-                videoEl.addEventListener('timeupdate', updateTextOverlay);
+
+        args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '28');
+        args.push('-movflags', '+faststart');
+        args.push(outName);
+
+        if (selectedAudioUrl) {
+            var audioData = await fetchFile(selectedAudioUrl);
+            var audioName = 'audio_in.mp3';
+            await ffmpeg.writeFile(audioName, audioData);
+            args = ['-i', inputNames[0], '-i', audioName, '-filter_complex', '[0:a][1:a]amix=inputs=2:duration=first[aud]', '-map', '0:v', '-map', '[aud]', '-c:v', 'libx264', '-preset', 'fast', '-crf', '28', '-movflags', '+faststart', '-shortest', outName];
+            if (trimStart > 0) {
+                args = ['-ss', String(trimStart), '-i', inputNames[0], '-i', audioName, '-filter_complex', '[0:a][1:a]amix=inputs=2:duration=first[aud]', '-map', '0:v', '-map', '[aud]', '-t', String(trimEnd - trimStart), '-c:v', 'libx264', '-preset', 'fast', '-crf', '28', '-movflags', '+faststart', '-shortest', outName];
             }
-            
-            fetch('{{ url_for("create") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'video_url=' + encodeURIComponent(videoUrl)
-            }).then(() => {
-                window.location.href = '{{ url_for("index") }}';
-            });
         }
-    </script>
+
+        updateProgress(10);
+        await ffmpeg.exec(args);
+        updateProgress(90);
+
+        var data = await ffmpeg.readFile(outName);
+        var blob = new Blob([data.buffer], { type: 'video/mp4' });
+        var formData = new FormData();
+        formData.append('video', blob, outName);
+
+        var resp = await fetch('{{ url_for("video_editor") }}', { method: 'POST', body: formData });
+        var result = await resp.json();
+
+        if (result.success) {
+            updateProgress(100);
+            setTimeout(function() {
+                window.location.href = '{{ url_for("create_shorts") }}?video_url=' + encodeURIComponent(result.url);
+            }, 500);
+        } else {
+            throw new Error(result.error || 'Upload failed');
+        }
+    } catch (e) {
+        console.error(e);
+        document.getElementById('progressText').textContent = 'Ошибка: ' + e.message;
+        document.getElementById('progressText').className = 'text-sm text-red-400';
+        setTimeout(hideProgress, 3000);
+    }
+    isProcessing = false;
+    document.getElementById('exportBtn').disabled = false;
+}
+</script>
 {% endblock %}
