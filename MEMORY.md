@@ -7,27 +7,29 @@ Repo: `github.com/Sergqmts/tg_bot`, branch `main`.
 ## How to Run
 ```bash
 python app.py  # dev on :5000
-# Production: gunicorn app:app --bind 0.0.0.0:$PORT
+# Production: uvicorn asgi_app:app --host 0.0.0.0 --port $PORT
 ```
 
 ## Key Architecture Decisions
 - **Modular app**: `app.py` + `routes/*.py` + `models.py` + `extensions.py` + `helpers.py`
 - **Flask-WTF CSRFProtect** for CSRF on all POST forms (except voice routes which are exempt)
 - **Cloudinary** for media persistence across deploys (fallback to local `/static/uploads/`)
-- **No real-time** — Socket.IO was removed due to gunicorn sync worker incompatibility. Notification badge uses JS polling (`GET /api/unread-count` every 10s)
+- **No Socket.IO** — replaced by Starlette + WebSocket for signaling (`/ws/call`). Notification badge uses JS polling (`GET /api/unread-count` every 10s).
+- **ASGI entry**: `asgi_app.py` wraps Flask via `WSGIMiddleware` and adds WebSocket routes under Starlette. Single uvicorn process on Railway.
 - **Media serving**: `/media/<filename>` → `send_from_directory(UPLOAD_FOLDER)`. Cloudinary URLs used directly when configured.
 - **Bots = Users with `is_bot=True`**: Bot platform modelled after Telegram. Token auth via URL path (`/bot<token>/sendMessage`). Webhooks for outgoing events.
 
 ## Database
 - SQLite locally (`instance/social.db`), PostgreSQL on Railway
 - `Message.body` has `NOT NULL` in production (set explicit `body=''`)
-- Models: User (+bot +google_id fields), Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment, Draft, ModerationLog, Report, Reaction, Tag, PostTag
+- Models: User (+bot +google_id fields), Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment, Draft, ModerationLog, Report, Reaction, Tag, PostTag, Call
 
 ## Branch History (recent)
 - `main` — production branch, Railway auto-deploys
 - `feature/bot-platform` — merged into main (bot platform, content moderation, admin panel, staff system)
 - `feature/photo-editor` — merged into main (comprehensive photo editor, navigation redesign, drafts)
 - `refactor/extract-models` — merged into main (models/routes refactor, Google OAuth login)
+- `feature/video-editor` — current branch (FFmpeg.wasm video editor, VoIP audio/video calls with WebRTC + WebSocket signaling)
 
 ## Features
 
@@ -72,6 +74,20 @@ Full-featured in-browser photo editor with 11 tool panels:
 - **Quality**: 60/80/92/100%
 - **History**: undo/redo (up to 50 steps)
 - **Draft model** (`Draft`) with `/drafts` route for listing/resuming
+
+### VoIP Calls (Audio/Video)
+- **WebRTC peer-to-peer** audio/video calls with full-duplex communication
+- **WebSocket signaling** via separate Starlette route `/ws/call` on the same uvicorn process
+- **`asgi_app.py`** combines Flask (HTTP) + WebSocket signaling under one ASGI app
+- **`signaling.py`** manages WebSocket connections, call rooms, SDP/ICE relay, mute/camera status
+- **`routes/calls.py`** — REST API: POST `/api/calls/initiate`, GET `/api/calls/<id>/status`, POST `/api/calls/<id>/end`, GET `/api/calls/history`
+- **`static/call.js`** — WebRTC client (RTCPeerConnection, media tracks), WS client, ringtone via Web Audio API
+- **`templates/call_ui.html`** — incoming call popup, full call screen (audio/video), PiP, screen share, controls (mute, camera, speaker, end)
+- **Call buttons** in chat header (`conversation.html` and `chat.html`)
+- **`Call` model**: caller_id, callee_id, call_type (audio/video), status (ringing/ongoing/ended/declined/missed), timestamps
+- **Stale call cleanup**: ringing calls older than 30s auto-expire to `missed`
+- **TURN**: Google STUN (stun.l.google.com), self-hosted coturn planned for symmetric NAT
+- **Dependencies**: `uvicorn`, `starlette`, `websockets`
 
 ### Google OAuth Login
 - **Google OAuth** via `authlib` — `/login/google` and `/login/google/callback` routes in `routes/auth.py`
@@ -126,6 +142,9 @@ PORT=8080
 | `admin.html` | Admin panel dashboard |
 | `bot_docs.html` | Bot API documentation |
 | `bot_settings.html` | Bot settings |
+| `call_ui.html` | VoIP call UI (incoming popup, call screen, PiP, controls) |
+| `conversation.html` | Direct message chat with call buttons |
+| `chat.html` | Group chat with call buttons |
 
 ## Railway
 - Project: `8f4bd177-1f4e-4afa-a55a-1ac415f7ee7b`
