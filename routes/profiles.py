@@ -5,7 +5,7 @@ def register_routes(app):
     from werkzeug.utils import secure_filename
     from datetime import datetime, timedelta
     from extensions import db, csrf
-    from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsAudio, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit
+    from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsAudio, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit, SavedPost
 
     @app.route('/user/<username>')
     def user_profile(username):
@@ -47,7 +47,12 @@ def register_routes(app):
         shorts_likes = {s.id: s.likes.count() for s in user_shorts}
         shorts_comments = {s.id: s.comments.count() for s in user_shorts}
 
-        return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count, user_shorts=user_shorts, shorts_likes=shorts_likes, shorts_comments=shorts_comments)
+        saved_posts = []
+        if current_user.is_authenticated and user.id == current_user.id:
+            saved = SavedPost.query.filter_by(user_id=current_user.id).order_by(SavedPost.created_at.desc()).all()
+            saved_posts = [Post.query.get(s.post_id) for s in saved if s.post_id]
+
+        return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count, user_shorts=user_shorts, shorts_likes=shorts_likes, shorts_comments=shorts_comments, saved_posts=saved_posts)
 
 
     @app.route('/follow/<username>', methods=['POST'])

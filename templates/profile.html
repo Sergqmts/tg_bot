@@ -120,7 +120,7 @@
     <div class="profile-tabs">
         <button class="tab active" onclick="switchTab('posts')">Посты</button>
         <button class="tab" onclick="switchTab('shorts')">Shorts</button>
-        <a href="{{ url_for('saved_posts') }}" class="tab">Сохранённые</a>
+        <button class="tab" onclick="switchTab('saved')">Сохранённые</button>
     </div>
     <div id="postsTab" class="posts-grid">
         {% for post in posts %}
@@ -191,16 +191,61 @@
         </div>
         {% endfor %}
     </div>
+    <div id="savedTab" class="posts-grid" style="display: none;">
+        {% for post in saved_posts %}
+        <a href="{{ url_for('view_post', post_id=post.id) }}" class="grid-item">
+            {% set media = post.media.first() %}
+            {% if media %}
+                {% if media.cloudinary_url %}
+                    {% if media.media_type == 'video' %}
+                    <video src="{{ media.cloudinary_url }}" crossorigin="anonymous" muted></video>
+                    {% elif media.media_type == 'audio' %}
+                    <div class="grid-audio-preview">🎵</div>
+                    {% else %}
+                    <img src="{{ media.cloudinary_url }}" alt="">
+                    {% endif %}
+                {% else %}
+                    {% if media.media_type == 'video' %}
+                    <video src="{{ url_for('uploaded_file', filename=media.filename) }}" muted></video>
+                    {% elif media.media_type == 'audio' %}
+                    <div class="grid-audio-preview">🎵</div>
+                    {% else %}
+                    <img src="{{ url_for('uploaded_file', filename=media.filename) }}" alt="">
+                    {% endif %}
+                {% endif %}
+            {% elif post.body %}
+            <div class="text-post-preview">{{ post.body[:50] }}</div>
+            {% endif %}
+            {% if post.media.count() > 1 %}
+            <div class="multi-indicator">⋮</div>
+            {% endif %}
+            <div class="grid-overlay">
+                <span>❤️ {{ post.likes.count() }}</span>
+                <span>💬 {{ post.comments.count() }}</span>
+            </div>
+        </a>
+        {% else %}
+        <div class="empty-state" style="grid-column: 1/-1;">
+            <div class="empty-icon">🔖</div>
+            <h3 class="empty-title">Нет сохранённых</h3>
+        </div>
+        {% endfor %}
+    </div>
     <script>
     function switchTab(tab) {
-        document.querySelectorAll('.profile-tabs .tab').forEach(function(t) { t.classList.remove('active'); });
-        document.querySelectorAll('.posts-grid').forEach(function(g) { g.style.display = 'none'; });
+        var tabs = document.querySelectorAll('.profile-tabs .tab');
+        var grids = document.querySelectorAll('.posts-grid');
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+        grids.forEach(function(g) { g.style.display = 'none'; });
         if (tab === 'posts') {
-            document.querySelector('.profile-tabs .tab:first-child').classList.add('active');
+            tabs[0].classList.add('active');
             document.getElementById('postsTab').style.display = 'grid';
-        } else {
-            document.querySelectorAll('.profile-tabs .tab')[1].classList.add('active');
+        } else if (tab === 'shorts') {
+            tabs[1].classList.add('active');
             document.getElementById('shortsTab').style.display = 'grid';
+        } else if (tab === 'saved') {
+            tabs[2].classList.add('active');
+            document.getElementById('savedTab').style.display = 'grid';
         }
     }
     </script>
