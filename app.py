@@ -605,6 +605,15 @@ with app.app_context():
         app.logger.info(f"Migration deezer_id BIGINT: {e}")
 
     try:
+        if not column_exists('user', 'is_business'):
+            db.session.execute(text('ALTER TABLE "user" ADD COLUMN is_business BOOLEAN DEFAULT FALSE'))
+            db.session.commit()
+            app.logger.info("Migrated: added user.is_business")
+    except Exception as e:
+        db.session.rollback()
+        app.logger.info(f"Migration user.is_business: {e}")
+
+    try:
         if not column_exists('post', 'music_track_id'):
             db.session.execute(text('ALTER TABLE post ADD COLUMN music_track_id INTEGER REFERENCES music_track(id)'))
             db.session.commit()
