@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from extensions import db
@@ -23,6 +23,19 @@ def register_routes(app):
 
         if callee_id == current_user.id:
             return jsonify({'error': 'cannot call yourself'}), 400
+
+        cutoff = datetime.utcnow() - timedelta(seconds=30)
+        stale = Call.query.filter(
+            db.or_(
+                db.and_(Call.caller_id == current_user.id, Call.callee_id == callee_id),
+                db.and_(Call.caller_id == callee_id, Call.callee_id == current_user.id),
+            ),
+            Call.status == 'ringing',
+            Call.created_at < cutoff,
+        ).all()
+        for s in stale:
+            s.status = 'missed'
+            s.ended_at = datetime.utcnow()
 
         active = Call.query.filter(
             db.or_(
