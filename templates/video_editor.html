@@ -175,11 +175,23 @@ async function initFFmpeg() {
             fetchFile = util.fetchFile;
             toBlobURL = util.toBlobURL;
         }
+        const ffmpegBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
+        const [workerCode, constCode, errorsCode] = await Promise.all([
+            fetch(ffmpegBase + '/worker.js').then(r => r.text()),
+            fetch(ffmpegBase + '/const.js').then(r => r.text()),
+            fetch(ffmpegBase + '/errors.js').then(r => r.text()),
+        ]);
+        const combinedWorker = constCode + '\n' + errorsCode + '\n' +
+            workerCode.replace(/import\s+\{[^}]*\}\s+from\s+['"]\.\/[^'"]+['"]\s*;?\s*/g, '');
+        const classWorkerURL = URL.createObjectURL(
+            new Blob([combinedWorker], { type: 'application/javascript' })
+        );
         ffmpeg = new FFmpeg();
         const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
         await ffmpeg.load({
             coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
             wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm'),
+            classWorkerURL: classWorkerURL,
         });
         ffmpeg.on('progress', function(ev) {
             updateProgress(ev.progress * 100);
