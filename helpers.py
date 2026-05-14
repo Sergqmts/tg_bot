@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import current_app
 from werkzeug.utils import secure_filename
 from extensions import db
-from models import User, Notification, Message, Chat, ChatMember, ModerationLog
+from models import User, Notification, Message, Chat, ChatMember, ModerationLog, FeatureAnnouncement
 
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
@@ -306,3 +306,9 @@ def _send_webhook_payload(bot, message, sender, chat, recipient=None):
         urllib.request.urlopen(req, timeout=5)
     except Exception as e:
         current_app.logger.warning(f"Webhook to {bot.webhook_url} failed: {e}")
+
+
+def announce_pending_features():
+    pending = FeatureAnnouncement.query.filter_by(is_posted=False).all()
+    for feature in pending:
+        feature.post_to_news()

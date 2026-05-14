@@ -19,6 +19,7 @@ from helpers import (
     moderate_post, get_or_create_dm, create_notification,
     column_exists, get_table_columns,
     _webhook_queue, enqueue_webhook_dispatch, process_webhook_queue,
+    announce_pending_features,
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -657,6 +658,24 @@ with app.app_context():
             db.session.commit()
     except Exception as e:
         app.logger.info(f"News community setup: {e}")
+
+    try:
+        features = [
+            ('🎬', 'Видеоредактор для Shorts', 'Теперь вы можете редактировать видео для Shorts прямо в браузере! Добавляйте обрезку, аудио, текст, фильтры, меняйте скорость и объединяйте несколько клипов — всё через FFmpeg.wasm без загрузки на сервер.'),
+            ('📸', 'Фоторедактор', 'Улучшайте свои фотографии перед публикацией: регулируйте яркость, контрастность, насыщенность, применяйте фильтры, рамки и стикеры прямо в приложении.'),
+            ('🎵', 'Shorts с музыкой', 'Создавайте короткие видео с фоновой музыкой. Доступна библиотека треков, поиск на FreeSound и загрузка собственных аудиофайлов.'),
+        ]
+        for icon, title, body in features:
+            existing = FeatureAnnouncement.query.filter_by(title=title).first()
+            if not existing:
+                fa = FeatureAnnouncement(icon=icon, title=title, body=body)
+                db.session.add(fa)
+                app.logger.info(f"Registered feature: {title}")
+        db.session.commit()
+    except Exception as e:
+        app.logger.info(f"Feature registration: {e}")
+
+    announce_pending_features()
 
 
 @app.context_processor

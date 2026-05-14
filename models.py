@@ -743,6 +743,36 @@ class AccountGroupMember(db.Model):
     __table_args__ = (db.UniqueConstraint('group_id', 'user_id', name='unique_group_user'),)
 
 
+class FeatureAnnouncement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    icon = db.Column(db.String(20), default='🚀')
+    is_posted = db.Column(db.Boolean, default=False)
+    posted_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def post_to_news(self):
+        from flask import current_app
+        bot = User.query.filter_by(username='NewsBot').first()
+        comm = Community.query.filter_by(slug='news').first()
+        if not bot or not comm:
+            return False
+        try:
+            text = f"{self.icon} **{self.title}**\n\n{self.body}\n\n#фича #обновление"
+            post = Post(body=text, author=bot, community=comm, is_community_post=True)
+            db.session.add(post)
+            self.is_posted = True
+            self.posted_at = datetime.utcnow()
+            db.session.commit()
+            current_app.logger.info(f"Feature announced: {self.title}")
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Feature announcement error: {e}")
+            db.session.rollback()
+            return False
+
+
 # WTForms
 
 class RegistrationForm(FlaskForm):

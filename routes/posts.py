@@ -224,6 +224,16 @@ def register_routes(app):
             app.logger.error(f"Photo transform error: {e}")
             return str(e), 500
 
+    @app.route('/announce-features', methods=['POST'])
+    @login_required
+    def announce_features():
+        if not current_user.is_staff:
+            abort(403)
+        from helpers import announce_pending_features
+        announce_pending_features()
+        flash('Pending features announced')
+        return redirect(request.referrer or url_for('index'))
+
     @app.route('/video_editor', methods=['GET', 'POST'])
     @login_required
     def video_editor():
