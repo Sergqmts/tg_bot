@@ -111,16 +111,90 @@
                     <i class="fa-solid fa-moon dark:hidden"></i>
                     <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
                 </button>
-                <a href="{{ url_for('user_profile', username=current_user.username) }}" class="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 dark:border-dark-border cursor-pointer">
-                    {% set avatar_url = get_avatar_url(current_user) %}
-                    {% if avatar_url %}
-                    <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
-                    {% else %}
-                    <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
-                        {{ current_user.username[0].upper() }}
+                <div class="relative" id="accountSwitcher">
+                    <button onclick="toggleAccountMenu()" class="flex items-center gap-1 cursor-pointer" title="Переключить аккаунт">
+                        <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 dark:border-dark-border">
+                            {% set avatar_url = get_avatar_url(current_user) %}
+                            {% if avatar_url %}
+                            <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
+                                {{ current_user.username[0].upper() }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                    </button>
+                    <div id="accountMenu" class="absolute right-0 top-12 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[250px] hidden" style="z-index:100;">
+                        {% if linked_accounts %}
+                            {% for member in linked_accounts %}
+                            <a href="{% if member.user_id == current_user.id %}{{ url_for('user_profile', username=current_user.username) }}{% else %}{{ url_for('switch_account', account_id=member.user_id) }}{% endif %}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm {% if member.user_id == current_user.id %}bg-slate-50 dark:bg-slate-700/50{% endif %}">
+                                {% set m_avatar = get_avatar_url(member.user) %}
+                                <div class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-600 flex-shrink-0">
+                                    {% if m_avatar %}
+                                    <img src="{{ m_avatar }}" class="w-full h-full object-cover">
+                                    {% else %}
+                                    <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-[10px] font-bold">
+                                        {{ (member.business_name or member.user.username)[0].upper() }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium truncate">{{ member.business_name or member.user.username }}</div>
+                                    <div class="text-xs text-slate-400">@{{ member.user.username }}</div>
+                                </div>
+                                {% if member.account_type == 'business' %}
+                                <span class="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded font-medium">Бизнес</span>
+                                {% else %}
+                                <span class="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded font-medium">Личный</span>
+                                {% endif %}
+                                {% if member.user_id == current_user.id %}
+                                <i class="fa-solid fa-check text-green-500 text-xs"></i>
+                                {% endif %}
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm bg-slate-50 dark:bg-slate-700/50">
+                                {% set avatar_url = get_avatar_url(current_user) %}
+                                <div class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-600 flex-shrink-0">
+                                    {% if avatar_url %}
+                                    <img src="{{ avatar_url }}" class="w-full h-full object-cover">
+                                    {% else %}
+                                    <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-[10px] font-bold">{{ current_user.username[0].upper() }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium truncate">{{ current_user.username }}</div>
+                                    <div class="text-xs text-slate-400">Личный аккаунт</div>
+                                </div>
+                                <i class="fa-solid fa-check text-green-500 text-xs"></i>
+                            </a>
+                        {% endif %}
+                        <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+                        {% set ns3 = namespace(is_business=false) %}
+                        {% for m in linked_accounts %}
+                            {% if m.user_id == current_user.id and m.account_type == 'business' %}
+                                {% set ns3.is_business = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if ns3.is_business %}
+                        <a href="{{ url_for('switch_back_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-brand-middle font-medium">
+                            <i class="fa-solid fa-arrow-left text-base w-5"></i> Вернуться к личному
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('accounts_list') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-600 dark:text-slate-400">
+                            <i class="fa-solid fa-gear text-base w-5"></i> Управление аккаунтами
+                        </a>
+                        <a href="{{ url_for('create_business_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-600 dark:text-slate-400">
+                            <i class="fa-solid fa-plus text-base w-5"></i> Создать бизнес-аккаунт
+                        </a>
+                        {% if ns3.is_business %}
+                        <a href="{{ url_for('business_analytics') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-600 dark:text-slate-400">
+                            <i class="fa-solid fa-chart-bar text-base w-5"></i> Аналитика
+                        </a>
+                        {% endif %}
                     </div>
-                    {% endif %}
-                </a>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -196,9 +270,37 @@
                         {% else %}
                         <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">{{ current_user.username[0].upper() }}</div>
                         {% endif %}
-                        <span class="font-medium">{{ current_user.username }}</span>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-medium block truncate">{{ current_user.username }}</span>
+                            <span class="text-xs text-slate-400">
+                                {% set ns = namespace(acctype='personal') %}
+                                {% for m in linked_accounts %}
+                                    {% if m.user_id == current_user.id %}
+                                        {% set ns.acctype = m.account_type %}
+                                    {% endif %}
+                                {% endfor %}
+                                {% if ns.acctype == 'business' %}Бизнес-аккаунт{% else %}Личный аккаунт{% endif %}
+                            </span>
+                        </div>
                     </a>
                     <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+                    <a href="{{ url_for('accounts_list') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                        <i class="fa-solid fa-arrows-rotate text-lg w-6"></i> Переключить аккаунт
+                    </a>
+                    {% set ns2 = namespace(is_business=false) %}
+                    {% for m in linked_accounts %}
+                        {% if m.user_id == current_user.id and m.account_type == 'business' %}
+                            {% set ns2.is_business = true %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if ns2.is_business %}
+                    <a href="{{ url_for('switch_back_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-brand-middle font-medium">
+                        <i class="fa-solid fa-arrow-left text-lg w-6"></i> Вернуться к личному
+                    </a>
+                    <a href="{{ url_for('business_analytics') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                        <i class="fa-solid fa-chart-bar text-lg w-6"></i> Аналитика
+                    </a>
+                    {% endif %}
                     <a href="{{ url_for('create') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
                         <i class="fa-regular fa-square-plus text-lg w-6"></i> Создать пост
                     </a>
@@ -259,6 +361,19 @@
                 toggleTheme();
             });
         }
+    </script>
+    <script>
+    function toggleAccountMenu() {
+        var menu = document.getElementById('accountMenu');
+        menu.classList.toggle('hidden');
+    }
+    document.addEventListener('click', function(e) {
+        var container = document.getElementById('accountSwitcher');
+        var menu = document.getElementById('accountMenu');
+        if (container && menu && !container.contains(e.target) && !menu.classList.contains('hidden')) {
+            menu.classList.add('hidden');
+        }
+    });
     </script>
     <script>
     /* Audio player */

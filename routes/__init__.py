@@ -6,6 +6,7 @@ from routes.messages import register_routes as register_message_routes
 from routes.communities import register_routes as register_community_routes
 from routes.music import register_routes as register_music_routes
 from routes.bots import register_routes as register_bot_routes
+from routes.accounts import register_routes as register_account_routes
 
 
 def register_all_routes(app):
@@ -17,3 +18,4 @@ def register_all_routes(app):
     register_community_routes(app)
     register_music_routes(app)
     register_bot_routes(app)
+    register_account_routes(app)

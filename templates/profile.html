@@ -78,6 +78,38 @@
         </div>
     </div>
     
+    {% if current_user.is_authenticated and user.id == current_user.id and linked_accounts %}
+    <div class="linked-accounts-section" style="margin-top: 1rem; padding: 1rem; background: var(--bg-card); border-radius: 12px;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.25rem;">
+            {% for m in linked_accounts %}
+            <a href="{% if m.user_id == current_user.id %}{{ url_for('user_profile', username=current_user.username) }}{% else %}{{ url_for('switch_account', account_id=m.user_id) }}{% endif %}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 10px; text-decoration: none; color: inherit; {% if m.user_id == current_user.id %}background: var(--bg-hover);{% else %}border: 1px solid var(--border-color);{% endif %} flex-shrink: 0;">
+                {% set m_avatar = get_avatar_url(m.user) %}
+                <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: linear-gradient(135deg, #FF3CAC, #784BA0); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">
+                    {% if m_avatar %}
+                    <img src="{{ m_avatar }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                    {{ (m.business_name or m.user.username)[0].upper() }}
+                    {% endif %}
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.875rem; font-weight: 500; white-space: nowrap;">{{ m.business_name or m.user.username }}</span>
+                    <span style="font-size: 0.7rem; color: var(--text-secondary);">
+                        {% if m.account_type == 'business' %}Бизнес{% else %}Личный{% endif %}
+                        {% if m.user_id == current_user.id %}· Активен{% endif %}
+                    </span>
+                </div>
+                {% if m.user_id != current_user.id %}
+                <span style="font-size: 0.75rem; color: var(--accent); margin-left: 0.25rem;">Переключиться →</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('create_business_account') }}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 10px; border: 1px dashed var(--border-color); text-decoration: none; color: var(--text-secondary); font-size: 0.8rem; flex-shrink: 0;">
+                <i class="fa-solid fa-plus"></i> Создать
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
     {% if not can_view %}
     <div class="empty-state">
         <div class="empty-icon">🔒</div>

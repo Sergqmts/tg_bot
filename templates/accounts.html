@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Управление аккаунтами{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">Аккаунты</h1>
+        <a href="{{ url_for('create_business_account') }}" class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl hover:shadow-lg transition-all text-sm font-medium">
+            <i class="fa-solid fa-plus"></i> Создать бизнес-аккаунт
+        </a>
+    </div>
+
+    <div class="space-y-3">
+        {% set shown_ids = [] %}
+        {% for member in linked_accounts %}
+            {% if member.user_id not in shown_ids %}
+            {% set _ = shown_ids.append(member.user_id) %}
+            <div class="glass rounded-2xl p-4 flex items-center justify-between {% if member.user_id == current_user.id %}ring-2 ring-brand-middle{% endif %}">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-200 dark:border-dark-border flex-shrink-0">
+                        {% set avatar = get_avatar_url(member.user) %}
+                        {% if avatar %}
+                        <img src="{{ avatar }}" class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-sm font-bold">
+                            {{ (member.business_name or member.user.username)[0].upper() }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div class="font-semibold">{{ member.business_name or member.user.username }}</div>
+                        <div class="text-xs text-slate-500">@{{ member.user.username }}
+                            {% if member.account_type == 'business' %}
+                            <span class="ml-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded text-[10px] font-medium">Бизнес</span>
+                            {% else %}
+                            <span class="ml-1 px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-[10px] font-medium">Личный</span>
+                            {% endif %}
+                        </div>
+                        {% if member.business_category %}
+                        <div class="text-xs text-slate-400 mt-0.5">{{ member.business_category }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if member.account_type == 'business' %}
+                    <a href="{{ url_for('business_analytics') }}" class="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                        <i class="fa-solid fa-chart-bar"></i>
+                    </a>
+                    {% endif %}
+                    {% if member.user_id != current_user.id %}
+                    <a href="{{ url_for('switch_account', account_id=member.user_id) }}" class="px-3 py-1.5 text-sm border border-brand-middle text-brand-middle rounded-xl hover:bg-brand-middle hover:text-white transition-all">
+                        Переключиться
+                    </a>
+                    {% else %}
+                    <span class="px-3 py-1.5 text-sm text-green-600 dark:text-green-400 font-medium">
+                        <i class="fa-solid fa-check"></i> Активен
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if not linked_accounts %}
+    <div class="text-center py-12 text-slate-400">
+        <i class="fa-solid fa-users text-4xl mb-4"></i>
+        <p>У вас пока нет связанных аккаунтов</p>
+        <p class="text-sm mt-2">Создайте бизнес-аккаунт, чтобы управлять им вместе с личным</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

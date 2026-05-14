@@ -310,6 +310,12 @@ def run_migrations():
                 db.session.commit()
             except:
                 db.session.rollback()
+        if 'is_business' not in existing:
+            try:
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN is_business BOOLEAN DEFAULT 0'))
+                db.session.commit()
+            except:
+                db.session.rollback()
     except Exception as e:
         app.logger.info(f"User migration: {e}")
     
@@ -655,6 +661,22 @@ def inject_utils():
             return url_for('uploaded_file', filename=user.avatar)
         return None
     return dict(get_avatar_url=get_avatar_url)
+
+
+@app.context_processor
+def inject_linked_accounts():
+    if current_user.is_authenticated:
+        try:
+            memberships = AccountGroupMember.query.filter_by(user_id=current_user.id).all()
+            group_ids = [m.group_id for m in memberships]
+            if group_ids:
+                all_members = AccountGroupMember.query.filter(
+                    AccountGroupMember.group_id.in_(group_ids)
+                ).order_by(AccountGroupMember.account_type.desc()).all()
+                return dict(linked_accounts=all_members)
+        except Exception:
+            pass
+    return dict(linked_accounts=[])
 
 
 @app.template_filter('avatar_url')

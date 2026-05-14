@@ -5,11 +5,16 @@ def register_routes(app):
     from werkzeug.utils import secure_filename
     from datetime import datetime, timedelta
     from extensions import db, csrf
-    from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsAudio, Notification, Tag, Community, Media, SavedPost, EditProfileForm
+    from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsAudio, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit
 
     @app.route('/user/<username>')
     def user_profile(username):
         user = User.query.filter_by(username=username).first_or_404()
+
+        if user.is_business and current_user.is_authenticated and current_user.id != user.id:
+            visit = ProfileVisit(profile_id=user.id, visitor_id=current_user.id)
+            db.session.add(visit)
+            db.session.commit()
 
         blocked_by_user = current_user.is_authenticated and current_user.is_blocking(user)
 

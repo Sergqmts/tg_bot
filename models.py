@@ -65,6 +65,7 @@ class User(UserMixin, db.Model):
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     is_banned = db.Column(db.Boolean, default=False)
     is_staff = db.Column(db.Boolean, default=False)
+    is_business = db.Column(db.Boolean, default=False)
     
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     likes = db.relationship('Like', backref='user', lazy='dynamic')
@@ -698,6 +699,48 @@ class MessageMedia(db.Model):
     message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
     media_url = db.Column(db.String(500))
     media_type = db.Column(db.String(20))
+
+
+class ProfileVisit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    profile_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    visitor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    profile = db.relationship('User', foreign_keys=[profile_id], backref='profile_visits')
+    visitor = db.relationship('User', foreign_keys=[visitor_id])
+
+
+class PostView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    viewer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    post = db.relationship('Post', backref=db.backref('post_views', lazy='dynamic'))
+    viewer = db.relationship('User', foreign_keys=[viewer_id])
+
+
+class AccountGroup(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    owner = db.relationship('User', foreign_keys=[owner_id], backref='owned_account_groups')
+    members = db.relationship('AccountGroupMember', backref='group', lazy='dynamic', cascade='all, delete-orphan')
+
+
+class AccountGroupMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('account_group.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    account_type = db.Column(db.String(20), default='personal')
+    role = db.Column(db.String(20), default='member')
+    business_name = db.Column(db.String(100), nullable=True)
+    business_category = db.Column(db.String(100), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('group_memberships', lazy='dynamic'))
+    __table_args__ = (db.UniqueConstraint('group_id', 'user_id', name='unique_group_user'),)
 
 
 # WTForms

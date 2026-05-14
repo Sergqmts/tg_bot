@@ -7,7 +7,7 @@ def register_routes(app):
     from datetime import datetime
     from PIL import Image, ImageEnhance, ImageFilter
     from extensions import db
-    from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog
+    from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog, PostView
 
     @app.route('/')
     def index():
@@ -440,6 +440,10 @@ def register_routes(app):
     @app.route('/post/<int:post_id>')
     def view_post(post_id):
         post = Post.query.get_or_404(post_id)
+        if current_user.is_authenticated and current_user.id != post.user_id:
+            view = PostView(post_id=post.id, viewer_id=current_user.id)
+            db.session.add(view)
+            db.session.commit()
         repost_count = Repost.query.filter_by(post_id=post.id).count()
         user_reaction = None
         if current_user.is_authenticated:

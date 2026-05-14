@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Аналитика — {{ membership.business_name or current_user.username }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">{{ membership.business_name or current_user.username }}</h1>
+            <p class="text-sm text-slate-500">@{{ current_user.username }} · Бизнес-аналитика</p>
+        </div>
+        <a href="{{ url_for('accounts_list') }}" class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-2xl text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+            <i class="fa-solid fa-arrow-left"></i> Назад
+        </a>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="glass rounded-2xl p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                    <i class="fa-solid fa-eye"></i>
+                </div>
+                <span class="text-sm text-slate-500">Визиты</span>
+            </div>
+            <div class="text-3xl font-bold">{{ visits_total }}</div>
+            <div class="text-xs text-slate-400 mt-1">Сегодня: {{ visits_today }} · 7д: {{ visits_7d }} · 30д: {{ visits_30d }}</div>
+        </div>
+        <div class="glass rounded-2xl p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                    <i class="fa-solid fa-chart-simple"></i>
+                </div>
+                <span class="text-sm text-slate-500">Просмотры постов</span>
+            </div>
+            <div class="text-3xl font-bold">{{ post_views_total }}</div>
+            <div class="text-xs text-slate-400 mt-1">Сегодня: {{ post_views_today }} · 7д: {{ post_views_7d }} · 30д: {{ post_views_30d }}</div>
+        </div>
+        <div class="glass rounded-2xl p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center text-green-600 dark:text-green-400">
+                    <i class="fa-solid fa-envelope"></i>
+                </div>
+                <span class="text-sm text-slate-500">Сообщения</span>
+            </div>
+            <div class="text-3xl font-bold">{{ total_messages }}</div>
+            <div class="text-xs text-slate-400 mt-1">За 30д: {{ messages_30d }} (новых: {{ new_message_senders }}, вернулись: {{ returning_message_senders }})</div>
+        </div>
+        <div class="glass rounded-2xl p-5">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <span class="text-sm text-slate-500">Подписчики</span>
+            </div>
+            <div class="text-3xl font-bold">{{ followers_year }}</div>
+            <div class="text-xs text-slate-400 mt-1">За год</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="glass rounded-2xl p-5">
+            <h3 class="font-semibold mb-3">Прирост подписчиков</h3>
+            <div class="grid grid-cols-5 gap-2 text-center">
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ followers_week }}</div>
+                    <div class="text-[10px] text-slate-400">Неделя</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ followers_month }}</div>
+                    <div class="text-[10px] text-slate-400">Месяц</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ followers_quarter }}</div>
+                    <div class="text-[10px] text-slate-400">Квартал</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ followers_half }}</div>
+                    <div class="text-[10px] text-slate-400">Полгода</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ followers_year }}</div>
+                    <div class="text-[10px] text-slate-400">Год</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-2xl p-5">
+            <h3 class="font-semibold mb-3">Сообщения (за 30 дней)</h3>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                    <div class="text-lg font-bold text-green-600 dark:text-green-400">{{ messages_30d }}</div>
+                    <div class="text-[10px] text-slate-400">Всего</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                    <div class="text-lg font-bold text-amber-600 dark:text-amber-400">{{ new_message_senders }}</div>
+                    <div class="text-[10px] text-slate-400">Новые</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
+                    <div class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ returning_message_senders }}</div>
+                    <div class="text-[10px] text-slate-400">Вернулись</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if posts_data %}
+    <div class="glass rounded-2xl p-5 mb-8">
+        <h3 class="font-semibold mb-3">Просмотры постов (топ-10)</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                        <th class="text-left py-2 pr-4">Пост</th>
+                        <th class="text-right py-2">Просмотры</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pd in posts_data %}
+                    <tr class="border-b border-slate-100 dark:border-slate-800">
+                        <td class="py-2 pr-4">
+                            <a href="{{ url_for('view_post', post_id=pd.post.id) }}" class="hover:text-brand-middle truncate block max-w-xs">
+                                {{ pd.post.body[:80] or '(без текста)' }}{% if pd.post.body and pd.post.body|length > 80 %}...{% endif %}
+                            </a>
+                            <div class="text-[10px] text-slate-400">{{ pd.post.created_at.strftime('%d.%m.%Y') }}</div>
+                        </td>
+                        <td class="text-right py-2 font-semibold">{{ pd.views }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="glass rounded-2xl p-5 mb-8">
+        <h3 class="font-semibold mb-4">Статистика за год по месяцам</h3>
+        <div class="relative" style="height:300px;">
+            <canvas id="yearChart"></canvas>
+        </div>
+        <div class="flex items-center justify-center gap-6 mt-4 text-xs">
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-blue-500"></span> Визиты</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-500"></span> Просмотры</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-green-500"></span> Подписчики</span>
+            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-purple-500"></span> Сообщения</span>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('{{ url_for("analytics_chart_data") }}')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var ctx = document.getElementById('yearChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.months.map(function(m) { return m.label; }),
+                    datasets: [
+                        {
+                            label: 'Визиты',
+                            data: data.months.map(function(m) { return m.visits; }),
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: 'rgb(59, 130, 246)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Просмотры',
+                            data: data.months.map(function(m) { return m.post_views; }),
+                            backgroundColor: 'rgba(251, 191, 36, 0.7)',
+                            borderColor: 'rgb(251, 191, 36)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Подписчики',
+                            data: data.months.map(function(m) { return m.followers; }),
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                            borderColor: 'rgb(34, 197, 94)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Сообщения',
+                            data: data.months.map(function(m) { return m.messages; }),
+                            backgroundColor: 'rgba(168, 85, 247, 0.7)',
+                            borderColor: 'rgb(168, 85, 247)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %}
