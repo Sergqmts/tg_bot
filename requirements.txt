@@ -23,6 +23,9 @@ tomli==2.4.1
 typing_extensions==4.15.0
 cloudinary==1.41.0
 authlib==1.5.2
+uvicorn==0.34.0
+starlette==0.46.0
+websockets==15.0
 requests==2.32.3
 Pillow==11.1.0
 faster-whisper==1.2.1

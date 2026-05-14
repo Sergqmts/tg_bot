@@ -37,6 +37,15 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
+                {% if chat.type == 'direct' %}
+                {% for m in chat.members %}{% if m.user.id != current_user.id %}{% set peer = m.user %}{% endif %}{% endfor %}
+                <button onclick="initiateCall({{ peer.id }}, '{{ peer.username }}', 'audio')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-brand-middle" title="Аудиозвонок">
+                    <i class="fa-solid fa-phone text-sm"></i>
+                </button>
+                <button onclick="initiateCall({{ peer.id }}, '{{ peer.username }}', 'video')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-brand-middle" title="Видеозвонок">
+                    <i class="fa-solid fa-video text-sm"></i>
+                </button>
+                {% endif %}
                 {% if chat.type != 'direct' %}
                 <a href="{{ url_for('chat_members', chat_id=chat.id) }}" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400 hover:text-slate-600" title="Участники">
                     <i class="fa-solid fa-users text-sm"></i>
@@ -729,6 +738,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (area) area.scrollTop = area.scrollHeight;
 });
 
+<script>
 function openModal(src) {
     var modal = document.getElementById('imageModal');
     var img = document.getElementById('modalImg');

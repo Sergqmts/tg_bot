@@ -1,0 +1,97 @@
+<!-- Incoming Call Modal -->
+<div id="incomingCallModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div class="relative z-10 flex items-center justify-center h-full">
+        <div class="glass rounded-3xl p-8 max-w-sm w-full mx-4 text-center animate-bounce-in">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-3xl font-bold" id="incomingCallAvatar">
+                <span id="incomingCallType">📞</span>
+            </div>
+            <h2 class="text-xl font-bold mb-1" id="incomingCallerName">Unknown</h2>
+            <p class="text-sm text-slate-400 mb-6" id="incomingCallTypeLabel">Аудиозвонок</p>
+            <div class="flex items-center justify-center gap-6">
+                <button onclick="declineCall()" class="w-14 h-14 rounded-full bg-red-500 text-white flex items-center justify-center text-2xl hover:bg-red-600 transition-all shadow-lg hover:shadow-red-500/30 active:scale-90">
+                    <i class="fa-solid fa-phone-slash"></i>
+                </button>
+                <button onclick="answerCall()" class="w-14 h-14 rounded-full bg-green-500 text-white flex items-center justify-center text-2xl hover:bg-green-600 transition-all shadow-lg hover:shadow-green-500/30 active:scale-90">
+                    <i class="fa-solid fa-phone"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Call Screen -->
+<div id="callScreen" class="fixed inset-0 z-[100] hidden bg-black">
+    <!-- Remote video (full screen) -->
+    <video id="remoteVideo" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
+
+    <!-- Audio-only gradient background -->
+    <div id="callScreenAudioOnly" class="absolute inset-0 hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-28 h-28 mx-auto mb-4 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-5xl font-bold">
+                <span id="callScreenType">📞</span>
+            </div>
+            <h2 class="text-white text-2xl font-bold mb-1" id="callPeerName">Unknown</h2>
+            <p class="text-white/60 text-sm mb-2" id="callStatus">Подключение...</p>
+            <p class="text-white/40 text-sm font-mono" id="callTimer">00:00</p>
+        </div>
+    </div>
+
+    <!-- Video area with remote + local -->
+    <div id="callScreenVideoArea" class="absolute inset-0 hidden">
+        <div class="relative w-full h-full">
+            <!-- Local video (PiP style, bottom-right) -->
+            <div id="localVideoContainer" class="absolute bottom-24 right-4 w-28 h-40 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 hidden z-10 bg-black">
+                <video id="localVideo" class="w-full h-full object-cover" autoplay muted playsinline></video>
+            </div>
+            <!-- Peer camera off indicator -->
+            <div id="peerCameraIndicator" class="absolute inset-0 hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+                <div class="text-center">
+                    <div class="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-3xl font-bold">
+                        <span id="callPeerAvatar">?</span>
+                    </div>
+                    <p class="text-white text-xl font-bold" id="callPeerNameVideo">Unknown</p>
+                    <p class="text-white/40 text-sm font-mono mt-1" id="callTimerVideo">00:00</p>
+                </div>
+            </div>
+            <!-- Peer mute indicator -->
+            <div id="peerMuteIndicator" class="absolute top-4 left-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full hidden">
+                <i class="fa-solid fa-microphone-slash mr-1"></i> Приглушен
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls overlay -->
+    <div class="absolute bottom-0 inset-x-0 pb-8 pt-20 bg-gradient-to-t from-black/70 to-transparent">
+        <div class="flex items-center justify-center gap-5">
+            <button id="muteBtn" onclick="toggleMute()" class="w-12 h-12 rounded-full bg-white/15 text-white flex items-center justify-center text-lg hover:bg-white/25 transition-all active:scale-90 backdrop-blur-sm" title="Микрофон">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button id="cameraBtn" onclick="toggleCamera()" class="w-12 h-12 rounded-full bg-white/15 text-white flex items-center justify-center text-lg hover:bg-white/25 transition-all active:scale-90 backdrop-blur-sm" title="Камера">
+                <i class="fa-solid fa-video"></i>
+            </button>
+            <button onclick="endCall()" class="w-14 h-14 rounded-full bg-red-500 text-white flex items-center justify-center text-xl hover:bg-red-600 transition-all shadow-lg hover:shadow-red-500/30 active:scale-90" title="Завершить">
+                <i class="fa-solid fa-phone-slash"></i>
+            </button>
+            <button onclick="toggleSpeaker()" class="w-12 h-12 rounded-full bg-white/15 text-white flex items-center justify-center text-lg hover:bg-white/25 transition-all active:scale-90 backdrop-blur-sm" title="Динамик">
+                <i class="fa-solid fa-volume-high"></i>
+            </button>
+            <button onclick="togglePip()" class="w-12 h-12 rounded-full bg-white/15 text-white flex items-center justify-center text-lg hover:bg-white/25 transition-all active:scale-90 backdrop-blur-sm" title="Картинка-в-картинке">
+                <i class="fa-solid fa-image"></i>
+            </button>
+            <button onclick="toggleScreenShare()" class="w-12 h-12 rounded-full bg-white/15 text-white flex items-center justify-center text-lg hover:bg-white/25 transition-all active:scale-90 backdrop-blur-sm" title="Экран">
+                <i class="fa-solid fa-desktop"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes bounce-in {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+.animate-bounce-in { animation: bounce-in 0.4s ease-out; }
+#muteBtn.active, #cameraBtn.active { background: rgba(239, 68, 68, 0.5); }
+</style>

@@ -743,6 +743,20 @@ class AccountGroupMember(db.Model):
     __table_args__ = (db.UniqueConstraint('group_id', 'user_id', name='unique_group_user'),)
 
 
+class Call(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    caller_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    callee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    call_type = db.Column(db.String(10), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='ringing')
+    started_at = db.Column(db.DateTime, nullable=True)
+    ended_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    caller = db.relationship('User', foreign_keys=[caller_id], backref='outgoing_calls')
+    callee = db.relationship('User', foreign_keys=[callee_id], backref='incoming_calls')
+
+
 class FeatureAnnouncement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)

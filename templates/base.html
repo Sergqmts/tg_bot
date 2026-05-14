@@ -33,6 +33,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        {% if current_user.is_authenticated %}
+        window.currentUserId = {{ current_user.id }};
+        window.currentUsername = '{{ current_user.username }}';
+        {% endif %}
+    </script>
     <style>
         .notif-btn {
             position: relative;
@@ -579,6 +585,11 @@
     }
     setInterval(updateNotifBadge, 10000);
     {% endif %}
+    {% if current_user.is_authenticated %}
+    connectCallWS({{ current_user.id }});
+    {% endif %}
     </script>
+<script src="{{ url_for('static', filename='call.js') }}"></script>
+{% include "call_ui.html" %}
 </body>
 </html>
