@@ -893,11 +893,10 @@ def register_routes(app):
     def direct_edit(user_id):
         other_user = User.query.get_or_404(user_id)
 
-        from sqlalchemy.orm import aliased
-        cm2 = aliased(ChatMember)
-        chat = Chat.query.join(ChatMember).filter(ChatMember.user_id == current_user.id).join(cm2).filter(
-            cm2.user_id == other_user.id,
-            Chat.type == 'direct'
+        chat = Chat.query.filter(
+            Chat.type == 'direct',
+            Chat.members.any(ChatMember.user_id == current_user.id),
+            Chat.members.any(ChatMember.user_id == other_user.id),
         ).first()
 
         if not chat:
