@@ -902,7 +902,7 @@ def register_routes(app):
 
         if not chat:
             flash('Чат не найден')
-            return redirect(url_for('conversation', user_id=user_id))
+            return redirect(url_for('conversation', username=other_user.username))
 
         if request.method == 'POST':
             bg_type = request.form.get('background_type', 'default')
