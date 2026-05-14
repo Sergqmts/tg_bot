@@ -81,7 +81,7 @@
 </head>
 <body class="font-sans transition-colors duration-300">
     {% if request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
-    <header class="fixed top-0 w-full z-50 glass border-b border-slate-200 dark:border-dark-border">
+    <header class="fixed top-0 w-full glass border-b border-slate-200 dark:border-dark-border" style="z-index: 100;">
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <div class="w-10 h-10 bg-gradient-to-tr from-brand-start via-brand-middle to-brand-end rounded-xl flex items-center justify-center text-white shadow-lg">
