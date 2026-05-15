@@ -30,6 +30,3 @@ requests==2.32.3
 Pillow==11.1.0
 faster-whisper==1.2.1
 
-# Optional - requires FFmpeg installed on server
-# ffmpeg-python==0.2.0
-# moviepy==1.0.3

@@ -29,7 +29,7 @@ python app.py  # dev on :5000
 - `feature/bot-platform` — merged into main (bot platform, content moderation, admin panel, staff system)
 - `feature/photo-editor` — merged into main (comprehensive photo editor, navigation redesign, drafts)
 - `refactor/extract-models` — merged into main (models/routes refactor, Google OAuth login)
-- `feature/video-editor` — current branch (FFmpeg.wasm video editor, VoIP audio/video calls with WebRTC + WebSocket signaling)
+- `feature/video-editor` — current branch (Cloudinary-based video editor, VoIP audio/video calls with WebRTC + WebSocket signaling)
 
 ## Features
 
@@ -88,6 +88,16 @@ Full-featured in-browser photo editor with 11 tool panels:
 - **Stale call cleanup**: ringing calls older than 30s auto-expire to `missed`
 - **TURN**: Google STUN (stun.l.google.com), self-hosted coturn planned for symmetric NAT
 - **Dependencies**: `uvicorn`, `starlette`, `websockets`
+
+### Video Editor for Shorts (`/video_editor`)
+- **Cloudinary-based** — no client-side WASM, no server-side encoding
+- Video uploaded directly to Cloudinary with `resource_type='video'`
+- **Trim**: start/end sliders → Cloudinary `so`/`eo` URL params
+- **Filters**: 7 presets (grayscale, sepia, vintage, cinematic, vivid, cool, warm) → Cloudinary `e_*` effects
+- **Speed**: 0.25x–2x → Cloudinary `e_accelerate`
+- **Audio**: select from existing `ShortsAudio` library (stored as `audio_id` on Shorts)
+- **Transformation URL** built server-side, served on-the-fly by Cloudinary — zero CPU load
+- Fallback to local file upload when Cloudinary not configured
 
 ### Google OAuth Login
 - **Google OAuth** via `authlib` — `/login/google` and `/login/google/callback` routes in `routes/auth.py`

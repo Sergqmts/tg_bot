@@ -1,404 +1,242 @@
 {% extends "base.html" %}
-{% block title %}Видеоредактор{% endblock %}
+{% block title %}Видеоредактор — Cloudinary{% endblock %}
 {% block content %}
-<div class="max-w-6xl mx-auto">
+<div class="max-w-4xl mx-auto">
     <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
             <a href="{{ url_for('create_shorts') }}" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
                 <i class="fa-solid fa-arrow-left"></i>
             </a>
             <h1 class="text-xl font-bold">Видеоредактор</h1>
-            <span id="ffmpegStatus" class="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">Загрузка FFmpeg...</span>
+            <span id="statusBadge" class="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">Cloudinary</span>
         </div>
-        <div class="flex gap-2">
-            <button onclick="exportVideo()" id="exportBtn" disabled class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50">
-                <i class="fa-solid fa-video"></i> Экспорт в Shorts
-            </button>
-        </div>
+        <button onclick="saveVideo()" id="saveBtn" disabled
+            class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50">
+            <i class="fa-solid fa-check"></i> Сохранить в Shorts
+        </button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <div class="lg:col-span-3">
-            <div id="uploadZone" class="glass rounded-2xl flex flex-col items-center justify-center p-8 min-h-[400px] border-2 border-dashed border-slate-300 dark:border-slate-600 cursor-pointer hover:border-brand-middle transition-all" onclick="document.getElementById('videoInput').click()">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="lg:col-span-2">
+            <div id="uploadZone"
+                class="glass rounded-2xl flex flex-col items-center justify-center p-8 min-h-[400px] border-2 border-dashed border-slate-300 dark:border-slate-600 cursor-pointer hover:border-brand-middle transition-all"
+                onclick="document.getElementById('videoInput').click()">
                 <i class="fa-solid fa-cloud-upload-alt text-5xl text-slate-300 dark:text-slate-600 mb-4"></i>
                 <p class="text-lg font-medium text-slate-500">Нажмите или перетащите видео</p>
-                <p class="text-sm text-slate-400 mt-1">MP4, WebM, MOV</p>
-                <input type="file" id="videoInput" accept="video/*" multiple class="hidden" onchange="handleFiles(this.files)">
+                <p class="text-sm text-slate-400 mt-1">MP4, WebM, MOV — загружается в Cloudinary</p>
+                <input type="file" id="videoInput" accept="video/*" class="hidden">
             </div>
             <div id="previewArea" class="hidden">
                 <div class="glass rounded-2xl overflow-hidden bg-black">
-                    <video id="previewVideo" class="w-full max-h-[500px] mx-auto" controls></video>
+                    <video id="previewVideo" class="w-full max-h-[500px] mx-auto" controls playsinline></video>
+                </div>
+                <div id="uploadProgress" class="hidden mt-2 text-sm text-center text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Загрузка в Cloudinary...
                 </div>
             </div>
         </div>
 
         <div class="space-y-3">
             <div class="glass rounded-2xl p-4">
-                <h3 class="font-semibold text-sm mb-3">Клипы</h3>
-                <div id="clipList" class="space-y-2 max-h-[200px] overflow-y-auto"></div>
-            </div>
-
-            <div class="glass rounded-2xl p-4">
                 <h3 class="font-semibold text-sm mb-3">Инструменты</h3>
-                <div class="space-y-2">
-                    <button onclick="togglePanel('trimPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                <div class="space-y-1">
+                    <button onclick="togglePanel('trimPanel')"
+                        class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
                         <i class="fa-solid fa-scissors text-slate-400"></i> Обрезка
                     </button>
-                    <button onclick="togglePanel('audioPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-music text-slate-400"></i> Аудио
-                    </button>
-                    <button onclick="togglePanel('textPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-font text-slate-400"></i> Текст
-                    </button>
-                    <button onclick="togglePanel('filterPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                    <button onclick="togglePanel('filterPanel')"
+                        class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
                         <i class="fa-solid fa-palette text-slate-400"></i> Фильтры
                     </button>
-                    <button onclick="togglePanel('speedPanel')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                    <button onclick="togglePanel('speedPanel')"
+                        class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
                         <i class="fa-solid fa-gauge-high text-slate-400"></i> Скорость
+                    </button>
+                    <button onclick="togglePanel('audioPanel')"
+                        class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-music text-slate-400"></i> Аудио
                     </button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div id="trimPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold">Обрезка</h3>
-            <button onclick="applyTrim()" class="px-3 py-1 text-sm bg-brand-middle text-white rounded-xl hover:bg-brand-middle/90 transition-all">Применить</button>
-        </div>
-        <div class="relative h-2 bg-slate-200 dark:bg-slate-700 rounded-full mb-4" id="timeline">
-            <div id="trimRange" class="absolute h-full bg-brand-middle/40 rounded-full" style="left:0%;right:0%;"></div>
-            <div id="trimStart" class="absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-brand-middle rounded-md cursor-ew-resize shadow-md -ml-2 flex items-center justify-center text-white text-[8px]">◀</div>
-            <div id="trimEnd" class="absolute top-1/2 -translate-y-1/2 w-4 h-8 bg-brand-middle rounded-md cursor-ew-resize shadow-md -mr-2 flex items-center justify-center text-white text-[8px]" style="right:0;">▶</div>
-        </div>
-        <div class="flex gap-4 text-sm">
-            <div><span class="text-slate-400">Начало:</span> <span id="trimStartLabel">0:00</span></div>
-            <div><span class="text-slate-400">Конец:</span> <span id="trimEndLabel">0:00</span></div>
-            <div><span class="text-slate-400">Длительность:</span> <span id="trimDurationLabel">0:00</span></div>
-        </div>
-    </div>
-
-    <div id="audioPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold">Аудио</h3>
-            <div class="flex gap-2">
-                <button onclick="document.getElementById('audioUpload').click()" class="px-3 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Загрузить</button>
-                <input type="file" id="audioUpload" accept="audio/*" class="hidden" onchange="handleAudioUpload(this.files[0])">
-                <button id="removeAudioBtn" onclick="removeAudio()" class="px-3 py-1 text-sm border border-red-300 dark:border-red-800 text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all hidden">Убрать</button>
-            </div>
-        </div>
-        <div class="space-y-2 max-h-[200px] overflow-y-auto">
-            {% for audio in audios %}
-            <div class="audio-track-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-all" onclick="selectAudio({{ audio.id }}, '{{ audio.audio_url|e }}', '{{ audio.title|e }}')">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-music text-slate-400"></i>
-                    <span class="text-sm">{{ audio.title }}</span>
+            <div id="trimPanel" class="panel-content hidden glass rounded-2xl p-4">
+                <h3 class="font-semibold text-sm mb-3">Обрезка</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-slate-400">Начало: <span id="trimStartLabel">0:00</span></label>
+                        <input type="range" id="trimStart" min="0" max="100" value="0" class="w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400">Конец: <span id="trimEndLabel">0:00</span></label>
+                        <input type="range" id="trimEnd" min="0" max="100" value="100" class="w-full">
+                    </div>
+                    <p class="text-xs text-slate-400 text-center">Длительность: <span id="trimDurationLabel">0:00</span></p>
                 </div>
-                <span class="text-xs text-slate-400">{{ audio.duration }}с</span>
             </div>
-            {% endfor %}
-        </div>
-        <div id="selectedAudioInfo" class="hidden mt-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm flex items-center gap-2">
-            <i class="fa-solid fa-check-circle text-green-500"></i>
-            <span id="selectedAudioName"></span>
-        </div>
-    </div>
 
-    <div id="textPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="font-semibold">Текст</h3>
-            <button onclick="addTextOverlay()" class="px-3 py-1 text-sm bg-brand-middle text-white rounded-xl hover:bg-brand-middle/90 transition-all">+ Добавить</button>
-        </div>
-        <div id="textList" class="space-y-2"></div>
-    </div>
-
-    <div id="filterPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
-        <h3 class="font-semibold mb-3">Фильтры</h3>
-        <div class="grid grid-cols-4 gap-2">
-            {% set filters = [
-                ('original', 'Оригинал'), ('grayscale', 'Ч/Б'), ('sepia', 'Сепия'),
-                ('vintage', 'Винтаж'), ('cinematic', 'Кино'), ('vivid', 'Яркий'),
-                ('cool', 'Холодный'), ('warm', 'Тёплый')
-            ] %}
-            {% for key, label in filters %}
-            <button onclick="selectFilter('{{ key }}')" class="filter-btn px-3 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all {% if key == 'original' %}bg-brand-middle text-white border-brand-middle{% endif %}" data-filter="{{ key }}">{{ label }}</button>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div id="speedPanel" class="panel-content hidden glass rounded-2xl p-4 mt-4">
-        <h3 class="font-semibold mb-3">Скорость</h3>
-        <div class="grid grid-cols-5 gap-2">
-            {% set speeds = [(0.25, '0.25x'), (0.5, '0.5x'), (1, '1x'), (1.5, '1.5x'), (2, '2x')] %}
-            {% for val, label in speeds %}
-            <button onclick="selectSpeed({{ val }})" class="speed-btn px-3 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all {% if val == 1 %}bg-brand-middle text-white border-brand-middle{% endif %}" data-speed="{{ val }}">{{ label }}</button>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div id="progressOverlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-middle/20 flex items-center justify-center">
-                <i class="fa-solid fa-spinner fa-spin text-2xl text-brand-middle"></i>
+            <div id="filterPanel" class="panel-content hidden glass rounded-2xl p-4">
+                <h3 class="font-semibold text-sm mb-3">Фильтры</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    {% set filters = [
+                        ('original', 'Оригинал'), ('grayscale', 'Ч/Б'), ('sepia', 'Сепия'),
+                        ('vintage', 'Винтаж'), ('cinematic', 'Кино'), ('vivid', 'Яркий'),
+                        ('cool', 'Холодный'), ('warm', 'Тёплый')
+                    ] %}
+                    {% for key, label in filters %}
+                    <button onclick="selectFilter('{{ key }}')"
+                        class="filter-btn px-3 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all {% if key == 'original' %}bg-brand-middle text-white border-brand-middle{% endif %}"
+                        data-filter="{{ key }}">{{ label }}</button>
+                    {% endfor %}
+                </div>
             </div>
-            <h3 class="font-semibold mb-2" id="progressTitle">Обработка видео...</h3>
-            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-2">
-                <div id="progressBar" class="h-full bg-gradient-to-r from-brand-start to-brand-middle rounded-full transition-all" style="width:0%"></div>
+
+            <div id="speedPanel" class="panel-content hidden glass rounded-2xl p-4">
+                <h3 class="font-semibold text-sm mb-3">Скорость</h3>
+                <div class="grid grid-cols-5 gap-1">
+                    {% set speeds = [(0.25, '0.25x'), (0.5, '0.5x'), (1, '1x'), (1.5, '1.5x'), (2, '2x')] %}
+                    {% for val, label in speeds %}
+                    <button onclick="selectSpeed({{ val }})"
+                        class="speed-btn px-2 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all {% if val == 1 %}bg-brand-middle text-white border-brand-middle{% endif %}"
+                        data-speed="{{ val }}">{{ label }}</button>
+                    {% endfor %}
+                </div>
             </div>
-            <p class="text-sm text-slate-400" id="progressText">Пожалуйста, подождите</p>
+
+            <div id="audioPanel" class="panel-content hidden glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-semibold text-sm">Аудио</h3>
+                    <button onclick="document.getElementById('audioUpload').click()"
+                        class="text-xs px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Загрузить</button>
+                    <input type="file" id="audioUpload" accept="audio/*" class="hidden">
+                </div>
+                <div class="space-y-1 max-h-[160px] overflow-y-auto" id="audioList">
+                    {% for audio in audios %}
+                    <div class="audio-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-all text-sm"
+                        data-id="{{ audio.id }}" data-url="{{ audio.audio_url }}" data-title="{{ audio.title }}">
+                        <span><i class="fa-solid fa-music text-slate-400 mr-2"></i>{{ audio.title }}</span>
+                        <span class="text-xs text-slate-400">{{ audio.duration }}с</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div id="selectedAudioInfo" class="hidden mt-2 text-xs text-green-500 flex items-center gap-1">
+                    <i class="fa-solid fa-check-circle"></i> <span id="selectedAudioName"></span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-let FFmpeg, fetchFile, toBlobURL;
-let ffmpeg = null;
-let clips = [];
-let currentClipIdx = 0;
-let selectedAudioId = null;
-let selectedAudioUrl = null;
-let selectedAudioName = '';
-let trimStart = 0, trimEnd = 0, videoDuration = 0;
-let texts = [];
-let textIdCounter = 0;
+let publicId = null;
+let version = null;
+let originalUrl = null;
+let videoDuration = 0;
 let selectedFilter = 'original';
 let selectedSpeed = 1;
-let isProcessing = false;
+let selectedAudioId = null;
 
-async function initFFmpeg() {
-    const status = document.getElementById('ffmpegStatus');
+const videoInput = document.getElementById('videoInput');
+const uploadZone = document.getElementById('uploadZone');
+const previewArea = document.getElementById('previewArea');
+const previewVideo = document.getElementById('previewVideo');
+const uploadProgress = document.getElementById('uploadProgress');
+const saveBtn = document.getElementById('saveBtn');
+
+videoInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) uploadVideo(this.files[0]);
+});
+
+uploadZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.classList.add('border-brand-middle');
+});
+uploadZone.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    this.classList.remove('border-brand-middle');
+});
+uploadZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.classList.remove('border-brand-middle');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) uploadVideo(e.dataTransfer.files[0]);
+});
+
+async function uploadVideo(file) {
+    const formData = new FormData();
+    formData.append('video', file);
+    uploadProgress.classList.remove('hidden');
+    uploadZone.classList.add('hidden');
+    previewArea.classList.remove('hidden');
+    saveBtn.disabled = true;
+
     try {
-        if (!FFmpeg) {
-            const mod = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-            const util = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
-            FFmpeg = mod.FFmpeg;
-            fetchFile = util.fetchFile;
-            toBlobURL = util.toBlobURL;
-        }
-        const ffmpegBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm';
-        const [workerCode, constCode, errorsCode] = await Promise.all([
-            fetch(ffmpegBase + '/worker.js').then(r => r.text()),
-            fetch(ffmpegBase + '/const.js').then(r => r.text()),
-            fetch(ffmpegBase + '/errors.js').then(r => r.text()),
-        ]);
-        const combinedWorker = constCode + '\n' + errorsCode + '\n' +
-            workerCode.replace(/import\s+\{[^}]*\}\s+from\s+['"]\.\/[^'"]+['"]\s*;?\s*/g, '');
-        const classWorkerURL = URL.createObjectURL(
-            new Blob([combinedWorker], { type: 'application/javascript' })
-        );
-        ffmpeg = new FFmpeg();
-        const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
-        await ffmpeg.load({
-            coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
-            wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm'),
-            classWorkerURL: classWorkerURL,
-        });
-        ffmpeg.on('progress', function(ev) {
-            updateProgress(ev.progress * 100);
-        });
-        status.textContent = 'FFmpeg готов';
-        status.className = 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400';
+        const resp = await fetch('{{ url_for("video_editor") }}', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (!data.success) throw new Error(data.error || 'Upload failed');
+
+        publicId = data.public_id;
+        version = data.version;
+        originalUrl = data.url;
+        previewVideo.src = data.url;
+        previewVideo.load();
+
+        previewVideo.onloadedmetadata = function() {
+            videoDuration = previewVideo.duration;
+            document.getElementById('trimStart').max = Math.floor(videoDuration);
+            document.getElementById('trimEnd').max = Math.floor(videoDuration);
+            document.getElementById('trimEnd').value = Math.floor(videoDuration);
+            updateTrimLabels();
+            saveBtn.disabled = false;
+        };
+
+        document.getElementById('statusBadge').textContent = 'Cloudinary ✓';
+        document.getElementById('statusBadge').className = 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400';
     } catch (e) {
-        status.textContent = 'FFmpeg ошибка';
-        status.className = 'text-xs px-2 py-1 rounded-full bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400';
         console.error(e);
+        uploadProgress.innerHTML = '<span class="text-red-400">Ошибка: ' + e.message + '</span>';
+        setTimeout(function() { location.reload(); }, 3000);
     }
+    uploadProgress.classList.add('hidden');
 }
 
 function togglePanel(id) {
-    var panel = document.getElementById(id);
-    var hidden = panel.classList.contains('hidden');
+    const panel = document.getElementById(id);
+    const hidden = panel.classList.contains('hidden');
     document.querySelectorAll('.panel-content').forEach(function(p) { p.classList.add('hidden'); });
     if (hidden) panel.classList.remove('hidden');
 }
 
-function handleFiles(files) {
-    for (var i = 0; i < files.length; i++) {
-        var file = files[i];
-        var url = URL.createObjectURL(file);
-        var video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = function(f, u) {
-            return function() {
-                clips.push({ file: f, url: u, duration: f.duration || video.duration, name: f.name });
-                updateClipList();
-                if (clips.length === 1) selectClip(0);
-            };
-        }(file, url);
-        video.src = url;
-    }
-    document.getElementById('uploadZone').classList.add('hidden');
-    document.getElementById('previewArea').classList.remove('hidden');
-}
-
-function updateClipList() {
-    var list = document.getElementById('clipList');
-    list.innerHTML = '';
-    clips.forEach(function(c, i) {
-        var div = document.createElement('div');
-        div.className = 'flex items-center justify-between px-3 py-2 rounded-xl text-sm cursor-pointer transition-all ' + (i === currentClipIdx ? 'bg-brand-middle/10 border border-brand-middle/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800');
-        div.innerHTML = '<div class="flex items-center gap-2"><i class="fa-solid fa-film text-slate-400"></i><span class="truncate max-w-[120px]">' + (c.name || 'Клип ' + (i+1)) + '</span><span class="text-xs text-slate-400">' + formatTime(c.duration) + '</span></div><button onclick="removeClip(' + i + ')" class="text-red-400 hover:text-red-600 text-xs"><i class="fa-solid fa-xmark"></i></button>';
-        div.onclick = function(idx) { return function() { selectClip(idx); }; }(i);
-        list.appendChild(div);
-    });
-}
-
-function selectClip(idx) {
-    if (idx < 0 || idx >= clips.length) return;
-    currentClipIdx = idx;
-    var clip = clips[idx];
-    var video = document.getElementById('previewVideo');
-    video.src = clip.url;
-    video.load();
-    video.onloadedmetadata = function() {
-        videoDuration = video.duration;
-        trimStart = 0;
-        trimEnd = videoDuration;
-        updateTrimUI();
-        updateClipList();
-    };
-}
-
-function removeClip(idx) {
-    clips.splice(idx, 1);
-    if (currentClipIdx >= clips.length) currentClipIdx = Math.max(0, clips.length - 1);
-    updateClipList();
-    if (clips.length === 0) {
-        document.getElementById('uploadZone').classList.remove('hidden');
-        document.getElementById('previewArea').classList.add('hidden');
-    } else {
-        selectClip(currentClipIdx);
-    }
-}
-
 function formatTime(secs) {
     if (!secs || isNaN(secs)) return '0:00';
-    var m = Math.floor(secs / 60);
-    var s = Math.floor(secs % 60);
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
     return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
-document.addEventListener('DOMContentLoaded', initFFmpeg);
+const trimStart = document.getElementById('trimStart');
+const trimEnd = document.getElementById('trimEnd');
 
-document.getElementById('uploadZone').addEventListener('dragover', function(e) {
-    e.preventDefault();
-    this.classList.add('border-brand-middle');
-});
-document.getElementById('uploadZone').addEventListener('dragleave', function(e) {
-    e.preventDefault();
-    this.classList.remove('border-brand-middle');
-});
-document.getElementById('uploadZone').addEventListener('drop', function(e) {
-    e.preventDefault();
-    this.classList.remove('border-brand-middle');
-    handleFiles(e.dataTransfer.files);
-});
+function updateTrimLabels() {
+    const start = parseFloat(trimStart.value);
+    const end = parseFloat(trimEnd.value);
+    document.getElementById('trimStartLabel').textContent = formatTime(start);
+    document.getElementById('trimEndLabel').textContent = formatTime(end);
+    document.getElementById('trimDurationLabel').textContent = formatTime(end - start);
+}
 
-var trimDragging = null;
-
-document.getElementById('timeline').addEventListener('mousedown', function(e) {
-    var rect = this.getBoundingClientRect();
-    var x = (e.clientX - rect.left) / rect.width;
-    var startLeft = trimStart / videoDuration;
-    var endRight = 1 - trimEnd / videoDuration;
-    if (Math.abs(x - startLeft) < 0.05) trimDragging = 'start';
-    else if (Math.abs(x - (1 - endRight)) < 0.05) trimDragging = 'end';
-    else trimDragging = null;
-});
-
-document.addEventListener('mousemove', function(e) {
-    if (!trimDragging || !videoDuration) return;
-    var rect = document.getElementById('timeline').getBoundingClientRect();
-    var x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    if (trimDragging === 'start') {
-        trimStart = Math.min(x * videoDuration, trimEnd - 0.5);
-    } else if (trimDragging === 'end') {
-        trimEnd = Math.max(x * videoDuration, trimStart + 0.5);
+trimStart.addEventListener('input', function() {
+    if (parseFloat(this.value) >= parseFloat(trimEnd.value)) {
+        this.value = Math.max(0, parseFloat(trimEnd.value) - 1);
     }
-    updateTrimUI();
+    updateTrimLabels();
+    previewVideo.currentTime = parseFloat(this.value);
 });
 
-document.addEventListener('mouseup', function() { trimDragging = null; });
-
-function updateTrimUI() {
-    var startPct = (trimStart / videoDuration * 100) || 0;
-    var endPct = (trimEnd / videoDuration * 100) || 100;
-    document.getElementById('trimRange').style.left = startPct + '%';
-    document.getElementById('trimRange').style.right = (100 - endPct) + '%';
-    document.getElementById('trimStart').style.left = startPct + '%';
-    document.getElementById('trimEnd').style.right = (100 - endPct) + '%';
-    document.getElementById('trimStartLabel').textContent = formatTime(trimStart);
-    document.getElementById('trimEndLabel').textContent = formatTime(trimEnd);
-    document.getElementById('trimDurationLabel').textContent = formatTime(trimEnd - trimStart);
-}
-
-function applyTrim() {
-    var video = document.getElementById('previewVideo');
-    video.currentTime = trimStart;
-    video.play();
-}
-
-function handleAudioUpload(file) {
-    if (!file) return;
-    var url = URL.createObjectURL(file);
-    selectedAudioUrl = url;
-    selectedAudioName = file.name;
-    selectedAudioId = null;
-    document.getElementById('selectedAudioName').textContent = file.name;
-    document.getElementById('selectedAudioInfo').classList.remove('hidden');
-    document.getElementById('removeAudioBtn').classList.remove('hidden');
-}
-
-function selectAudio(id, url, name) {
-    selectedAudioId = id;
-    selectedAudioUrl = url;
-    selectedAudioName = name;
-    document.getElementById('selectedAudioName').textContent = name;
-    document.getElementById('selectedAudioInfo').classList.remove('hidden');
-    document.getElementById('removeAudioBtn').classList.remove('hidden');
-    document.querySelectorAll('.audio-track-item').forEach(function(el) {
-        el.classList.remove('bg-brand-middle/10', 'border', 'border-brand-middle/30');
-    });
-    event.currentTarget.classList.add('bg-brand-middle/10', 'border', 'border-brand-middle/30');
-}
-
-function removeAudio() {
-    selectedAudioId = null;
-    selectedAudioUrl = null;
-    selectedAudioName = '';
-    document.getElementById('selectedAudioInfo').classList.add('hidden');
-    document.getElementById('removeAudioBtn').classList.add('hidden');
-    document.querySelectorAll('.audio-track-item').forEach(function(el) {
-        el.classList.remove('bg-brand-middle/10', 'border', 'border-brand-middle/30');
-    });
-}
-
-function addTextOverlay() {
-    var id = textIdCounter++;
-    texts.push({ id: id, text: 'Текст', x: 50, y: 50, size: 32, color: '#ffffff', start: 0, end: 5 });
-    renderTextList();
-}
-
-function renderTextList() {
-    var list = document.getElementById('textList');
-    list.innerHTML = '';
-    texts.forEach(function(t) {
-        var div = document.createElement('div');
-        div.className = 'p-3 rounded-xl bg-slate-50 dark:bg-slate-800 space-y-2';
-        div.innerHTML = '<div class="flex items-center gap-2"><input type="text" value="' + t.text.replace(/"/g, '&quot;') + '" onchange="updateText(' + t.id + ',\'text\',this.value)" class="flex-1 bg-transparent border-b border-slate-300 dark:border-slate-600 text-sm outline-none"><button onclick="removeText(' + t.id + ')" class="text-red-400 text-xs"><i class="fa-solid fa-xmark"></i></button></div><div class="flex gap-2 text-xs items-center"><span>Размер:</span><input type="range" min="12" max="96" value="' + t.size + '" onchange="updateText(' + t.id + ',\'size\',parseInt(this.value))" class="flex-1"><span class="w-8 text-right">' + t.size + '</span></div><div class="flex gap-2 text-xs items-center"><span>Цвет:</span><input type="color" value="' + t.color + '" onchange="updateText(' + t.id + ',\'color\',this.value)" class="w-8 h-8 rounded cursor-pointer"><span class="ml-2">Начало:</span><input type="number" min="0" step="0.5" value="' + t.start + '" onchange="updateText(' + t.id + ',\'start\',parseFloat(this.value))" class="w-14 bg-transparent border-b border-slate-300 dark:border-slate-600 outline-none text-center"><span>Конец:</span><input type="number" min="0" step="0.5" value="' + t.end + '" onchange="updateText(' + t.id + ',\'end\',parseFloat(this.value))" class="w-14 bg-transparent border-b border-slate-300 dark:border-slate-600 outline-none text-center"></div>';
-        list.appendChild(div);
-    });
-}
-
-function updateText(id, field, value) {
-    var t = texts.find(function(x) { return x.id === id; });
-    if (t) t[field] = value;
-}
-
-function removeText(id) {
-    texts = texts.filter(function(t) { return t.id !== id; });
-    renderTextList();
-}
+trimEnd.addEventListener('input', function() {
+    if (parseFloat(this.value) <= parseFloat(trimStart.value)) {
+        this.value = Math.min(videoDuration, parseFloat(trimStart.value) + 1);
+    }
+    updateTrimLabels();
+});
 
 function selectFilter(name) {
     selectedFilter = name;
@@ -406,17 +244,12 @@ function selectFilter(name) {
         b.classList.remove('bg-brand-middle', 'text-white', 'border-brand-middle');
         b.classList.add('border-slate-200', 'dark:border-slate-700');
     });
-    var btn = document.querySelector('.filter-btn[data-filter="' + name + '"]');
+    const btn = document.querySelector('.filter-btn[data-filter="' + name + '"]');
     if (btn) {
         btn.classList.remove('border-slate-200', 'dark:border-slate-700');
         btn.classList.add('bg-brand-middle', 'text-white', 'border-brand-middle');
     }
-    applyFilterPreview(name);
-}
-
-function applyFilterPreview(name) {
-    var video = document.getElementById('previewVideo');
-    var filters = {
+    const cssFilters = {
         original: 'none',
         grayscale: 'grayscale(1)',
         sepia: 'sepia(0.8)',
@@ -426,7 +259,7 @@ function applyFilterPreview(name) {
         cool: 'hue-rotate(200deg) saturate(0.8)',
         warm: 'sepia(0.3) saturate(1.2) hue-rotate(-10deg)',
     };
-    video.style.filter = filters[name] || 'none';
+    previewVideo.style.filter = cssFilters[name] || 'none';
 }
 
 function selectSpeed(val) {
@@ -435,142 +268,65 @@ function selectSpeed(val) {
         b.classList.remove('bg-brand-middle', 'text-white', 'border-brand-middle');
         b.classList.add('border-slate-200', 'dark:border-slate-700');
     });
-    var btn = document.querySelector('.speed-btn[data-speed="' + val + '"]');
+    const btn = document.querySelector('.speed-btn[data-speed="' + val + '"]');
     if (btn) {
         btn.classList.remove('border-slate-200', 'dark:border-slate-700');
         btn.classList.add('bg-brand-middle', 'text-white', 'border-brand-middle');
     }
-    var video = document.getElementById('previewVideo');
-    video.playbackRate = val;
+    previewVideo.playbackRate = val;
 }
 
-function showProgress(title, text) {
-    document.getElementById('progressOverlay').classList.remove('hidden');
-    document.getElementById('progressTitle').textContent = title || 'Обработка...';
-    document.getElementById('progressText').textContent = text || 'Пожалуйста, подождите';
-    document.getElementById('progressBar').style.width = '0%';
-}
+document.querySelectorAll('.audio-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+        document.querySelectorAll('.audio-item').forEach(function(a) {
+            a.classList.remove('bg-brand-middle/10', 'border', 'border-brand-middle/30');
+        });
+        this.classList.add('bg-brand-middle/10', 'border', 'border-brand-middle/30');
+        selectedAudioId = this.dataset.id;
+        document.getElementById('selectedAudioName').textContent = this.dataset.title;
+        document.getElementById('selectedAudioInfo').classList.remove('hidden');
+    });
+});
 
-function updateProgress(pct) {
-    document.getElementById('progressBar').style.width = Math.min(pct, 99) + '%';
-}
+document.getElementById('audioUpload').addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+        selectedAudioId = 'upload';
+        document.getElementById('selectedAudioName').textContent = this.files[0].name;
+        document.getElementById('selectedAudioInfo').classList.remove('hidden');
+    }
+});
 
-function hideProgress() {
-    document.getElementById('progressOverlay').classList.add('hidden');
-}
-
-async function exportVideo() {
-    if (isProcessing || !ffmpeg || clips.length === 0) return;
-    isProcessing = true;
-    document.getElementById('exportBtn').disabled = true;
-    showProgress('Экспорт видео...', 'Обработка через FFmpeg.wasm');
+async function saveVideo() {
+    if (!publicId) return;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Сохранение...';
 
     try {
-        var outName = 'output_' + Date.now() + '.mp4';
-        var filterParts = [];
-        var inputIdx = 0;
-        var inputNames = [];
+        const startVal = parseFloat(trimStart.value) || 0;
+        const endVal = parseFloat(trimEnd.value) || 0;
+        const resp = await fetch('{{ url_for("video_editor") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                public_id: publicId,
+                version: version,
+                original_url: originalUrl,
+                start_offset: startVal > 0 ? startVal : 0,
+                end_offset: endVal < videoDuration ? endVal : 0,
+                filter: selectedFilter,
+                speed: selectedSpeed,
+            })
+        });
+        const data = await resp.json();
+        if (!data.success) throw new Error(data.error || 'Save failed');
 
-        for (var i = 0; i < clips.length; i++) {
-            var c = clips[i];
-            var inName = 'input' + i + '.mp4';
-            var data = await fetchFile(c.url);
-            await ffmpeg.writeFile(inName, data);
-            inputNames.push(inName);
-
-            var fltr = '';
-            if (selectedSpeed !== 1) {
-                fltr += '[0:v]setpts=' + (1/selectedSpeed) + '*PTS[v' + i + '];';
-            }
-            if (selectedFilter !== 'original') {
-                var fMap = { grayscale: 'colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3', sepia: 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131', vintage: 'curves=b=.3/.4', cinematic: 'eq=brightness=-0.1:contrast=1.3:saturation=1.4', vivid: 'eq=saturation=1.8:brightness=0.05', cool: 'hue=h=200', warm: 'hue=h=-10:saturation=1.2' };
-                var ff = fMap[selectedFilter];
-                if (ff) fltr += '[v' + i + ']' + ff + '[vf' + i + '];';
-            }
-        }
-
-        var concatFile = 'concat_list.txt';
-        var concatContent = '';
-        for (var i = 0; i < clips.length; i++) {
-            concatContent += "file '" + inputNames[i] + "'\n";
-        }
-        await ffmpeg.writeFile(concatFile, concatContent);
-
-        var args = ['-f', 'concat', '-safe', '0', '-i', concatFile];
-
-        if (trimStart > 0 || trimEnd < videoDuration) {
-            args = ['-ss', String(trimStart), '-i', inputNames[0]];
-            if (clips.length > 1) {
-                for (var i = 1; i < clips.length; i++) {
-                    args.push('-i', inputNames[i]);
-                }
-            }
-            var dur = trimEnd - trimStart;
-            args.push('-t', String(dur));
-        }
-
-        var filterComplex = '';
-        var hasFilter = selectedFilter !== 'original' || selectedSpeed !== 1 || texts.length > 0;
-
-        if (hasFilter && clips.length <= 1) {
-            var vfParts = [];
-            if (selectedSpeed !== 1) vfParts.push('setpts=' + (1/selectedSpeed) + '*PTS');
-            var fMap = { grayscale: 'colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3', sepia: 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131', vintage: 'curves=b=.3/.4', cinematic: 'eq=brightness=-0.1:contrast=1.3:saturation=1.4', vivid: 'eq=saturation=1.8:brightness=0.05', cool: 'hue=h=200', warm: 'hue=h=-10:saturation=1.2' };
-            if (selectedFilter !== 'original' && fMap[selectedFilter]) vfParts.push(fMap[selectedFilter]);
-
-            texts.forEach(function(t) {
-                var escaped = t.text.replace(/'/g, "'\\\\\\''").replace(/:/g, '\\:');
-                var dt = 'drawtext=text=\'' + escaped + '\':fontsize=' + t.size + ':fontcolor=' + t.color + ':x=(w-text_w)/2:y=(h-text_h)/2:enable=\'between(t,' + t.start + ',' + t.end + ')\'';
-                vfParts.push(dt);
-            });
-
-            if (vfParts.length > 0) {
-                args.push('-vf', vfParts.join(','));
-            }
-        }
-
-        args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '28');
-        args.push('-movflags', '+faststart');
-        args.push(outName);
-
-        if (selectedAudioUrl) {
-            var audioData = await fetchFile(selectedAudioUrl);
-            var audioName = 'audio_in.mp3';
-            await ffmpeg.writeFile(audioName, audioData);
-            args = ['-i', inputNames[0], '-i', audioName, '-filter_complex', '[0:a][1:a]amix=inputs=2:duration=first[aud]', '-map', '0:v', '-map', '[aud]', '-c:v', 'libx264', '-preset', 'fast', '-crf', '28', '-movflags', '+faststart', '-shortest', outName];
-            if (trimStart > 0) {
-                args = ['-ss', String(trimStart), '-i', inputNames[0], '-i', audioName, '-filter_complex', '[0:a][1:a]amix=inputs=2:duration=first[aud]', '-map', '0:v', '-map', '[aud]', '-t', String(trimEnd - trimStart), '-c:v', 'libx264', '-preset', 'fast', '-crf', '28', '-movflags', '+faststart', '-shortest', outName];
-            }
-        }
-
-        updateProgress(10);
-        await ffmpeg.exec(args);
-        updateProgress(90);
-
-        var data = await ffmpeg.readFile(outName);
-        var blob = new Blob([data.buffer], { type: 'video/mp4' });
-        var formData = new FormData();
-        formData.append('video', blob, outName);
-
-        var resp = await fetch('{{ url_for("video_editor") }}', { method: 'POST', body: formData });
-        var result = await resp.json();
-
-        if (result.success) {
-            updateProgress(100);
-            setTimeout(function() {
-                window.location.href = '{{ url_for("create_shorts") }}?video_url=' + encodeURIComponent(result.url);
-            }, 500);
-        } else {
-            throw new Error(result.error || 'Upload failed');
-        }
+        window.location.href = '{{ url_for("create_shorts") }}?video_url=' + encodeURIComponent(data.url);
     } catch (e) {
         console.error(e);
-        document.getElementById('progressText').textContent = 'Ошибка: ' + e.message;
-        document.getElementById('progressText').className = 'text-sm text-red-400';
-        setTimeout(hideProgress, 3000);
+        alert('Ошибка: ' + e.message);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Сохранить в Shorts';
     }
-    isProcessing = false;
-    document.getElementById('exportBtn').disabled = false;
 }
 </script>
 {% endblock %}

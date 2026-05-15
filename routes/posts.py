@@ -238,17 +238,77 @@ def register_routes(app):
     @login_required
     def video_editor():
         if request.method == 'POST':
-            video = request.files.get('video')
-            if video and video.filename:
-                from helpers import cloudinary_configured, upload_to_cloudinary
+            from helpers import cloudinary_configured
+
+            # Case 1: Upload raw video to Cloudinary
+            if request.files.get('video'):
+                video = request.files['video']
                 if cloudinary_configured:
-                    url = upload_to_cloudinary(video, folder='shorts')
+                    import cloudinary.uploader
+                    result = cloudinary.uploader.upload(
+                        video, folder='shorts', resource_type='video',
+                        timeout=30
+                    )
+                    return jsonify({
+                        'public_id': result['public_id'],
+                        'version': result['version'],
+                        'url': result['secure_url'],
+                        'success': True
+                    })
                 else:
                     filename = secure_filename(f"shorts_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp4")
                     video.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     url = url_for('uploaded_file', filename=filename, _external=True)
+                    return jsonify({'url': url, 'success': True})
+
+            # Case 2: Build Cloudinary URL with transformations
+            data = request.get_json()
+            if data and data.get('public_id'):
+                public_id = data['public_id']
+                version = data.get('version')
+                start_offset = data.get('start_offset', 0)
+                end_offset = data.get('end_offset', 0)
+                effect = data.get('filter', '')
+                speed = data.get('speed', 1)
+
+                filter_map = {
+                    'grayscale': 'e_grayscale',
+                    'sepia': 'e_sepia',
+                    'vintage': 'e_art:vintage',
+                    'cinematic': 'e_contrast:40/e_brightness:-20',
+                    'vivid': 'e_saturation:50',
+                    'cool': 'e_hue:200',
+                    'warm': 'e_hue:-10',
+                }
+
+                tx_parts = []
+                if start_offset > 0:
+                    tx_parts.append(f'so_{start_offset}')
+                if end_offset > 0:
+                    tx_parts.append(f'eo_{end_offset}')
+                if effect and effect in filter_map and effect != 'original':
+                    tx_parts.append(filter_map[effect])
+                if speed and speed != 1:
+                    tx_parts.append(f'e_accelerate:{speed}')
+
+                if tx_parts:
+                    tx_str = '/'.join(tx_parts)
+                    from helpers import cloud_name
+                    if version:
+                        url = f'https://res.cloudinary.com/{cloud_name}/video/upload/{tx_str}/v{version}/{public_id}'
+                    else:
+                        url = f'https://res.cloudinary.com/{cloud_name}/video/upload/{tx_str}/{public_id}'
+                else:
+                    url = data.get('original_url', '')
+
                 return jsonify({'url': url, 'success': True})
-            return jsonify({'error': 'No video file', 'success': False}), 400
+
+            # Fallback: no Cloudinary, pass original URL through
+            if data and data.get('original_url'):
+                return jsonify({'url': data['original_url'], 'success': True})
+
+            return jsonify({'error': 'Invalid request', 'success': False}), 400
+
         audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).all()
         return render_template('video_editor.html', audios=audios)
 
