@@ -16,6 +16,7 @@ let wsMessageQueue = [];
 let wsRetryTimeout = null;
 let wsRetryDelay = 1000;
 let wsPingInterval = null;
+let callPeerUsername = null;
 
 const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/call';
 const ICE_SERVERS = {
@@ -129,6 +130,7 @@ function handleWSMessage(msg) {
             if (callActive) {
                 stopCall();
                 hideCallScreen();
+                redirectToChat();
             }
             alert(msg.message || 'Ошибка вызова');
             break;
@@ -226,13 +228,19 @@ async function onCallAnswered(data) {
 function onCallDeclined(data) {
     stopCall();
     updateCallScreenStatus('declined');
-    setTimeout(hideCallScreen, 1500);
+    setTimeout(function () {
+        hideCallScreen();
+        redirectToChat();
+    }, 1500);
 }
 
 function onRemoteEnded(data) {
     stopCall();
     updateCallScreenStatus('ended');
-    setTimeout(hideCallScreen, 1000);
+    setTimeout(function () {
+        hideCallScreen();
+        redirectToChat();
+    }, 1000);
 }
 
 async function handleSDPOffer(data) {
@@ -351,6 +359,7 @@ function endCall() {
     }).catch(function () { });
     stopCall();
     hideCallScreen();
+    redirectToChat();
 }
 
 function stopCall() {
@@ -376,6 +385,7 @@ function stopCall() {
     callMuted = false;
     callCameraOff = false;
     callScreenShared = false;
+    callPeerUsername = null;
     document.getElementById('localVideoContainer').classList.add('hidden');
     var rv = document.getElementById('remoteVideo');
     if (rv) rv.srcObject = null;
@@ -498,6 +508,14 @@ function showIncomingCall(data) {
     playRingtone();
 }
 
+function redirectToChat() {
+    if (callPeerUsername) {
+        var username = callPeerUsername;
+        callPeerUsername = null;
+        window.location.href = '/messages/' + encodeURIComponent(username);
+    }
+}
+
 function hideIncomingCall() {
     var modal = document.getElementById('incomingCallModal');
     if (modal) modal.classList.add('hidden');
@@ -508,6 +526,7 @@ function showCallScreen(mode, peerName, callType) {
     var screen = document.getElementById('callScreen');
     if (!screen) return;
     screen.classList.remove('hidden');
+    callPeerUsername = peerName;
 
     document.getElementById('callPeerName').textContent = peerName || 'Unknown';
     document.getElementById('callStatus').textContent = mode === 'calling' ? 'Звоним...' : mode === 'connecting' ? 'Подключение...' : '';
