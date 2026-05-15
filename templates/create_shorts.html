@@ -440,6 +440,7 @@ function publishPreview() {
     dataTransfer.items.add(file);
     form.querySelector('input[name="video"]').files = dataTransfer.files;
     form.querySelector('textarea[name="caption"]').value = document.getElementById('previewCaption').value;
+    document.getElementById('videoUrlInput').value = '';
     form.submit();
 }
 
@@ -451,6 +452,7 @@ function showPreview(input) {
         document.getElementById('uploadIcon').style.display = 'none';
         document.getElementById('uploadText').style.display = 'none';
         document.getElementById('videoPreview').style.display = 'block';
+        document.getElementById('videoUrlInput').value = '';
     }
 }
 function removeVideo() {

@@ -360,14 +360,14 @@ def register_routes(app):
                 return redirect(url_for('shorts'))
 
             video_url = request.form.get('video_url')
-            if video_url:
-                shorts = Shorts(video_url=video_url, caption=caption, user_id=current_user.id, audio_id=int(audio_id) if audio_id else None)
-                db.session.add(shorts)
-                db.session.commit()
-                flash('Shorts опубликован!')
-                return redirect(url_for('shorts'))
 
             if not video or video.filename == '':
+                if video_url:
+                    shorts = Shorts(video_url=video_url, caption=caption, user_id=current_user.id, audio_id=int(audio_id) if audio_id else None)
+                    db.session.add(shorts)
+                    db.session.commit()
+                    flash('Shorts опубликован!')
+                    return redirect(url_for('shorts'))
                 flash('Выберите видео')
                 return redirect(url_for('create_shorts'))
 

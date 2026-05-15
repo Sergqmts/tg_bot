@@ -203,7 +203,7 @@ async function uploadVideo(file) {
     } catch (e) {
         console.error(e);
         uploadProgress.innerHTML = '<span class="text-red-400">Ошибка: ' + e.message + '</span>';
-        setTimeout(function() { location.reload(); }, 3000);
+        saveBtn.disabled = false;
     }
     uploadProgress.classList.add('hidden');
 }
