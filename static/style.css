@@ -2491,6 +2491,11 @@ img, video {
     max-width: 75%;
 }
 
+.dark .call-message-inner {
+    background: rgba(71, 85, 105, 0.4);
+    border-color: rgba(71, 85, 105, 0.6);
+}
+
 .call-message-row {
     display: flex;
     align-items: center;
@@ -2534,6 +2539,11 @@ img, video {
 
 .call-message-inner.call-missed {
     border-color: rgba(239, 68, 68, 0.3);
+}
+
+.dark .call-message-inner.call-missed {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.1);
 }
 
 .call-message-inner.call-missed .call-message-text {
