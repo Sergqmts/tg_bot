@@ -23,7 +23,7 @@ def create_call_dm_message(caller, callee, call_type, duration_sec=None,
         body = f'{icon} {type_label} · {format_duration(duration_sec)}'
     else:
         body = f'{icon} {type_label}'
-    msg = Message(body=body, sender_id=caller.id, chat_id=chat.id)
+    msg = Message(body=body, sender_id=caller.id, recipient_id=callee.id, chat_id=chat.id)
     db.session.add(msg)
     db.session.flush()
     return msg
