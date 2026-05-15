@@ -274,7 +274,10 @@ function createPeerConnection() {
     callPeerConnection.ontrack = function (ev) {
         callRemoteStream = ev.streams[0];
         var vid = document.getElementById('remoteVideo');
-        if (vid) vid.srcObject = callRemoteStream;
+        if (vid) {
+            vid.srcObject = callRemoteStream;
+            vid.play().catch(function (e) { });
+        }
     };
     callPeerConnection.onicecandidate = function (ev) {
         if (ev.candidate) {
