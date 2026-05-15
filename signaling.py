@@ -68,6 +68,12 @@ async def handle_call_ws(websocket: WebSocket):
                             'data': {'call_id': call_id, 'user_id': user_id}
                         })
 
+            elif msg_type == 'call:rejoin':
+                call_id = data.get('call_id')
+                if call_id:
+                    call_rooms.setdefault(call_id, set()).add(user_id)
+                    await websocket.send_json({'type': 'call:rejoined', 'data': {'call_id': call_id}})
+
             elif msg_type == 'call:decline':
                 call_id = data.get('call_id')
                 for uid in call_rooms.get(call_id, set()):

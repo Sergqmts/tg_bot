@@ -58,9 +58,15 @@ function connectCallWS(userId) {
             if (callSocket && callSocket.readyState === WebSocket.OPEN) {
                 callSocket.send(JSON.stringify({ type: 'ping' }));
             }
-        }, 30000);
+        }, 15000);
         wsSend({ type: 'auth', user_id: userId });
         flushWsQueue();
+        if (callActive && currentCallId) {
+            wsSend({
+                type: 'call:rejoin',
+                data: { call_id: currentCallId }
+            });
+        }
     };
     callSocket.onmessage = function (ev) {
         var msg = JSON.parse(ev.data);
@@ -69,7 +75,6 @@ function connectCallWS(userId) {
     callSocket.onclose = function () {
         if (wsPingInterval) { clearInterval(wsPingInterval);
             wsPingInterval = null; }
-        if (callActive) endCall();
         wsRetryDelay = Math.min(wsRetryDelay * 2, 30000);
         wsRetryTimeout = setTimeout(function () { connectCallWS(userId); }, wsRetryDelay);
     };
