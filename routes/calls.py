@@ -1,8 +1,28 @@
+import hmac
+import hashlib
+import base64
+import time
 from datetime import datetime, timedelta
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from extensions import db
 from models import Call, User, Message, Chat, ChatMember
+
+
+def get_turn_credentials():
+    key_id = current_app.config.get('CLOUDFLARE_TURN_KEY_ID', '')
+    api_token = current_app.config.get('CLOUDFLARE_TURN_API_TOKEN', '')
+    if not key_id or not api_token:
+        return None
+    timestamp = int(time.time()) + 86400
+    username = f"{timestamp}:{key_id}"
+    sig = hmac.new(
+        api_token.encode('utf-8'),
+        username.encode('utf-8'),
+        hashlib.sha256
+    ).digest()
+    credential = base64.b64encode(sig).decode('utf-8')
+    return {'username': username, 'credential': credential}
 
 
 def format_duration(seconds):
@@ -193,3 +213,11 @@ def register_routes(app):
                 'created_at': call.created_at.isoformat(),
             })
         return jsonify(result)
+
+    @app.route('/api/turn/credentials', methods=['GET'])
+    @login_required
+    def turn_credentials():
+        creds = get_turn_credentials()
+        if not creds:
+            return jsonify({'error': 'TURN not configured'}), 501
+        return jsonify(creds)

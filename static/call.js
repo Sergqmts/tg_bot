@@ -28,6 +28,21 @@ const ICE_SERVERS = {
         { urls: 'stun:stun4.l.google.com:19302' },
     ]
 };
+let turnCredentials = null;
+
+async function fetchTurnCredentials() {
+    if (turnCredentials) return turnCredentials;
+    try {
+        var resp = await fetch('/api/turn/credentials', {
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        });
+        if (!resp.ok) return null;
+        turnCredentials = await resp.json();
+        return turnCredentials;
+    } catch (e) {
+        return null;
+    }
+}
 
 function wsSend(data) {
     if (callSocket && callSocket.readyState === WebSocket.OPEN) {
@@ -178,7 +193,7 @@ async function answerCall() {
     showCallScreen('connecting', data.caller_username, data.call_type);
 
     await startLocalStream(currentCallType);
-    createPeerConnection();
+    await createPeerConnection();
     callActive = true;
     syncCallScreenType();
     fetch('/api/calls/' + currentCallId + '/answer', {
@@ -210,7 +225,7 @@ function declineCall() {
 async function onCallAnswered(data) {
     await startLocalStream(currentCallType);
     syncCallScreenType();
-    createPeerConnection();
+    await createPeerConnection();
     callActive = true;
     fetch('/api/calls/' + currentCallId + '/answer', {
         method: 'POST',
@@ -246,7 +261,7 @@ function onRemoteEnded(data) {
 }
 
 async function handleSDPOffer(data) {
-    if (!callPeerConnection) createPeerConnection();
+    if (!callPeerConnection) await createPeerConnection();
     try {
         await callPeerConnection.setRemoteDescription(data.sdp);
         flushIceCandidateQueue();
@@ -286,8 +301,22 @@ function flushIceCandidateQueue() {
     }
 }
 
-function createPeerConnection() {
-    callPeerConnection = new RTCPeerConnection(ICE_SERVERS);
+async function createPeerConnection() {
+    var config = { iceServers: ICE_SERVERS.iceServers.slice() };
+    var creds = await fetchTurnCredentials();
+    if (creds && creds.username && creds.credential) {
+        config.iceServers.push({
+            urls: 'turn:turn.cloudflare.com:3478',
+            username: creds.username,
+            credential: creds.credential
+        });
+        config.iceServers.push({
+            urls: 'turns:turn.cloudflare.com:5349',
+            username: creds.username,
+            credential: creds.credential
+        });
+    }
+    callPeerConnection = new RTCPeerConnection(config);
     if (callLocalStream) {
         callLocalStream.getTracks().forEach(function (t) {
             callPeerConnection.addTrack(t, callLocalStream);
@@ -386,6 +415,7 @@ function stopCall() {
         wsRetryTimeout = null; }
     callMuted = false;
     callCameraOff = false;
+    turnCredentials = null;
     callScreenShared = false;
     callPeerUsername = null;
     document.getElementById('localVideoContainer').classList.add('hidden');

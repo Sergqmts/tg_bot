@@ -86,7 +86,9 @@ Full-featured in-browser photo editor with 11 tool panels:
 - **Call buttons** in chat header (`conversation.html` and `chat.html`)
 - **`Call` model**: caller_id, callee_id, call_type (audio/video), status (ringing/ongoing/ended/declined/missed), timestamps
 - **Stale call cleanup**: ringing calls older than 30s auto-expire to `missed`
-- **TURN**: Google STUN (stun.l.google.com), self-hosted coturn planned for symmetric NAT
+- **TURN**: Google STUN (stun.l.google.com) + Cloudflare TURN (turn.cloudflare.com) for symmetric NAT traversal
+- **TURN auth**: HMAC-SHA256 credentials generated server-side via `/api/turn/credentials`, 24h expiry
+- **Setup**: Set `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` env vars (from Cloudflare Dashboard → Calls → TURN)
 - **Dependencies**: `uvicorn`, `starlette`, `websockets`
 
 ### Video Editor for Shorts (`/video_editor`)
@@ -132,6 +134,8 @@ CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
+CLOUDFLARE_TURN_KEY_ID=...
+CLOUDFLARE_TURN_API_TOKEN=...
 PORT=8080
 ```
 
