@@ -180,6 +180,7 @@ async function answerCall() {
     await startLocalStream(currentCallType);
     createPeerConnection();
     callActive = true;
+    syncCallScreenType();
     fetch('/api/calls/' + currentCallId + '/answer', {
         method: 'POST',
         headers: { 'X-CSRFToken': getCSRFToken() }
@@ -208,6 +209,7 @@ function declineCall() {
 
 async function onCallAnswered(data) {
     await startLocalStream(currentCallType);
+    syncCallScreenType();
     createPeerConnection();
     callActive = true;
     fetch('/api/calls/' + currentCallId + '/answer', {
@@ -564,6 +566,17 @@ function updateCallScreenStatus(status) {
     if (!el) return;
     var msgs = { connected: 'Разговор', ended: 'Звонок завершен', declined: 'Отменен' };
     el.textContent = msgs[status] || status;
+}
+
+function syncCallScreenType() {
+    var isVideo = currentCallType === 'video';
+    document.getElementById('callScreenType').textContent = isVideo ? '📹' : '📞';
+    document.getElementById('callScreenVideoArea').classList.toggle('hidden', !isVideo);
+    document.getElementById('callScreenAudioOnly').classList.toggle('hidden', isVideo);
+    var rv = document.getElementById('remoteVideo');
+    if (rv) rv.style.display = isVideo ? 'block' : 'none';
+    document.getElementById('localVideoContainer').style.display = isVideo ? 'block' : 'none';
+    document.getElementById('cameraBtn').style.display = isVideo ? 'flex' : 'none';
 }
 
 function updateMuteButton() {
