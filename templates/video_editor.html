@@ -185,9 +185,9 @@ async function uploadVideo(file) {
         publicId = data.public_id;
         version = data.version;
         originalUrl = data.url;
-        previewVideo.src = data.url;
 
         previewVideo.onloadedmetadata = function() {
+            if (!previewVideo.duration || isNaN(previewVideo.duration)) return;
             videoDuration = previewVideo.duration;
             document.getElementById('trimStart').max = Math.floor(videoDuration);
             document.getElementById('trimEnd').max = Math.floor(videoDuration);
@@ -196,6 +196,18 @@ async function uploadVideo(file) {
             saveBtn.disabled = false;
             previewBtn.disabled = false;
         };
+        previewVideo.ondurationchange = function() {
+            if (!previewVideo.duration || isNaN(previewVideo.duration)) return;
+            if (videoDuration > 0) return;
+            videoDuration = previewVideo.duration;
+            document.getElementById('trimStart').max = Math.floor(videoDuration);
+            document.getElementById('trimEnd').max = Math.floor(videoDuration);
+            document.getElementById('trimEnd').value = Math.floor(videoDuration);
+            updateTrimLabels();
+            saveBtn.disabled = false;
+            previewBtn.disabled = false;
+        };
+        previewVideo.src = data.url;
         previewVideo.load();
 
         document.getElementById('statusBadge').textContent = 'Cloudinary ✓';
