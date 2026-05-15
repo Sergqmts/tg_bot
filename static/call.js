@@ -15,6 +15,7 @@ let iceCandidateQueue = [];
 let wsMessageQueue = [];
 let wsRetryTimeout = null;
 let wsRetryDelay = 1000;
+let wsPingInterval = null;
 
 const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/call';
 const ICE_SERVERS = {
@@ -52,14 +53,22 @@ function connectCallWS(userId) {
     callSocket = new WebSocket(WS_URL);
     callSocket.onopen = function () {
         wsRetryDelay = 1000;
-        flushWsQueue();
+        if (wsPingInterval) { clearInterval(wsPingInterval); }
+        wsPingInterval = setInterval(function () {
+            if (callSocket && callSocket.readyState === WebSocket.OPEN) {
+                callSocket.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
         wsSend({ type: 'auth', user_id: userId });
+        flushWsQueue();
     };
     callSocket.onmessage = function (ev) {
         var msg = JSON.parse(ev.data);
         handleWSMessage(msg);
     };
     callSocket.onclose = function () {
+        if (wsPingInterval) { clearInterval(wsPingInterval);
+            wsPingInterval = null; }
         if (callActive) endCall();
         wsRetryDelay = Math.min(wsRetryDelay * 2, 30000);
         wsRetryTimeout = setTimeout(function () { connectCallWS(userId); }, wsRetryDelay);
@@ -96,6 +105,13 @@ function handleWSMessage(msg) {
             break;
         case 'call:peer_camera':
             updatePeerCameraStatus(msg.data);
+            break;
+        case 'auth:ok':
+            break;
+        case 'ping':
+            wsSend({ type: 'pong' });
+            break;
+        case 'pong':
             break;
         case 'error':
             console.error('WS error:', msg.message);
@@ -298,6 +314,9 @@ async function startLocalStream(callType) {
             currentCallType = 'audio';
             return startLocalStream('audio');
         }
+        if (e.name === 'NotFoundError' || e.name === 'NotAllowedError') {
+            alert('Не найден микрофон. Разрешите доступ к микрофону в настройках браузера.');
+        }
     }
 }
 
@@ -318,6 +337,8 @@ function stopCall() {
     callActive = false;
     if (callTimerInterval) { clearInterval(callTimerInterval);
         callTimerInterval = null; }
+    if (wsPingInterval) { clearInterval(wsPingInterval);
+        wsPingInterval = null; }
     if (callPeerConnection) { callPeerConnection.close();
         callPeerConnection = null; }
     if (callLocalStream) {

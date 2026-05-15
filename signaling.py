@@ -26,6 +26,10 @@ async def handle_call_ws(websocket: WebSocket):
                     await websocket.send_json({'type': 'auth:ok', 'user_id': user_id})
                 continue
 
+            if msg_type == 'ping':
+                await websocket.send_json({'type': 'pong'})
+                continue
+
             if user_id is None:
                 await websocket.send_json({'type': 'error', 'message': 'not authenticated'})
                 continue
