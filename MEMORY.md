@@ -1,7 +1,8 @@
-# MEMORY — Social Network Project
+# MEMORY — VIBE Social Network Project
 
 ## Quick Overview
-Full-stack social network (Flask + PostgreSQL + Tailwind CSS). Deployed on Railway.
+Full-stack social network (Flask + PostgreSQL + Tailwind CSS).  
+Deployed on Railway: https://socnet.up.railway.app  
 Repo: `github.com/Sergqmts/tg_bot`, branch `main`.
 
 ## How to Run
@@ -11,114 +12,82 @@ python app.py  # dev on :5000
 ```
 
 ## Key Architecture Decisions
-- **Modular app**: `app.py` + `routes/*.py` + `models.py` + `extensions.py` + `helpers.py`
-- **Flask-WTF CSRFProtect** for CSRF on all POST forms (except voice routes which are exempt)
+- **Modular app**: `app.py` → `routes/*.py` (10 modules) + `models.py` + `extensions.py` + `helpers.py`
+- **ASGI hybrid**: `asgi_app.py` wraps Flask via `WSGIMiddleware` + adds Starlette WebSocket route `/ws/call`
+- **Flask-WTF CSRFProtect** for CSRF on all POST forms (except voice routes, bot API, and call API)
 - **Cloudinary** for media persistence across deploys (fallback to local `/static/uploads/`)
-- **No Socket.IO** — replaced by Starlette + WebSocket for signaling (`/ws/call`). Notification badge uses JS polling (`GET /api/unread-count` every 10s).
-- **ASGI entry**: `asgi_app.py` wraps Flask via `WSGIMiddleware` and adds WebSocket routes under Starlette. Single uvicorn process on Railway.
-- **Media serving**: `/media/<filename>` → `send_from_directory(UPLOAD_FOLDER)`. Cloudinary URLs used directly when configured.
+- **No Socket.IO in production** — replaced by Starlette + WebSocket for call signaling. Notification polling via `GET /api/unread-count` every 10s.
+- **Single uvicorn process** on Railway: `asgi_app.py` → Starlette mounts Flask + WebSocket
+- **Media serving**: Cloudinary URLs used directly when configured; fallback to `/media/<filename>` → `send_from_directory`
 - **Bots = Users with `is_bot=True`**: Bot platform modelled after Telegram. Token auth via URL path (`/bot<token>/sendMessage`). Webhooks for outgoing events.
+- **Calls**: WebRTC peer-to-peer with WebSocket signaling (Starlette), TURN via Cloudflare, REST API in `routes/calls.py`
 
 ## Database
 - SQLite locally (`instance/social.db`), PostgreSQL on Railway
 - `Message.body` has `NOT NULL` in production (set explicit `body=''`)
-- Models: User (+bot +google_id fields), Post, Media, Like, Comment, Message, MessageMedia, Chat, ChatMember, Community, CommunityMember, Notification, Story, Shorts, ShortsAudio, ShortsLike, ShortsComment, Draft, ModerationLog, Report, Reaction, Tag, PostTag, Call
+- Auto-migrations in `app.py` `init_db()` and `@app.before_request run_migrations()`
+- Full list of models in PROJECT.md (40+ models)
+
+## Route Modules
+| File | Prefix | Purpose |
+|------|--------|---------|
+| `routes/auth.py` | — | Login, register, Google OAuth |
+| `routes/posts.py` | — | Feed, create post, like, comment, delete, repost, save, react, video/photo editor, search, tags, drafts |
+| `routes/profiles.py` | — | Profile page, edit, follow/unfollow, block, privacy, photos, recommendations, explore, business analytics |
+| `routes/stories.py` | — | Stories CRUD, reactions, comments, archive, hide |
+| `routes/messages.py` | — | DM + group chats, voice/video messages, forward, chat settings, backgrounds |
+| `routes/communities.py` | — | Communities CRUD, events, join requests, member management |
+| `routes/music.py` | — | Deezer integration, playlists, favorites, history, recommendations |
+| `routes/bots.py` | — | Bot management UI + Bot API (25 methods), webhooks |
+| `routes/accounts.py` | — | Multi-account linking, business account creation, switching |
+| `routes/calls.py` | — | VoIP call API (initiate, status, end, history, TURN credentials) |
 
 ## Branch History (recent)
 - `main` — production branch, Railway auto-deploys
-- `feature/bot-platform` — merged into main (bot platform, content moderation, admin panel, staff system)
-- `feature/photo-editor` — merged into main (comprehensive photo editor, navigation redesign, drafts)
-- `refactor/extract-models` — merged into main (models/routes refactor, Google OAuth login)
-- `feature/video-editor` — current branch (Cloudinary-based video editor, VoIP audio/video calls with WebRTC + WebSocket signaling)
+- `feature/bot-platform` → merged (bot platform, moderation, admin, staff)
+- `feature/photo-editor` → merged (photo editor, nav redesign, drafts)
+- `refactor/extract-models` → merged (models/routes refactor, Google OAuth)
+- `feature/video-editor` → merged (video editor, VoIP calls)
+- `feature/music-player` → merged (Deezer integration, playlists)
+- `feature/shorts` → merged (shorts with audio, video editor)
+- `feature/stories-improvements` → merged (story reactions, comments, archive)
+- `feature/multi-account` → merged (account groups, business accounts)
+- `feature/mobile-improvements` → pending merge
 
-## Features
+## Key Components
 
-### Bot Platform (Telegram-style)
-- **Bot model**: `is_bot`, `bot_token`, `bot_commands`, `can_join_groups`, `privacy_mode`, `webhook_url`, `creator_id` fields on User
-- **Token generation**: `generate_bot_token()` — Telegram-style (`id:secret`)
-- **Bot management UI**: `/bots`, `/bots/new`, `/bots/<id>/settings`
-- **BotForm**: username must end with `bot`
-- **Bot API (25 methods)**: sendMessage, sendPhoto, sendVideo, sendVoice, sendDocument, forwardMessage, deleteMessage, banChatMember, unbanChatMember, promoteChatMember, getChat, getChatMembers, getMe, setWebhook, deleteWebhook, getCommunity, getCommunityMembers, approveJoinRequest, denyJoinRequest, kickMember, promoteToAdmin, deletePost, sendPost, joinCommunity, getUpdates
-- **Webhooks**: async POST to `bot.webhook_url` on new messages (skips bot's own messages)
-- CSRF exempt for all bot API routes
-- Bot indicator 🤖 in all relevant templates
-
-### Content Moderation
-- `ModerationLog` model for tracking violations
-- `ModeratorBot` — system bot created on startup (`creator_id=None`)
-- NSFW detection: 150+ keywords (RU/EN) via `check_nsfw_text()`
-- `moderate_post()` — rejects post, sends DM warning, auto-bans after 5 violations
-- Hooks into `/create`, community post, and Bot API `sendPost`
-
-### Admin Panel (`/admin`)
-- `Report` model for user complaints (target_user, target_post, reason, status)
-- Staff-only access (`staff_required` decorator, `User.is_staff`)
-- Sections: System Bots, Reports, Users (ban/unban/make staff), Communities (ban/unban)
-- Report button (🚩) on every post
-- Auto-promotes `botadmin` and `Sergqmts` to staff on startup
+### VoIP Calls
+- WebRTC p2p via Starlette WebSocket (`/ws/call`)
+- `signaling.py`: connections dict, call rooms, SDP/ICE relay
+- `static/call.js`: RTCPeerConnection, WS client, ringtone
+- `templates/call_ui.html`: incoming popup, fullscreen call, PiP, screen share
+- TURN: Cloudflare via HMAC-SHA256 credentials (`/api/turn/credentials`)
+- Stale cleanup: ringing > 30s → auto-missed
 
 ### Photo Editor (`/photo_editor`)
-Full-featured in-browser photo editor with 11 tool panels:
-1. **Crop** — free + 8 aspect ratio presets (1:1, 4:5, 9:16, 16:9, 3:2, 4:3, 2:3, 21:9), rotate, flip, straighten
-2. **Adjust** — brightness, contrast, saturation, exposure, sharpness, shadows, highlights, temperature, tint, noise, vignette
-3. **Filters** — 25 Instagram-style presets with live canvas thumbnails
-4. **Effects** — vintage, B&W, LOMO, glitter, glow, grain, HDR, dramatic, soft
-5. **Text** — fonts, size, color, bold/italic/underline, shadow, alignment, layer list
-6. **Stickers** — 32 emoji + custom image upload
-7. **Drawing** — marker, brush, spray, eraser with size/color/opacity
-8. **Portrait** — skin smooth, teeth whiten, eye enhance, blemish remove, makeup, face slim
-9. **Frames** — 6 decorative styles (thin, double, polaroid, neon, gold, VHS)
-10. **Collage** — 6 layout templates (up to 6 photos)
-11. **Animation** — sparkles, hearts, bubbles, stars, rainbow, glitch + GIF upload
-- **Save to**: feed, stories, shorts, or draft
-- **Quality**: 60/80/92/100%
-- **History**: undo/redo (up to 50 steps)
-- **Draft model** (`Draft`) with `/drafts` route for listing/resuming
+- Full Canvas2D in `templates/photo_editor.html` (1555 lines)
+- 11 tool panels, 25 filters, undo/redo (50 steps)
+- Save to feed / stories / shorts / draft
 
-### VoIP Calls (Audio/Video)
-- **WebRTC peer-to-peer** audio/video calls with full-duplex communication
-- **WebSocket signaling** via separate Starlette route `/ws/call` on the same uvicorn process
-- **`asgi_app.py`** combines Flask (HTTP) + WebSocket signaling under one ASGI app
-- **`signaling.py`** manages WebSocket connections, call rooms, SDP/ICE relay, mute/camera status
-- **`routes/calls.py`** — REST API: POST `/api/calls/initiate`, GET `/api/calls/<id>/status`, POST `/api/calls/<id>/end`, GET `/api/calls/history`
-- **`static/call.js`** — WebRTC client (RTCPeerConnection, media tracks), WS client, ringtone via Web Audio API
-- **`templates/call_ui.html`** — incoming call popup, full call screen (audio/video), PiP, screen share, controls (mute, camera, speaker, end)
-- **Call buttons** in chat header (`conversation.html` and `chat.html`)
-- **`Call` model**: caller_id, callee_id, call_type (audio/video), status (ringing/ongoing/ended/declined/missed), timestamps
-- **Stale call cleanup**: ringing calls older than 30s auto-expire to `missed`
-- **TURN**: Google STUN (stun.l.google.com) + Cloudflare TURN (turn.cloudflare.com) for symmetric NAT traversal
-- **TURN auth**: HMAC-SHA256 credentials generated server-side via `/api/turn/credentials`, 24h expiry
-- **Setup**: Set `CLOUDFLARE_TURN_KEY_ID` and `CLOUDFLARE_TURN_API_TOKEN` env vars (from Cloudflare Dashboard → Calls → TURN)
-- **Dependencies**: `uvicorn`, `starlette`, `websockets`
+### Video Editor (`/video_editor`)
+- Cloudinary-based transformations (no server CPU)
+- Trim, filters (7), speed (0.25x–2x), audio overlay
+- ShortsAudio library for background music
 
-### Video Editor for Shorts (`/video_editor`)
-- **Cloudinary-based** — no client-side WASM, no server-side encoding
-- Video uploaded directly to Cloudinary with `resource_type='video'`
-- **Trim**: start/end sliders → Cloudinary `so`/`eo` URL params
-- **Filters**: 7 presets (grayscale, sepia, vintage, cinematic, vivid, cool, warm) → Cloudinary `e_*` effects
-- **Speed**: 0.25x–2x → Cloudinary `e_accelerate`
-- **Audio**: select from existing `ShortsAudio` library (stored as `audio_id` on Shorts)
-- **Transformation URL** built server-side, served on-the-fly by Cloudinary — zero CPU load
-- Fallback to local file upload when Cloudinary not configured
+### Bot Platform
+- 25+ API methods, Telegram-style token auth
+- Webhooks: async POST on new messages
+- Bot management: `/bots`, `/bots/new`, `/bots/<id>/settings`
+- Username must end with `bot`
 
-### Google OAuth Login
-- **Google OAuth** via `authlib` — `/login/google` and `/login/google/callback` routes in `routes/auth.py`
-- `google_id` field on User model for linking Google accounts
-- Existing email match links Google account to existing user
-- New Google users get auto-generated username with fallback on conflict
-- Registration form validates email uniqueness across all users (incl. Google-created)
-- Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+### Content Moderation
+- 150+ NSFW keywords (RU/EN)
+- `moderate_post()` → warning DM → auto-ban at 5 violations
+- `ModeratorBot` system bot, created on startup
 
-### Navigation
-- Bottom nav: Главная | Шортсы | Сообщения | Сообщества | ⋯ (ещё)
-- "Ещё" popup: профиль, создать пост, фоторедактор, поиск, уведомления, черновики, админка (staff)
-
-### Other
-- **Feed sorting**: `Post.created_at.desc()` (newest first)
-- **Draft system**: `/drafts`, `/drafts/<id>/delete`, create with `?draft=1`
-- **Staff bypass**: staff can view private profiles and communities without joining
-- **Favicon**: SVG route at `/favicon.ico`
-- **init_db() fix**: `pool_pre_ping: True` + `with db.engine.connect()` context manager for Railway PostgreSQL
+### Admin Panel (`/admin`)
+- Staff-only, `User.is_staff` flag
+- Reports, user ban/unban, community ban/unban
 
 ## Bot API NewsBot
 - Token: `657313327:peqDnhI7QJEPa3yHzwH_ycugww-0BgNgHbvCyBiTd_A`
@@ -136,6 +105,7 @@ GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 CLOUDFLARE_TURN_KEY_ID=...
 CLOUDFLARE_TURN_API_TOKEN=...
+FREESOUND_API_KEY=...
 PORT=8080
 ```
 
@@ -149,21 +119,17 @@ PORT=8080
 ## Critical Templates
 | File | Purpose |
 |------|---------|
-| `base.html` | Layout, nav, notification badge, audio player JS, theme toggle, bottom nav with "more" menu |
+| `base.html` | Layout, nav, notification badge, audio player, theme toggle, bottom nav |
 | `photo_editor.html` | Full photo editor (1555 lines, Canvas2D) |
-| `create_story.html` | Story creation with camera + link to photo editor |
-| `drafts.html` | Draft list with edit/delete |
+| `call_ui.html` | VoIP call UI (incoming popup, call screen, PiP, controls) |
+| `video_editor.html` | Cloudinary video editor with audio library |
+| `post.html` | Single post view |
+| `conversation.html` | DM chat with call buttons |
+| `chat.html` | Group chat with call buttons |
 | `admin.html` | Admin panel dashboard |
 | `bot_docs.html` | Bot API documentation |
-| `bot_settings.html` | Bot settings |
-| `call_ui.html` | VoIP call UI (incoming popup, call screen, PiP, controls) |
-| `conversation.html` | Direct message chat with call buttons |
-| `chat.html` | Group chat with call buttons |
+| `music_home.html` | Music player main page |
 
 ## Railway
-- Project: `8f4bd177-1f4e-4afa-a55a-1ac415f7ee7b`
-- Service: `a7eb91a7-a672-484f-a6ad-7f8149a850dd`
-- Env: `d5f79170-1b9e-429b-bb25-d633a8b51c8c`
 - URL: `socnet.up.railway.app`
-- Deploy: GraphQL `githubRepoDeploy` mutation with projectId, repo, branch, environmentId
-- Token: `2dffee3b-d944-4281-8d4f-84cc6eb686f2`
+- Env: `d5f79170-1b9e-429b-bb25-d633a8b51c8c`
