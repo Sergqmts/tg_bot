@@ -2473,3 +2473,70 @@ img, video {
         bottom: 80px;
     }
 }
+
+/* Call system messages in chat */
+.call-system-message {
+    margin: 0.25rem 0;
+}
+
+.call-message-inner {
+    background: rgba(148, 163, 184, 0.15);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 1rem;
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 75%;
+}
+
+.call-message-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.call-message-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.call-message-text {
+    font-size: 0.8rem;
+    color: var(--text);
+    opacity: 0.8;
+}
+
+.call-message-time {
+    font-size: 0.65rem;
+    color: var(--text);
+    opacity: 0.5;
+}
+
+.call-message-callback {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    background: var(--accent, #784BA0);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: opacity 0.2s;
+}
+
+.call-message-callback:hover {
+    opacity: 0.85;
+}
+
+.call-message-inner.call-missed {
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.call-message-inner.call-missed .call-message-text {
+    color: #ef4444;
+    opacity: 1;
+}

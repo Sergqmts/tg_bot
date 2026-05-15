@@ -41,6 +41,29 @@
     <!-- Messages area - scrolls independently -->
     <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2 scroll-smooth" id="messagesArea">
         {% for msg in messages %}
+        {% if msg.body and (msg.body[:1] == '📞' or msg.body[:1] == '📹') %}
+        <!-- Call system message -->
+        <div class="flex justify-center call-system-message">
+            <div class="call-message-inner {% if 'Пропущенный' in msg.body %}call-missed{% endif %}">
+                <div class="call-message-row">
+                    <span class="call-message-icon">{% if msg.body[:1] == '📹' %}📹{% else %}📞{% endif %}</span>
+                    <span class="call-message-text">
+                        {% if 'Пропущенный' in msg.body %}
+                            Пропущенный {% if msg.body[:1] == '📹' %}видеозвонок{% else %}аудиозвонок{% endif %}
+                        {% else %}
+                            {{ msg.body[2:]|trim }}
+                        {% endif %}
+                    </span>
+                </div>
+                {% if 'Пропущенный' in msg.body %}
+                <button onclick="initiateCall({{ other_user.id }}, '{{ other_user.username }}', '{% if msg.body[:1] == '📹' %}video{% else %}audio{% endif %}')" class="call-message-callback">
+                    <i class="fa-solid fa-phone"></i> Перезвонить
+                </button>
+                {% endif %}
+                <div class="call-message-time">{{ msg.created_at.strftime('%H:%M') }}</div>
+            </div>
+        </div>
+        {% else %}
         <div class="flex {% if msg.sender_id == current_user.id %}justify-end{% else %}justify-start{% endif %} gap-1 group">
             {% if msg.sender_id != current_user.id %}
             <a href="{{ url_for('user_profile', username=msg.sender.username) }}" class="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mt-1">
@@ -61,7 +84,6 @@
             </a>
             {% endif %}
 
-            <!-- Message bubble - distinct own/other styling -->
             <div class="{% if msg.sender_id == current_user.id %}bg-brand-middle text-white rounded-2xl rounded-br-md{% else %}bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl rounded-bl-md shadow-sm{% endif %} px-3 py-2 max-w-[75%] relative">
                 <button class="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-full {% if msg.sender_id == current_user.id %}bg-white/20{% else %}bg-slate-100 dark:bg-slate-700{% endif %} opacity-0 group-hover:opacity-100 transition-opacity" onclick="toggleMessageMenu(this, {{ msg.id }})">
                     <i class="fa-solid fa-ellipsis text-[10px]"></i>
@@ -147,6 +169,7 @@
             </a>
             {% endif %}
         </div>
+        {% endif %}
         {% endfor %}
     </div>
     

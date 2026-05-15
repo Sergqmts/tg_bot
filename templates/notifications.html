@@ -49,6 +49,8 @@
                             <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> отправил вам сообщение
                         {% elif notif.type == 'new_story' %}
                             <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> опубликовал новую историю
+                        {% elif notif.type == 'call_missed' %}
+                            <strong>{{ notif.sender.username if notif.sender else 'Кто-то' }}</strong> пропущенный звонок
                         {% endif %}
                     </p>
                     <span class="notification-time">{{ notif.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
