@@ -560,7 +560,8 @@ with app.app_context():
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5000, host='0.0.0.0', allow_unsafe_werkzeug=True)
+    import uvicorn
+    uvicorn.run('asgi_app:app', host='0.0.0.0', port=5000, reload=True)
 
 
 

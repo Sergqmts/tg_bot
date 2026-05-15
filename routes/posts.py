@@ -275,7 +275,7 @@ def register_routes(app):
                     'grayscale': 'e_grayscale',
                     'sepia': 'e_sepia',
                     'vintage': 'e_art:vintage',
-                    'cinematic': 'e_contrast:40/e_brightness:-20',
+                    'cinematic': 'e_contrast:40,e_brightness:-20',
                     'vivid': 'e_saturation:50',
                     'cool': 'e_hue:200',
                     'warm': 'e_hue:-10',
@@ -290,6 +290,37 @@ def register_routes(app):
                     tx_parts.append(filter_map[effect])
                 if speed and speed != 1:
                     tx_parts.append(f'e_accelerate:{speed}')
+
+                audio_id = data.get('audio_id')
+                if audio_id:
+                    from helpers import cloudinary_configured, cloud_name
+                    audio_track = ShortsAudio.query.get(audio_id)
+                    if audio_track and audio_track.audio_url:
+                        import cloudinary.uploader
+                        audio_url = audio_track.audio_url
+                        audio_public_id = None
+                        if cloudinary_configured and 'res.cloudinary.com' in audio_url:
+                            parts = audio_url.split('/')
+                            if 'upload' in parts:
+                                idx = parts.index('upload') + 1
+                                path_parts = parts[idx:]
+                                if path_parts and path_parts[0].startswith('v'):
+                                    path_parts = path_parts[1:]
+                                path = '/'.join(path_parts)
+                                if '.' in path:
+                                    path = path.rsplit('.', 1)[0]
+                                audio_public_id = path
+                        else:
+                            try:
+                                result = cloudinary.uploader.upload(
+                                    audio_url, folder='shorts_audio', resource_type='video',
+                                    timeout=30
+                                )
+                                audio_public_id = result['public_id']
+                            except:
+                                pass
+                        if audio_public_id:
+                            tx_parts.append('l_audio:' + audio_public_id.replace('/', ':') + ',fl_layer_apply')
 
                 if tx_parts:
                     tx_str = '/'.join(tx_parts)

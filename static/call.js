@@ -11,20 +11,49 @@ let callScreenShared = false;
 let callStartTime = null;
 let callTimerInterval = null;
 let pendingCallData = null;
+let iceCandidateQueue = [];
+let wsMessageQueue = [];
+let wsRetryTimeout = null;
+let wsRetryDelay = 1000;
 
 const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/call';
 const ICE_SERVERS = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
     ]
 };
 
+function wsSend(data) {
+    if (callSocket && callSocket.readyState === WebSocket.OPEN) {
+        callSocket.send(JSON.stringify(data));
+    } else if (callSocket && callSocket.readyState === WebSocket.CONNECTING) {
+        wsMessageQueue.push(data);
+    }
+}
+
+function flushWsQueue() {
+    while (wsMessageQueue.length) {
+        var msg = wsMessageQueue.shift();
+        if (callSocket && callSocket.readyState === WebSocket.OPEN) {
+            callSocket.send(JSON.stringify(msg));
+        }
+    }
+}
+
 function connectCallWS(userId) {
     if (callSocket && callSocket.readyState === WebSocket.OPEN) return;
+    if (callSocket) { callSocket.onclose = null; callSocket.close(); }
+    if (wsRetryTimeout) { clearTimeout(wsRetryTimeout);
+        wsRetryTimeout = null; }
     callSocket = new WebSocket(WS_URL);
     callSocket.onopen = function () {
-        callSocket.send(JSON.stringify({ type: 'auth', user_id: userId }));
+        wsRetryDelay = 1000;
+        flushWsQueue();
+        wsSend({ type: 'auth', user_id: userId });
     };
     callSocket.onmessage = function (ev) {
         var msg = JSON.parse(ev.data);
@@ -32,7 +61,8 @@ function connectCallWS(userId) {
     };
     callSocket.onclose = function () {
         if (callActive) endCall();
-        setTimeout(function () { connectCallWS(userId); }, 3000);
+        wsRetryDelay = Math.min(wsRetryDelay * 2, 30000);
+        wsRetryTimeout = setTimeout(function () { connectCallWS(userId); }, wsRetryDelay);
     };
 }
 
@@ -67,6 +97,20 @@ function handleWSMessage(msg) {
         case 'call:peer_camera':
             updatePeerCameraStatus(msg.data);
             break;
+        case 'error':
+            console.error('WS error:', msg.message);
+            if (currentCallId) {
+                fetch('/api/calls/' + currentCallId + '/end', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCSRFToken() }
+                }).catch(function () { });
+            }
+            if (callActive) {
+                stopCall();
+                hideCallScreen();
+            }
+            alert(msg.message || 'Ошибка вызова');
+            break;
     }
 }
 
@@ -84,7 +128,7 @@ async function initiateCall(calleeId, calleeUsername, callType) {
         if (!resp.ok) { alert(data.error || 'Call failed'); return; }
 
         currentCallId = data.call_id;
-        callSocket.send(JSON.stringify({
+        wsSend({
             type: 'call:initiate',
             data: {
                 callee_id: calleeId,
@@ -92,7 +136,7 @@ async function initiateCall(calleeId, calleeUsername, callType) {
                 call_type: callType,
                 caller_username: window.currentUsername
             }
-        }));
+        });
 
         showCallScreen('calling', calleeUsername, callType);
         callStartTime = Date.now();
@@ -110,22 +154,23 @@ async function answerCall() {
 
     showCallScreen('connecting', data.caller_username, data.call_type);
 
-    callSocket.send(JSON.stringify({
-        type: 'call:answer',
-        data: { call_id: currentCallId }
-    }));
-
     await startLocalStream(currentCallType);
     createPeerConnection();
     callActive = true;
+    startCallTimer();
+
+    wsSend({
+        type: 'call:answer',
+        data: { call_id: currentCallId }
+    });
 }
 
 function declineCall() {
     if (!pendingCallData) return;
-    callSocket.send(JSON.stringify({
+    wsSend({
         type: 'call:decline',
         data: { call_id: pendingCallData.call_id }
-    }));
+    });
     hideIncomingCall();
     pendingCallData = null;
 }
@@ -139,10 +184,10 @@ async function onCallAnswered(data) {
 
     var offer = await callPeerConnection.createOffer();
     await callPeerConnection.setLocalDescription(offer);
-    callSocket.send(JSON.stringify({
+    wsSend({
         type: 'sdp:offer',
         data: { call_id: currentCallId, sdp: offer }
-    }));
+    });
 }
 
 function onCallDeclined(data) {
@@ -159,24 +204,42 @@ function onRemoteEnded(data) {
 
 async function handleSDPOffer(data) {
     if (!callPeerConnection) createPeerConnection();
-    await callPeerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-    var answer = await callPeerConnection.createAnswer();
-    await callPeerConnection.setLocalDescription(answer);
-    callSocket.send(JSON.stringify({
-        type: 'sdp:answer',
-        data: { call_id: currentCallId, sdp: answer }
-    }));
+    try {
+        await callPeerConnection.setRemoteDescription(data.sdp);
+        flushIceCandidateQueue();
+        var answer = await callPeerConnection.createAnswer();
+        await callPeerConnection.setLocalDescription(answer);
+        wsSend({
+            type: 'sdp:answer',
+            data: { call_id: currentCallId, sdp: answer }
+        });
+    } catch (e) {
+        console.error('SDP offer error:', e);
+    }
 }
 
 async function handleSDPAnswer(data) {
-    if (callPeerConnection && callPeerConnection.remoteDescription === null) {
-        await callPeerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    if (!callPeerConnection || callPeerConnection.remoteDescription) return;
+    try {
+        await callPeerConnection.setRemoteDescription(data.sdp);
+        flushIceCandidateQueue();
+    } catch (e) {
+        console.error('SDP answer error:', e);
     }
 }
 
 function handleICECandidate(data) {
-    if (callPeerConnection) {
-        callPeerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(function (e) { });
+    if (!data.candidate) return;
+    if (!callPeerConnection || !callPeerConnection.remoteDescription) {
+        iceCandidateQueue.push(data.candidate);
+        return;
+    }
+    callPeerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)).catch(function (e) { });
+}
+
+function flushIceCandidateQueue() {
+    while (iceCandidateQueue.length) {
+        callPeerConnection.addIceCandidate(new RTCIceCandidate(iceCandidateQueue.shift())).catch(function (e) { });
     }
 }
 
@@ -194,10 +257,10 @@ function createPeerConnection() {
     };
     callPeerConnection.onicecandidate = function (ev) {
         if (ev.candidate) {
-            callSocket.send(JSON.stringify({
+            wsSend({
                 type: 'ice:candidate',
                 data: { call_id: currentCallId, candidate: ev.candidate }
-            }));
+            });
         }
     };
     callPeerConnection.onconnectionstatechange = function () {
@@ -239,10 +302,10 @@ async function startLocalStream(callType) {
 }
 
 function endCall() {
-    callSocket.send(JSON.stringify({
+    wsSend({
         type: 'call:end',
         data: { call_id: currentCallId }
-    }));
+    });
     fetch('/api/calls/' + currentCallId + '/end', {
         method: 'POST',
         headers: { 'X-CSRFToken': getCSRFToken() }
@@ -265,6 +328,13 @@ function stopCall() {
     currentCallId = null;
     currentCallType = null;
     pendingCallData = null;
+    iceCandidateQueue = [];
+    wsMessageQueue = [];
+    if (wsRetryTimeout) { clearTimeout(wsRetryTimeout);
+        wsRetryTimeout = null; }
+    callMuted = false;
+    callCameraOff = false;
+    callScreenShared = false;
     document.getElementById('localVideoContainer').classList.add('hidden');
     var rv = document.getElementById('remoteVideo');
     if (rv) rv.srcObject = null;
@@ -277,10 +347,10 @@ function toggleMute() {
     if (callLocalStream) {
         callLocalStream.getAudioTracks().forEach(function (t) { t.enabled = !callMuted; });
     }
-    callSocket.send(JSON.stringify({
+    wsSend({
         type: 'call:toggle_mute',
         data: { call_id: currentCallId, muted: callMuted }
-    }));
+    });
     updateMuteButton();
 }
 
@@ -290,10 +360,10 @@ function toggleCamera() {
     if (callLocalStream) {
         callLocalStream.getVideoTracks().forEach(function (t) { t.enabled = !callCameraOff; });
     }
-    callSocket.send(JSON.stringify({
+    wsSend({
         type: 'call:toggle_camera',
         data: { call_id: currentCallId, camera_on: !callCameraOff }
-    }));
+    });
     updateCameraButton();
 }
 
