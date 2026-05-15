@@ -585,11 +585,13 @@
     }
     setInterval(updateNotifBadge, 10000);
     {% endif %}
-    {% if current_user.is_authenticated %}
-    connectCallWS({{ current_user.id }});
-    {% endif %}
     </script>
 <script src="{{ url_for('static', filename='call.js') }}"></script>
 {% include "call_ui.html" %}
+<script>
+    {% if current_user.is_authenticated %}
+    connectCallWS({{ current_user.id }});
+    {% endif %}
+</script>
 </body>
 </html>
