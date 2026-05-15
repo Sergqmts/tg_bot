@@ -357,7 +357,11 @@ async function createPeerConnection() {
 async function startLocalStream(callType) {
     try {
         var constraints = {
-            audio: true,
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
             video: callType === 'video'
         };
         callLocalStream = await navigator.mediaDevices.getUserMedia(constraints);
