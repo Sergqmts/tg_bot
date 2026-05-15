@@ -178,6 +178,10 @@ async function answerCall() {
     await startLocalStream(currentCallType);
     createPeerConnection();
     callActive = true;
+    fetch('/api/calls/' + currentCallId + '/answer', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    }).catch(function () { });
     startCallTimer();
 
     wsSend({
@@ -188,6 +192,10 @@ async function answerCall() {
 
 function declineCall() {
     if (!pendingCallData) return;
+    fetch('/api/calls/' + pendingCallData.call_id + '/end', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    }).catch(function () { });
     wsSend({
         type: 'call:decline',
         data: { call_id: pendingCallData.call_id }
@@ -200,6 +208,10 @@ async function onCallAnswered(data) {
     await startLocalStream(currentCallType);
     createPeerConnection();
     callActive = true;
+    fetch('/api/calls/' + currentCallId + '/answer', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+    }).catch(function () { });
     startCallTimer();
     updateCallScreenStatus('connected');
 
