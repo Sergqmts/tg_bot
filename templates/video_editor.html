@@ -10,10 +10,16 @@
             <h1 class="text-xl font-bold">Видеоредактор</h1>
             <span id="statusBadge" class="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">Cloudinary</span>
         </div>
-        <button onclick="saveVideo()" id="saveBtn" disabled
-            class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50">
-            <i class="fa-solid fa-check"></i> Сохранить в Shorts
-        </button>
+        <div class="flex gap-2">
+            <button onclick="previewVideoCloudinary()" id="previewBtn" disabled
+                class="px-3 py-2 rounded-2xl border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all disabled:opacity-50">
+                <i class="fa-solid fa-eye"></i> Предпросмотр
+            </button>
+            <button onclick="saveVideo()" id="saveBtn" disabled
+                class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50">
+                <i class="fa-solid fa-video"></i> Экспорт в Shorts
+            </button>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -134,6 +140,7 @@ let videoDuration = 0;
 let selectedFilter = 'original';
 let selectedSpeed = 1;
 let selectedAudioId = null;
+let isPreviewing = false;
 
 const videoInput = document.getElementById('videoInput');
 const uploadZone = document.getElementById('uploadZone');
@@ -141,6 +148,7 @@ const previewArea = document.getElementById('previewArea');
 const previewVideo = document.getElementById('previewVideo');
 const uploadProgress = document.getElementById('uploadProgress');
 const saveBtn = document.getElementById('saveBtn');
+const previewBtn = document.getElementById('previewBtn');
 
 videoInput.addEventListener('change', function() {
     if (this.files && this.files[0]) uploadVideo(this.files[0]);
@@ -167,6 +175,7 @@ async function uploadVideo(file) {
     uploadZone.classList.add('hidden');
     previewArea.classList.remove('hidden');
     saveBtn.disabled = true;
+    previewBtn.disabled = true;
 
     try {
         const resp = await fetch('{{ url_for("video_editor") }}', { method: 'POST', body: formData });
@@ -177,7 +186,6 @@ async function uploadVideo(file) {
         version = data.version;
         originalUrl = data.url;
         previewVideo.src = data.url;
-        previewVideo.load();
 
         previewVideo.onloadedmetadata = function() {
             videoDuration = previewVideo.duration;
@@ -186,7 +194,9 @@ async function uploadVideo(file) {
             document.getElementById('trimEnd').value = Math.floor(videoDuration);
             updateTrimLabels();
             saveBtn.disabled = false;
+            previewBtn.disabled = false;
         };
+        previewVideo.load();
 
         document.getElementById('statusBadge').textContent = 'Cloudinary ✓';
         document.getElementById('statusBadge').className = 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400';
@@ -212,28 +222,28 @@ function formatTime(secs) {
     return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
-const trimStart = document.getElementById('trimStart');
-const trimEnd = document.getElementById('trimEnd');
+const trimStartEl = document.getElementById('trimStart');
+const trimEndEl = document.getElementById('trimEnd');
 
 function updateTrimLabels() {
-    const start = parseFloat(trimStart.value);
-    const end = parseFloat(trimEnd.value);
+    const start = parseFloat(trimStartEl.value);
+    const end = parseFloat(trimEndEl.value);
     document.getElementById('trimStartLabel').textContent = formatTime(start);
     document.getElementById('trimEndLabel').textContent = formatTime(end);
     document.getElementById('trimDurationLabel').textContent = formatTime(end - start);
 }
 
-trimStart.addEventListener('input', function() {
-    if (parseFloat(this.value) >= parseFloat(trimEnd.value)) {
-        this.value = Math.max(0, parseFloat(trimEnd.value) - 1);
+trimStartEl.addEventListener('input', function() {
+    if (parseFloat(this.value) >= parseFloat(trimEndEl.value)) {
+        this.value = Math.max(0, parseFloat(trimEndEl.value) - 1);
     }
     updateTrimLabels();
     previewVideo.currentTime = parseFloat(this.value);
 });
 
-trimEnd.addEventListener('input', function() {
-    if (parseFloat(this.value) <= parseFloat(trimStart.value)) {
-        this.value = Math.min(videoDuration, parseFloat(trimStart.value) + 1);
+trimEndEl.addEventListener('input', function() {
+    if (parseFloat(this.value) <= parseFloat(trimStartEl.value)) {
+        this.value = Math.min(videoDuration, parseFloat(trimStartEl.value) + 1);
     }
     updateTrimLabels();
 });
@@ -249,17 +259,19 @@ function selectFilter(name) {
         btn.classList.remove('border-slate-200', 'dark:border-slate-700');
         btn.classList.add('bg-brand-middle', 'text-white', 'border-brand-middle');
     }
-    const cssFilters = {
-        original: 'none',
-        grayscale: 'grayscale(1)',
-        sepia: 'sepia(0.8)',
-        vintage: 'sepia(0.5) contrast(0.8) brightness(0.9)',
-        cinematic: 'contrast(1.2) brightness(0.8) saturate(1.3)',
-        vivid: 'contrast(1.1) saturate(1.5) brightness(1.05)',
-        cool: 'hue-rotate(200deg) saturate(0.8)',
-        warm: 'sepia(0.3) saturate(1.2) hue-rotate(-10deg)',
-    };
-    previewVideo.style.filter = cssFilters[name] || 'none';
+    if (!isPreviewing) {
+        const cssFilters = {
+            original: 'none',
+            grayscale: 'grayscale(1)',
+            sepia: 'sepia(0.8)',
+            vintage: 'sepia(0.5) contrast(0.8) brightness(0.9)',
+            cinematic: 'contrast(1.2) brightness(0.8) saturate(1.3)',
+            vivid: 'contrast(1.1) saturate(1.5) brightness(1.05)',
+            cool: 'hue-rotate(200deg) saturate(0.8)',
+            warm: 'sepia(0.3) saturate(1.2) hue-rotate(-10deg)',
+        };
+        previewVideo.style.filter = cssFilters[name] || 'none';
+    }
 }
 
 function selectSpeed(val) {
@@ -273,7 +285,9 @@ function selectSpeed(val) {
         btn.classList.remove('border-slate-200', 'dark:border-slate-700');
         btn.classList.add('bg-brand-middle', 'text-white', 'border-brand-middle');
     }
-    previewVideo.playbackRate = val;
+    if (!isPreviewing) {
+        previewVideo.playbackRate = val;
+    }
 }
 
 document.querySelectorAll('.audio-item').forEach(function(el) {
@@ -296,36 +310,94 @@ document.getElementById('audioUpload').addEventListener('change', function() {
     }
 });
 
+async function getTransformedUrl() {
+    const startVal = parseFloat(trimStartEl.value) || 0;
+    const endVal = parseFloat(trimEndEl.value) || 0;
+    const resp = await fetch('{{ url_for("video_editor") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            public_id: publicId,
+            version: version,
+            original_url: originalUrl,
+            start_offset: startVal > 0 ? startVal : 0,
+            end_offset: endVal < videoDuration ? endVal : 0,
+            filter: selectedFilter,
+            speed: selectedSpeed,
+        })
+    });
+    return resp.json();
+}
+
+async function previewVideoCloudinary() {
+    if (!originalUrl) return;
+
+    if (isPreviewing) {
+        previewVideo.style.filter = '';
+        previewVideo.src = originalUrl;
+        previewVideo.load();
+        previewVideo.playbackRate = selectedSpeed;
+        const cssFilters = {
+            original: 'none', grayscale: 'grayscale(1)', sepia: 'sepia(0.8)',
+            vintage: 'sepia(0.5) contrast(0.8) brightness(0.9)', cinematic: 'contrast(1.2) brightness(0.8) saturate(1.3)',
+            vivid: 'contrast(1.1) saturate(1.5) brightness(1.05)', cool: 'hue-rotate(200deg) saturate(0.8)',
+            warm: 'sepia(0.3) saturate(1.2) hue-rotate(-10deg)',
+        };
+        if (selectedFilter !== 'original') previewVideo.style.filter = cssFilters[selectedFilter] || 'none';
+        previewVideo.playbackRate = selectedSpeed;
+        isPreviewing = false;
+        previewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> Предпросмотр';
+        return;
+    }
+
+    if (!publicId) {
+        previewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> Предпросмотр';
+        return;
+    }
+
+    previewBtn.disabled = true;
+    previewBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Загрузка...';
+
+    try {
+        const data = await getTransformedUrl();
+        if (!data.success) throw new Error(data.error || 'Preview failed');
+
+        previewVideo.style.filter = '';
+        previewVideo.playbackRate = 1;
+        previewVideo.src = data.url;
+        previewVideo.load();
+        previewVideo.onloadeddata = function() { previewVideo.play(); };
+
+        isPreviewing = true;
+        previewBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Оригинал';
+    } catch (e) {
+        console.error(e);
+        alert('Ошибка предпросмотра: ' + e.message);
+    }
+    previewBtn.disabled = false;
+}
+
 async function saveVideo() {
-    if (!publicId) return;
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Сохранение...';
 
     try {
-        const startVal = parseFloat(trimStart.value) || 0;
-        const endVal = parseFloat(trimEnd.value) || 0;
-        const resp = await fetch('{{ url_for("video_editor") }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                public_id: publicId,
-                version: version,
-                original_url: originalUrl,
-                start_offset: startVal > 0 ? startVal : 0,
-                end_offset: endVal < videoDuration ? endVal : 0,
-                filter: selectedFilter,
-                speed: selectedSpeed,
-            })
-        });
-        const data = await resp.json();
-        if (!data.success) throw new Error(data.error || 'Save failed');
-
-        window.location.href = '{{ url_for("create_shorts") }}?video_url=' + encodeURIComponent(data.url);
+        let url;
+        if (publicId) {
+            const data = await getTransformedUrl();
+            if (!data.success) throw new Error(data.error || 'Save failed');
+            url = data.url;
+        } else if (originalUrl) {
+            url = originalUrl;
+        } else {
+            throw new Error('Видео не загружено');
+        }
+        window.location.href = '{{ url_for("create_shorts") }}?video_url=' + encodeURIComponent(url);
     } catch (e) {
         console.error(e);
         alert('Ошибка: ' + e.message);
         saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Сохранить в Shorts';
+        saveBtn.innerHTML = '<i class="fa-solid fa-video"></i> Экспорт в Shorts';
     }
 }
 </script>
