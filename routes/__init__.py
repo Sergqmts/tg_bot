@@ -8,6 +8,7 @@ from routes.music import register_routes as register_music_routes
 from routes.bots import register_routes as register_bot_routes
 from routes.accounts import register_routes as register_account_routes
 from routes.calls import register_routes as register_call_routes
+from routes.editor import register_routes as register_editor_routes
 
 
 def register_all_routes(app):
@@ -21,3 +22,4 @@ def register_all_routes(app):
     register_bot_routes(app)
     register_account_routes(app)
     register_call_routes(app)
+    register_editor_routes(app)
