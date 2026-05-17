@@ -18,6 +18,7 @@
 - **Бот-платформа** (Telegram-style API, 25+ методов, вебхуки)
 - **Фоторедактор** (11 инструментов: кадр, фильтры, эффекты, текст, стикеры, рисование, портрет, рамки, коллаж, анимация)
 - **Видеоредактор для Shorts** (обрезка, фильтры, скорость, аудио — через Cloudinary)
+- **Editor Service Integration** — вынесенный микросервис фото/видео редактора с JWT-прокси
 - **Бизнес-аккаунты** и **мультиаккаунты**
 - **Админ-панель** (модерация контента, жалобы, управление пользователями)
 - **Система черновиков**
@@ -31,7 +32,7 @@ python app.py  # dev :5000
 Локально SQLite, продакшн PostgreSQL.
 
 ## Переменные окружения
-`SECRET_KEY`, `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN`, `FREESOUND_API_KEY`
+`SECRET_KEY`, `DATABASE_URL`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CLOUDFLARE_TURN_KEY_ID`, `CLOUDFLARE_TURN_API_TOKEN`, `FREESOUND_API_KEY`, `EDITOR_SERVICE_URL`, `EDITOR_SERVICE_TOKEN`, `EDITOR_JWT_SECRET`
 
 ## Документация
 - [PROJECT.md](PROJECT.md) — полное описание

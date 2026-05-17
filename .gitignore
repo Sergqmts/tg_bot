@@ -43,6 +43,9 @@ test_output.txt
 # Logs
 *.log
 
+# Memory file (session context, not source code)
+MEMORY.md
+
 # Editor service docs (integration reference, not part of main app)
 EDITOR_SERVICE_SPEC.md
 docs/
