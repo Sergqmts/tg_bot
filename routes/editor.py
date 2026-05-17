@@ -1,7 +1,7 @@
 def register_routes(app):
     import os
     from datetime import datetime, timedelta
-    from flask import request, jsonify, redirect, abort, current_app
+    from flask import request, jsonify, redirect, url_for, abort, current_app
     from flask_login import login_required, current_user
     from extensions import db
     from models import Post, Story, Shorts, Draft, Media, ShortsAudio
@@ -9,7 +9,7 @@ def register_routes(app):
 
     EDITOR_SERVICE_TOKEN = os.environ.get('EDITOR_SERVICE_TOKEN')
     JWT_SECRET = os.environ.get('EDITOR_JWT_SECRET') or app.config.get('SECRET_KEY', 'dev-secret')
-    EDITOR_SERVICE_URL = os.environ.get('EDITOR_SERVICE_URL', 'http://localhost:8080')
+    EDITOR_SERVICE_URL = os.environ.get('EDITOR_SERVICE_URL', 'http://localhost:8080').rstrip('/')
 
     def check_service_token():
         token = request.headers.get('X-Service-Token')
@@ -108,6 +108,8 @@ def register_routes(app):
     @app.route('/proxy/edit/photo')
     @login_required
     def proxy_photo_editor():
+        if not EDITOR_SERVICE_TOKEN:
+            return redirect(url_for('photo_editor', **request.args))
         token = generate_editor_token(current_user)
         url = f"{EDITOR_SERVICE_URL}/photo?token={token}"
         draft_id = request.args.get('draft')
@@ -121,6 +123,8 @@ def register_routes(app):
     @app.route('/proxy/edit/video')
     @login_required
     def proxy_video_editor():
+        if not EDITOR_SERVICE_TOKEN:
+            return redirect(url_for('video_editor'))
         token = generate_editor_token(current_user)
         url = f"{EDITOR_SERVICE_URL}/video?token={token}"
         return redirect(url)
