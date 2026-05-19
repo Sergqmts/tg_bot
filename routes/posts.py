@@ -153,6 +153,29 @@ def register_routes(app):
     @app.route('/photo_editor', methods=['GET', 'POST'])
     @login_required
     def photo_editor():
+        if request.method == 'POST':
+            media_data = request.form.get('media_data')
+            if media_data:
+                import base64, io
+                header, data = media_data.split(',', 1)
+                binary = base64.b64decode(data)
+                from werkzeug.datastructures import FileStorage
+                file = FileStorage(io.BytesIO(binary), filename=f'avatar_{current_user.id}.jpg', content_type='image/jpeg')
+                from helpers import cloudinary_configured, upload_to_cloudinary
+                if cloudinary_configured:
+                    url = upload_to_cloudinary(file, folder='avatars')
+                    if url:
+                        current_user.avatar_cloudinary_url = url
+                        current_user.avatar = url.split('/')[-1].split('.')[0]
+                else:
+                    filename = secure_filename(f"avatar_{current_user.id}_{int(datetime.utcnow().timestamp())}.jpg")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    current_user.avatar = filename
+                    current_user.avatar_cloudinary_url = None
+                db.session.commit()
+                return jsonify({'status': 'ok'})
+            return jsonify({'status': 'error', 'message': 'No image data'}), 400
+
         draft_id = request.args.get('draft')
         target = request.args.get('target', 'feed')
         editing = draft_id is not None

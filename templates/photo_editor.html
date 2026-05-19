@@ -281,7 +281,8 @@
     <img id="savePreview" class="preview">
     <textarea id="saveCaption" placeholder="Подпись..."></textarea>
     <div class="save-options">
-      <label><input type="radio" name="saveTarget" value="feed" checked> 📰 В ленту</label>
+      <label><input type="radio" name="saveTarget" value="profile" checked> 👤 В профиль</label>
+      <label><input type="radio" name="saveTarget" value="feed"> 📰 В ленту</label>
       <label><input type="radio" name="saveTarget" value="story"> 📸 В сторис</label>
       <label><input type="radio" name="saveTarget" value="shorts"> 🎬 В шортсы</label>
       <label><input type="radio" name="saveTarget" value="draft"> 📝 Черновик</label>
@@ -1669,6 +1670,19 @@ function publishPhoto() {
   
   renderWithDraw();
   const dataUrl = state.canvas.toDataURL('image/jpeg', quality);
+  
+  if (target === 'profile') {
+    const formData = new FormData();
+    formData.append('media_data', dataUrl);
+    fetch('{{ url_for("photo_editor") }}', { method: 'POST', body: formData })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'ok') window.location.href = '{{ url_for("index") }}';
+        else alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+      })
+      .catch(err => { alert('Ошибка: ' + err); });
+    return;
+  }
   
   const formData = new FormData();
   formData.append('media_data', dataUrl);
