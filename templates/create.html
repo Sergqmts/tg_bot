@@ -20,7 +20,7 @@
                     Прикрепить
                 </label>
                 <input type="file" id="media-input" name="media" accept="image/*,video/*,audio/*,application/*,.pdf,.doc,.docx,.txt" multiple style="display: none;" onchange="handleFiles(this.files)">
-                <a href="{{ url_for('proxy_photo_editor') }}" class="attach-label" style="text-decoration:none;">
+                <a href="{{ url_for('proxy_photo_editor', return=url_for('create')) }}" class="attach-label" style="text-decoration:none;">
                     <svg class="attach-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
                     Редактор фото
                 </a>
@@ -100,6 +100,17 @@
             });
         }
         
+        (function() {
+            var editorPhoto = sessionStorage.getItem('editor_photo');
+            if (editorPhoto) {
+                sessionStorage.removeItem('editor_photo');
+                fetch(editorPhoto).then(function(r) { return r.blob(); }).then(function(blob) {
+                    var file = new File([blob], 'edited_photo.jpg', { type: 'image/jpeg' });
+                    handleFiles([file]);
+                });
+            }
+        })();
+
         function updateFileInput() {
             const input = document.getElementById('media-input');
             const dt = new DataTransfer();

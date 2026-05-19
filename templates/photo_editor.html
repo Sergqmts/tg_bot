@@ -296,6 +296,7 @@
 </div>
 
 <script>
+const RETURN_URL = '{{ request.args.get("return", "") }}';
 const FILTERS = {
   none: '',
   clarendon: 'contrast(1.2) saturate(1.35)',
@@ -1681,6 +1682,12 @@ function publishPhoto() {
         else alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
       })
       .catch(err => { alert('Ошибка: ' + err); });
+    return;
+  }
+  
+  if (RETURN_URL && (target === 'feed' || target === 'story')) {
+    sessionStorage.setItem('editor_photo', dataUrl);
+    window.location.href = RETURN_URL;
     return;
   }
   
