@@ -116,11 +116,11 @@
                     <input type="file" id="audioUpload" accept="audio/*" class="hidden">
                 </div>
                 <div class="space-y-1 max-h-[160px] overflow-y-auto" id="audioList">
-                    {% for audio in audios %}
+                    {% for track in tracks %}
                     <div class="audio-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-all text-sm"
-                        data-id="{{ audio.id }}" data-url="{{ audio.audio_url }}" data-title="{{ audio.title }}">
-                        <span><i class="fa-solid fa-music text-slate-400 mr-2"></i>{{ audio.title }}</span>
-                        <span class="text-xs text-slate-400">{{ audio.duration }}с</span>
+                        data-id="{{ track.id }}" data-url="{{ track.preview_url or track.file_url }}" data-title="{{ track.title }}">
+                        <span><i class="fa-solid fa-music text-slate-400 mr-2"></i>{{ track.title }}{% if track.artist %} — {{ track.artist }}{% endif %}</span>
+                        <span class="text-xs text-slate-400">{{ track.duration }}с</span>
                     </div>
                     {% endfor %}
                 </div>

@@ -5,7 +5,7 @@ def register_routes(app):
     from werkzeug.utils import secure_filename
     from datetime import datetime, timedelta
     from extensions import db, csrf
-    from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsAudio, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit, SavedPost
+    from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, MusicTrack, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit, SavedPost
 
     @app.route('/user/<username>')
     def user_profile(username):
@@ -326,8 +326,8 @@ def register_routes(app):
     @app.route('/sharts')
     def shorts():
         shorts_list = Shorts.query.order_by(Shorts.created_at.desc()).limit(20).all()
-        audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).limit(20).all()
-        return render_template('shorts.html', shorts_list=shorts_list, audios=audios)
+        tracks = MusicTrack.query.order_by(MusicTrack.created_at.desc()).limit(20).all()
+        return render_template('shorts.html', shorts_list=shorts_list, tracks=tracks)
 
 
     @app.route('/shorts/create', methods=['GET', 'POST'])
@@ -401,8 +401,8 @@ def register_routes(app):
                 return redirect(url_for('create_shorts'))
 
         video_url = request.args.get('video_url')
-        audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).all()
-        return render_template('create_shorts.html', audios=audios, video_url=video_url)
+        tracks = MusicTrack.query.order_by(MusicTrack.created_at.desc()).all()
+        return render_template('create_shorts.html', tracks=tracks, video_url=video_url)
 
 
     @app.route('/shorts/<int:shorts_id>', methods=['GET', 'POST'])
@@ -477,100 +477,7 @@ def register_routes(app):
         return redirect(request.referrer or url_for('user_profile', username=current_user.username))
 
 
-    @app.route('/shorts/audio/upload', methods=['GET', 'POST'])
-    @login_required
-    def upload_shorts_audio():
-        if request.method == 'POST':
-            audio = request.files.get('audio')
-            title = request.form.get('title', 'Original audio')
 
-            if audio:
-                from helpers import cloudinary_configured, upload_to_cloudinary
-                if cloudinary_configured:
-                    result = cloudinary.uploader.upload(
-                        audio, folder='shorts_audio', resource_type='video',
-                        timeout=30
-                    )
-                    audio_url = result['secure_url']
-                else:
-                    filename = f'saudio_{current_user.id}_{int(datetime.utcnow().timestamp())}.mp3'
-                    audio.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-                    audio_url = url_for('uploaded_file', filename=filename)
-
-                shorts_audio = ShortsAudio(
-                    title=title,
-                    audio_url=audio_url,
-                    user_id=current_user.id
-                )
-                db.session.add(shorts_audio)
-                db.session.commit()
-                return redirect(url_for('create_shorts'))
-
-        return render_template('upload_shorts_audio.html')
-
-
-    @app.route('/shorts/audio/search_freesound')
-    @login_required
-    def search_freesound():
-        query = request.args.get('q', '').strip()
-        if not query or len(query) < 2:
-            return jsonify({'results': []})
-
-        import urllib.request
-        import urllib.parse
-        import json
-
-        try:
-            from helpers import FREESOUND_API_KEY
-            url = f'https://freesound.org/apiv2/search/text/?query={urllib.parse.quote(query)}&token={FREESOUND_API_KEY}&page=1&page_size=12&fields=id,name,previews,duration,username,tags,description'
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode())
-
-            results = []
-            for s in data.get('results', []):
-                previews = s.get('previews', {})
-                preview_url = previews.get('preview-hq-mp3') or previews.get('preview-lq-mp3')
-                if preview_url:
-                    results.append({
-                        'id': s['id'],
-                        'name': s['name'],
-                        'username': s.get('username', ''),
-                        'duration': s.get('duration', 0),
-                        'preview_url': preview_url,
-                        'tags': s.get('tags', [])[:5],
-                        'description': s.get('description', '')[:200]
-                    })
-            return jsonify({'results': results})
-        except Exception as e:
-            current_app.logger.error(f"FreeSound search error: {e}")
-            return jsonify({'error': str(e), 'results': []}), 500
-
-
-    @app.route('/shorts/audio/add_freesound', methods=['POST'])
-    @login_required
-    def add_freesound_audio():
-        name = request.form.get('name', '').strip()
-        preview_url = request.form.get('preview_url', '').strip()
-        duration = request.form.get('duration', 0, type=int)
-
-        if not name or not preview_url:
-            return jsonify({'error': 'Missing fields'}), 400
-
-        existing = ShortsAudio.query.filter_by(audio_url=preview_url).first()
-        if existing:
-            return jsonify({'id': existing.id, 'title': existing.title, 'message': 'Уже добавлено'})
-
-        audio = ShortsAudio(
-            title=name,
-            audio_url=preview_url,
-            duration=duration,
-            user_id=current_user.id
-        )
-        db.session.add(audio)
-        db.session.commit()
-
-        return jsonify({'id': audio.id, 'title': audio.title, 'message': 'Добавлено!'})
 
 
     @app.route('/photos')

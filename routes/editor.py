@@ -4,7 +4,7 @@ def register_routes(app):
     from flask import request, jsonify, redirect, url_for, abort, current_app
     from flask_login import login_required, current_user
     from extensions import db
-    from models import Post, Story, Shorts, Draft, Media, ShortsAudio
+    from models import Post, Story, Shorts, Draft, Media, MusicTrack
     import jwt as pyjwt
 
     EDITOR_SERVICE_TOKEN = os.environ.get('EDITOR_SERVICE_TOKEN')
@@ -84,7 +84,7 @@ def register_routes(app):
         if not cloudinary_url or not user_id:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
-        audio = ShortsAudio.query.get(audio_id) if audio_id else None
+        audio = MusicTrack.query.get(audio_id) if audio_id else None
 
         shorts = Shorts(
             video_url=cloudinary_url,

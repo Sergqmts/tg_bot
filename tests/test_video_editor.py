@@ -1,6 +1,6 @@
 import json
 from extensions import db
-from models import ShortsAudio
+from models import MusicTrack
 
 
 CLOUD_NAME = 'testcloud'

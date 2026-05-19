@@ -626,6 +626,26 @@ with app.app_context():
         app.logger.info(f"Migration post.music_track_id: {e}")
 
     try:
+        # Migrate shorts.audio_id FK from shorts_audio to music_track
+        shorts_cols = get_table_columns('shorts')
+        if 'audio_id' in shorts_cols:
+            db_url = str(db.engine.url)
+            is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+            if is_postgres:
+                try:
+                    db.session.execute(text("ALTER TABLE shorts DROP CONSTRAINT IF EXISTS shorts_audio_id_fkey"))
+                    db.session.execute(text("ALTER TABLE shorts ADD CONSTRAINT shorts_audio_id_fkey FOREIGN KEY (audio_id) REFERENCES music_track(id)"))
+                    db.session.commit()
+                    app.logger.info("Migrated shorts.audio_id FK to music_track")
+                except Exception as fk_err:
+                    db.session.rollback()
+                    app.logger.info(f"Migration shorts.audio_id FK: {fk_err}")
+            else:
+                app.logger.info("SQLite: shorts.audio_id FK change needs manual migration")
+    except Exception as e:
+        app.logger.info(f"Migration shorts.audio_id: {e}")
+
+    try:
         if not User.query.filter_by(username='NewsBot').first():
             bot = User(
                 username='NewsBot',
