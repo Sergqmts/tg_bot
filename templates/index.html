@@ -26,8 +26,9 @@
             <div class="story-item">
                 <a href="{{ url_for('view_story', story_id=story.id) }}" class="story-ring">
                     <div class="story-ring-inner">
-                        {% if story.user.avatar and story.user.avatar != 'default.png' %}
-                        <img src="{{ story.user.avatar }}" class="story-avatar-img">
+                        {% set avatar_url = get_avatar_url(story.user) %}
+                        {% if avatar_url %}
+                        <img src="{{ avatar_url }}" class="story-avatar-img">
                         {% else %}
                         <div class="story-avatar-placeholder">{{ story.user.username[0].upper() }}</div>
                         {% endif %}

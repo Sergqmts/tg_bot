@@ -653,6 +653,7 @@ def register_routes(app):
         return render_template('forward_message.html', message=message, chats=chats, other_user=other_user, following=following, Post=Post)
 
 
+    @app.route('/message/<int:message_id>/forward', methods=['POST'])
     @login_required
     def forward_message_post(message_id):
         message = Message.query.get_or_404(message_id)

@@ -5,8 +5,16 @@ def register_routes(app):
     from werkzeug.utils import secure_filename
     from werkzeug.datastructures import FileStorage
     from datetime import datetime, timedelta
+    from sqlalchemy import and_
     from extensions import db
-    from models import Story, StoryReaction, StoryComment, User, Message
+    from models import Story, StoryReaction, StoryComment, User, Message, followers
+
+    def get_approved_followers():
+        return User.query.join(followers, and_(
+            followers.c.follower_id == User.id,
+            followers.c.followed_id == current_user.id,
+            followers.c.status == 'approved'
+        )).all()
 
     @app.route('/story/create', methods=['GET', 'POST'])
     @login_required
@@ -46,8 +54,7 @@ def register_routes(app):
                         )
                         db.session.add(story)
                         db.session.commit()
-                        followers = current_user.followers.filter_by(status='approved').all()
-                        for follower in followers:
+                        for follower in get_approved_followers():
                             create_notification(follower.id, current_user.id, 'new_story')
                         return redirect(url_for('index'))
                 else:
@@ -63,8 +70,7 @@ def register_routes(app):
                     )
                     db.session.add(story)
                     db.session.commit()
-                    followers = current_user.followers.filter_by(status='approved').all()
-                    for follower in followers:
+                    for follower in get_approved_followers():
                         create_notification(follower.id, current_user.id, 'new_story')
                     return redirect(url_for('index'))
             
@@ -98,8 +104,7 @@ def register_routes(app):
                     )
                     db.session.add(story)
                     db.session.commit()
-                    followers = current_user.followers.filter_by(status='approved').all()
-                    for follower in followers:
+                    for follower in get_approved_followers():
                         create_notification(follower.id, current_user.id, 'new_story')
                     return redirect(url_for('index'))
         
@@ -186,10 +191,10 @@ def register_routes(app):
         Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False, Story.is_archived == False).update({Story.is_archived: True})
         db.session.commit()
         user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.followed.all()]
-        blocked_ids = [b.blocked_id for b in current_user.blocked.all()]
-        exclude_ids = list(set(user_ids + blocked_ids))
+        blocked_ids = [b.id for b in current_user.blocked.all()]
         stories_list = Story.query.filter(
-            Story.user_id.in_(exclude_ids),
+            Story.user_id.in_(user_ids),
+            ~Story.user_id.in_(blocked_ids) if blocked_ids else True,
             Story.expires_at > datetime.utcnow()
         ).order_by(Story.created_at.desc()).all()
         return render_template('stories.html', stories=stories_list)

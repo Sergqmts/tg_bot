@@ -173,10 +173,10 @@ class User(UserMixin, db.Model):
         except Exception:
             return False
 
-    def is_member(self, chat):
+    def is_chat_member(self, chat):
         return ChatMember.query.filter_by(chat_id=chat.id, user_id=self.id).first() is not None
 
-    def is_admin(self, chat):
+    def is_chat_admin(self, chat):
         member = ChatMember.query.filter_by(chat_id=chat.id, user_id=self.id).first()
         return member and member.role == 'admin'
 
@@ -474,17 +474,6 @@ class PostTag(db.Model):
     tag_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=False)
 
 
-class ShortsAudio(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    audio_url = db.Column(db.String(500), nullable=False)
-    duration = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    user = db.relationship('User', backref='uploaded_shorts_audios')
-
-
 class MusicTrack(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -541,7 +530,7 @@ class FavoriteTrack(db.Model):
 class Shorts(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     video_url = db.Column(db.String(500), nullable=False)
-    audio_id = db.Column(db.Integer, db.ForeignKey('shorts_audio.id'), nullable=True)
+    audio_id = db.Column(db.Integer, db.ForeignKey('music_track.id'), nullable=True)
     caption = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -550,7 +539,7 @@ class Shorts(db.Model):
     comments = db.relationship('ShortsComment', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
     
     user = db.relationship('User', backref='shorts_videos')
-    audio = db.relationship('ShortsAudio', backref='shorts_videos')
+    audio = db.relationship('MusicTrack', backref='shorts_videos')
     
     def liked_by(self, user):
         return self.likes.filter_by(user_id=user.id).first() is not None

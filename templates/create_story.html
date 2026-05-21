@@ -38,7 +38,7 @@
         
         <div class="p-4 space-y-4">
             <div class="flex gap-3">
-                <a href="{{ url_for('photo_editor', target='story') }}" class="flex-1 flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl hover:opacity-90 transition-all">
+                <a href="{{ url_for('proxy_photo_editor', target='story', return=url_for('create_story')) }}" class="flex-1 flex items-center justify-center gap-2 p-4 bg-gradient-to-r from-purple-600 to-pink-500 rounded-2xl hover:opacity-90 transition-all">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                     <span class="text-sm font-bold">Редактор</span>
                 </a>
@@ -106,6 +106,17 @@
     </div>
     
     <script>
+        (function() {
+            var editorPhoto = sessionStorage.getItem('editor_photo');
+            if (editorPhoto) {
+                sessionStorage.removeItem('editor_photo');
+                fetch(editorPhoto).then(function(r) { return r.blob(); }).then(function(blob) {
+                    var file = new File([blob], 'edited_photo.jpg', { type: 'image/jpeg' });
+                    showPreview(file);
+                });
+            }
+        })();
+
         let stream = null;
         let mediaRecorder = null;
         let recordedChunks = [];
@@ -214,6 +225,8 @@
             
             const formData = new FormData();
             formData.append('media_data', document.getElementById('mediaData').value);
+            const csrfInput = document.querySelector('input[name="csrf_token"]');
+            if (csrfInput) formData.append('csrf_token', csrfInput.value);
             
             try {
                 const resp = await fetch('{{ url_for("create_story") }}', { method: 'POST', body: formData });

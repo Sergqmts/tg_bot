@@ -7,7 +7,7 @@ def register_routes(app):
     from datetime import datetime
     from PIL import Image, ImageEnhance, ImageFilter
     from extensions import db
-    from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, ShortsAudio, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog, PostView
+    from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog, PostView
 
     @app.route('/')
     def index():
@@ -153,6 +153,29 @@ def register_routes(app):
     @app.route('/photo_editor', methods=['GET', 'POST'])
     @login_required
     def photo_editor():
+        if request.method == 'POST':
+            media_data = request.form.get('media_data')
+            if media_data:
+                import base64, io
+                header, data = media_data.split(',', 1)
+                binary = base64.b64decode(data)
+                from werkzeug.datastructures import FileStorage
+                file = FileStorage(io.BytesIO(binary), filename=f'avatar_{current_user.id}.jpg', content_type='image/jpeg')
+                from helpers import cloudinary_configured, upload_to_cloudinary
+                if cloudinary_configured:
+                    url = upload_to_cloudinary(file, folder='avatars')
+                    if url:
+                        current_user.avatar_cloudinary_url = url
+                        current_user.avatar = url.split('/')[-1].split('.')[0]
+                else:
+                    filename = secure_filename(f"avatar_{current_user.id}_{int(datetime.utcnow().timestamp())}.jpg")
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    current_user.avatar = filename
+                    current_user.avatar_cloudinary_url = None
+                db.session.commit()
+                return jsonify({'status': 'ok'})
+            return jsonify({'status': 'error', 'message': 'No image data'}), 400
+
         draft_id = request.args.get('draft')
         target = request.args.get('target', 'feed')
         editing = draft_id is not None
@@ -294,33 +317,34 @@ def register_routes(app):
                 audio_id = data.get('audio_id')
                 if audio_id:
                     from helpers import cloudinary_configured, cloud_name
-                    audio_track = ShortsAudio.query.get(audio_id)
-                    if audio_track and audio_track.audio_url:
-                        import cloudinary.uploader
-                        audio_url = audio_track.audio_url
-                        audio_public_id = None
-                        if cloudinary_configured and 'res.cloudinary.com' in audio_url:
-                            parts = audio_url.split('/')
-                            if 'upload' in parts:
-                                idx = parts.index('upload') + 1
-                                path_parts = parts[idx:]
-                                if path_parts and path_parts[0].startswith('v'):
-                                    path_parts = path_parts[1:]
-                                path = '/'.join(path_parts)
-                                if '.' in path:
-                                    path = path.rsplit('.', 1)[0]
-                                audio_public_id = path
-                        else:
-                            try:
-                                result = cloudinary.uploader.upload(
-                                    audio_url, folder='shorts_audio', resource_type='video',
-                                    timeout=30
-                                )
-                                audio_public_id = result['public_id']
-                            except:
-                                pass
-                        if audio_public_id:
-                            tx_parts.append('l_audio:' + audio_public_id.replace('/', ':') + ',fl_layer_apply')
+                    audio_track = MusicTrack.query.get(audio_id)
+                    if audio_track:
+                        audio_url = audio_track.preview_url or audio_track.file_url
+                        if audio_url:
+                            import cloudinary.uploader
+                            audio_public_id = None
+                            if cloudinary_configured and 'res.cloudinary.com' in audio_url:
+                                parts = audio_url.split('/')
+                                if 'upload' in parts:
+                                    idx = parts.index('upload') + 1
+                                    path_parts = parts[idx:]
+                                    if path_parts and path_parts[0].startswith('v'):
+                                        path_parts = path_parts[1:]
+                                    path = '/'.join(path_parts)
+                                    if '.' in path:
+                                        path = path.rsplit('.', 1)[0]
+                                    audio_public_id = path
+                            else:
+                                try:
+                                    result = cloudinary.uploader.upload(
+                                        audio_url, folder='shorts_audio', resource_type='video',
+                                        timeout=30
+                                    )
+                                    audio_public_id = result['public_id']
+                                except:
+                                    pass
+                            if audio_public_id:
+                                tx_parts.append('l_audio:' + audio_public_id.replace('/', ':') + ',fl_layer_apply')
 
                 if tx_parts:
                     tx_str = '/'.join(tx_parts)
@@ -340,8 +364,8 @@ def register_routes(app):
 
             return jsonify({'error': 'Invalid request', 'success': False}), 400
 
-        audios = ShortsAudio.query.order_by(ShortsAudio.created_at.desc()).all()
-        return render_template('video_editor.html', audios=audios)
+        tracks = MusicTrack.query.order_by(MusicTrack.created_at.desc()).all()
+        return render_template('video_editor.html', tracks=tracks)
 
     @app.route('/post/<int:post_id>/repost', methods=['GET', 'POST'])
     @login_required

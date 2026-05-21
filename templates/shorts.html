@@ -223,8 +223,9 @@
             <div class="shorts-item-info">
                 <div class="shorts-item-author">
                     <div class="shorts-item-avatar">
-                        {% if shorts.user.avatar and shorts.user.avatar != 'default.png' %}
-                        <img src="{{ shorts.user.avatar }}">
+                        {% set avatar_url = get_avatar_url(shorts.user) %}
+                        {% if avatar_url %}
+                        <img src="{{ avatar_url }}">
                         {% else %}
                         <span>{{ shorts.user.username[0].upper() }}</span>
                         {% endif %}
@@ -299,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             var url = this.getAttribute('href');
-            fetch(url, {method: 'POST'}).then(function() {
+            fetch(url, {method: 'POST', headers: {'X-CSRFToken': getCSRFToken()}}).then(function() {
                 location.reload();
             });
         });
@@ -328,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             fetch('/shorts/' + shortsId + '/react', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRFToken()},
                 body: 'emoji=' + encodeURIComponent(emoji)
             }).then(function() {
                 el.classList.toggle('selected');

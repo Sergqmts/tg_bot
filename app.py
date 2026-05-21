@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from flask_socketio import emit, join_room, leave_room
 
 from werkzeug.utils import secure_filename
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from socket import gethostname, gethostbyname
 import os
 import cloudinary
@@ -71,7 +71,8 @@ def inject_stories():
             following = current_user.followed.all()
             follower_ids = [f.id for f in followers]
             following_ids = [f.id for f in following]
-            user_ids = [current_user.id] + follower_ids + following_ids
+            blocked_ids = [b.id for b in current_user.blocked.all()]
+            user_ids = [uid for uid in ([current_user.id] + follower_ids + following_ids) if uid not in blocked_ids]
             
             if user_ids:
                 story_users = db.session.query(Story.user_id).filter(
@@ -98,7 +99,7 @@ def inject_stories():
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
 cloud_secret = os.environ.get('CLOUDINARY_API_SECRET')
-app.logger.info(f"Cloudinary config: cloud_name={cloud_name}, has_key=bool(cloud_key), has_secret=bool(cloud_secret)")
+app.logger.info(f"Cloudinary config: cloud_name={cloud_name}, has_key={bool(cloud_key)}, has_secret={bool(cloud_secret)}")
 if cloudinary_configured:
     cloudinary.config(
         cloud_name=cloud_name,
@@ -268,7 +269,10 @@ csrf.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    try:
+        return User.query.get(int(user_id))
+    except (ValueError, TypeError):
+        return None
 
 
 _migration_done = False
@@ -474,8 +478,9 @@ def update_last_seen():
         try:
             current_user.last_seen = datetime.utcnow()
             db.session.commit()
-        except:
-            pass
+        except Exception as e:
+            app.logger.error(f"update_last_seen error: {e}")
+            db.session.rollback()
 
 
 @app.route('/favicon.ico')
@@ -626,6 +631,26 @@ with app.app_context():
         app.logger.info(f"Migration post.music_track_id: {e}")
 
     try:
+        # Migrate shorts.audio_id FK from shorts_audio to music_track
+        shorts_cols = get_table_columns('shorts')
+        if 'audio_id' in shorts_cols:
+            db_url = str(db.engine.url)
+            is_postgres = 'postgresql' in db_url or 'psycopg' in db_url
+            if is_postgres:
+                try:
+                    db.session.execute(text("ALTER TABLE shorts DROP CONSTRAINT IF EXISTS shorts_audio_id_fkey"))
+                    db.session.execute(text("ALTER TABLE shorts ADD CONSTRAINT shorts_audio_id_fkey FOREIGN KEY (audio_id) REFERENCES music_track(id)"))
+                    db.session.commit()
+                    app.logger.info("Migrated shorts.audio_id FK to music_track")
+                except Exception as fk_err:
+                    db.session.rollback()
+                    app.logger.info(f"Migration shorts.audio_id FK: {fk_err}")
+            else:
+                app.logger.info("SQLite: shorts.audio_id FK change needs manual migration")
+    except Exception as e:
+        app.logger.info(f"Migration shorts.audio_id: {e}")
+
+    try:
         if not User.query.filter_by(username='NewsBot').first():
             bot = User(
                 username='NewsBot',
@@ -752,3 +777,6 @@ csrf._exempt_views.add('send_voice')
 csrf._exempt_views.add('send_chat_voice')
 csrf._exempt_views.add('forward_post')
 csrf._exempt_views.add('forward_message')
+csrf._exempt_views.add('editor_publish')
+csrf._exempt_views.add('editor_publish_video')
+csrf._exempt_views.add('editor_get_draft')

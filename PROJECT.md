@@ -15,7 +15,7 @@
 - **`helpers.py`** — утилиты (загрузка Cloudinary, модерация, генерация токенов, уведомления)
 
 ### Маршруты (`routes/`)
-Модульная система: `routes/__init__.py → register_all_routes(app)` импортирует 10 модулей:
+Модульная система: `routes/__init__.py → register_all_routes(app)` импортирует 11 модулей:
 
 | Файл | Маршруты |
 |------|----------|
@@ -29,6 +29,7 @@
 | `bots.py` | `/bots`, `/bots/new`, `/bots/<id>/settings`, `/bot<token>/<method>` (25 методов) |
 | `accounts.py` | `/accounts`, `/accounts/create`, `/accounts/switch`, `/accounts/link` |
 | `calls.py` | `/api/calls/initiate`, `/api/calls/<id>/status`, `/api/calls/<id>/end`, `/api/calls/history`, `/api/turn/credentials` |
+| `editor.py` | `/proxy/edit/photo`, `/proxy/edit/video`, `/api/editor/publish`, `/api/editor/publish-video`, `/api/editor/draft/<id>` |
 
 ## 🗄️ База данных (SQLAlchemy + PostgreSQL/SQLite)
 
@@ -125,7 +126,8 @@ tg_bot/
 │   ├── music.py            # Музыкальный плеер (Deezer)
 │   ├── bots.py             # Bot API (Telegram-style)
 │   ├── accounts.py         # Мультиаккаунты / бизнес-аккаунты
-│   └── calls.py            # VoIP звонки API
+│   ├── calls.py            # VoIP звонки API
+│   └── editor.py           # Editor Service Integration (прокси, API публикации)
 ├── static/
 │   ├── style.css           # Все стили (2169 строк)
 │   ├── call.js             # WebRTC клиент для звонков
@@ -141,6 +143,15 @@ tg_bot/
 - Bot API: 25+ методов (sendMessage, sendPhoto, sendVideo, sendVoice, sendDocument, forwardMessage, deleteMessage, banChatMember, unbanChatMember, promoteChatMember, getChat, getChatMembers, getMe, setWebhook, deleteWebhook, getCommunity, getCommunityMembers, approveJoinRequest, denyJoinRequest, kickMember, promoteToAdmin, deletePost, sendPost, joinCommunity, getUpdates)
 - Вебхуки: асинхронный POST при новых сообщениях
 - CSRF exempt для всех Bot API маршрутов
+
+### Editor Service Integration
+- Внешний микросервис редактора для фото и видео (`editor_service_VibeHub`)
+- Прокси-роуты: `/proxy/edit/photo`, `/proxy/edit/video` — JWT-редирект на редактор
+- API-эндпоинты для публикации: `/api/editor/publish`, `/api/editor/publish-video`
+- API для черновиков: `/api/editor/draft/<id>`
+- JWT-аутентификация: общий секрет `EDITOR_JWT_SECRET` / `JWT_SECRET`
+- Service-to-service auth: `X-Service-Token` header
+- Fallback на локальные редакторы при отсутствии `EDITOR_SERVICE_TOKEN`
 
 ### Фоторедактор (`/photo_editor`)
 11 инструментов на Canvas2D:
@@ -242,6 +253,10 @@ GOOGLE_CLIENT_SECRET=...
 CLOUDFLARE_TURN_KEY_ID=...
 CLOUDFLARE_TURN_API_TOKEN=...
 FREESOUND_API_KEY=...
+EDITOR_SERVICE_URL=https://editorservicevibehub-production.up.railway.app
+EDITOR_SERVICE_TOKEN=service-token
+EDITOR_JWT_SECRET=<общий JWT-секрет с редактором>
+JWT_SECRET=<тот же секрет для редактора>
 PORT=8080
 ```
 
@@ -251,3 +266,4 @@ PORT=8080
 3. Нет лимита размера файлов — большие аплоады могут вызвать 502
 4. `Message.body NOT NULL` в PostgreSQL — всегда передавать `body=''`
 5. Нет requirements.txt generation — при новых зависимостях обновлять вручную
+6. JWT key < 32 bytes вызывает `InsecureKeyLengthWarning` — рекомендуется ключ длиннее 32 символов

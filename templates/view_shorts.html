@@ -163,8 +163,9 @@
     <div class="shorts-view-info">
         <div class="shorts-view-author">
             <div class="shorts-view-avatar">
-                {% if shorts.user.avatar and shorts.user.avatar != 'default.png' %}
-                <img src="{{ shorts.user.avatar }}">
+                {% set avatar_url = get_avatar_url(shorts.user) %}
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}">
                 {% else %}
                 <span>{{ shorts.user.username[0].upper() }}</span>
                 {% endif %}
