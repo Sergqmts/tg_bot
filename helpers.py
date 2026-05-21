@@ -10,7 +10,7 @@ from models import User, Notification, Message, Chat, ChatMember, ModerationLog,
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
 cloud_secret = os.environ.get('CLOUDINARY_API_SECRET')
-cloudinary_configured = cloud_name and cloud_key
+cloudinary_configured = cloud_name and cloud_key and cloud_secret
 
 FREESOUND_API_KEY = os.environ.get('FREESOUND_API_KEY', '')
 
@@ -212,7 +212,7 @@ def moderate_post(body, author, community=None):
 def get_or_create_dm(user_a, user_b):
     from sqlalchemy.orm import aliased
     cm2 = aliased(ChatMember)
-    chat = Chat.query.join(ChatMember).filter(ChatMember.user_id == user_a.id).join(cm2).filter(
+    chat = Chat.query.join(ChatMember).filter(ChatMember.user_id == user_a.id).join(cm2, cm2.chat_id == Chat.id).filter(
         cm2.user_id == user_b.id, Chat.type == 'direct'
     ).first()
     if not chat:

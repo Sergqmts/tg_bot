@@ -173,10 +173,10 @@ class User(UserMixin, db.Model):
         except Exception:
             return False
 
-    def is_member(self, chat):
+    def is_chat_member(self, chat):
         return ChatMember.query.filter_by(chat_id=chat.id, user_id=self.id).first() is not None
 
-    def is_admin(self, chat):
+    def is_chat_admin(self, chat):
         member = ChatMember.query.filter_by(chat_id=chat.id, user_id=self.id).first()
         return member and member.role == 'admin'
 

@@ -194,7 +194,7 @@ def register_routes(app):
                         current_user.avatar_cloudinary_url = url
                         current_user.avatar = url.split('/')[-1].split('.')[0]
                 else:
-                    filename = secure_filename(f"{datetime.now().timestamp}_{file.filename}")
+                    filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                     file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                     current_user.avatar = filename
                     current_user.avatar_cloudinary_url = None

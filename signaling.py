@@ -1,7 +1,6 @@
 import json
 import logging
-from datetime import datetime
-from starlette.websockets import WebSocket, WebSocketState
+from starlette.websockets import WebSocket
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ async def handle_call_ws(websocket: WebSocket):
             elif msg_type == 'call:answer':
                 call_id = data.get('call_id')
                 call_rooms.setdefault(call_id, set()).add(user_id)
-                for uid in call_rooms.get(call_id, set()):
+                for uid in list(call_rooms.get(call_id, set())):
                     if uid != user_id:
                         await send_to_user(uid, {
                             'type': 'call:answered',
@@ -90,7 +89,7 @@ async def handle_call_ws(websocket: WebSocket):
 
             elif msg_type == 'call:decline':
                 call_id = data.get('call_id')
-                for uid in call_rooms.get(call_id, set()):
+                for uid in list(call_rooms.get(call_id, set())):
                     if uid != user_id:
                         await send_to_user(uid, {
                             'type': 'call:declined',
@@ -101,7 +100,7 @@ async def handle_call_ws(websocket: WebSocket):
 
             elif msg_type == 'call:end':
                 call_id = data.get('call_id')
-                for uid in call_rooms.get(call_id, set()):
+                for uid in list(call_rooms.get(call_id, set())):
                     if uid != user_id:
                         await send_to_user(uid, {
                             'type': 'call:ended',
@@ -113,7 +112,7 @@ async def handle_call_ws(websocket: WebSocket):
             elif msg_type == 'sdp:offer':
                 call_id = data.get('call_id')
                 sdp = data.get('sdp')
-                for uid in call_rooms.get(call_id, set()):
+                for uid in list(call_rooms.get(call_id, set())):
                     if uid != user_id:
                         await send_to_user(uid, {
                             'type': 'sdp:offer',
@@ -123,7 +122,7 @@ async def handle_call_ws(websocket: WebSocket):
             elif msg_type == 'sdp:answer':
                 call_id = data.get('call_id')
                 sdp = data.get('sdp')
-                for uid in call_rooms.get(call_id, set()):
+                for uid in list(call_rooms.get(call_id, set())):
                     if uid != user_id:
                         await send_to_user(uid, {
                             'type': 'sdp:answer',
@@ -133,7 +132,7 @@ async def handle_call_ws(websocket: WebSocket):
             elif msg_type == 'ice:candidate':
                 call_id = data.get('call_id')
                 candidate = data.get('candidate')
-                for uid in call_rooms.get(call_id, set()):
+                for uid in list(call_rooms.get(call_id, set())):
                     if uid != user_id:
                         await send_to_user(uid, {
                             'type': 'ice:candidate',
@@ -143,7 +142,7 @@ async def handle_call_ws(websocket: WebSocket):
             elif msg_type == 'call:toggle_mute':
                 call_id = data.get('call_id')
                 muted = data.get('muted')
-                for uid in call_rooms.get(call_id, set()):
+                for uid in list(call_rooms.get(call_id, set())):
                     if uid != user_id:
                         await send_to_user(uid, {
                             'type': 'call:peer_mute',
@@ -153,7 +152,7 @@ async def handle_call_ws(websocket: WebSocket):
             elif msg_type == 'call:toggle_camera':
                 call_id = data.get('call_id')
                 camera_on = data.get('camera_on')
-                for uid in call_rooms.get(call_id, set()):
+                for uid in list(call_rooms.get(call_id, set())):
                     if uid != user_id:
                         await send_to_user(uid, {
                             'type': 'call:peer_camera',
@@ -172,7 +171,7 @@ async def handle_call_ws(websocket: WebSocket):
             for call_id in list(call_rooms.keys()):
                 if user_id in call_rooms[call_id]:
                     call_rooms[call_id].discard(user_id)
-                    for uid in call_rooms[call_id]:
+                    for uid in list(call_rooms[call_id]):
                         await send_to_user(uid, {
                             'type': 'call:ended',
                             'data': {'call_id': call_id, 'user_id': user_id}

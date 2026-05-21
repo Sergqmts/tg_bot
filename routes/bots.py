@@ -31,10 +31,14 @@ def register_routes(app):
             if not user:
                 return None, None
             return None, user
-        chat = Chat.query.get(int(chat_id))
+        try:
+            cid = int(chat_id)
+        except (ValueError, TypeError):
+            return None, None
+        chat = Chat.query.get(cid)
         if chat:
             return chat, None
-        user = User.query.get(int(chat_id))
+        user = User.query.get(cid)
         if user:
             return None, user
         return None, None
@@ -55,9 +59,14 @@ def register_routes(app):
         return chat
 
     def resolve_community(slug_or_id):
+        if slug_or_id is None:
+            return None
         if isinstance(slug_or_id, str) and not slug_or_id.isdigit():
             return Community.query.filter_by(slug=slug_or_id).first()
-        return Community.query.get(int(slug_or_id))
+        try:
+            return Community.query.get(int(slug_or_id))
+        except (ValueError, TypeError):
+            return None
 
     def process_video(file_data, start_time=0, duration=None, quality='medium'):
         if cloudinary_configured and file_data.get('cloudinary_url'):

@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from flask_socketio import emit, join_room, leave_room
 
 from werkzeug.utils import secure_filename
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from socket import gethostname, gethostbyname
 import os
 import cloudinary
@@ -99,7 +99,7 @@ def inject_stories():
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
 cloud_secret = os.environ.get('CLOUDINARY_API_SECRET')
-app.logger.info(f"Cloudinary config: cloud_name={cloud_name}, has_key=bool(cloud_key), has_secret=bool(cloud_secret)")
+app.logger.info(f"Cloudinary config: cloud_name={cloud_name}, has_key={bool(cloud_key)}, has_secret={bool(cloud_secret)}")
 if cloudinary_configured:
     cloudinary.config(
         cloud_name=cloud_name,
@@ -269,7 +269,10 @@ csrf.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    try:
+        return User.query.get(int(user_id))
+    except (ValueError, TypeError):
+        return None
 
 
 _migration_done = False
@@ -475,8 +478,9 @@ def update_last_seen():
         try:
             current_user.last_seen = datetime.utcnow()
             db.session.commit()
-        except:
-            pass
+        except Exception as e:
+            app.logger.error(f"update_last_seen error: {e}")
+            db.session.rollback()
 
 
 @app.route('/favicon.ico')
