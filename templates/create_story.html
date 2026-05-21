@@ -225,6 +225,8 @@
             
             const formData = new FormData();
             formData.append('media_data', document.getElementById('mediaData').value);
+            const csrfInput = document.querySelector('input[name="csrf_token"]');
+            if (csrfInput) formData.append('csrf_token', csrfInput.value);
             
             try {
                 const resp = await fetch('{{ url_for("create_story") }}', { method: 'POST', body: formData });

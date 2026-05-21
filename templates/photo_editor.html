@@ -1675,6 +1675,7 @@ function publishPhoto() {
   if (target === 'profile') {
     const formData = new FormData();
     formData.append('media_data', dataUrl);
+    formData.append('csrf_token', getCSRFToken());
     fetch('{{ url_for("photo_editor") }}', { method: 'POST', body: formData })
       .then(res => res.json())
       .then(data => {
@@ -1694,6 +1695,7 @@ function publishPhoto() {
   const formData = new FormData();
   formData.append('media_data', dataUrl);
   formData.append('body', caption);
+  formData.append('csrf_token', getCSRFToken());
   
   let url = '{{ url_for("create") }}';
   if (target === 'story') url = '{{ url_for("create_story") }}';
@@ -1701,7 +1703,7 @@ function publishPhoto() {
   else if (target === 'draft') url = '{{ url_for("create") }}?draft=1';
   
   fetch(url, { method: 'POST', body: formData })
-    .then(() => { window.location.href = '{{ url_for("index") }}'; })
+    .then(res => { if (res.ok) window.location.href = '{{ url_for("index") }}'; else alert('Ошибка ' + res.status); })
     .catch(err => { alert('Ошибка: ' + err); });
 }
 

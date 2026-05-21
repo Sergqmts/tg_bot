@@ -36,14 +36,14 @@
 
     <!-- Video area with remote + local -->
     <div id="callScreenVideoArea" class="absolute inset-0 hidden">
-        <video id="remoteVideo" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
         <div class="relative w-full h-full">
+            <video id="remoteVideo" class="absolute inset-0 w-full h-full object-cover z-0" autoplay playsinline></video>
             <!-- Local video (PiP style, bottom-right) -->
             <div id="localVideoContainer" class="absolute bottom-24 right-4 w-28 h-40 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20 hidden z-10 bg-black">
                 <video id="localVideo" class="w-full h-full object-cover" autoplay muted playsinline></video>
             </div>
             <!-- Peer camera off indicator -->
-            <div id="peerCameraIndicator" class="absolute inset-0 hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+            <div id="peerCameraIndicator" class="absolute inset-0 hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center z-10">
                 <div class="text-center">
                     <div class="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-3xl font-bold">
                         <span id="callPeerAvatar">?</span>
@@ -53,7 +53,7 @@
                 </div>
             </div>
             <!-- Peer mute indicator -->
-            <div id="peerMuteIndicator" class="absolute top-4 left-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full hidden">
+            <div id="peerMuteIndicator" class="absolute top-4 left-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full hidden z-10">
                 <i class="fa-solid fa-microphone-slash mr-1"></i> Приглушен
             </div>
         </div>
