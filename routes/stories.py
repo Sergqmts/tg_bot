@@ -5,8 +5,16 @@ def register_routes(app):
     from werkzeug.utils import secure_filename
     from werkzeug.datastructures import FileStorage
     from datetime import datetime, timedelta
+    from sqlalchemy import and_
     from extensions import db
-    from models import Story, StoryReaction, StoryComment, User, Message
+    from models import Story, StoryReaction, StoryComment, User, Message, followers
+
+    def get_approved_followers():
+        return User.query.join(followers, and_(
+            followers.c.follower_id == User.id,
+            followers.c.followed_id == current_user.id,
+            followers.c.status == 'approved'
+        )).all()
 
     @app.route('/story/create', methods=['GET', 'POST'])
     @login_required
@@ -46,8 +54,7 @@ def register_routes(app):
                         )
                         db.session.add(story)
                         db.session.commit()
-                        followers = current_user.followers.filter_by(status='approved').all()
-                        for follower in followers:
+                        for follower in get_approved_followers():
                             create_notification(follower.id, current_user.id, 'new_story')
                         return redirect(url_for('index'))
                 else:
@@ -63,8 +70,7 @@ def register_routes(app):
                     )
                     db.session.add(story)
                     db.session.commit()
-                    followers = current_user.followers.filter_by(status='approved').all()
-                    for follower in followers:
+                    for follower in get_approved_followers():
                         create_notification(follower.id, current_user.id, 'new_story')
                     return redirect(url_for('index'))
             
@@ -98,8 +104,7 @@ def register_routes(app):
                     )
                     db.session.add(story)
                     db.session.commit()
-                    followers = current_user.followers.filter_by(status='approved').all()
-                    for follower in followers:
+                    for follower in get_approved_followers():
                         create_notification(follower.id, current_user.id, 'new_story')
                     return redirect(url_for('index'))
         
