@@ -30,6 +30,7 @@
                 </button>
             </div>
 
+            <input type="hidden" name="media_data" id="mediaDataInput" value="">
             <input type="hidden" name="music_track_id" id="musicTrackInput" value="">
             <div id="selectedTrackBadge" class="selected-track-badge" style="display:none;">
                 <span id="selectedTrackName"></span>
@@ -104,6 +105,7 @@
             var editorPhoto = sessionStorage.getItem('editor_photo');
             if (editorPhoto) {
                 sessionStorage.removeItem('editor_photo');
+                document.getElementById('mediaDataInput').value = editorPhoto;
                 fetch(editorPhoto).then(function(r) { return r.blob(); }).then(function(blob) {
                     var file = new File([blob], 'edited_photo.jpg', { type: 'image/jpeg' });
                     handleFiles([file]);
@@ -117,11 +119,7 @@
             for (let i = 0; i < files.length; i++) {
                 dt.items.add(files[i]);
             }
-            Object.defineProperty(input, 'files', {
-                value: dt.files,
-                writable: false,
-                configurable: true
-            });
+            input.files = dt.files;
         }
         
 

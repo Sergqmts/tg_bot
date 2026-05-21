@@ -191,10 +191,10 @@ def register_routes(app):
         Story.query.filter(Story.expires_at < datetime.utcnow(), Story.is_saved == False, Story.is_archived == False).update({Story.is_archived: True})
         db.session.commit()
         user_ids = [current_user.id] + [f.id for f in current_user.followers.all()] + [f.id for f in current_user.followed.all()]
-        blocked_ids = [b.blocked_id for b in current_user.blocked.all()]
-        exclude_ids = list(set(user_ids + blocked_ids))
+        blocked_ids = [b.id for b in current_user.blocked.all()]
         stories_list = Story.query.filter(
-            Story.user_id.in_(exclude_ids),
+            Story.user_id.in_(user_ids),
+            ~Story.user_id.in_(blocked_ids) if blocked_ids else True,
             Story.expires_at > datetime.utcnow()
         ).order_by(Story.created_at.desc()).all()
         return render_template('stories.html', stories=stories_list)

@@ -53,9 +53,9 @@
             <div class="absolute top-[60px] bottom-[80px] w-[30%] right-0 z-[50] cursor-pointer" onclick="nextStory()"></div>
             
             {% if story.media_type == 'video' %}
-            <video class="w-full h-full object-contain bg-[#000]" id="storyMedia" src="{{ story.media_url }}" autoplay loop muted></video>
+            <video class="w-full h-full object-contain bg-[#000]" id="storyMedia" src="{{ story.media_url if story.media_url.startswith('http') else url_for('uploaded_file', filename=story.media_url) }}" autoplay loop muted></video>
             {% else %}
-            <img class="w-full h-full object-contain bg-[#000]" src="{{ story.media_url }}" alt="">
+            <img class="w-full h-full object-contain bg-[#000]" src="{{ story.media_url if story.media_url.startswith('http') else url_for('uploaded_file', filename=story.media_url) }}" alt="">
             {% endif %}
             
             <div class="absolute right-3 bottom-[80px] flex flex-col gap-5 items-center z-[100]">

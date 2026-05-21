@@ -71,7 +71,8 @@ def inject_stories():
             following = current_user.followed.all()
             follower_ids = [f.id for f in followers]
             following_ids = [f.id for f in following]
-            user_ids = [current_user.id] + follower_ids + following_ids
+            blocked_ids = [b.id for b in current_user.blocked.all()]
+            user_ids = [uid for uid in ([current_user.id] + follower_ids + following_ids) if uid not in blocked_ids]
             
             if user_ids:
                 story_users = db.session.query(Story.user_id).filter(
