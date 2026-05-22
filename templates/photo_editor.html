@@ -1686,7 +1686,7 @@ function publishPhoto() {
     return;
   }
   
-  if (RETURN_URL && (target === 'feed' || target === 'story')) {
+  if (RETURN_URL && target === 'feed') {
     sessionStorage.setItem('editor_photo', dataUrl);
     window.location.href = RETURN_URL;
     return;

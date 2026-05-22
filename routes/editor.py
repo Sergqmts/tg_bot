@@ -1,12 +1,11 @@
 def register_routes(app):
-    import os, re
+    import os
     from datetime import datetime, timedelta
     from flask import request, jsonify, redirect, url_for, abort, current_app
     from flask_login import login_required, current_user
     from extensions import db
     from models import Post, Story, Shorts, Draft, Media, MusicTrack
     import jwt as pyjwt
-    import requests as http_requests
 
     EDITOR_SERVICE_TOKEN = os.environ.get('EDITOR_SERVICE_TOKEN')
     JWT_SECRET = os.environ.get('EDITOR_JWT_SECRET') or app.config.get('SECRET_KEY', 'dev-secret')
@@ -24,47 +23,6 @@ def register_routes(app):
             'exp': datetime.utcnow() + timedelta(hours=1),
         }
         return pyjwt.encode(payload, JWT_SECRET, algorithm='HS256')
-
-    def _proxy_editor_html(path, params, fallback_route):
-        if 'token' not in params:
-            params['token'] = generate_editor_token(current_user)
-        try:
-            resp = http_requests.get(
-                f"{EDITOR_SERVICE_URL}{path}",
-                params=params,
-                timeout=30,
-                headers={'User-Agent': 'VibeHub-Proxy/1.0'}
-            )
-            resp.raise_for_status()
-            content_type = resp.headers.get('Content-Type', '')
-            if 'text/html' in content_type:
-                html = resp.text
-                html = re.sub(
-                    r'<link[^>]*\brel=["\'](?:shortcut\s+)?icon["\'][^>]*>',
-                    '',
-                    html,
-                    flags=re.IGNORECASE
-                )
-                scheme = 'https' if request.headers.get('X-Forwarded-Proto', request.scheme) == 'https' else request.scheme
-                favicon_url = url_for('favicon', _scheme=scheme, _external=True)
-                html = re.sub(
-                    r'</head>',
-                    f'<link rel="icon" type="image/x-icon" href="{favicon_url}"></head>',
-                    html,
-                    flags=re.IGNORECASE
-                )
-                html = re.sub(
-                    r'<head[^>]*>',
-                    lambda m: m.group() + f'<base href="{EDITOR_SERVICE_URL}/">',
-                    html,
-                    flags=re.IGNORECASE
-                )
-                return html, resp.status_code
-            else:
-                return resp.content, resp.status_code
-        except Exception as e:
-            app.logger.error(f"Editor proxy error: {e}")
-            return redirect(url_for(fallback_route, **request.args))
 
     @app.route('/api/editor/publish', methods=['POST'])
     def editor_publish():
@@ -156,30 +114,9 @@ def register_routes(app):
     @app.route('/proxy/edit/photo')
     @login_required
     def proxy_photo_editor():
-        if not EDITOR_SERVICE_TOKEN:
-            return redirect(url_for('photo_editor', **request.args))
-        if 'token' not in request.args:
-            token = generate_editor_token(current_user)
-            args = dict(request.args)
-            args['token'] = token
-            return redirect(url_for('proxy_photo_editor', **args))
-        params = dict(request.args)
-        result = _proxy_editor_html('/photo', params, 'photo_editor')
-        if isinstance(result, tuple):
-            return result[0], result[1]
-        return result
+        return redirect(url_for('photo_editor', **request.args))
 
     @app.route('/proxy/edit/video')
     @login_required
     def proxy_video_editor():
-        if not EDITOR_SERVICE_TOKEN:
-            return redirect(url_for('video_editor'))
-        if 'token' not in request.args:
-            token = generate_editor_token(current_user)
-            args = dict(request.args)
-            args['token'] = token
-            return redirect(url_for('proxy_video_editor', **args))
-        result = _proxy_editor_html('/video', dict(request.args), 'video_editor')
-        if isinstance(result, tuple):
-            return result[0], result[1]
-        return result
+        return redirect(url_for('video_editor'))
