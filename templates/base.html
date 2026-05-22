@@ -104,6 +104,8 @@
             overscroll-behavior-y: contain;
             -webkit-overflow-scrolling: touch;
         }
+        /* Prevent horizontal scroll on mobile */
+        html, body { overflow-x: hidden; }
         /* Prevent zoom on input focus (iOS) */
         input, select, textarea {
             font-size: 16px !important;
@@ -117,10 +119,19 @@
             padding-bottom: env(safe-area-inset-bottom);
             height: calc(4rem + env(safe-area-inset-bottom)) !important;
         }
+        /* Word-break for user content */
+        .post-text, .post-caption, .comment-text, .profile-bio,
+        .message-bubble, .post-body { word-break: break-word; overflow-wrap: break-word; }
+        /* Minimum touch targets */
+        button, [role="button"], a { min-height: 44px; min-width: 44px; }
+        /* Exception: icon-only elements that should be smaller */
+        .dot, .gallery-dot, .story-ring span { min-height: unset; min-width: unset; }
         /* Mobile: hide desktop-only elements */
         @media (max-width: 767px) {
             .mobile-hidden { display: none !important; }
             .mobile-only { display: flex !important; }
+            /* Prevent any child from overflowing the viewport */
+            .post-card, .card, .profile-header { max-width: 100vw; }
         }
         @media (min-width: 768px) {
             .mobile-only { display: none !important; }

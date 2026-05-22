@@ -27,6 +27,8 @@
         html, body { background: var(--ig-bg); height: 100dvh; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
         #storyViewer { padding-bottom: env(safe-area-inset-bottom); }
         .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        /* Prevent iOS zoom on input focus */
+        input, select, textarea { font-size: 16px !important; }
     </style>
 </head>
 <body class="bg-[#000] dark:bg-[#000] text-white">

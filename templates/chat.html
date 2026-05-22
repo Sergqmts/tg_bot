@@ -79,7 +79,7 @@
             {% endif %}
 
             <!-- Message bubble - distinct own/other styling -->
-            <div class="{% if msg.sender_id == current_user.id %}bg-brand-middle text-white rounded-2xl rounded-br-md{% else %}bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl rounded-bl-md shadow-sm{% endif %} px-3 py-2 max-w-[75%] relative">
+            <div class="{% if msg.sender_id == current_user.id %}bg-brand-middle text-white rounded-2xl rounded-br-md{% else %}bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border rounded-2xl rounded-bl-md shadow-sm{% endif %} px-3 py-2 max-w-[75%] relative" style="word-break:break-word;overflow-wrap:break-word;">
                 <button class="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-full {% if msg.sender_id == current_user.id %}bg-white/20{% else %}bg-slate-100 dark:bg-slate-700{% endif %} opacity-0 group-hover:opacity-100 transition-opacity" onclick="showMessageMenu(event, {{ msg.id }}); return false;">
                     <i class="fa-solid fa-ellipsis text-[10px]"></i>
                 </button>
@@ -171,7 +171,7 @@
         <div class="relative max-w-6xl mx-auto">
 
             <!-- Attach menu -->
-            <div id="attachMenu" class="hidden absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[180px] z-50">
+            <div id="attachMenu" class="hidden absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50" style="width:min(220px,calc(100vw - 2rem));">
                 <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
                     <input type="file" accept="image/*,video/*" hidden onchange="handleFileSelect(this)">
                     <span class="w-8 h-8 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-image text-sm text-pink-500"></i></span>
