@@ -26,8 +26,8 @@ def register_routes(app):
         return pyjwt.encode(payload, JWT_SECRET, algorithm='HS256')
 
     def _proxy_editor_html(path, params, fallback_route):
-        token = generate_editor_token(current_user)
-        params['token'] = token
+        if 'token' not in params:
+            params['token'] = generate_editor_token(current_user)
         try:
             resp = http_requests.get(
                 f"{EDITOR_SERVICE_URL}{path}",
@@ -158,16 +158,12 @@ def register_routes(app):
     def proxy_photo_editor():
         if not EDITOR_SERVICE_TOKEN:
             return redirect(url_for('photo_editor', **request.args))
-        params = {}
-        draft_id = request.args.get('draft')
-        target = request.args.get('target')
-        return_url = request.args.get('return')
-        if draft_id:
-            params['draft'] = draft_id
-        if target:
-            params['target'] = target
-        if return_url:
-            params['return'] = return_url
+        if 'token' not in request.args:
+            token = generate_editor_token(current_user)
+            args = dict(request.args)
+            args['token'] = token
+            return redirect(url_for('proxy_photo_editor', **args))
+        params = dict(request.args)
         result = _proxy_editor_html('/photo', params, 'photo_editor')
         if isinstance(result, tuple):
             return result[0], result[1]
@@ -178,7 +174,12 @@ def register_routes(app):
     def proxy_video_editor():
         if not EDITOR_SERVICE_TOKEN:
             return redirect(url_for('video_editor'))
-        result = _proxy_editor_html('/video', {}, 'video_editor')
+        if 'token' not in request.args:
+            token = generate_editor_token(current_user)
+            args = dict(request.args)
+            args['token'] = token
+            return redirect(url_for('proxy_video_editor', **args))
+        result = _proxy_editor_html('/video', dict(request.args), 'video_editor')
         if isinstance(result, tuple):
             return result[0], result[1]
         return result
