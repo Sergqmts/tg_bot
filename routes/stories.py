@@ -21,6 +21,7 @@ def register_routes(app):
     def create_story():
         if request.method == 'POST':
             media_data = request.form.get('media_data')
+            from helpers import cloudinary_configured, upload_to_cloudinary, create_notification
             
             if media_data:
                 header, data = media_data.split(',', 1)
@@ -42,7 +43,6 @@ def register_routes(app):
                 filename = f'story_{datetime.now().timestamp()}.{ext}'
                 file = FileStorage(io.BytesIO(binary), filename=filename, content_type=f'image/{ext}' if media_type == 'image' else f'video/{ext}')
                 
-                from helpers import cloudinary_configured, upload_to_cloudinary, create_notification
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='stories')
                     if url:

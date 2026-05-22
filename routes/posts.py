@@ -64,6 +64,8 @@ def register_routes(app):
                 media_data = request.form.get('media_data')
                 music_track_id = request.form.get('music_track_id', type=int)
                 
+                from helpers import cloudinary_configured, upload_to_cloudinary
+                
                 post = Post(body=body, author=current_user)
                 if music_track_id:
                     track = MusicTrack.query.get(music_track_id)
@@ -97,7 +99,6 @@ def register_routes(app):
                     binary = base64.b64decode(data)
                     file = FileStorage(io.BytesIO(binary), filename=f'photo.{ext}', content_type=f'image/{ext}')
                     
-                    from helpers import cloudinary_configured, upload_to_cloudinary
                     if cloudinary_configured:
                         url = upload_to_cloudinary(file, folder='posts')
                         if url:
