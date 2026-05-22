@@ -485,9 +485,7 @@ def update_last_seen():
 
 @app.route('/favicon.ico')
 def favicon():
-    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="url(#g)"/><linearGradient id="g" x1="0" y1="0" x2="32" y2="32"><stop offset="0%" stop-color="#FF3CAC"/><stop offset="100%" stop-color="#2B86C5"/></linearGradient><text x="16" y="23" text-anchor="middle" font-size="20" fill="white" font-family="sans-serif">V</text></svg>'
-    from flask import Response
-    return Response(svg, mimetype='image/svg+xml')
+    return send_from_directory(app.static_folder, 'favicon.ico')
 
 
 # Register all route handlers from routes/ package
