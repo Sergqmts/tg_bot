@@ -76,7 +76,6 @@
 
 html {
     scroll-behavior: smooth;
-    overflow-x: hidden;
 }
 
 body {
@@ -86,7 +85,6 @@ body {
     line-height: 1.5;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
 }
 
 a {
