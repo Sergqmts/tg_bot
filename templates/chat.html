@@ -166,82 +166,90 @@
         {% endfor %}
     </div>
     
-    <!-- Footer with input - redesigned -->
-    <footer class="glass border-t border-slate-200 dark:border-dark-border p-3">
-        <div class="max-w-6xl mx-auto">
-            <div class="attach-preview hidden" id="attachPreview">
-                <div class="preview-grid flex gap-2 mb-2" id="previewGrid"></div>
+    <!-- Footer -->
+    <footer class="glass border-t border-slate-200 dark:border-dark-border px-3 pt-2 pb-2 flex-shrink-0" style="padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));">
+        <div class="relative max-w-6xl mx-auto">
+
+            <!-- Attach menu -->
+            <div id="attachMenu" class="hidden absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[180px] z-50">
+                <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                    <input type="file" accept="image/*,video/*" hidden onchange="handleFileSelect(this)">
+                    <span class="w-8 h-8 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-image text-sm text-pink-500"></i></span>
+                    <span class="text-sm font-medium">Фото / видео</span>
+                </label>
+                <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                    <input type="file" accept="audio/*" hidden onchange="handleFileSelect(this)">
+                    <span class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-music text-sm text-purple-500"></i></span>
+                    <span class="text-sm font-medium">Музыка</span>
+                </label>
+                <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                    <input type="file" accept=".pdf,.doc,.docx,.txt,.zip,.rar,.7z" hidden onchange="handleFileSelect(this)">
+                    <span class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-file text-sm text-blue-500"></i></span>
+                    <span class="text-sm font-medium">Файл</span>
+                </label>
             </div>
-            
-            <div class="voice-recording hidden" id="voiceRecording">
-                <div class="recording-indicator flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2">
-                    <span class="recording-dot w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                    <span class="recording-time text-sm font-medium" id="recordingTime">0:00</span>
+
+            <!-- Attach preview -->
+            <div id="attachPreview" class="hidden mb-2">
+                <div id="previewGrid" class="flex gap-2 flex-wrap"></div>
+            </div>
+
+            <!-- Voice recording bar -->
+            <div id="voiceRecordingBar" class="hidden items-center gap-2" style="height:52px;">
+                <button type="button" onclick="cancelRecording()" class="w-11 h-11 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+                <div class="flex-1 flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full px-4 h-11 overflow-hidden select-none" id="voiceRecordingSlide">
+                    <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse flex-shrink-0"></span>
+                    <span class="text-sm font-medium tabular-nums min-w-[36px]" id="recordingTime">0:00</span>
+                    <span class="flex-1 text-xs text-slate-400 text-center">← сдвиньте для отмены</span>
                 </div>
-                <div class="recording-controls flex gap-2 mt-2">
-                    <button type="button" class="cancel-record px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-sm" onclick="cancelRecording()">✕</button>
-                    <button type="button" class="send-record px-3 py-1.5 rounded-lg bg-brand-middle text-white text-sm" onclick="sendChatRecording()">➤</button>
+                <button type="button" onclick="sendChatRecording()" class="w-11 h-11 rounded-full bg-brand-middle text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Video message recording bar -->
+            <div id="videoRecordingBar" class="hidden flex-col items-center gap-3 py-2">
+                <div class="relative w-[120px] h-[120px] rounded-full overflow-hidden bg-black shadow-xl border-[3px] border-brand-middle">
+                    <video id="videoPreview" class="w-full h-full object-cover" muted playsinline></video>
+                    <div class="absolute top-2 inset-x-0 flex justify-center items-center gap-1.5 pointer-events-none">
+                        <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                        <span class="text-white text-xs font-bold drop-shadow" id="videoRecordingTime">0:00</span>
+                    </div>
+                </div>
+                <div class="flex gap-3" id="videoRecordingControls">
+                    <button type="button" onclick="cancelVideoRecording()" class="px-5 py-2 rounded-full bg-slate-200 dark:bg-slate-700 text-sm font-medium flex items-center gap-2 active:scale-95 transition-transform">
+                        <i class="fa-solid fa-xmark"></i> Отмена
+                    </button>
+                    <button type="button" onclick="sendChatVideoRecording()" class="px-5 py-2 rounded-full bg-brand-middle text-white text-sm font-medium flex items-center gap-2 active:scale-95 transition-transform">
+                        <i class="fa-solid fa-paper-plane"></i> Отправить
+                    </button>
                 </div>
             </div>
 
-            <div class="video-recording hidden" id="videoRecording" style="display: none; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0;">
-                <div class="w-[140px] h-[140px] rounded-full overflow-hidden bg-black relative flex-shrink-0 shadow-lg border-2 border-white dark:border-slate-700">
-                    <video id="videoPreview" class="w-full h-full object-cover" muted playsinline></video>
-                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium" id="videoRecordingTime">0:00</span>
-                    <span class="text-xs text-slate-400">/ 1:00</span>
-                </div>
-                <div class="flex gap-3">
-                    <button type="button" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-sm font-medium" onclick="cancelVideoRecording()">✕ Отмена</button>
-                    <button type="button" class="px-4 py-2 rounded-xl bg-brand-middle text-white text-sm font-medium" onclick="sendChatVideoRecording()">➤ Отправить</button>
-                </div>
-            </div>
-            
-            <form method="POST" action="" enctype="multipart/form-data" class="flex items-center gap-2" id="messageForm" onsubmit="return attachFileToForm(this)">
+            <!-- Normal input form -->
+            <form method="POST" action="" enctype="multipart/form-data" id="messageForm" onsubmit="return attachFileToForm(this)">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
-                <!-- Attach button - less noticeable -->
-                 <button type="button" class="attach-btn w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" onclick="toggleAttachMenu()">
-                    <i class="fa-solid fa-paperclip text-sm"></i>
-                </button>
-                
-                <div class="attach-menu hidden" id="attachMenu">
-                    <label class="attach-option flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
-                        <input type="file" accept="image/*,video/*" hidden onchange="handleFileSelect(this)">
-                        <i class="fa-solid fa-camera text-brand-middle"></i> <span class="text-sm">Фото/видео</span>
-                    </label>
-                    <label class="attach-option flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
-                        <input type="file" accept="audio/*" hidden onchange="handleFileSelect(this)">
-                        <i class="fa-solid fa-music text-brand-middle"></i> <span class="text-sm">Музыка</span>
-                    </label>
-                    <label class="attach-option flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
-                        <input type="file" hidden onchange="handleFileSelect(this)">
-                        <i class="fa-solid fa-paperclip text-brand-middle"></i> <span class="text-sm">Файл</span>
-                    </label>
-                </div>
-                
-                <!-- Camera button -->
-                 <button type="button" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" id="camBtn" onclick="toggleChatVideoRecording()">
-                    <i class="fa-solid fa-video text-sm"></i>
-                </button>
-                
-                <!-- Mic button -->
-                 <button type="button" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" id="micBtn" onclick="toggleRecording()">
-                    <i class="fa-solid fa-microphone text-sm"></i>
-                </button>
-                
-                <!-- Input field with rounded background -->
-                <div class="flex-1 flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-brand-middle focus-within:border-brand-middle transition-all">
-                     <input type="text" name="body" placeholder="Напишите сообщение..." class="flex-1 bg-transparent outline-none text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500" id="messageInput">
-                    <input type="file" name="media" id="attachedFile" hidden>
-                    <!-- Send button INSIDE the input field -->
-                    <button type="submit" class="w-8 h-8 rounded-full bg-brand-middle text-white flex items-center justify-center hover:shadow-lg transition-all ml-2 flex-shrink-0">
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                <input type="file" name="media" id="attachedFile" hidden>
+                <div class="flex items-center gap-2" id="inputRow">
+                    <button type="button" class="attach-btn w-11 h-11 rounded-full flex items-center justify-center text-slate-400 hover:text-brand-middle transition-colors flex-shrink-0" onclick="toggleAttachMenu()">
+                        <i class="fa-solid fa-paperclip text-base"></i>
                     </button>
+                    <div class="flex-1 flex items-center bg-slate-100 dark:bg-slate-800 rounded-full px-4 min-h-[44px] focus-within:ring-2 focus-within:ring-brand-middle transition-all">
+                        <input type="text" name="body" id="messageInput" placeholder="Сообщение..." class="flex-1 bg-transparent outline-none text-sm py-2 min-w-0">
+                    </div>
+                    <div class="relative flex-shrink-0">
+                        <button type="submit" id="sendBtn" class="hidden w-11 h-11 rounded-full bg-brand-middle text-white items-center justify-center shadow-md active:scale-90 transition-all">
+                            <i class="fa-solid fa-paper-plane text-sm"></i>
+                        </button>
+                        <button type="button" id="mediaActionBtn" class="flex w-11 h-11 rounded-full bg-brand-middle text-white items-center justify-center shadow-md active:scale-90 transition-all" onclick="handleMediaBtnTap()">
+                            <i id="mediaActionIcon" class="fa-solid fa-microphone text-sm"></i>
+                        </button>
+                        <button type="button" id="modeToggleBtn" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 flex items-center justify-center active:scale-90 transition-transform" onclick="toggleMediaMode(); event.stopPropagation();" title="Переключить режим">
+                            <i id="modeToggleIcon" class="fa-solid fa-video text-[9px] text-slate-600 dark:text-slate-300"></i>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -261,6 +269,66 @@
 
 <script>
 let selectedFile = null;
+let mediaMode = 'voice';
+let chatMediaRecorder, chatAudioChunks = [], chatRecordingTimer, chatRecordingSeconds = 0, chatRecordedBlob = null, chatRecordingPromise, chatRecordingResolve;
+let chatVmRecorder, chatVmChunks = [], chatVmTimer, chatVmSeconds = 0, chatVmBlob = null, chatVmPromise, chatVmResolve, chatVmStream = null;
+let currentAudio = null;
+let _videoObserver = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.addEventListener('input', function() {
+            const has = this.value.trim().length > 0;
+            document.getElementById('sendBtn').classList.toggle('hidden', !has);
+            document.getElementById('sendBtn').classList.toggle('flex', has);
+            document.getElementById('mediaActionBtn').classList.toggle('hidden', has);
+            document.getElementById('mediaActionBtn').classList.toggle('flex', !has);
+            document.getElementById('modeToggleBtn').classList.toggle('hidden', has);
+        });
+    }
+    setupVideoAutoplay();
+    updateChatBackground();
+    const area = document.getElementById('messagesArea');
+    if (area) area.scrollTop = area.scrollHeight;
+});
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.attach-btn') && !e.target.closest('#attachMenu'))
+        document.getElementById('attachMenu').classList.add('hidden');
+    document.querySelectorAll('.message-context-menu').forEach(m => { m.classList.add('hidden'); m.style.display = ''; });
+    const v = e.target.closest('[data-video-msg]');
+    if (v && v.tagName === 'VIDEO') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else { v.muted = false; v.requestFullscreen().catch(()=>{}); v.play().catch(()=>{}); }
+    }
+});
+
+window.addEventListener('beforeunload', () => { currentAudio?.pause(); });
+
+function showInputRow() {
+    document.getElementById('inputRow').classList.remove('hidden');
+    document.getElementById('voiceRecordingBar').classList.add('hidden');
+    document.getElementById('videoRecordingBar').classList.add('hidden');
+}
+function formatChatTime(s) {
+    return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}
+function toggleMediaMode() {
+    if (mediaMode === 'voice') {
+        mediaMode = 'video';
+        document.getElementById('mediaActionIcon').className = 'fa-solid fa-video text-sm';
+        document.getElementById('modeToggleIcon').className = 'fa-solid fa-microphone text-[9px] text-slate-600 dark:text-slate-300';
+    } else {
+        mediaMode = 'voice';
+        document.getElementById('mediaActionIcon').className = 'fa-solid fa-microphone text-sm';
+        document.getElementById('modeToggleIcon').className = 'fa-solid fa-video text-[9px] text-slate-600 dark:text-slate-300';
+    }
+}
+function handleMediaBtnTap() {
+    if (mediaMode === 'voice') toggleRecording();
+    else toggleChatVideoRecording();
+}
 
 function toggleAttachMenu() {
     document.getElementById('attachMenu').classList.toggle('hidden');
@@ -296,478 +364,236 @@ function showMessageMenu(event, msgId) {
     menu.classList.add('message-context-menu');
 }
 
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
-        document.getElementById('attachMenu').classList.add('hidden');
-    }
-    document.querySelectorAll('.message-context-menu').forEach(m => {
-        m.classList.add('hidden');
-        m.style.display = '';
-    });
-});
-
-document.addEventListener('contextmenu', function(e) {
-    if (e.target.closest('.chat-message')) {
-    } else {
-        document.querySelectorAll('.message-context-menu').forEach(m => m.style.display = 'none');
-    }
-});
-
 function handleFileSelect(input) {
-    if (input.files && input.files[0]) {
-        selectedFile = input.files[0];
-        showPreview(selectedFile);
-    }
+    if (input.files && input.files[0]) { selectedFile = input.files[0]; showPreview(selectedFile); }
+    document.getElementById('attachMenu').classList.add('hidden');
 }
-
 function showPreview(file) {
     const preview = document.getElementById('attachPreview');
     const grid = document.getElementById('previewGrid');
     grid.innerHTML = '';
-    
     const item = document.createElement('div');
-    item.className = 'preview-item';
-    
+    item.className = 'preview-item relative inline-block';
     if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = function(e) {
-            item.innerHTML = '<img src="' + e.target.result + '">';
+        reader.onload = e => {
+            item.innerHTML = '<img src="' + e.target.result + '" class="rounded-xl max-w-[120px] max-h-[120px] object-cover">';
+            addRemoveBtn(item, preview);
         };
         reader.readAsDataURL(file);
-    } else if (file.type.startsWith('video/')) {
-        item.innerHTML = '<div class="preview-icon">🎬</div>';
-    } else if (file.type.startsWith('audio/')) {
-        item.innerHTML = '<div class="preview-icon">🎵</div>';
     } else {
-        item.innerHTML = '<div class="preview-icon">📄</div>';
+        const icons = { 'video/': '🎬', 'audio/': '🎵' };
+        const icon = Object.entries(icons).find(([k]) => file.type.startsWith(k));
+        item.innerHTML = '<div class="w-16 h-16 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-2xl">' + (icon ? icon[1] : '📄') + '</div>';
+        addRemoveBtn(item, preview);
     }
-    
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-preview';
-    removeBtn.innerHTML = '×';
-    removeBtn.onclick = function() {
-        selectedFile = null;
-        preview.style.display = 'none';
-        document.getElementById('attachedFile').value = '';
-    };
-    item.appendChild(removeBtn);
     grid.appendChild(item);
-    preview.style.display = 'block';
+    preview.classList.remove('hidden');
 }
-
+function addRemoveBtn(item, preview) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center';
+    btn.innerHTML = '×';
+    btn.onclick = () => { selectedFile = null; preview.classList.add('hidden'); document.getElementById('attachedFile').value = ''; };
+    item.appendChild(btn);
+}
 function attachFileToForm(form) {
     if (selectedFile) {
-        const fileInput = document.getElementById('attachedFile');
         const dt = new DataTransfer();
         dt.items.add(selectedFile);
-        fileInput.files = dt.files;
+        document.getElementById('attachedFile').files = dt.files;
     }
     return true;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    var area = document.getElementById('messagesArea');
-    if (area) area.scrollTop = area.scrollHeight;
-});
-
-let chatMediaRecorder;
-let chatAudioChunks = [];
-let chatRecordingTimer;
-let chatRecordingSeconds = 0;
-let chatRecordedBlob = null;
-let chatRecordingPromise = null;
-let chatRecordingResolve = null;
-
 async function toggleRecording() {
-    const micBtn = document.getElementById('micBtn');
-    const voiceRecording = document.getElementById('voiceRecording');
-    const messageForm = document.getElementById('messageForm');
-    
-    if (chatMediaRecorder && chatMediaRecorder.state === 'recording') {
-        chatRecordingResolve();
-    } else {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            chatMediaRecorder = new MediaRecorder(stream);
-            chatAudioChunks = [];
-            chatRecordedBlob = null;
-            chatRecordingSeconds = 0;
-            chatRecordingPromise = new Promise(resolve => chatRecordingResolve = resolve);
-            
-            chatMediaRecorder.ondataavailable = e => chatAudioChunks.push(e.data);
-            chatMediaRecorder.onstop = () => {
-                chatRecordedBlob = new Blob(chatAudioChunks, { type: 'audio/webm' });
-                stream.getTracks().forEach(t => t.stop());
-                if (chatRecordingResolve) chatRecordingResolve();
-            };
-            
-            chatMediaRecorder.start();
-            micBtn.classList.add('recording');
-            voiceRecording.style.display = 'flex';
-            messageForm.style.display = 'none';
-            
-            chatRecordingTimer = setInterval(() => {
-                chatRecordingSeconds++;
-                document.getElementById('recordingTime').textContent = formatChatTime(chatRecordingSeconds);
-            }, 1000);
-        } catch (err) {
-            alert('Не удалось получить доступ к микрофону');
-        }
-    }
-}
-
-function formatChatTime(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        chatMediaRecorder = new MediaRecorder(stream);
+        chatAudioChunks = []; chatRecordedBlob = null; chatRecordingSeconds = 0;
+        chatRecordingPromise = new Promise(r => chatRecordingResolve = r);
+        chatMediaRecorder.ondataavailable = e => chatAudioChunks.push(e.data);
+        chatMediaRecorder.onstop = () => {
+            chatRecordedBlob = new Blob(chatAudioChunks, { type: 'audio/webm' });
+            stream.getTracks().forEach(t => t.stop());
+            if (chatRecordingResolve) chatRecordingResolve();
+        };
+        chatMediaRecorder.start();
+        document.getElementById('recordingTime').textContent = '0:00';
+        document.getElementById('inputRow').classList.add('hidden');
+        const bar = document.getElementById('voiceRecordingBar');
+        bar.classList.remove('hidden'); bar.style.display = 'flex';
+        chatRecordingTimer = setInterval(() => {
+            chatRecordingSeconds++;
+            document.getElementById('recordingTime').textContent = formatChatTime(chatRecordingSeconds);
+        }, 1000);
+    } catch(err) { alert('Нет доступа к микрофону'); }
 }
 
 function cancelRecording() {
-    if (chatMediaRecorder && chatMediaRecorder.state === 'recording') {
-        chatMediaRecorder.stop();
-    }
+    if (chatMediaRecorder && chatMediaRecorder.state === 'recording') chatMediaRecorder.stop();
     clearInterval(chatRecordingTimer);
-    document.getElementById('micBtn').classList.remove('recording');
-    document.getElementById('voiceRecording').style.display = 'none';
-    document.getElementById('messageForm').style.display = 'flex';
-    chatRecordedBlob = null;
-    chatAudioChunks = [];
+    chatRecordedBlob = null; chatAudioChunks = [];
+    showInputRow();
 }
 
 async function sendChatRecording() {
-    const micBtn = document.getElementById('micBtn');
-    const voiceRecording = document.getElementById('voiceRecording');
-    const messageForm = document.getElementById('messageForm');
-    
     clearInterval(chatRecordingTimer);
-    document.getElementById('micBtn').classList.remove('recording');
-    voiceRecording.style.display = 'none';
-    voiceRecording.innerHTML = '<span style="color: var(--text);">⏳ Расшифровка...</span>';
-    voiceRecording.style.display = 'flex';
-    micBtn.disabled = true;
-    
-    if (chatMediaRecorder && chatMediaRecorder.state === 'recording') {
-        chatMediaRecorder.stop();
-    }
-    
-    if (chatRecordingPromise) {
-        await chatRecordingPromise;
-    }
-    
-    if (!chatRecordedBlob) {
-        voiceRecording.style.display = 'none';
-        messageForm.style.display = 'flex';
-        micBtn.disabled = false;
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('voice', chatRecordedBlob, 'voice_message.webm');
-    formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
-    
+    if (chatMediaRecorder && chatMediaRecorder.state === 'recording') chatMediaRecorder.stop();
+    if (chatRecordingPromise) await chatRecordingPromise;
+    if (!chatRecordedBlob) { showInputRow(); return; }
+
+    const slide = document.getElementById('voiceRecordingSlide');
+    const savedSlide = slide.innerHTML;
+    slide.innerHTML = '<span class="text-sm text-slate-500">⏳ Отправка...</span>';
+
+    const fd = new FormData();
+    fd.append('voice', chatRecordedBlob, 'voice_message.webm');
+    fd.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
     const chatId = {{ chat.id }};
-    const url = `/chat/${chatId}/voice`;
-    
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
-            }
-        });
-        
-        if (response.ok) {
-            location.reload();
-        } else {
-            voiceRecording.style.display = 'none';
-            messageForm.style.display = 'flex';
-        }
-    } catch (err) {
-        voiceRecording.style.display = 'none';
-        messageForm.style.display = 'flex';
-    }
-    
-    chatRecordedBlob = null;
-    chatAudioChunks = [];
-    micBtn.disabled = false;
+        const r = await fetch(`/chat/${chatId}/voice`, { method: 'POST', body: fd });
+        if (r.ok) { location.reload(); return; }
+    } catch(e) {}
+    slide.innerHTML = savedSlide;
+    chatRecordedBlob = null; chatAudioChunks = [];
+    showInputRow();
 }
 
-let currentAudio = null;
+(function() {
+    let sx = 0;
+    document.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener('touchmove', e => {
+        const bar = document.getElementById('voiceRecordingBar');
+        if (!bar.classList.contains('hidden') && sx - e.touches[0].clientX > 80) cancelRecording();
+    }, { passive: true });
+})();
 
 function playVoice(url, btn) {
     if (btn.classList.contains('playing')) {
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio.currentTime = 0;
-        }
-        btn.classList.remove('playing');
-        return;
+        currentAudio && (currentAudio.pause(), currentAudio.currentTime = 0);
+        btn.classList.remove('playing'); return;
     }
-    
-    if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
-        document.querySelectorAll('.play-voice-btn.playing').forEach(b => b.classList.remove('playing'));
-    }
-    
+    if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+    document.querySelectorAll('.play-voice-btn.playing').forEach(b => b.classList.remove('playing'));
     currentAudio = new Audio(url);
     currentAudio.onplay = () => btn.classList.add('playing');
-    currentAudio.onended = () => {
-        btn.classList.remove('playing');
-        currentAudio = null;
-    };
+    currentAudio.onended = () => { btn.classList.remove('playing'); currentAudio = null; };
     currentAudio.play();
 }
-
-function toggleTranscription(msgId) {
-    const el = document.getElementById('transcript-' + msgId);
+function toggleTranscription(id) {
+    const el = document.getElementById('transcript-' + id);
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-// Auto-switch chat background based on theme
-function updateChatBackground() {
-    const chatDiv = document.getElementById('chatContainer');
-    if (!chatDiv) return;
-    
-    const bgType = '{{ chat.background_type if chat else "default" }}';
-    if (bgType === 'default') {
-        const isDark = document.documentElement.classList.contains('dark');
-        const bgFile = isDark ? 'dark.png' : 'light.png';
-        chatDiv.style.background = `url('/static/chat-backgrounds/${bgFile}') center / cover no-repeat`;
-        return;
-    }
-    
-    const bgData = {{ (bg_data|tojson) if bg_data else {} }};
-    if (!bgData || typeof bgData !== 'object') return;
-    
-    const isDark = document.documentElement.classList.contains('dark');
-    const theme = isDark ? 'dark' : 'light';
-    const value = bgData[theme] || '';
-    
-    if (!value) {
-        chatDiv.style.background = '';
-        return;
-    }
-    
-    if (bgType === 'color') {
-        chatDiv.style.background = value;
-    } else if (bgType === 'gradient') {
-        chatDiv.style.background = value;
-    } else if (bgType === 'image') {
-        const url = (value && value.startsWith('http')) ? value : '/uploads/' + value;
-        chatDiv.style.background = `url('${url}') center / cover no-repeat`;
-    }
-}
-
-// Override theme toggle to update chat background
-const originalToggleTheme = toggleTheme;
-if (typeof originalToggleTheme === 'function') {
-    toggleTheme = function() {
-        originalToggleTheme();
-        setTimeout(updateChatBackground, 100);
-    };
-}
-
-document.addEventListener('DOMContentLoaded', updateChatBackground);
-
-/* Video messages */
-let chatVmRecorder;
-let chatVmChunks = [];
-let chatVmTimer;
-let chatVmSeconds = 0;
-let chatVmBlob = null;
-let chatVmPromise;
-let chatVmResolve;
-let chatVmStream = null;
-
 async function toggleChatVideoRecording() {
-    const camBtn = document.getElementById('camBtn');
-    const videoRecording = document.getElementById('videoRecording');
-    const messageForm = document.getElementById('messageForm');
-
-    if (chatVmRecorder && chatVmRecorder.state === 'recording') {
-        stopChatVideoRecording();
-    } else {
-        try {
-            chatVmStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 320 } }, audio: true });
-            const preview = document.getElementById('videoPreview');
-            preview.srcObject = chatVmStream;
-            preview.play();
-
-            chatVmRecorder = new MediaRecorder(chatVmStream, { mimeType: 'video/webm;codecs=vp9' });
-            if (chatVmRecorder.state === 'inactive') {
-                chatVmRecorder = new MediaRecorder(chatVmStream, { mimeType: 'video/webm;codecs=vp8' });
-            }
-            if (chatVmRecorder.state === 'inactive') {
-                chatVmRecorder = new MediaRecorder(chatVmStream);
-            }
-            chatVmChunks = [];
-            chatVmBlob = null;
-            chatVmSeconds = 0;
-            chatVmPromise = new Promise(resolve => chatVmResolve = resolve);
-
-            chatVmRecorder.ondataavailable = e => chatVmChunks.push(e.data);
-            chatVmRecorder.onstop = () => {
-                chatVmBlob = new Blob(chatVmChunks, { type: 'video/webm' });
-                if (chatVmStream) chatVmStream.getTracks().forEach(t => t.stop());
-                if (chatVmResolve) chatVmResolve();
-            };
-
-            chatVmRecorder.start();
-            document.getElementById('videoRecordingTime').textContent = '0:00';
-            camBtn.classList.add('recording');
-            videoRecording.style.display = 'flex';
-            messageForm.style.display = 'none';
-
-            chatVmTimer = setInterval(() => {
-                chatVmSeconds++;
-                document.getElementById('videoRecordingTime').textContent = formatChatTime(chatVmSeconds);
-                if (chatVmSeconds >= 60) stopChatVideoRecording();
-            }, 1000);
-        } catch (err) {
-            console.error(err);
-            alert('Не удалось получить доступ к камере');
-        }
-    }
+    try {
+        chatVmStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 320 } }, audio: true });
+        const preview = document.getElementById('videoPreview');
+        preview.srcObject = chatVmStream; preview.play();
+        const mimeTypes = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4'];
+        const mime = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+        chatVmRecorder = new MediaRecorder(chatVmStream, mime ? { mimeType: mime } : {});
+        chatVmChunks = []; chatVmBlob = null; chatVmSeconds = 0;
+        chatVmPromise = new Promise(r => chatVmResolve = r);
+        chatVmRecorder.ondataavailable = e => chatVmChunks.push(e.data);
+        chatVmRecorder.onstop = () => {
+            chatVmBlob = new Blob(chatVmChunks, { type: 'video/webm' });
+            if (chatVmStream) chatVmStream.getTracks().forEach(t => t.stop());
+            if (chatVmResolve) chatVmResolve();
+        };
+        chatVmRecorder.start();
+        document.getElementById('videoRecordingTime').textContent = '0:00';
+        document.getElementById('inputRow').classList.add('hidden');
+        const bar = document.getElementById('videoRecordingBar');
+        bar.classList.remove('hidden'); bar.style.display = 'flex';
+        chatVmTimer = setInterval(() => {
+            chatVmSeconds++;
+            document.getElementById('videoRecordingTime').textContent = formatChatTime(chatVmSeconds);
+            if (chatVmSeconds >= 60) stopChatVmRecording();
+        }, 1000);
+    } catch(err) { alert('Нет доступа к камере'); }
 }
 
-function stopChatVideoRecording() {
-    if (chatVmRecorder && chatVmRecorder.state === 'recording') {
-        chatVmRecorder.stop();
-    }
+function stopChatVmRecording() {
+    if (chatVmRecorder && chatVmRecorder.state === 'recording') chatVmRecorder.stop();
     clearInterval(chatVmTimer);
-    document.getElementById('camBtn').classList.remove('recording');
-    const preview = document.getElementById('videoPreview');
-    if (preview.srcObject) {
-        preview.srcObject.getTracks().forEach(t => t.stop());
-        preview.srcObject = null;
-    }
+    const p = document.getElementById('videoPreview');
+    if (p.srcObject) { p.srcObject.getTracks().forEach(t => t.stop()); p.srcObject = null; }
 }
 
 function cancelVideoRecording() {
-    stopChatVideoRecording();
-    document.getElementById('videoRecording').style.display = 'none';
-    document.getElementById('messageForm').style.display = 'flex';
-    chatVmBlob = null;
-    chatVmChunks = [];
-    chatVmStream = null;
+    stopChatVmRecording();
+    chatVmBlob = null; chatVmChunks = []; chatVmStream = null;
+    showInputRow();
 }
 
 async function sendChatVideoRecording() {
-    const videoRecording = document.getElementById('videoRecording');
-    const messageForm = document.getElementById('messageForm');
-
-    stopChatVideoRecording();
-    videoRecording.innerHTML = '<span style="color: var(--text);">⏳ Отправка...</span>';
-    videoRecording.style.display = 'flex';
-
+    stopChatVmRecording();
+    const controls = document.getElementById('videoRecordingControls');
+    const savedControls = controls.innerHTML;
+    controls.innerHTML = '<span class="text-sm text-slate-500 py-1">⏳ Отправка...</span>';
     if (chatVmPromise) await chatVmPromise;
-
-    if (!chatVmBlob) {
-        videoRecording.style.display = 'none';
-        messageForm.style.display = 'flex';
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('video_message', chatVmBlob, 'video_message.webm');
-    formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
-
+    if (!chatVmBlob) { controls.innerHTML = savedControls; showInputRow(); return; }
+    const fd = new FormData();
+    fd.append('video_message', chatVmBlob, 'video_message.webm');
+    fd.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
     const chatId = {{ chat.id }};
-    const url = `/chat/${chatId}/video-message`;
-
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            body: formData
-        });
-        if (response.ok) {
-            location.reload();
-        } else {
-            videoRecording.style.display = 'none';
-            messageForm.style.display = 'flex';
-        }
-    } catch (err) {
-        videoRecording.style.display = 'none';
-        messageForm.style.display = 'flex';
-    }
-
-    chatVmBlob = null;
-    chatVmChunks = [];
-    chatVmStream = null;
+        const r = await fetch(`/chat/${chatId}/video-message`, { method: 'POST', body: fd });
+        if (r.ok) { location.reload(); return; }
+    } catch(e) {}
+    controls.innerHTML = savedControls;
+    chatVmBlob = null; chatVmChunks = []; chatVmStream = null;
+    showInputRow();
 }
 
-/* Autoplay video messages on scroll */
 function setupVideoAutoplay() {
+    if (_videoObserver) return;
     const players = document.querySelectorAll('[data-video-msg]');
     if (!players.length) return;
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const video = entry.target;
-            if (entry.isIntersecting) {
-                video.muted = true;
-                video.play().catch(() => {});
-            } else {
-                video.pause();
-            }
-        });
+    _videoObserver = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.muted = true; e.target.play().catch(()=>{}); } else e.target.pause(); });
     }, { threshold: 0.5 });
-
-    players.forEach(v => observer.observe(v));
+    players.forEach(v => _videoObserver.observe(v));
 }
 
-/* Tap video message to toggle sound/fullscreen */
-document.addEventListener('click', function(e) {
-    const video = e.target.closest('[data-video-msg]');
-    if (video && video.tagName === 'VIDEO') {
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-        } else {
-            video.muted = false;
-            video.requestFullscreen().catch(() => {});
-            video.play().catch(() => {});
-        }
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    setupVideoAutoplay();
-    var area = document.getElementById('messagesArea');
-    if (area) area.scrollTop = area.scrollHeight;
-});
-
-<script>
 function openModal(src) {
-    var modal = document.getElementById('imageModal');
-    var img = document.getElementById('modalImg');
-    var video = document.getElementById('modalVideo');
-    var downloadBtn = document.getElementById('modalDownloadBtn');
-
-    downloadBtn.href = src;
-
+    const modal = document.getElementById('imageModal');
+    const img = document.getElementById('modalImg');
+    const video = document.getElementById('modalVideo');
+    document.getElementById('modalDownloadBtn').href = src;
     if (src.match(/\.(mp4|webm|mov)(\?|$)/i)) {
-        img.classList.add('hidden');
-        video.classList.remove('hidden');
-        video.src = src;
-        video.play();
+        img.classList.add('hidden'); video.classList.remove('hidden'); video.src = src; video.play();
     } else {
-        video.classList.add('hidden');
-        video.pause();
-        video.src = '';
-        img.classList.remove('hidden');
-        img.src = src;
+        video.classList.add('hidden'); video.pause(); video.src = ''; img.classList.remove('hidden'); img.src = src;
     }
-
     modal.classList.remove('hidden');
 }
 function closeModal() {
-    var modal = document.getElementById('imageModal');
-    var video = document.getElementById('modalVideo');
-    video.pause();
-    video.src = '';
-    modal.classList.add('hidden');
+    const video = document.getElementById('modalVideo');
+    video.pause(); video.src = '';
+    document.getElementById('imageModal').classList.add('hidden');
 }
+
+function updateChatBackground() {
+    const chatDiv = document.getElementById('chatContainer');
+    if (!chatDiv) return;
+    const bgType = '{{ chat.background_type if chat else "default" }}';
+    const isDark = document.documentElement.classList.contains('dark');
+    if (bgType === 'default') {
+        chatDiv.style.background = `url('/static/chat-backgrounds/${isDark ? 'dark' : 'light'}.png') center / cover no-repeat`;
+        return;
+    }
+    const bgData = {{ (bg_data|tojson) if bg_data else {} }};
+    if (!bgData || typeof bgData !== 'object') return;
+    const value = bgData[isDark ? 'dark' : 'light'] || '';
+    if (!value) { chatDiv.style.background = ''; return; }
+    if (bgType === 'color' || bgType === 'gradient') chatDiv.style.background = value;
+    else if (bgType === 'image') chatDiv.style.background = `url('${value.startsWith('http') ? value : '/uploads/' + value}') center / cover no-repeat`;
+}
+const _origToggle = window.toggleTheme;
+if (typeof _origToggle === 'function') window.toggleTheme = function() { _origToggle(); setTimeout(updateChatBackground, 100); };
 </script>
 {% endblock %}
