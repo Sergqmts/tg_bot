@@ -428,7 +428,7 @@ def register_routes(app):
     def tag_posts(name):
         tag = Tag.query.filter_by(name=name.lstrip('#')).first_or_404()
         post_tags = PostTag.query.filter_by(tag_id=tag.id).order_by(PostTag.id.desc()).all()
-        posts = [pt.post for pt in post_tags if pt.post]
+        posts = [Post.query.get(pt.post_id) for pt in post_tags if pt.post_id]
         return render_template('tag_posts.html', tag=tag, posts=posts)
 
     @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])

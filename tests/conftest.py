@@ -12,6 +12,8 @@ os.environ['CLOUDFLARE_TURN_KEY_ID'] = ''
 os.environ['CLOUDFLARE_TURN_API_TOKEN'] = ''
 os.environ['SECRET_KEY'] = 'test-secret-key'
 os.environ['DATABASE_URL'] = ''
+os.environ['EDITOR_SERVICE_TOKEN'] = 'test-service-token-123'
+os.environ['EDITOR_JWT_SECRET'] = 'test-jwt-secret'
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -27,10 +29,15 @@ def app():
 
 @pytest.fixture(scope='function', autouse=True)
 def db(app):
+    from flask import g
+    if '_login_user' in g:
+        del g._login_user
     for tbl in reversed(_db.metadata.sorted_tables):
         _db.session.execute(tbl.delete())
     _db.session.commit()
     yield _db
+    if '_login_user' in g:
+        del g._login_user
     for tbl in reversed(_db.metadata.sorted_tables):
         _db.session.execute(tbl.delete())
     _db.session.commit()
