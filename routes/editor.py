@@ -45,18 +45,20 @@ def register_routes(app):
                     html,
                     flags=re.IGNORECASE
                 )
+                scheme = 'https' if request.headers.get('X-Forwarded-Proto', request.scheme) == 'https' else request.scheme
+                favicon_url = url_for('favicon', _scheme=scheme, _external=True)
                 html = re.sub(
                     r'</head>',
-                    f'<link rel="icon" type="image/x-icon" href="{url_for("favicon", _external=True)}"></head>',
+                    f'<link rel="icon" type="image/x-icon" href="{favicon_url}"></head>',
                     html,
                     flags=re.IGNORECASE
                 )
-                for attr in ('href', 'src', 'action'):
-                    html = re.sub(
-                        rf'({attr}=")(/)',
-                        rf'\1{EDITOR_SERVICE_URL}/',
-                        html
-                    )
+                html = re.sub(
+                    r'<head[^>]*>',
+                    lambda m: m.group() + f'<base href="{EDITOR_SERVICE_URL}/">',
+                    html,
+                    flags=re.IGNORECASE
+                )
                 return html, resp.status_code
             else:
                 return resp.content, resp.status_code
