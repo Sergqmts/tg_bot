@@ -1,6 +1,6 @@
 def register_routes(app):
     import base64, io, os
-    from flask import render_template, redirect, url_for, flash, request, abort
+    from flask import render_template, redirect, url_for, flash, request, abort, current_app
     from flask_login import login_required, current_user
     from werkzeug.utils import secure_filename
     from werkzeug.datastructures import FileStorage
@@ -37,7 +37,8 @@ def register_routes(app):
                 
                 try:
                     binary = base64.b64decode(data)
-                except:
+                except Exception as e:
+                    current_app.logger.warning("story base64 decode failed: %s", e)
                     return 'Invalid base64 data', 400
                 
                 filename = f'story_{datetime.now().timestamp()}.{ext}'

@@ -384,7 +384,7 @@ async function previewVideoCloudinary() {
         previewBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Оригинал';
     } catch (e) {
         console.error(e);
-        alert('Ошибка предпросмотра: ' + e.message);
+        showToast('Ошибка предпросмотра: ' + e.message, 'error');
     }
     previewBtn.disabled = false;
 }
@@ -407,7 +407,7 @@ async function saveVideo() {
         window.location.href = '{{ url_for("create_shorts") }}?video_url=' + encodeURIComponent(url);
     } catch (e) {
         console.error(e);
-        alert('Ошибка: ' + e.message);
+        showToast('Ошибка: ' + e.message, 'error');
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fa-solid fa-video"></i> Экспорт в Shorts';
     }

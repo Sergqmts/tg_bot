@@ -1680,9 +1680,9 @@ function publishPhoto() {
       .then(res => res.json())
       .then(data => {
         if (data.status === 'ok') window.location.href = '{{ url_for("index") }}';
-        else alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+        else showToast('Ошибка: ' + (data.message || 'Неизвестная ошибка'), 'error');
       })
-      .catch(err => { alert('Ошибка: ' + err); });
+      .catch(err => { showToast('Ошибка: ' + err, 'error'); });
     return;
   }
   
@@ -1703,8 +1703,8 @@ function publishPhoto() {
   else if (target === 'draft') url = '{{ url_for("create") }}?draft=1';
   
   fetch(url, { method: 'POST', body: formData })
-    .then(res => { if (res.ok) window.location.href = '{{ url_for("index") }}'; else alert('Ошибка ' + res.status); })
-    .catch(err => { alert('Ошибка: ' + err); });
+    .then(res => { if (res.ok) window.location.href = '{{ url_for("index") }}'; else showToast('Ошибка ' + res.status, 'error'); })
+    .catch(err => { showToast('Ошибка: ' + err, 'error'); });
 }
 
 function generateThumbs() {

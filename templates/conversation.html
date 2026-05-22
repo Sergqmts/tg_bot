@@ -439,7 +439,7 @@ async function startVoiceRecording() {
             recordingSeconds++;
             document.getElementById('recordingTime').textContent = formatTime(recordingSeconds);
         }, 1000);
-    } catch(err) { alert('Нет доступа к микрофону'); }
+    } catch(err) { showToast('Нет доступа к микрофону', 'error'); }
 }
 
 function cancelRecording() {
@@ -523,7 +523,7 @@ async function startVideoRecording() {
             document.getElementById('videoRecordingTime').textContent = formatTime(vmSeconds);
             if (vmSeconds >= 60) stopVmRecording();
         }, 1000);
-    } catch(err) { alert('Нет доступа к камере'); }
+    } catch(err) { showToast('Нет доступа к камере', 'error'); }
 }
 
 function stopVmRecording() {

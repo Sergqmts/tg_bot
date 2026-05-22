@@ -103,7 +103,8 @@ def register_routes(app):
         try:
             Message.query.filter_by(sender=other_user, recipient=current_user, read=False).update({'read': True})
             db.session.commit()
-        except:
+        except Exception as e:
+            current_app.logger.warning("mark-as-read failed: %s", e)
             db.session.rollback()
 
         if request.method == 'POST':

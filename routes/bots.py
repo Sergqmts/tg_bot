@@ -259,7 +259,8 @@ def register_routes(app):
                     try:
                         upload = cloudinary.uploader.upload(filepath, folder='avatars')
                         bot.avatar_cloudinary_url = upload['secure_url']
-                    except:
+                    except Exception as e:
+                        current_app.logger.warning("bot avatar upload failed: %s", e)
                         bot.avatar = filename
                 else:
                     bot.avatar = filename
@@ -289,7 +290,8 @@ def register_routes(app):
                 try:
                     json.loads(commands_raw)
                     bot.bot_commands = commands_raw
-                except:
+                except (ValueError, KeyError) as e:
+                    current_app.logger.warning("bot commands JSON invalid: %s", e)
                     flash('Ошибка в JSON команд')
                 bot.can_join_groups = bool(request.form.get('can_join_groups'))
                 bot.privacy_mode = bool(request.form.get('privacy_mode'))
@@ -853,8 +855,8 @@ def register_routes(app):
 
             try:
                 os.unlink(temp_path)
-            except:
-                pass
+            except OSError as e:
+                current_app.logger.warning("temp file cleanup failed: %s", e)
 
             if result:
                 return jsonify({'video_url': f'/media/{result}'})
@@ -881,8 +883,8 @@ def register_routes(app):
 
             try:
                 os.unlink(temp_path)
-            except:
-                pass
+            except OSError as e:
+                current_app.logger.warning("temp file cleanup failed: %s", e)
 
             if thumb:
                 return jsonify({'thumbnail': f'/media/{thumb}'})

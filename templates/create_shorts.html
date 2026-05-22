@@ -352,7 +352,7 @@ async function startCamera() {
         document.getElementById('cameraVideo').srcObject = stream;
     } catch(e) {
         console.log('Camera error:', e);
-        alert('Не удалось получить доступ к камере');
+        showToast('Не удалось получить доступ к камере', 'error');
     }
 }
 

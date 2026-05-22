@@ -428,7 +428,7 @@ async function toggleRecording() {
             chatRecordingSeconds++;
             document.getElementById('recordingTime').textContent = formatChatTime(chatRecordingSeconds);
         }, 1000);
-    } catch(err) { alert('Нет доступа к микрофону'); }
+    } catch(err) { showToast('Нет доступа к микрофону', 'error'); }
 }
 
 function cancelRecording() {
@@ -513,7 +513,7 @@ async function toggleChatVideoRecording() {
             document.getElementById('videoRecordingTime').textContent = formatChatTime(chatVmSeconds);
             if (chatVmSeconds >= 60) stopChatVmRecording();
         }, 1000);
-    } catch(err) { alert('Нет доступа к камере'); }
+    } catch(err) { showToast('Нет доступа к камере', 'error'); }
 }
 
 function stopChatVmRecording() {

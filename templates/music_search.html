@@ -47,7 +47,7 @@ function addToPlaylist(trackId) {
   if (!name) return;
   var form = new FormData();
   form.append('track_id', trackId);
-  csrfFetch('/music/playlist/' + name + '/add', {method:'POST', body:form}).then(r=>r.json()).then(d=>{ alert(d.ok ? 'Добавлено!' : 'Ошибка: ' + (d.error||'?')); });
+  csrfFetch('/music/playlist/' + name + '/add', {method:'POST', body:form}).then(r=>r.json()).then(d=>{ showToast(d.ok ? 'Добавлено!' : 'Ошибка: ' + (d.error||'?'), d.ok ? 'success' : 'error'); });
 }
 </script>
 {% endblock %}

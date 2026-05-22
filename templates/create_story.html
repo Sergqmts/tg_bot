@@ -134,7 +134,7 @@
                 video.srcObject = stream;
                 document.getElementById('cameraSection').classList.remove('hidden');
             } catch (err) {
-                alert('Не удалось открыть камеру: ' + err.message);
+                showToast('Не удалось открыть камеру: ' + err.message, 'error');
             }
         }
         
@@ -231,8 +231,8 @@
             try {
                 const resp = await fetch('{{ url_for("create_story") }}', { method: 'POST', body: formData });
                 if (resp.ok) window.location.href = '{{ url_for("index") }}';
-                else { alert('Ошибка'); btn.disabled = false; btn.textContent = 'Опубликовать'; }
-            } catch (err) { alert(err.message); btn.disabled = false; }
+                else { showToast('Ошибка публикации', 'error'); btn.disabled = false; btn.textContent = 'Опубликовать'; }
+            } catch (err) { showToast(err.message, 'error'); btn.disabled = false; }
         };
     </script>
 </body>
