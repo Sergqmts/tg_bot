@@ -240,7 +240,11 @@ def register_routes(app):
     @app.route('/api/turn/credentials', methods=['GET'])
     @login_required
     def turn_credentials():
+        key_id = current_app.config.get('CLOUDFLARE_TURN_KEY_ID', '')
+        api_token = current_app.config.get('CLOUDFLARE_TURN_API_TOKEN', '')
+        if not key_id or not api_token:
+            return jsonify({'error': 'TURN not configured', 'debug': f'key_id_set={bool(key_id)}, token_set={bool(api_token)}'}), 501
         creds = get_turn_credentials()
         if not creds:
-            return jsonify({'error': 'TURN not configured'}), 501
+            return jsonify({'error': 'TURN fetch failed — check Railway logs for details'}), 501
         return jsonify(creds)
