@@ -13,8 +13,8 @@ _turn_cache = {'creds': None, 'expires': 0}
 def get_turn_credentials():
     key_id = current_app.config.get('CLOUDFLARE_TURN_KEY_ID', '')
     api_token = current_app.config.get('CLOUDFLARE_TURN_API_TOKEN', '')
-    current_app.logger.info('TURN debug: key_id=%s, token_len=%d, token_prefix=%s',
-                            key_id, len(api_token), api_token[:8] if api_token else 'EMPTY')
+    current_app.logger.warning('TURN debug: key_id=%s, token_len=%d, token_prefix=%s',
+                               key_id, len(api_token), api_token[:8] if api_token else 'EMPTY')
     if not key_id or not api_token:
         return None
     now = time.time()
