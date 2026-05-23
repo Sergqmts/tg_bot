@@ -324,6 +324,7 @@ async function createPeerConnection() {
         });
     }
     callPeerConnection.ontrack = function (ev) {
+        console.log('[WebRTC] ontrack:', ev.track.kind, 'streams:', ev.streams.length);
         if (ev.streams && ev.streams[0]) {
             callRemoteStream = ev.streams[0];
         } else {
@@ -333,7 +334,7 @@ async function createPeerConnection() {
         var vid = document.getElementById('remoteVideo');
         if (vid && callRemoteStream) {
             vid.srcObject = callRemoteStream;
-            vid.play().catch(function (e) { });
+            vid.play().catch(function (e) { console.warn('[WebRTC] play() rejected:', e); });
         }
     };
     callPeerConnection.onicecandidate = function (ev) {
@@ -344,7 +345,20 @@ async function createPeerConnection() {
             });
         }
     };
+    callPeerConnection.oniceconnectionstatechange = function () {
+        var state = callPeerConnection.iceConnectionState;
+        console.log('[WebRTC] ICE state:', state);
+        if (state === 'connected' || state === 'completed') {
+            updateCallScreenStatus('connected');
+        } else if (state === 'failed') {
+            console.error('[WebRTC] ICE failed — нет TURN-сервера или NAT блокирует соединение');
+            updateCallScreenStatus('Ошибка связи');
+        } else if (state === 'disconnected') {
+            updateCallScreenStatus('Нет связи...');
+        }
+    };
     callPeerConnection.onconnectionstatechange = function () {
+        console.log('[WebRTC] Connection state:', callPeerConnection.connectionState);
         if (callPeerConnection.connectionState === 'disconnected' ||
             callPeerConnection.connectionState === 'failed') {
             if (callActive) {

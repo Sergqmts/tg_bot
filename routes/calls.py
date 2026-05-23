@@ -1,12 +1,13 @@
-import hmac
-import hashlib
-import base64
+import json
 import time
+import urllib.request
 from datetime import datetime, timedelta
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from extensions import db
 from models import Call, User, Message, Chat, ChatMember
+
+_turn_cache = {'creds': None, 'expires': 0}
 
 
 def get_turn_credentials():
@@ -14,15 +15,37 @@ def get_turn_credentials():
     api_token = current_app.config.get('CLOUDFLARE_TURN_API_TOKEN', '')
     if not key_id or not api_token:
         return None
-    timestamp = int(time.time()) + 86400
-    username = f"{timestamp}:{key_id}"
-    sig = hmac.new(
-        api_token.encode('utf-8'),
-        username.encode('utf-8'),
-        hashlib.sha256
-    ).digest()
-    credential = base64.b64encode(sig).decode('utf-8')
-    return {'username': username, 'credential': credential}
+    now = time.time()
+    if _turn_cache['creds'] and now < _turn_cache['expires']:
+        return _turn_cache['creds']
+    try:
+        url = f'https://rtc.live.cloudflare.com/v1/turn/keys/{key_id}/credentials/generate'
+        req = urllib.request.Request(
+            url,
+            data=json.dumps({'ttl': 86400}).encode('utf-8'),
+            headers={
+                'Authorization': f'Bearer {api_token}',
+                'Content-Type': 'application/json',
+            },
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=5) as r:
+            data = json.loads(r.read())
+        for server in data.get('iceServers', []):
+            urls = server.get('urls', '')
+            if isinstance(urls, str):
+                urls = [urls]
+            if any('turn' in u.lower() for u in urls):
+                creds = {
+                    'username': server.get('username', ''),
+                    'credential': server.get('credential', '')
+                }
+                _turn_cache['creds'] = creds
+                _turn_cache['expires'] = now + 43200  # cache 12 h
+                return creds
+    except Exception as e:
+        current_app.logger.warning('TURN credential fetch failed: %s', e)
+    return None
 
 
 def format_duration(seconds):
