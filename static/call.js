@@ -277,7 +277,8 @@ async function handleSDPOffer(data) {
 }
 
 async function handleSDPAnswer(data) {
-    if (!callPeerConnection || callPeerConnection.remoteDescription) return;
+    if (!callPeerConnection) return;
+    if (callPeerConnection.signalingState !== 'have-local-offer') return;
     try {
         await callPeerConnection.setRemoteDescription(data.sdp);
         flushIceCandidateQueue();
@@ -323,9 +324,14 @@ async function createPeerConnection() {
         });
     }
     callPeerConnection.ontrack = function (ev) {
-        callRemoteStream = ev.streams[0];
+        if (ev.streams && ev.streams[0]) {
+            callRemoteStream = ev.streams[0];
+        } else {
+            if (!callRemoteStream) callRemoteStream = new MediaStream();
+            callRemoteStream.addTrack(ev.track);
+        }
         var vid = document.getElementById('remoteVideo');
-        if (vid) {
+        if (vid && callRemoteStream) {
             vid.srcObject = callRemoteStream;
             vid.play().catch(function (e) { });
         }

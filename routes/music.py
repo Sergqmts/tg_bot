@@ -151,7 +151,8 @@ def register_routes(app):
     @login_required
     def music_local_track(track_id):
         track = MusicTrack.query.get_or_404(track_id)
-        if track.source == 'upload' and track.file_url:
+        audio_url = track.file_url if track.source == 'upload' else track.preview_url
+        if audio_url:
             h = ListeningHistory(user_id=current_user.id, track_id=track.id)
             db.session.add(h)
             db.session.commit()
@@ -159,7 +160,8 @@ def register_routes(app):
                 'id': track.id,
                 'title': track.title,
                 'artist': track.artist,
-                'file_url': track.file_url,
+                'file_url': track.file_url or '',
+                'preview_url': track.preview_url or '',
                 'cover_url': track.cover_url or '',
                 'duration': track.duration
             })
