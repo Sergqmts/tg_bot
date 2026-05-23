@@ -33,7 +33,9 @@ def get_turn_credentials():
         )
         with urllib.request.urlopen(req, timeout=5) as r:
             data = json.loads(r.read())
-        for server in data.get('iceServers', []):
+        ice = data.get('iceServers', {})
+        servers = ice if isinstance(ice, list) else [ice]
+        for server in servers:
             urls = server.get('urls', '')
             if isinstance(urls, str):
                 urls = [urls]
