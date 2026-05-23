@@ -487,6 +487,12 @@ def update_last_seen():
 def favicon():
     return send_from_directory(app.static_folder, 'favicon.ico')
 
+@app.route('/sw.js')
+def service_worker():
+    response = send_from_directory(app.static_folder, 'sw.js')
+    response.headers['Service-Worker-Allowed'] = '/'
+    return response
+
 
 # Register all route handlers from routes/ package
 from routes import register_all_routes
