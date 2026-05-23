@@ -277,15 +277,16 @@ let _videoObserver = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     const input = document.getElementById('messageInput');
+    function updateSendState() {
+        const has = (input && input.value.trim().length > 0) || !!selectedFile;
+        document.getElementById('sendBtn').style.display = has ? 'flex' : 'none';
+        document.getElementById('mediaActionBtn').style.display = has ? 'none' : 'flex';
+        document.getElementById('modeToggleBtn').style.display = has ? 'none' : '';
+    }
+    window._chatUpdateSendState = updateSendState;
     if (input) {
-        input.addEventListener('input', function() {
-            const has = this.value.trim().length > 0;
-            document.getElementById('sendBtn').classList.toggle('hidden', !has);
-            document.getElementById('sendBtn').classList.toggle('flex', has);
-            document.getElementById('mediaActionBtn').classList.toggle('hidden', has);
-            document.getElementById('mediaActionBtn').classList.toggle('flex', !has);
-            document.getElementById('modeToggleBtn').classList.toggle('hidden', has);
-        });
+        input.addEventListener('input', updateSendState);
+        input.addEventListener('keyup', updateSendState);
     }
     setupVideoAutoplay();
     updateChatBackground();
@@ -367,6 +368,7 @@ function showMessageMenu(event, msgId) {
 function handleFileSelect(input) {
     if (input.files && input.files[0]) { selectedFile = input.files[0]; showPreview(selectedFile); }
     document.getElementById('attachMenu').classList.add('hidden');
+    if (window._chatUpdateSendState) window._chatUpdateSendState();
 }
 function showPreview(file) {
     const preview = document.getElementById('attachPreview');
@@ -395,7 +397,7 @@ function addRemoveBtn(item, preview) {
     btn.type = 'button';
     btn.className = 'absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center';
     btn.innerHTML = '×';
-    btn.onclick = () => { selectedFile = null; preview.classList.add('hidden'); document.getElementById('attachedFile').value = ''; };
+    btn.onclick = () => { selectedFile = null; preview.classList.add('hidden'); document.getElementById('attachedFile').value = ''; if (window._chatUpdateSendState) window._chatUpdateSendState(); };
     item.appendChild(btn);
 }
 function attachFileToForm(form) {
