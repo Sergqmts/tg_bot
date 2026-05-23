@@ -19,7 +19,7 @@ def get_turn_credentials():
     if _turn_cache['creds'] and now < _turn_cache['expires']:
         return _turn_cache['creds']
     try:
-        url = f'https://rtc.live.cloudflare.com/v1/turn/keys/{key_id}/credentials/generate'
+        url = f'https://rtc.live.cloudflare.com/v1/turn/keys/{key_id}/credentials/generate-ice-servers'
         req = urllib.request.Request(
             url,
             data=json.dumps({'ttl': 86400}).encode('utf-8'),
