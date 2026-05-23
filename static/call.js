@@ -334,7 +334,9 @@ async function createPeerConnection() {
         var vid = document.getElementById('remoteVideo');
         if (vid && callRemoteStream) {
             vid.srcObject = callRemoteStream;
-            vid.play().catch(function (e) { console.warn('[WebRTC] play() rejected:', e); });
+            if (vid.paused) {
+                vid.play().catch(function (e) { console.warn('[WebRTC] play() rejected:', e); });
+            }
         }
     };
     callPeerConnection.onicecandidate = function (ev) {
