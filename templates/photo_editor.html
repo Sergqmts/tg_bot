@@ -47,7 +47,8 @@
 .history-bar button:hover { background: #405de6; color: #fff; }
 .history-bar .sep { width: 1px; background: #2a2a4a; margin: 4px 0; }
 .save-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.85); z-index: 9999; display: none; align-items: center; justify-content: center; }
-.save-dialog { background: #16213e; border-radius: 16px; padding: 24px; width: 400px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+.save-dialog { background: #16213e; border-radius: 16px; padding: 24px; width: 400px; max-width: 90vw; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; }
+.save-dialog .btn-row { position: sticky; bottom: -24px; margin: 12px -24px -24px; padding: 12px 24px; background: #16213e; border-top: 1px solid #2a2a4a; border-radius: 0 0 16px 16px; }
 .save-dialog h3 { margin: 0 0 16px; color: #fff; }
 .save-dialog .preview { width: 100%; max-height: 240px; object-fit: contain; border-radius: 8px; margin-bottom: 16px; background: #0f0f1a; }
 .save-dialog textarea { width: 100%; min-height: 60px; padding: 10px; border: 1px solid #2a2a4a; border-radius: 8px; background: #1a1a2e; color: #eee; resize: vertical; margin-bottom: 12px; font-size: 13px; }
@@ -942,20 +943,33 @@ function updateCropBox() {
   const box = document.getElementById('cropBox');
   const canvas = state.canvas;
   const rect = canvas.getBoundingClientRect();
+  // FIX ISSUE-001: offset cropBox by canvas position within canvasWrap
+  const wrap = document.getElementById('canvasWrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const offsetX = rect.left - wrapRect.left;
+  const offsetY = rect.top - wrapRect.top;
   let x = state.crop.x, y = state.crop.y, w = state.crop.w, h = state.crop.h;
+  x = Math.max(0, Math.min(x, rect.width - 50));
+  y = Math.max(0, Math.min(y, rect.height - 50));
+  // FIX ISSUE-002: enforce aspect ratio without breaking due to independent clamps
   if (state.crop.aspect !== 'free') {
     const ratio = ASPECTS[state.crop.aspect];
     if (ratio) {
-      if (w / h > ratio) h = w / ratio;
-      else w = h * ratio;
+      const maxW = rect.width - x;
+      const maxH = rect.height - y;
+      w = Math.min(w, maxW, maxH * ratio);
+      w = Math.max(50, w);
+      h = w / ratio;
+    } else {
+      w = Math.max(50, Math.min(w, rect.width - x));
+      h = Math.max(50, Math.min(h, rect.height - y));
     }
+  } else {
+    w = Math.max(50, Math.min(w, rect.width - x));
+    h = Math.max(50, Math.min(h, rect.height - y));
   }
-  w = Math.max(50, Math.min(w, rect.width - x));
-  h = Math.max(50, Math.min(h, rect.height - y));
-  x = Math.max(0, Math.min(x, rect.width - w));
-  y = Math.max(0, Math.min(y, rect.height - h));
   state.crop.x = x; state.crop.y = y; state.crop.w = w; state.crop.h = h;
-  box.style.left = x + 'px'; box.style.top = y + 'px';
+  box.style.left = (offsetX + x) + 'px'; box.style.top = (offsetY + y) + 'px';
   box.style.width = w + 'px'; box.style.height = h + 'px';
 }
 
