@@ -305,17 +305,8 @@ function flushIceCandidateQueue() {
 async function createPeerConnection() {
     var config = { iceServers: ICE_SERVERS.iceServers.slice() };
     var creds = await fetchTurnCredentials();
-    if (creds && creds.username && creds.credential) {
-        config.iceServers.push({
-            urls: 'turn:turn.cloudflare.com:3478',
-            username: creds.username,
-            credential: creds.credential
-        });
-        config.iceServers.push({
-            urls: 'turns:turn.cloudflare.com:5349',
-            username: creds.username,
-            credential: creds.credential
-        });
+    if (Array.isArray(creds)) {
+        creds.forEach(function(server) { config.iceServers.push(server); });
     }
     callPeerConnection = new RTCPeerConnection(config);
     if (callLocalStream) {

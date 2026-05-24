@@ -11,42 +11,22 @@ _turn_cache = {'creds': None, 'expires': 0}
 
 
 def get_turn_credentials():
-    key_id = current_app.config.get('CLOUDFLARE_TURN_KEY_ID', '')
-    api_token = current_app.config.get('CLOUDFLARE_TURN_API_TOKEN', '')
-    current_app.logger.warning('TURN debug: key_id=%s, token_len=%d, token_prefix=%s',
-                               key_id, len(api_token), api_token[:8] if api_token else 'EMPTY')
-    if not key_id or not api_token:
+    app_name = current_app.config.get('METERED_APP_NAME', '')
+    api_key = current_app.config.get('METERED_API_KEY', '')
+    if not app_name or not api_key:
         return None
     now = time.time()
     if _turn_cache['creds'] and now < _turn_cache['expires']:
         return _turn_cache['creds']
     try:
-        url = f'https://rtc.live.cloudflare.com/v1/turn/keys/{key_id}/credentials/generate-ice-servers'
-        req = urllib.request.Request(
-            url,
-            data=json.dumps({'ttl': 86400}).encode('utf-8'),
-            headers={
-                'Authorization': f'Bearer {api_token}',
-                'Content-Type': 'application/json',
-            },
-            method='POST'
-        )
+        url = f'https://{app_name}.metered.live/api/v1/turn/credentials?apiKey={api_key}'
+        req = urllib.request.Request(url, method='GET')
         with urllib.request.urlopen(req, timeout=5) as r:
-            data = json.loads(r.read())
-        ice = data.get('iceServers', {})
-        servers = ice if isinstance(ice, list) else [ice]
-        for server in servers:
-            urls = server.get('urls', '')
-            if isinstance(urls, str):
-                urls = [urls]
-            if any('turn' in u.lower() for u in urls):
-                creds = {
-                    'username': server.get('username', ''),
-                    'credential': server.get('credential', '')
-                }
-                _turn_cache['creds'] = creds
-                _turn_cache['expires'] = now + 43200  # cache 12 h
-                return creds
+            servers = json.loads(r.read())
+        if isinstance(servers, list) and servers:
+            _turn_cache['creds'] = servers
+            _turn_cache['expires'] = now + 43200  # cache 12 h
+            return servers
     except Exception as e:
         current_app.logger.warning('TURN credential fetch failed: %s', e)
     return None
@@ -244,11 +224,11 @@ def register_routes(app):
     @app.route('/api/turn/credentials', methods=['GET'])
     @login_required
     def turn_credentials():
-        key_id = current_app.config.get('CLOUDFLARE_TURN_KEY_ID', '')
-        api_token = current_app.config.get('CLOUDFLARE_TURN_API_TOKEN', '')
-        if not key_id or not api_token:
-            return jsonify({'error': 'TURN not configured', 'debug': f'key_id_set={bool(key_id)}, token_set={bool(api_token)}'}), 501
+        app_name = current_app.config.get('METERED_APP_NAME', '')
+        api_key = current_app.config.get('METERED_API_KEY', '')
+        if not app_name or not api_key:
+            return jsonify({'error': 'TURN not configured'}), 501
         creds = get_turn_credentials()
         if not creds:
-            return jsonify({'error': 'TURN fetch failed — check Railway logs for details'}), 501
+            return jsonify({'error': 'TURN fetch failed'}), 501
         return jsonify(creds)

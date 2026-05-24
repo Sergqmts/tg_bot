@@ -49,8 +49,8 @@ app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', '')
 app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET', '')
-app.config['CLOUDFLARE_TURN_KEY_ID'] = os.environ.get('CLOUDFLARE_TURN_KEY_ID', '')
-app.config['CLOUDFLARE_TURN_API_TOKEN'] = os.environ.get('CLOUDFLARE_TURN_API_TOKEN', '')
+app.config['METERED_APP_NAME'] = os.environ.get('METERED_APP_NAME', '')
+app.config['METERED_API_KEY'] = os.environ.get('METERED_API_KEY', '')
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'pdf', 'doc', 'docx', 'txt'}
 
 # Custom Jinja2 filters

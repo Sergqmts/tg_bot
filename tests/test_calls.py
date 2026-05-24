@@ -26,18 +26,34 @@ class TestGetTurnCredentials:
             assert get_turn_credentials() is None
 
     def test_configured(self, app):
-        app.config['CLOUDFLARE_TURN_KEY_ID'] = 'test-key-id'
-        app.config['CLOUDFLARE_TURN_API_TOKEN'] = 'test-api-token'
-        with app.app_context():
-            creds = get_turn_credentials()
-            assert creds is not None
-            assert 'username' in creds
-            assert 'credential' in creds
-            assert creds['username'].endswith(':test-key-id')
-            assert isinstance(creds['credential'], str)
-            assert len(creds['credential']) > 0
-        app.config['CLOUDFLARE_TURN_KEY_ID'] = ''
-        app.config['CLOUDFLARE_TURN_API_TOKEN'] = ''
+        sample_servers = [
+            {'urls': 'stun:stun.metered.ca:80'},
+            {'urls': 'turn:standard.relay.metered.ca:80', 'username': 'testuser', 'credential': 'testpass'},
+        ]
+        app.config['METERED_APP_NAME'] = 'testapp'
+        app.config['METERED_API_KEY'] = 'test-api-key'
+        import urllib.request
+        from unittest.mock import patch, MagicMock
+        mock_response = MagicMock()
+        mock_response.read.return_value = json.dumps(sample_servers).encode()
+        mock_response.__enter__ = lambda s: s
+        mock_response.__exit__ = MagicMock(return_value=False)
+        import routes.calls as calls_module
+        calls_module._turn_cache['creds'] = None
+        calls_module._turn_cache['expires'] = 0
+        with patch('urllib.request.urlopen', return_value=mock_response):
+            with app.app_context():
+                creds = get_turn_credentials()
+                assert isinstance(creds, list)
+                assert len(creds) > 0
+                turn_servers = [s for s in creds if 'turn' in s.get('urls', '').lower()]
+                assert len(turn_servers) > 0
+                assert 'username' in turn_servers[0]
+                assert 'credential' in turn_servers[0]
+        app.config['METERED_APP_NAME'] = ''
+        app.config['METERED_API_KEY'] = ''
+        calls_module._turn_cache['creds'] = None
+        calls_module._turn_cache['expires'] = 0
 
 
 class TestInitiateCall:
