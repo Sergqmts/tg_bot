@@ -90,7 +90,7 @@ def register_routes(app):
         if not cloudinary_url or not user_id:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
-        audio = MusicTrack.query.get(audio_id) if audio_id else None
+        audio = db.session.get(MusicTrack, audio_id) if audio_id else None
 
         shorts = Shorts(
             video_url=cloudinary_url,
@@ -106,9 +106,9 @@ def register_routes(app):
     @app.route('/api/editor/draft/<int:draft_id>')
     def editor_get_draft(draft_id):
         check_service_token()
-        draft = Draft.query.get(draft_id)
+        draft = db.session.get(Draft, draft_id)
         if not draft:
-            return jsonify({'status': 'error', 'message': 'Draft not found'})
+            return jsonify({'status': 'error', 'message': 'Draft not found'}), 404
         return jsonify({'media_data': draft.media_data, 'caption': draft.caption})
 
     @app.route('/proxy/edit/photo')
