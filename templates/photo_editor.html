@@ -329,12 +329,12 @@ const FILTERS = {
 const ASPECTS = { free:0, '1:1':1, '4:5':4/5, '9:16':9/16, '16:9':16/9, '3:2':3/2, '4:3':4/3, '2:3':2/3, '21:9':21/9 };
 
 const FRAMES = [
-  {name:'Тонкая',style:'4px solid #fff',border:'',bg:''},
-  {name:'Двойная',style:'4px solid #fff;box-shadow:0 0 0 4px #405de6',border:'',bg:''},
-  {name:'Полярнойд',style:'background:#fff;padding:12px',border:'1px solid #ddd',bg:'#fff'},
-  {name:'Неон',style:'3px solid #ff3cac;box-shadow:0 0 12px #ff3cac',border:'',bg:''},
-  {name:'Золото',style:'3px solid #d4a017;box-shadow:0 0 8px rgba(212,160,23,.5)',border:'',bg:''},
-  {name:'VHS',style:'2px solid #00ff88;box-shadow:4px 4px 0 rgba(0,255,136,.3)',border:'',bg:''}
+  {id:'thin',   name:'Тонкая',    color:'#fff',    width:4, glow:null, offset:null, bg:''},
+  {id:'double', name:'Двойная',   color:'#fff',    width:4, glow:null, offset:null, bg:'', inner:{color:'#405de6',width:3,gap:7}},
+  {id:'polar',  name:'Полярнойд', color:'#ccc',    width:1, glow:null, offset:null, bg:'#fff', pad:16},
+  {id:'neon',   name:'Неон',      color:'#ff3cac', width:3, glow:{color:'#ff3cac',blur:14}, offset:null, bg:''},
+  {id:'gold',   name:'Золото',    color:'#d4a017', width:3, glow:{color:'rgba(212,160,23,0.6)',blur:10}, offset:null, bg:''},
+  {id:'vhs',    name:'VHS',       color:'#00ff88', width:2, glow:{color:'rgba(0,255,136,0.35)',blur:0}, offset:{x:5,y:5}, bg:''}
 ];
 
 const COLLAGE = [
@@ -369,6 +369,9 @@ let state = {
   drawTool: 'marker',
   isDrawing: false,
   drawLayer: null,
+  currentStroke: null,
+  bgSnap: null,
+  strokePoints: [],
   animFrame: null,
   animType: null,
   time: 0,
@@ -609,10 +612,39 @@ function render() {
   if (state.frameStyle) {
     const fs = state.frameStyle;
     ctx.save();
-    if (fs.bg) { ctx.fillStyle = fs.bg; ctx.fillRect(0,0,w,h); }
-    ctx.strokeStyle = fs.border || '#fff';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(2,2,w-4,h-4);
+    const id = fs.id;
+
+    if (id === 'polar') {
+      // Polaroid: white background, image sits inside with padding, thin inner border
+      const pad = fs.pad || 16;
+      ctx.fillStyle = fs.bg || '#fff';
+      ctx.fillRect(0, 0, w, h);
+      // Redraw image inset
+      ctx.drawImage(state.image, pad, pad, w - pad * 2, h - pad * 2);
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+    } else {
+      // For glow/shadow frames: apply shadow first, then stroke
+      if (fs.glow) {
+        ctx.shadowColor = fs.glow.color;
+        ctx.shadowBlur = fs.glow.blur;
+        if (fs.offset) { ctx.shadowOffsetX = fs.offset.x; ctx.shadowOffsetY = fs.offset.y; }
+      }
+      ctx.strokeStyle = fs.color || '#fff';
+      ctx.lineWidth = fs.width || 4;
+      ctx.strokeRect(2, 2, w - 4, h - 4);
+
+      if (id === 'double' && fs.inner) {
+        // Second inner ring
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = fs.inner.color;
+        ctx.lineWidth = fs.inner.width;
+        const g = fs.inner.gap;
+        ctx.strokeRect(2 + g, 2 + g, w - 4 - g * 2, h - 4 - g * 2);
+      }
+    }
     ctx.restore();
   }
   
@@ -1139,11 +1171,68 @@ function activateDrawLayer() {
   oc.width = state.width; oc.height = state.height;
   state.drawLayer = oc;
   state.drawing = true;
+  const cs = document.createElement('canvas');
+  cs.width = state.width; cs.height = state.height;
+  state.currentStroke = cs;
 }
 
 function deactivateDrawLayer() {
   state.drawing = false;
 }
+
+// ── Drawing performance helpers ──────────────────────────────────────────────
+var _drawRafId = null;
+
+// Called on mousedown/touchstart: snapshots the canvas so we can fast-composite
+// during the stroke without running the expensive full render() each event.
+function beginStroke(x, y) {
+  state.strokePoints = [{x: x, y: y}];
+  if (state.currentStroke) {
+    state.currentStroke.getContext('2d').clearRect(0, 0, state.width, state.height);
+  }
+  // Snapshot the current canvas (includes any previously drawn strokes)
+  var snap = document.createElement('canvas');
+  snap.width = state.canvas.width;
+  snap.height = state.canvas.height;
+  snap.getContext('2d').drawImage(state.canvas, 0, 0);
+  state.bgSnap = snap;
+}
+
+// Cheap composite: bgSnap (image+effects+old strokes) + currentStroke overlay.
+// Used for brush/marker — avoids the full render() pipeline during a stroke.
+function fastPaint() {
+  if (!state.ctx || !state.bgSnap) return;
+  state.ctx.drawImage(state.bgSnap, 0, 0);
+  if (state.currentStroke) state.ctx.drawImage(state.currentStroke, 0, 0);
+}
+
+// RAF-throttled fastPaint (brush/marker path)
+function scheduleFastPaint() {
+  if (_drawRafId) return;
+  _drawRafId = requestAnimationFrame(function() { _drawRafId = null; fastPaint(); });
+}
+
+// RAF-throttled full render (spray/eraser path — these modify drawLayer directly)
+function scheduleRender() {
+  if (_drawRafId) return;
+  _drawRafId = requestAnimationFrame(function() { _drawRafId = null; render(); });
+}
+
+// Called on mouseup/touchend: merges currentStroke into drawLayer, then renders once.
+function endStroke() {
+  if (_drawRafId) { cancelAnimationFrame(_drawRafId); _drawRafId = null; }
+  // Merge current stroke into the persistent draw layer
+  if (state.drawTool !== 'eraser' && state.drawTool !== 'spray') {
+    if (state.currentStroke && state.drawLayer) {
+      state.drawLayer.getContext('2d').drawImage(state.currentStroke, 0, 0);
+      state.currentStroke.getContext('2d').clearRect(0, 0, state.width, state.height);
+    }
+  }
+  state.strokePoints = [];
+  state.bgSnap = null;
+  render();
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 function toggleDrawing() {
   if (!state.drawLayer) activateDrawLayer();
@@ -1226,6 +1315,7 @@ function initCanvasEvents() {
     const pos = getCanvasCoords(e);
     if (state.isDrawing && state.drawLayer) {
       state.lastDrawPos = pos;
+      beginStroke(pos.x, pos.y);
       drawAt(pos.x, pos.y);
     } else if (state.image) {
       if (state.selectedLayer >= 0 && hitTestResizeHandle(pos)) {
@@ -1276,13 +1366,14 @@ function initCanvasEvents() {
       if (state.selectedLayer >= 0) saveHistory();
     }
     state.lastDrawPos = null;
-    if (state.isDrawing) { saveHistory(); render(); }
+    if (state.isDrawing) { saveHistory(); endStroke(); }
   });
   state.canvas.addEventListener('touchstart', function(e) {
     if (state.isDrawing && state.drawLayer) {
       e.preventDefault();
       const pos = getCanvasCoords(e);
       state.lastDrawPos = pos;
+      beginStroke(pos.x, pos.y);
       drawAt(pos.x, pos.y);
     } else if (state.image) {
       const pos = getCanvasCoords(e);
@@ -1338,68 +1429,67 @@ function initCanvasEvents() {
       if (state.selectedLayer >= 0) saveHistory();
     }
     state.lastDrawPos = null;
-    if (state.isDrawing) { saveHistory(); render(); }
+    if (state.isDrawing) { saveHistory(); endStroke(); }
   });
 }
 
 function drawAt(x, y) {
   if (!state.drawLayer) return;
-  const ctx = state.drawLayer.getContext('2d');
   const size = parseInt(document.getElementById('brushSize').value);
   const color = document.getElementById('brushColor').value;
   const opacity = parseInt(document.getElementById('brushOpacity').value) / 100;
-  ctx.save();
-  ctx.globalAlpha = opacity;
-  if (state.drawTool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
-  ctx.beginPath();
-  if (state.drawTool === 'spray') {
-    for (let i=0; i<30; i++) {
+
+  if (state.drawTool === 'eraser') {
+    // Eraser: draw directly on drawLayer with destination-out
+    const ctx = state.drawLayer.getContext('2d');
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    scheduleRender();
+  } else if (state.drawTool === 'spray') {
+    // Spray: draw directly on drawLayer, scheduleRender for display
+    const ctx = state.drawLayer.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = color;
+    for (let i = 0; i < 30; i++) {
       const angle = Math.random() * 2 * Math.PI;
       const radius = Math.random() * size;
-      const sx = x + Math.cos(angle) * radius;
-      const sy = y + Math.sin(angle) * radius;
-      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(sx, sy, size * 0.3, 0, Math.PI*2);
+      ctx.arc(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, size * 0.3, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
+    scheduleRender();
   } else {
+    // Brush/Marker: draw initial dot on currentStroke, fast-composite for display
+    if (!state.currentStroke) return;
+    const ctx = state.currentStroke.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = opacity;
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, y, size/2, 0, Math.PI*2);
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+    scheduleFastPaint();
   }
-  ctx.restore();
-  render();
 }
 
 function drawLine(x1, y1, x2, y2) {
   if (!state.drawLayer) return;
-  const ctx = state.drawLayer.getContext('2d');
   const size = parseInt(document.getElementById('brushSize').value);
   const color = document.getElementById('brushColor').value;
   const opacity = parseInt(document.getElementById('brushOpacity').value) / 100;
-  ctx.save();
-  ctx.globalAlpha = opacity;
-  if (state.drawTool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
-  if (state.drawTool === 'spray') {
-    const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
-    const steps = Math.max(1, Math.floor(dist / 2));
-    for (let s=0; s<=steps; s++) {
-      const t = s/steps;
-      const x = x1 + (x2-x1)*t;
-      const y = y1 + (y2-y1)*t;
-      for (let i=0; i<10; i++) {
-        const angle = Math.random() * 2 * Math.PI;
-        const radius = Math.random() * size;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x + Math.cos(angle)*radius, y + Math.sin(angle)*radius, size*0.3, 0, Math.PI*2);
-        ctx.fill();
-      }
-    }
-  } else {
-    ctx.strokeStyle = color;
+
+  if (state.drawTool === 'eraser') {
+    // Eraser: straight lineTo on drawLayer with destination-out is fine
+    const ctx = state.drawLayer.getContext('2d');
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
     ctx.lineWidth = size;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -1407,9 +1497,80 @@ function drawLine(x1, y1, x2, y2) {
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
+    ctx.restore();
+    scheduleRender();
+    return;
+  }
+
+  if (state.drawTool === 'spray') {
+    // Spray: interpolate dots along segment, draw on drawLayer
+    const ctx = state.drawLayer.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    const dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    const steps = Math.max(1, Math.floor(dist / 3));
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      const sx = x1 + (x2 - x1) * t;
+      const sy = y1 + (y2 - y1) * t;
+      for (let i = 0; i < 8; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const radius = Math.random() * size;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(sx + Math.cos(angle) * radius, sy + Math.sin(angle) * radius, size * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+    scheduleRender();
+    return;
+  }
+
+  // ── Brush / Marker ────────────────────────────────────────────────────────
+  // Accumulate points in strokePoints, then redraw the whole current stroke
+  // on currentStroke using quadratic Bézier midpoints for smooth curves.
+  // This avoids any call to render() during the stroke; fastPaint() composites
+  // bgSnap + currentStroke in a single requestAnimationFrame.
+  if (!state.currentStroke) return;
+  const pts = state.strokePoints;
+  pts.push({x: x2, y: y2});
+
+  const ctx = state.currentStroke.getContext('2d');
+  ctx.clearRect(0, 0, state.width, state.height);
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = size;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (pts.length === 1) {
+    ctx.beginPath();
+    ctx.arc(pts[0].x, pts[0].y, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (pts.length === 2) {
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[1].x, pts[1].y);
+    ctx.stroke();
+  } else {
+    // Smooth curve: use midpoints between consecutive points as anchors,
+    // and each actual sampled point as the quadratic control point.
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i].x + pts[i + 1].x) / 2;
+      const my = (pts[i].y + pts[i + 1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+    }
+    const last = pts[pts.length - 1];
+    ctx.lineTo(last.x, last.y);
+    ctx.stroke();
   }
   ctx.restore();
-  render();
+  scheduleFastPaint();
 }
 
 function applyPortrait(type) {
