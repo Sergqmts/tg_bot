@@ -4,16 +4,16 @@
 <div style="padding-bottom:80px;">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
     <h2 style="font-size:24px;font-weight:700;">Музыка</h2>
-    <a href="{{ url_for('music_search') }}" style="font-size:24px;color:var(--text-muted);">🔍</a>
+    <a href="{{ url_for('music_search') }}" style="font-size:20px;color:var(--text-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-magnifying-glass"></i></a>
   </div>
 
   <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;">
     <a href="{{ url_for('music_home') }}" class="btn btn-primary" style="font-size:13px;white-space:nowrap;">Главная</a>
     <a href="{{ url_for('music_search') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;">Поиск</a>
-    <a href="{{ url_for('music_favorites') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;">♥ Избранное</a>
-    <a href="{{ url_for('music_history') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;">📋 История</a>
-    <a href="{{ url_for('music_recommendations') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;">🎯 Рекомендации</a>
-    <a href="{{ url_for('music_upload') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;">📤 Загрузить</a>
+    <a href="{{ url_for('music_favorites') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;"><i class="fa-solid fa-heart"></i> Избранное</a>
+    <a href="{{ url_for('music_history') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;"><i class="fa-solid fa-clock-rotate-left"></i> История</a>
+    <a href="{{ url_for('music_recommendations') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;"><i class="fa-solid fa-wand-sparkles"></i> Рекомендации</a>
+    <a href="{{ url_for('music_upload') }}" class="btn btn-secondary" style="font-size:13px;white-space:nowrap;"><i class="fa-solid fa-upload"></i> Загрузить</a>
   </div>
 
   {% if charts %}
