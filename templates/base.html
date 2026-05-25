@@ -154,11 +154,11 @@
             </div>
             <div class="flex items-center gap-3 sm:gap-6">
                 <!-- Mobile: search icon -->
-                <a href="{{ url_for('explore') }}" class="md:hidden text-xl text-slate-500 dark:text-slate-400 hover:text-brand-middle transition-colors">
+                <a href="{{ url_for('explore') }}" class="md:hidden w-11 h-11 flex items-center justify-center text-xl text-slate-500 dark:text-slate-400 hover:text-brand-middle transition-colors rounded-xl">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </a>
                 {% if current_user.is_authenticated %}
-                <a href="{{ url_for('notifications') }}" class="text-xl hover:text-brand-middle transition-colors relative">
+                <a href="{{ url_for('notifications') }}" class="w-11 h-11 flex items-center justify-center text-xl hover:text-brand-middle transition-colors relative rounded-xl">
                     <i class="fa-regular fa-bell"></i>
                     {% if unread_notifications > 0 %}
                     <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold" id="notif-badge" {% if unread_notifications == 0 %}style="display:none"{% endif %}>{{ unread_notifications }}</span>
