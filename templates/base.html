@@ -301,23 +301,28 @@
         </div>
         <audio id="playerAudio" style="display:none;"></audio>
     </div>
-    <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border z-50" style="padding-bottom: env(safe-area-inset-bottom);">
+    <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border z-50 md:hidden" style="padding-bottom: env(safe-area-inset-bottom);">
         <div class="flex items-center justify-around h-16 px-2">
-            <a href="{{ url_for('index') }}" class="text-2xl {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
-                <i class="fa-solid fa-house"></i>
+            <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-house text-xl"></i>
+                <span>Лента</span>
             </a>
-            <a href="{{ url_for('shorts') }}" class="text-2xl {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
-                <i class="fa-solid fa-clapperboard"></i>
+            <a href="{{ url_for('shorts') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-clapperboard text-xl"></i>
+                <span>Shorts</span>
             </a>
-            <a href="{{ url_for('messages') }}" class="text-2xl {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
-                <i class="fa-solid fa-paper-plane"></i>
+            <a href="{{ url_for('messages') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-paper-plane text-xl"></i>
+                <span>Сообщения</span>
             </a>
-            <a href="{{ url_for('communities') }}" class="text-2xl {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
-                <i class="fa-solid fa-users"></i>
+            <a href="{{ url_for('communities') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+                <i class="fa-solid fa-users text-xl"></i>
+                <span>Сообщества</span>
             </a>
             <div class="relative" id="moreMenuContainer">
-                <button onclick="toggleMoreMenu()" class="text-2xl text-slate-400 hover:text-brand-middle transition-colors p-2">
-                    <i class="fa-solid fa-ellipsis"></i>
+                <button onclick="toggleMoreMenu()" class="flex flex-col items-center gap-0.5 text-xs text-slate-400 hover:text-brand-middle transition-colors p-2">
+                    <i class="fa-solid fa-ellipsis text-xl"></i>
+                    <span>Ещё</span>
                 </button>
                 <div id="moreMenu" class="absolute bottom-16 right-0 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[180px] w-[min(200px,calc(100vw-2rem))] hidden" style="z-index:100;">
                     <a href="{{ url_for('user_profile', username=current_user.username) }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm">
