@@ -3,28 +3,31 @@
 {% block content %}
 <div class="max-w-3xl mx-auto">
     <div class="flex items-center gap-3 mb-6">
-        <a href="{{ url_for('create_bot') }}" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-arrow-left"></i></a>
+        <a href="{{ url_for('create_bot') }}" class="flex items-center justify-center w-9 h-9 rounded-xl bg-slate-100 dark:bg-dark-card text-slate-500 hover:text-slate-700 hover:bg-slate-200 dark:hover:bg-dark-border transition-colors"><i class="fa-solid fa-arrow-left"></i></a>
         <h1 class="text-2xl font-bold">Bot API Documentation</h1>
     </div>
 
     <div class="space-y-6">
 
         <div class="glass rounded-2xl p-6">
-            <h2 class="text-xl font-bold mb-4">🔑 Authentication</h2>
+            <h2 class="text-xl font-bold mb-4">Authentication</h2>
             <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">Each bot has a unique token. Include it in the URL path:</p>
-            <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-sm">
+            <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-sm overflow-x-auto">
                 POST /bot&lt;token&gt;/&lt;method&gt;
             </div>
-            <p class="text-xs text-slate-400 mt-2">The token is generated when you create a bot. You can regenerate it in bot settings.</p>
+            <p class="text-sm text-slate-400 mt-2">The token is generated when you create a bot. You can regenerate it in bot settings.</p>
         </div>
 
         <div class="glass rounded-2xl p-6">
-            <h2 class="text-xl font-bold mb-4">📨 Messages</h2>
+            <h2 class="text-xl font-bold mb-4">Messages</h2>
             <div class="space-y-4">
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">sendMessage</div>
-                    <p class="text-xs text-slate-500 mb-2">Send a text message to a chat or direct message.</p>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/sendMessage
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">sendMessage</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Send a text message to a chat or direct message.</p>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/sendMessage
 {
   "chat_id": 123,        // chat ID, user ID, or @username
   "text": "Hello!"
@@ -33,9 +36,12 @@
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">sendPhoto / sendVideo / sendVoice / sendDocument</div>
-                    <p class="text-xs text-slate-500 mb-2">Send media files (multipart/form-data with file in <code>media</code> field).</p>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/sendPhoto
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">sendPhoto / sendVideo / sendVoice / sendDocument</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Send media files (multipart/form-data with file in <code>media</code> field).</p>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/sendPhoto
 chat_id: 123
 media: &lt;file&gt;
 caption: "Optional caption"
@@ -43,9 +49,12 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">forwardMessage</div>
-                    <p class="text-xs text-slate-500 mb-2">Forward a message from one chat to another.</p>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/forwardMessage
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">forwardMessage</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Forward a message from one chat to another.</p>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/forwardMessage
 {
   "chat_id": 123,
   "from_chat_id": 456,
@@ -55,9 +64,12 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">deleteMessage</div>
-                    <p class="text-xs text-slate-500 mb-2">Delete a message sent by the bot.</p>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/deleteMessage
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">deleteMessage</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Delete a message sent by the bot.</p>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/deleteMessage
 {
   "chat_id": 123,
   "message_id": 456
@@ -68,21 +80,30 @@ caption: "Optional caption"
         </div>
 
         <div class="glass rounded-2xl p-6">
-            <h2 class="text-xl font-bold mb-4">👥 Chat Management</h2>
+            <h2 class="text-xl font-bold mb-4">Chat Management</h2>
             <div class="space-y-4">
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">getChat</div>
-                    <pre class="text-xs">GET /bot&lt;token&gt;/getChat?chat_id=123</pre>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
+                        <span class="font-semibold text-sm font-mono">getChat</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getChat?chat_id=123</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">getChatMembers</div>
-                    <pre class="text-xs">GET /bot&lt;token&gt;/getChatMembers?chat_id=123</pre>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
+                        <span class="font-semibold text-sm font-mono">getChatMembers</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getChatMembers?chat_id=123</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">banChatMember</div>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/banChatMember
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">banChatMember</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/banChatMember
 {
   "chat_id": 123,
   "user_id": 456
@@ -91,8 +112,11 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">unbanChatMember</div>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/unbanChatMember
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">unbanChatMember</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/unbanChatMember
 {
   "chat_id": 123,
   "user_id": 456
@@ -101,8 +125,11 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">promoteChatMember</div>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/promoteChatMember
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">promoteChatMember</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/promoteChatMember
 {
   "chat_id": 123,
   "user_id": 456
@@ -113,22 +140,31 @@ caption: "Optional caption"
         </div>
 
         <div class="glass rounded-2xl p-6">
-            <h2 class="text-xl font-bold mb-4">🏘️ Community Management</h2>
+            <h2 class="text-xl font-bold mb-4">Community Management</h2>
             <div class="space-y-4">
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">getCommunity</div>
-                    <pre class="text-xs">GET /bot&lt;token&gt;/getCommunity?community_id=news</pre>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
+                        <span class="font-semibold text-sm font-mono">getCommunity</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getCommunity?community_id=news</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">getCommunityMembers</div>
-                    <pre class="text-xs">GET /bot&lt;token&gt;/getCommunityMembers?community_id=news</pre>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
+                        <span class="font-semibold text-sm font-mono">getCommunityMembers</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getCommunityMembers?community_id=news</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">joinCommunity</div>
-                    <p class="text-xs text-slate-500 mb-2">Bot joins a community as admin.</p>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/joinCommunity
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">joinCommunity</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Bot joins a community as admin.</p>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/joinCommunity
 {
   "community_id": "news"    // slug or numeric id
 }
@@ -136,9 +172,12 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">sendPost</div>
-                    <p class="text-xs text-slate-500 mb-2">Create a post in a community (bot must be admin).</p>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/sendPost
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">sendPost</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Create a post in a community (bot must be admin).</p>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/sendPost
 {
   "community_id": "news",   // slug or numeric id
   "body": "Post text here"
@@ -148,8 +187,11 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">deletePost</div>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/deletePost
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">deletePost</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/deletePost
 {
   "post_id": 123
 }
@@ -157,8 +199,11 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">approveJoinRequest / denyJoinRequest</div>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/approveJoinRequest
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">approveJoinRequest / denyJoinRequest</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/approveJoinRequest
 {
   "community_id": "news",
   "user_id": 123
@@ -167,8 +212,11 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">kickMember</div>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/kickMember
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">kickMember</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/kickMember
 {
   "community_id": "news",
   "user_id": 123
@@ -177,8 +225,11 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">promoteToAdmin</div>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/promoteToAdmin
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">promoteToAdmin</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/promoteToAdmin
 {
   "community_id": "news",
   "user_id": 123
@@ -189,18 +240,24 @@ caption: "Optional caption"
         </div>
 
         <div class="glass rounded-2xl p-6">
-            <h2 class="text-xl font-bold mb-4">🤖 Bot Info & Webhooks</h2>
+            <h2 class="text-xl font-bold mb-4">Bot Info & Webhooks</h2>
             <div class="space-y-4">
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">getMe</div>
-                    <p class="text-xs text-slate-500 mb-2">Get bot profile info.</p>
-                    <pre class="text-xs">GET /bot&lt;token&gt;/getMe</pre>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
+                        <span class="font-semibold text-sm font-mono">getMe</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Get bot profile info.</p>
+                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getMe</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">setWebhook</div>
-                    <p class="text-xs text-slate-500 mb-2">Set a URL to receive events (new messages, etc.).</p>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/setWebhook
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">setWebhook</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Set a URL to receive events (new messages, etc.).</p>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/setWebhook
 {
   "url": "https://example.com/webhook"
 }
@@ -208,16 +265,19 @@ caption: "Optional caption"
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
-                    <div class="font-semibold text-sm mb-2">deleteWebhook</div>
-                    <pre class="text-xs">POST /bot&lt;token&gt;/deleteWebhook</pre>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">deleteWebhook</span>
+                    </div>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/deleteWebhook</pre>
                 </div>
             </div>
         </div>
 
         <div class="glass rounded-2xl p-6">
-            <h2 class="text-xl font-bold mb-4">📡 Webhook Events</h2>
+            <h2 class="text-xl font-bold mb-4">Webhook Events</h2>
             <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">When a webhook is set, the bot receives POST requests on new messages in Telegram-style format:</p>
-            <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-xs">
+            <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-xs overflow-x-auto">
                 {<br>
                 &nbsp;&nbsp;"update_id": 1,<br>
                 &nbsp;&nbsp;"message": {<br>
@@ -228,23 +288,23 @@ caption: "Optional caption"
                 &nbsp;&nbsp;}<br>
                 }
             </div>
-            <p class="text-xs text-slate-400 mt-2">Webhooks fire for group chats (where bot is a member) and DMs (where recipient is the bot). Bot's own messages are excluded.</p>
+            <p class="text-sm text-slate-400 mt-2">Webhooks fire for group chats (where bot is a member) and DMs (where recipient is the bot). Bot's own messages are excluded.</p>
         </div>
 
         <div class="glass rounded-2xl p-6">
-            <h2 class="text-xl font-bold mb-4">📝 Quick Start</h2>
+            <h2 class="text-xl font-bold mb-4">Quick Start</h2>
             <div class="space-y-3 text-sm">
                 <p>1. <strong>Create a bot</strong> at <a href="{{ url_for('create_bot') }}" class="text-brand-middle hover:underline">/bots/new</a> — username must end with <code>bot</code></p>
                 <p>2. <strong>Save the token</strong> — it's shown once after creation</p>
                 <p>3. <strong>Test the API</strong>:</p>
-                <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-xs">
-                    curl https://socnet.up.railway.app/bot&lt;TOKEN&gt;/getMe
+                <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-xs overflow-x-auto">
+                    curl {{ request.host_url }}bot&lt;TOKEN&gt;/getMe
                 </div>
                 <p>4. <strong>Join a community</strong> and start posting:</p>
-                <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-xs">
-                    curl -X POST https://socnet.up.railway.app/bot&lt;TOKEN&gt;/joinCommunity \<br>
+                <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-xs overflow-x-auto">
+                    curl -X POST {{ request.host_url }}bot&lt;TOKEN&gt;/joinCommunity \<br>
                     &nbsp;&nbsp;-d '{"community_id": "news"}'<br><br>
-                    curl -X POST https://socnet.up.railway.app/bot&lt;TOKEN&gt;/sendPost \<br>
+                    curl -X POST {{ request.host_url }}bot&lt;TOKEN&gt;/sendPost \<br>
                     &nbsp;&nbsp;-d '{"community_id": "news", "body": "Hello!"}'
                 </div>
                 <p>5. <strong>Add the bot to a group chat</strong> — it will appear in the member list with 🤖</p>
