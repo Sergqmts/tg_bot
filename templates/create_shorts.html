@@ -4,8 +4,9 @@
 <style>
 .create-shorts-page {
     padding-top: 60px;
-    padding-bottom: 70px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
     min-height: 100vh;
+    overflow-y: auto;
 }
 .create-shorts-form {
     padding: 20px;

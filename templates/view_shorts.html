@@ -10,8 +10,10 @@
     height: 100dvh;
     background: #000;
     overflow: hidden;
-    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    z-index: 60;
 }
+/* Hide base nav on full-screen shorts view */
+nav.fixed.bottom-0 { display: none !important; }
 .shorts-view-video {
     position: absolute;
     top: 0;
