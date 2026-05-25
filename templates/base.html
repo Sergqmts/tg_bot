@@ -135,14 +135,39 @@
 <body class="font-sans transition-colors duration-300">
     {% if request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
     <header class="fixed top-0 w-full glass border-b border-slate-200 dark:border-dark-border" style="z-index: 100;">
-        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
+            <div class="flex items-center gap-2 flex-shrink-0">
                 <a href="{{ url_for('index') }}" class="flex items-center gap-2">
                     <img src="{{ url_for('static', filename='icon-192.png') }}?v=2" class="w-9 h-9 rounded-xl object-cover shadow-lg" alt="Vibe">
                     <span class="text-2xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle">VIBEHUB</span>
                 </a>
             </div>
-            <div class="flex-1 max-w-md mx-8 hidden md:block">
+            <!-- Desktop navigation (hidden on mobile — mobile uses bottom nav) -->
+            {% if current_user.is_authenticated %}
+            <nav class="hidden md:flex items-center gap-1 flex-shrink-0">
+                <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    <i class="fa-solid fa-house text-lg"></i>
+                    <span class="hidden lg:inline">Лента</span>
+                </a>
+                <a href="{{ url_for('shorts') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    <i class="fa-solid fa-clapperboard text-lg"></i>
+                    <span class="hidden lg:inline">Shorts</span>
+                </a>
+                <a href="{{ url_for('messages') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    <i class="fa-solid fa-paper-plane text-lg"></i>
+                    <span class="hidden lg:inline">Сообщения</span>
+                </a>
+                <a href="{{ url_for('communities') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    <i class="fa-solid fa-users text-lg"></i>
+                    <span class="hidden lg:inline">Сообщества</span>
+                </a>
+                <a href="{{ url_for('music_home') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint in ['music_home', 'music_search'] %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                    <i class="fa-solid fa-music text-lg"></i>
+                    <span class="hidden lg:inline">Музыка</span>
+                </a>
+            </nav>
+            {% endif %}
+            <div class="flex-1 max-w-xs mx-2 hidden md:block">
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                         <i class="fa-solid fa-magnifying-glass"></i>
