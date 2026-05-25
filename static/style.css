@@ -222,6 +222,7 @@ img, video {
 .border-none { border-style: none; }
 .bg-slate-100 { background-color: #f1f5f9; }
 .dark .dark\:bg-slate-800 { background-color: var(--surface-elevated); }
+.bg-transparent { background-color: transparent; }
 
 @media (min-width: 768px) {
     .md\:block { display: block; }
@@ -1471,10 +1472,14 @@ img, video {
     margin: 16px;
     padding: 12px 16px;
     background: var(--accent-purple);
-    color: var(--text);
+    color: #3730a3; /* indigo-800 — читается на светлом accent-purple */
     border-radius: var(--radius-md);
     font-size: 0.85rem;
     animation: slideUp 0.3s ease;
+}
+.dark .flash-message {
+    background: #312e81; /* indigo-900 — тёмный фон */
+    color: #e0e7ff;      /* indigo-100 — светлый текст, хороший контраст */
 }
 
 /* ===== POST CARD ===== */
