@@ -275,6 +275,12 @@
                             <i class="fa-solid fa-chart-bar text-base w-5"></i> Аналитика
                         </a>
                         {% endif %}
+                        {% if current_user.is_staff %}
+                        <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+                        <a href="{{ url_for('admin_panel') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-amber-600">
+                            <i class="fa-solid fa-shield-halved text-base w-5"></i> Админ-панель
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
