@@ -70,6 +70,20 @@
   </div>
   {% endif %}
 
+  {% if not charts and not playlists and not recent and not favs %}
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 16px;gap:16px;text-align:center;">
+    <i class="fa-solid fa-music" style="font-size:48px;color:var(--text-muted);opacity:0.5;"></i>
+    <div>
+      <div style="font-size:17px;font-weight:600;margin-bottom:6px;">Здесь пока тихо</div>
+      <div style="font-size:14px;color:var(--text-muted);">Загрузите трек или найдите музыку через поиск</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+      <a href="{{ url_for('music_search') }}" class="btn btn-primary" style="font-size:14px;">Найти музыку</a>
+      <a href="{{ url_for('music_upload') }}" class="btn btn-secondary" style="font-size:14px;">Загрузить трек</a>
+    </div>
+  </div>
+  {% endif %}
+
   {% if favs %}
   <h3 style="font-size:18px;font-weight:600;margin-bottom:12px;">♥ Избранное</h3>
   <div style="display:flex;flex-direction:column;gap:8px;">
