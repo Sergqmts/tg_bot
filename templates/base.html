@@ -177,7 +177,7 @@
                     </form>
                 </div>
             </div>
-            <div class="flex items-center gap-3 sm:gap-6">
+            <div class="flex items-center gap-3 sm:gap-6 ml-auto">
                 <!-- Mobile: search icon -->
                 <a href="{{ url_for('explore') }}" class="md:hidden w-11 h-11 flex items-center justify-center text-xl text-slate-500 dark:text-slate-400 hover:text-brand-middle transition-colors rounded-xl">
                     <i class="fa-solid fa-magnifying-glass"></i>
@@ -326,7 +326,7 @@
         </div>
         <audio id="playerAudio" style="display:none;"></audio>
     </div>
-    <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border z-50 md:hidden" style="padding-bottom: env(safe-area-inset-bottom);">
+    <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border md:hidden" style="z-index: 110; padding-bottom: env(safe-area-inset-bottom);">
         <div class="flex items-center justify-around h-16 px-2">
             <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-house text-xl"></i>
