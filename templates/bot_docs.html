@@ -76,6 +76,28 @@ caption: "Optional caption"
 }
 </pre>
                 </div>
+
+                <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
+                        <span class="font-semibold text-sm font-mono">receiveMessage</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">internal</span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                        Trigger the bot's command handler programmatically — as if a user sent it a DM.
+                        For bots with interactive logic (e.g. <code>NewsBot</code>), this processes commands
+                        like <code>/start</code>, <code>/help</code>, <code>/bug</code>, <code>/feedback</code>
+                        and sends a reply back to the user. Called automatically by the platform when a user
+                        messages the bot directly; you can also call it externally.
+                    </p>
+                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/receiveMessage
+{
+  "user_id": 123,      // ID of the user whose message to process
+  "text": "/help"      // text to handle (command or free-form)
+}
+</pre>
+                    <p class="text-xs text-slate-400 mt-2">Returns <code>{"ok": true}</code>. The bot's reply is sent as a DM to the user — not included in this response.</p>
+                </div>
             </div>
         </div>
 
@@ -289,6 +311,95 @@ caption: "Optional caption"
                 }
             </div>
             <p class="text-sm text-slate-400 mt-2">Webhooks fire for group chats (where bot is a member) and DMs (where recipient is the bot). Bot's own messages are excluded.</p>
+        </div>
+
+        <div class="glass rounded-2xl p-6">
+            <h2 class="text-xl font-bold mb-4">Interactive Commands</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                The platform automatically routes incoming DMs to your bot's <code>receiveMessage</code>
+                handler. Use <code>setWebhook</code> to receive these events at your server, or implement
+                in-platform command handling by calling <code>receiveMessage</code> directly.
+            </p>
+            <div class="space-y-4">
+                <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
+                    <p class="text-sm font-semibold mb-2">Built-in NewsBot commands</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                        <strong>NewsBot</strong> — the platform's built-in community bot — handles these commands automatically.
+                        All messages sent to it via DM are processed in real time.
+                    </p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-dark-border">
+                                    <th class="pb-2 pr-4 font-semibold">Command</th>
+                                    <th class="pb-2 pr-4 font-semibold">Description</th>
+                                    <th class="pb-2 font-semibold">Forwarded to admins?</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 dark:divide-dark-border">
+                                <tr>
+                                    <td class="py-2 pr-4 font-mono">/start</td>
+                                    <td class="py-2 pr-4 text-slate-500 dark:text-slate-400">Greeting + feature overview</td>
+                                    <td class="py-2 text-slate-400">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4 font-mono">/help</td>
+                                    <td class="py-2 pr-4 text-slate-500 dark:text-slate-400">List of available commands</td>
+                                    <td class="py-2 text-slate-400">—</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4 font-mono">/bug &lt;description&gt;</td>
+                                    <td class="py-2 pr-4 text-slate-500 dark:text-slate-400">Report a bug</td>
+                                    <td class="py-2 text-emerald-600 dark:text-emerald-400">✓ all staff</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4 font-mono">/feedback &lt;text&gt;</td>
+                                    <td class="py-2 pr-4 text-slate-500 dark:text-slate-400">Leave feedback or a suggestion</td>
+                                    <td class="py-2 text-emerald-600 dark:text-emerald-400">✓ all staff</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 pr-4 font-mono italic">any message</td>
+                                    <td class="py-2 pr-4 text-slate-500 dark:text-slate-400">Free-form — treated as feedback</td>
+                                    <td class="py-2 text-emerald-600 dark:text-emerald-400">✓ all staff</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
+                    <p class="text-sm font-semibold mb-2">How incoming messages are dispatched</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                        When a user sends a DM to any bot, the platform:
+                    </p>
+                    <ol class="text-xs text-slate-500 dark:text-slate-400 space-y-1 list-decimal list-inside">
+                        <li>Saves the message to the DB (sender = user, recipient = bot)</li>
+                        <li>If the bot has a <strong>webhook</strong> set — fires a POST with the message payload</li>
+                        <li>If the bot is <strong>NewsBot</strong> — also runs the built-in command handler automatically</li>
+                    </ol>
+                    <p class="text-xs text-slate-400 mt-3">
+                        To add interactive logic to your own bot: set a webhook and handle commands server-side,
+                        then reply by calling <code>sendMessage</code> with your bot token.
+                    </p>
+                </div>
+
+                <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
+                    <p class="text-sm font-semibold mb-2">Example: webhook payload for an incoming DM</p>
+                    <pre class="text-xs overflow-x-auto">{
+  "update_id": 42,
+  "message": {
+    "message_id": 101,
+    "from": {"id": 5, "username": "alice"},
+    "chat": {"id": 200, "type": "direct"},
+    "text": "/help"
+  }
+}</pre>
+                    <p class="text-xs text-slate-400 mt-2">
+                        Respond to this by calling <code>POST /bot&lt;token&gt;/sendMessage</code>
+                        with <code>chat_id</code> = the sender's user ID.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <div class="glass rounded-2xl p-6">
