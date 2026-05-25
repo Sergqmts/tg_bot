@@ -375,6 +375,7 @@ def register_routes(app):
                 ext = video.filename.rsplit('.', 1)[-1].lower() if '.' in video.filename else 'mp4'
                 from helpers import cloudinary_configured, upload_to_cloudinary
                 if cloudinary_configured:
+                    import cloudinary.uploader
                     result = cloudinary.uploader.upload(
                         video, folder='shorts', resource_type='video',
                         timeout=30
