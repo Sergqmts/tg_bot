@@ -20,9 +20,9 @@
                 </a>
                 <span class="story-username">Ваша</span>
             </div>
-            {% if top_stories %}
-            {% for story in top_stories %}
-            {% if story and story.user_id != current_user.id %}
+            {% set other_stories = top_stories | selectattr('user_id', '!=', current_user.id) | list if top_stories else [] %}
+            {% if other_stories %}
+            {% for story in other_stories %}
             <div class="story-item">
                 <a href="{{ url_for('view_story', story_id=story.id) }}" class="story-ring">
                     <div class="story-ring-inner">
@@ -36,8 +36,12 @@
                 </a>
                 <span class="story-username">{{ story.user.username[:8] }}</span>
             </div>
-            {% endif %}
             {% endfor %}
+            {% else %}
+            <div class="story-item story-skeleton" aria-hidden="true"><div class="story-ring story-skel-ring"><div class="story-ring-inner story-skel-inner"></div></div><span class="story-skel-label"></span></div>
+            <div class="story-item story-skeleton" aria-hidden="true"><div class="story-ring story-skel-ring"><div class="story-ring-inner story-skel-inner"></div></div><span class="story-skel-label"></span></div>
+            <div class="story-item story-skeleton" aria-hidden="true"><div class="story-ring story-skel-ring"><div class="story-ring-inner story-skel-inner"></div></div><span class="story-skel-label"></span></div>
+            <div class="stories-empty-hint">Подпишитесь на&nbsp;друзей, чтобы видеть их истории</div>
             {% endif %}
         </div>
     </div>

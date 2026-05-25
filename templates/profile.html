@@ -23,7 +23,7 @@
                     {% if user.id in active_users %}
                     <span class="online-badge" title="В сети">🟢</span>
                     {% elif user.last_seen %}
-                    <span class="last-seen" title="Был(а) в сети">был(а) {{ moment(user.last_seen).fromNow() if moment else user.last_seen.strftime('%d.%m.%Y %H:%M') }}</span>
+                    <span class="last-seen" data-ts="{{ user.last_seen.timestamp()|int }}" title="Был(а) в сети">был(а) {{ user.last_seen.strftime('%d.%m.%Y %H:%M') }}</span>
                     {% endif %}
                 </div>
                 <div class="profile-stats">
@@ -258,9 +258,31 @@
     margin-left: 0.5rem;
 }
 .last-seen {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
+    font-size: 0.75rem;
+    color: var(--text-muted);
     margin-left: 0.5rem;
+    font-style: italic;
 }
 </style>
+<script>
+(function() {
+    var el = document.querySelector('.last-seen[data-ts]');
+    if (!el) return;
+    var ts = parseInt(el.dataset.ts, 10) * 1000;
+    var now = Date.now();
+    var diff = Math.floor((now - ts) / 1000);
+    var text;
+    if (diff < 60)         text = 'только что';
+    else if (diff < 3600)  text = 'был(а) ' + Math.floor(diff / 60) + ' мин. назад';
+    else if (diff < 7200)  text = 'был(а) час назад';
+    else if (diff < 86400) text = 'был(а) ' + Math.floor(diff / 3600) + ' ч. назад';
+    else if (diff < 172800) text = 'был(а) вчера';
+    else if (diff < 604800) text = 'был(а) ' + Math.floor(diff / 86400) + ' дн. назад';
+    else {
+        var d = new Date(ts);
+        text = 'был(а) ' + d.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+    }
+    el.textContent = text;
+})();
+</script>
 {% endblock %}
