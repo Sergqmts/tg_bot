@@ -777,9 +777,10 @@ img, video {
 .profile-username {
     font-size: 1.4rem;
     font-weight: 600;
-    word-break: break-word;
-    overflow-wrap: break-word;
+    word-break: break-all;
+    overflow-wrap: anywhere;
     max-width: 200px;
+    line-height: 1.2;
 }
 
 .verified-badge {
@@ -788,9 +789,10 @@ img, video {
 
 .profile-stats {
     display: flex;
-    gap: 20px;
-    font-size: 0.9rem;
+    gap: 12px;
+    font-size: 0.85rem;
     margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 
 .profile-stats strong {
