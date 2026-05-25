@@ -328,23 +328,60 @@ def register_routes(app):
         commits = payload.get('commits', [])
         if not commits:
             return 'ok', 200
-        repo_name = payload.get('repository', {}).get('full_name', 'project')
-        pusher = payload.get('pusher', {}).get('name', 'unknown')
-        messages = []
+
+        # ─── Filter only user-facing commits ───────────────────────────
+        # Conventional commit prefixes that matter to users.
+        # Developer-only prefixes (chore, style, refactor, test, ci, docs, fix(qa))
+        # are skipped — raw commit messages are not user-friendly.
+        USER_FACING_PREFIXES = ('feat', 'feature', 'add', 'новая', 'new')
+        FIX_PREFIXES = ('fix', 'bug')
+
+        feature_lines = []
+        fix_lines = []
         for c in commits:
-            msg = c.get('message', '').split('\n')[0][:100]
-            author = c.get('author', {}).get('username', c.get('committer', {}).get('username', ''))
-            if author:
-                messages.append(f'• {msg} (@{author})')
-            else:
-                messages.append(f'• {msg}')
-        body = f'''🚀 Новое обновление VIBE!
+            raw = c.get('message', '').split('\n')[0].strip()
+            lower = raw.lower()
 
-        Загружено {len(commits)} коммит(ов) в {repo_name}:
+            # Skip chore/style/test/ci/docs/refactor commits entirely
+            if any(lower.startswith(p) for p in ('chore', 'style', 'refactor', 'test', 'ci', 'docs', 'wip')):
+                continue
 
-        {chr(10).join(messages)}
+            # Classify as feature or fix
+            if any(lower.startswith(p) for p in USER_FACING_PREFIXES):
+                # Strip conventional prefix "feat: " / "feat(scope): "
+                clean = raw
+                for pfx in USER_FACING_PREFIXES:
+                    if lower.startswith(pfx):
+                        after = raw[len(pfx):]
+                        if after.startswith('('):
+                            after = after[after.find(')')+1:] if ')' in after else after
+                        clean = after.lstrip(':').strip()
+                        break
+                feature_lines.append(f'✨ {clean[:120]}')
+            elif any(lower.startswith(p) for p in FIX_PREFIXES):
+                clean = raw
+                for pfx in FIX_PREFIXES:
+                    if lower.startswith(pfx):
+                        after = raw[len(pfx):]
+                        if after.startswith('('):
+                            after = after[after.find(')')+1:] if ')' in after else after
+                        clean = after.lstrip(':').strip()
+                        break
+                fix_lines.append(f'🔧 {clean[:120]}')
 
-        #обновление #фича'''
+        # Build post body — skip if nothing user-facing
+        sections = []
+        if feature_lines:
+            sections.append('**Новые возможности:**\n' + '\n'.join(feature_lines))
+        if fix_lines:
+            sections.append('**Исправления:**\n' + '\n'.join(fix_lines))
+
+        if not sections:
+            current_app.logger.info('github-webhook: no user-facing commits, skipping post')
+            return 'ok', 200
+
+        body = '🚀 **Обновление VIBE**\n\n' + '\n\n'.join(sections) + '\n\n#обновление #фича'
+
         bot = User.query.filter_by(username='NewsBot').first()
         comm = Community.query.filter_by(slug='news').first()
         if bot and comm:
@@ -792,6 +829,25 @@ def register_routes(app):
                     return bot_json_response({'ok': True})
         return bot_json_response('Cannot delete this post', 403)
 
+    def bot_receive_message(bot):
+        """Internal endpoint: user sent a message to this bot — process commands."""
+        data = request.json or request.form
+        user_id = data.get('user_id')
+        text = data.get('text', '').strip()
+        if not user_id:
+            return bot_json_response('user_id is required', 400)
+        user = User.query.get(int(user_id))
+        if not user:
+            return bot_json_response('User not found', 404)
+        # Only NewsBot has interactive command handling
+        if bot.username == 'NewsBot':
+            try:
+                from helpers import handle_newsbot_command
+                handle_newsbot_command(bot, user, text)
+            except Exception as e:
+                current_app.logger.error(f"bot_receive_message error: {e}")
+        return bot_json_response({'ok': True})
+
     @app.route('/bot<token>/<method>', methods=['GET', 'POST', 'DELETE'])
     @csrf.exempt
     def bot_api(token, method):
@@ -826,6 +882,7 @@ def register_routes(app):
             'deletePost': bot_delete_post,
             'sendPost': bot_send_post,
             'joinCommunity': bot_join_community,
+            'receiveMessage': bot_receive_message,
         }
 
         handler = handlers.get(method)

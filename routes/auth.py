@@ -29,6 +29,11 @@ def register_routes(app):
             user.set_password(form.password.data)
             db.session.add(user)
             db.session.commit()
+            try:
+                from helpers import send_welcome_dm
+                send_welcome_dm(user)
+            except Exception as e:
+                current_app.logger.warning(f"Welcome DM failed: {e}")
             flash('Регистрация прошла успешно! Войдите в аккаунт.')
             return redirect(url_for('login'))
         return render_template('register.html', form=form)
@@ -119,6 +124,11 @@ def register_routes(app):
             user.avatar_cloudinary_url = picture
         db.session.add(user)
         db.session.commit()
+        try:
+            from helpers import send_welcome_dm
+            send_welcome_dm(user)
+        except Exception as e:
+            current_app.logger.warning(f"Welcome DM (Google) failed: {e}")
         login_user(user)
         flash(f'Добро пожаловать! Ваш username: {username}')
         return redirect(url_for('index'))

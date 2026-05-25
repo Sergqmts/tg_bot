@@ -312,3 +312,150 @@ def announce_pending_features():
     pending = FeatureAnnouncement.query.filter_by(is_posted=False).all()
     for feature in pending:
         feature.post_to_news()
+
+
+def send_welcome_dm(new_user):
+    """Send a welcome DM from NewsBot to a newly registered user."""
+    try:
+        bot = User.query.filter_by(username='NewsBot').first()
+        if not bot:
+            return False
+
+        welcome_text = (
+            f"👋 Привет, @{new_user.username}! Добро пожаловать в **VIBE** — социальную сеть нового поколения.\n\n"
+            "Вот что ты можешь делать прямо сейчас:\n\n"
+            "📝 **Посты** — публикуй фото, видео, текст. Лайки, реакции, репосты, сохранения.\n"
+            "📖 **Stories** — исчезающие истории на 24 часа с реакциями и комментариями.\n"
+            "🎬 **Shorts** — короткие видео с фоновой музыкой и встроенным редактором.\n"
+            "📸 **Фоторедактор** — фильтры, яркость, контраст, рамки и стикеры перед публикацией.\n"
+            "💬 **Чаты** — личные и групповые переписки, голосовые и видеосообщения.\n"
+            "📞 **Звонки** — голосовые и видеозвонки прямо в приложении (WebRTC).\n"
+            "🎶 **Музыка** — плеер с Deezer, плейлисты и рекомендации.\n"
+            "👥 **Сообщества** — создавай сообщества, организуй события с RSVP.\n"
+            "🤖 **Боты** — создай своего бота с Telegram-совместимым API.\n\n"
+            "Если есть вопросы — пиши мне! Команды:\n"
+            "/help — список команд\n"
+            "/bug — сообщить об ошибке\n"
+            "/feedback — оставить отзыв\n\n"
+            "Удачи! 🚀"
+        )
+
+        # Get or create DM chat between bot and new user
+        from sqlalchemy.orm import aliased
+        cm2 = aliased(ChatMember)
+        chat = Chat.query.join(ChatMember).filter(
+            ChatMember.user_id == bot.id
+        ).join(cm2, cm2.chat_id == Chat.id).filter(
+            cm2.user_id == new_user.id, Chat.type == 'direct'
+        ).first()
+
+        if not chat:
+            chat = Chat(name='DM', type='direct', creator_id=bot.id)
+            db.session.add(chat)
+            db.session.flush()
+            for uid in [bot.id, new_user.id]:
+                if not ChatMember.query.filter_by(chat_id=chat.id, user_id=uid).first():
+                    db.session.add(ChatMember(chat_id=chat.id, user_id=uid, role='member'))
+            db.session.flush()
+
+        msg = Message(body=welcome_text, sender_id=bot.id, recipient_id=new_user.id, chat_id=chat.id)
+        db.session.add(msg)
+        db.session.commit()
+        current_app.logger.info(f"Welcome DM sent to @{new_user.username}")
+        return True
+    except Exception as e:
+        current_app.logger.error(f"send_welcome_dm error: {e}")
+        db.session.rollback()
+        return False
+
+
+def handle_newsbot_command(bot, user, text):
+    """Process a command or message sent to NewsBot and reply in DM."""
+    try:
+        text = (text or '').strip()
+        cmd = text.split()[0].lower() if text else ''
+
+        if cmd in ('/start', '/help', 'help', 'помощь', 'хелп'):
+            reply = (
+                "🤖 **NewsBot — помощник VIBE**\n\n"
+                "Доступные команды:\n"
+                "/help — эта справка\n"
+                "/bug [описание] — сообщить об ошибке\n"
+                "/feedback [текст] — оставить отзыв или предложение\n\n"
+                "Или просто напиши — я передам сообщение команде."
+            )
+        elif cmd == '/bug':
+            desc = text[4:].strip() or '(описание не указано)'
+            _forward_to_admins(bot, user, f"🐛 **Баг от @{user.username}:**\n{desc}")
+            reply = "✅ Спасибо! Мы получили твой баг-репорт и разберёмся как можно скорее."
+        elif cmd == '/feedback':
+            desc = text[9:].strip() or '(текст не указан)'
+            _forward_to_admins(bot, user, f"💬 **Отзыв от @{user.username}:**\n{desc}")
+            reply = "✅ Спасибо за отзыв! Это помогает нам делать VIBE лучше."
+        else:
+            # Generic message — forward to admins as feedback
+            if text:
+                _forward_to_admins(bot, user, f"📨 **Сообщение от @{user.username}:**\n{text}")
+            reply = (
+                "Привет! Я получил твоё сообщение и передам его команде.\n\n"
+                "Если хочешь сообщить об ошибке — напиши /bug [описание]\n"
+                "Отзыв или предложение — /feedback [текст]"
+            )
+
+        # Send reply back to user
+        from sqlalchemy.orm import aliased
+        cm2 = aliased(ChatMember)
+        chat = Chat.query.join(ChatMember).filter(
+            ChatMember.user_id == bot.id
+        ).join(cm2, cm2.chat_id == Chat.id).filter(
+            cm2.user_id == user.id, Chat.type == 'direct'
+        ).first()
+
+        if not chat:
+            chat = Chat(name='DM', type='direct', creator_id=bot.id)
+            db.session.add(chat)
+            db.session.flush()
+            for uid in [bot.id, user.id]:
+                if not ChatMember.query.filter_by(chat_id=chat.id, user_id=uid).first():
+                    db.session.add(ChatMember(chat_id=chat.id, user_id=uid, role='member'))
+            db.session.flush()
+
+        msg = Message(body=reply, sender_id=bot.id, recipient_id=user.id, chat_id=chat.id)
+        db.session.add(msg)
+        db.session.commit()
+        return True
+    except Exception as e:
+        current_app.logger.error(f"handle_newsbot_command error: {e}")
+        db.session.rollback()
+        return False
+
+
+def _forward_to_admins(bot, from_user, text):
+    """Forward a feedback/bug report to all staff users via DM."""
+    try:
+        admins = User.query.filter_by(is_staff=True, is_bot=False).all()
+        for admin in admins:
+            from sqlalchemy.orm import aliased
+            cm2 = aliased(ChatMember)
+            chat = Chat.query.join(ChatMember).filter(
+                ChatMember.user_id == bot.id
+            ).join(cm2, cm2.chat_id == Chat.id).filter(
+                cm2.user_id == admin.id, Chat.type == 'direct'
+            ).first()
+
+            if not chat:
+                chat = Chat(name='DM', type='direct', creator_id=bot.id)
+                db.session.add(chat)
+                db.session.flush()
+                for uid in [bot.id, admin.id]:
+                    if not ChatMember.query.filter_by(chat_id=chat.id, user_id=uid).first():
+                        db.session.add(ChatMember(chat_id=chat.id, user_id=uid, role='member'))
+                db.session.flush()
+
+            msg = Message(body=text, sender_id=bot.id, recipient_id=admin.id, chat_id=chat.id)
+            db.session.add(msg)
+        db.session.flush()
+        current_app.logger.info(f"Forwarded to {len(admins)} admin(s)")
+    except Exception as e:
+        current_app.logger.error(f"_forward_to_admins error: {e}")
+        raise

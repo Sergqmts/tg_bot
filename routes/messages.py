@@ -162,6 +162,13 @@ def register_routes(app):
                     enqueue_webhook_dispatch(msg.id)
                     create_notification(other_user.id, current_user.id, 'message', message_id=msg.id)
                     current_app.logger.info(f"Message saved with media: {media_url}")
+                    # If recipient is a bot, trigger its command handler
+                    if other_user.is_bot and body:
+                        try:
+                            from helpers import handle_newsbot_command
+                            handle_newsbot_command(other_user, current_user, body)
+                        except Exception as _bot_err:
+                            current_app.logger.warning(f"Bot command handler: {_bot_err}")
                 except Exception as e:
                     current_app.logger.error(f"Message error: {e}", exc_info=True)
                     db.session.rollback()
