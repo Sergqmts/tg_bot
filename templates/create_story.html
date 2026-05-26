@@ -105,7 +105,19 @@
         </div>
     </div>
     
+    <div id="toast-container" style="position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;"></div>
+
     <script>
+        function showToast(msg, type) {
+            const colors = {error:'#ef4444', success:'#22c55e', info:'#3b82f6', warning:'#f59e0b'};
+            const t = document.createElement('div');
+            t.textContent = msg;
+            t.style.cssText = `background:${colors[type]||colors.info};color:#fff;padding:0.75rem 1.25rem;border-radius:0.5rem;font-size:0.9rem;max-width:20rem;pointer-events:auto;box-shadow:0 4px 12px rgba(0,0,0,.4);opacity:0;transition:opacity .2s;`;
+            document.getElementById('toast-container').appendChild(t);
+            requestAnimationFrame(() => { t.style.opacity = '1'; });
+            setTimeout(() => { t.style.opacity = '0'; t.addEventListener('transitionend', () => t.remove()); }, 3500);
+        }
+
         (function() {
             var editorPhoto = sessionStorage.getItem('editor_photo');
             if (editorPhoto) {

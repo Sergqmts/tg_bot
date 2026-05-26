@@ -46,18 +46,19 @@ def register_routes(app):
                 
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='stories')
-                    if url:
-                        story = Story(
-                            user_id=current_user.id,
-                            media_url=url,
-                            media_type=media_type,
-                            expires_at=datetime.utcnow() + timedelta(hours=24)
-                        )
-                        db.session.add(story)
-                        db.session.commit()
-                        for follower in get_approved_followers():
-                            create_notification(follower.id, current_user.id, 'new_story')
-                        return redirect(url_for('index'))
+                    if not url:
+                        return 'Ошибка загрузки медиа', 500
+                    story = Story(
+                        user_id=current_user.id,
+                        media_url=url,
+                        media_type=media_type,
+                        expires_at=datetime.utcnow() + timedelta(hours=24)
+                    )
+                    db.session.add(story)
+                    db.session.commit()
+                    for follower in get_approved_followers():
+                        create_notification(follower.id, current_user.id, 'new_story')
+                    return redirect(url_for('index'))
                 else:
                     filename_save = secure_filename(filename)
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename_save)
@@ -80,18 +81,19 @@ def register_routes(app):
             if file and allowed_file(file.filename):
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='stories')
-                    if url:
-                        ext = file.filename.rsplit('.', 1)[1].lower()
-                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                        story = Story(
-                            user_id=current_user.id,
-                            media_url=url,
-                            media_type=media_type,
-                            expires_at=datetime.utcnow() + timedelta(hours=24)
-                        )
-                        db.session.add(story)
-                        db.session.commit()
-                        return redirect(url_for('index'))
+                    if not url:
+                        return 'Ошибка загрузки медиа', 500
+                    ext = file.filename.rsplit('.', 1)[1].lower()
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                    story = Story(
+                        user_id=current_user.id,
+                        media_url=url,
+                        media_type=media_type,
+                        expires_at=datetime.utcnow() + timedelta(hours=24)
+                    )
+                    db.session.add(story)
+                    db.session.commit()
+                    return redirect(url_for('index'))
                 else:
                     filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
