@@ -1082,3 +1082,39 @@ def register_routes(app):
             return redirect(url_for('chat_view', chat_id=chat_id))
 
         return render_template('chat_edit.html', chat=chat, bg_data=chat.get_background_data() if chat else {})
+
+    @app.route('/api/contacts')
+    @login_required
+    def api_contacts():
+        from sqlalchemy import and_
+        from models import followers as followers_table
+        # users that follow current_user or current_user follows — approved only
+        following = User.query.join(
+            followers_table,
+            and_(
+                followers_table.c.follower_id == current_user.id,
+                followers_table.c.followed_id == User.id,
+                followers_table.c.status == 'approved'
+            )
+        ).all()
+        followers_list = User.query.join(
+            followers_table,
+            and_(
+                followers_table.c.followed_id == current_user.id,
+                followers_table.c.follower_id == User.id,
+                followers_table.c.status == 'approved'
+            )
+        ).all()
+        seen = set()
+        result = []
+        for u in following + followers_list:
+            if u.id not in seen:
+                seen.add(u.id)
+                from helpers import get_avatar_url
+                result.append({
+                    'id': u.id,
+                    'username': u.username,
+                    'avatar': get_avatar_url(u) or ''
+                })
+        return jsonify({'users': result})
+

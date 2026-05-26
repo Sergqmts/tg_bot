@@ -5,7 +5,7 @@ def register_routes(app):
     from werkzeug.utils import secure_filename
     from datetime import datetime, timedelta
     from extensions import db, csrf
-    from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, MusicTrack, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit, SavedPost
+    from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsSaved, MusicTrack, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit, SavedPost, Story, Message
 
     @app.route('/user/<username>')
     def user_profile(username):
@@ -478,7 +478,60 @@ def register_routes(app):
         return redirect(request.referrer or url_for('user_profile', username=current_user.username))
 
 
+    @app.route('/shorts/<int:shorts_id>/save', methods=['POST'])
+    @login_required
+    def save_shorts(shorts_id):
+        shorts_video = Shorts.query.get_or_404(shorts_id)
+        existing = ShortsSaved.query.filter_by(user_id=current_user.id, shorts_id=shorts_id).first()
+        if existing:
+            db.session.delete(existing)
+            saved = False
+        else:
+            db.session.add(ShortsSaved(user_id=current_user.id, shorts_id=shorts_id))
+            saved = True
+        db.session.commit()
+        return jsonify({'saved': saved, 'count': shorts_video.saved_by.count()})
 
+
+    @app.route('/shorts/<int:shorts_id>/share-to-story', methods=['POST'])
+    @login_required
+    def share_shorts_to_story(shorts_id):
+        from datetime import timedelta
+        shorts_video = Shorts.query.get_or_404(shorts_id)
+        story = Story(
+            user_id=current_user.id,
+            media_url=shorts_video.video_url,
+            media_type='video',
+            expires_at=datetime.utcnow() + timedelta(hours=24)
+        )
+        db.session.add(story)
+        db.session.commit()
+        return jsonify({'ok': True})
+
+
+    @app.route('/shorts/<int:shorts_id>/send-to-chat', methods=['POST'])
+    @login_required
+    def send_shorts_to_chat(shorts_id):
+        shorts_video = Shorts.query.get_or_404(shorts_id)
+        recipient_id = request.form.get('recipient_id', type=int)
+        if not recipient_id:
+            return jsonify({'error': 'recipient_id required'}), 400
+        recipient = User.query.get_or_404(recipient_id)
+        msg = Message(
+            sender_id=current_user.id,
+            recipient_id=recipient.id,
+            body=f'[shorts:{shorts_id}] {shorts_video.video_url}'
+        )
+        db.session.add(msg)
+        db.session.commit()
+        return jsonify({'ok': True})
+
+
+    @app.route('/api/shorts/<int:shorts_id>/save-status')
+    @login_required
+    def shorts_save_status(shorts_id):
+        saved = ShortsSaved.query.filter_by(user_id=current_user.id, shorts_id=shorts_id).first() is not None
+        return jsonify({'saved': saved})
 
 
     @app.route('/photos')

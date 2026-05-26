@@ -30,14 +30,17 @@ def upload_to_cloudinary(file, folder='social'):
         return None
     if cloudinary_configured:
         import cloudinary.uploader
-        result = cloudinary.uploader.upload(
-            file,
-            folder=folder,
-            resource_type='auto',
-            timeout=30,
-            transformation=[{'quality': 'auto', 'fetch_format': 'auto'}]
-        )
-        return result['secure_url']
+        try:
+            result = cloudinary.uploader.upload(
+                file,
+                folder=folder,
+                resource_type='auto',
+                timeout=30,
+            )
+            return result['secure_url']
+        except Exception as e:
+            current_app.logger.error("Cloudinary upload failed (folder=%s): %s", folder, e)
+            return None
     filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
     file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
     return filename

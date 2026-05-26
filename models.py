@@ -537,7 +537,8 @@ class Shorts(db.Model):
     views = db.Column(db.Integer, default=0)
     likes = db.relationship('ShortsLike', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('ShortsComment', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
-    
+    saved_by = db.relationship('ShortsSaved', backref='shorts_ref', lazy='dynamic', cascade='all, delete-orphan')
+
     user = db.relationship('User', backref='shorts_videos')
     audio = db.relationship('MusicTrack', backref='shorts_videos')
     
@@ -566,8 +567,18 @@ class ShortsComment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
-    
+
     author = db.relationship('User', foreign_keys=[user_id])
+
+
+class ShortsSaved(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', foreign_keys=[user_id])
+    shorts = db.relationship('Shorts', foreign_keys=[shorts_id])
 
 
 class Comment(db.Model):
