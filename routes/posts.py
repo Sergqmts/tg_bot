@@ -1,6 +1,6 @@
 def register_routes(app):
     import os, re, base64, io
-    from flask import render_template, redirect, url_for, flash, request, abort, jsonify
+    from flask import render_template, redirect, url_for, flash, request, abort, jsonify, current_app
     from flask_login import login_required, current_user
     from werkzeug.utils import secure_filename
     from werkzeug.datastructures import FileStorage
@@ -64,6 +64,8 @@ def register_routes(app):
                 media_data = request.form.get('media_data')
                 music_track_id = request.form.get('music_track_id', type=int)
                 
+                from helpers import cloudinary_configured, upload_to_cloudinary
+                
                 post = Post(body=body, author=current_user)
                 if music_track_id:
                     track = MusicTrack.query.get(music_track_id)
@@ -97,7 +99,6 @@ def register_routes(app):
                     binary = base64.b64decode(data)
                     file = FileStorage(io.BytesIO(binary), filename=f'photo.{ext}', content_type=f'image/{ext}')
                     
-                    from helpers import cloudinary_configured, upload_to_cloudinary
                     if cloudinary_configured:
                         url = upload_to_cloudinary(file, folder='posts')
                         if url:
@@ -341,8 +342,8 @@ def register_routes(app):
                                         timeout=30
                                     )
                                     audio_public_id = result['public_id']
-                                except:
-                                    pass
+                                except Exception as e:
+                                    current_app.logger.warning("audio layer upload failed: %s", e)
                             if audio_public_id:
                                 tx_parts.append('l_audio:' + audio_public_id.replace('/', ':') + ',fl_layer_apply')
 
@@ -427,7 +428,7 @@ def register_routes(app):
     def tag_posts(name):
         tag = Tag.query.filter_by(name=name.lstrip('#')).first_or_404()
         post_tags = PostTag.query.filter_by(tag_id=tag.id).order_by(PostTag.id.desc()).all()
-        posts = [pt.post for pt in post_tags if pt.post]
+        posts = [Post.query.get(pt.post_id) for pt in post_tags if pt.post_id]
         return render_template('tag_posts.html', tag=tag, posts=posts)
 
     @app.route('/post/<int:post_id>/forward', methods=['GET', 'POST'])
@@ -605,12 +606,14 @@ def register_routes(app):
             db.session.execute(text("DELETE FROM comment_reaction WHERE comment_id IN (SELECT id FROM comment WHERE post_id = :post_id)"), {'post_id': post_id})
             db.session.execute(text("UPDATE notification SET comment_id = NULL WHERE comment_id IN (SELECT id FROM comment WHERE post_id = :post_id)"), {'post_id': post_id})
             db.session.execute(text("UPDATE comment SET reply_to_id = NULL WHERE reply_to_id IN (SELECT id FROM comment WHERE post_id = :post_id)"), {'post_id': post_id})
-        except: pass
-        
+        except Exception as e:
+            current_app.logger.warning("post relation cleanup failed: %s", e)
+
         for media in post.media:
             try:
                 os.remove(os.path.join(app.config['UPLOAD_FOLDER'], media.filename))
-            except: pass
+            except Exception as e:
+                current_app.logger.warning("media file removal failed: %s", e)
         db.session.delete(post)
         db.session.commit()
         flash('Пост удалён')

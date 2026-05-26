@@ -21,49 +21,56 @@ def register_routes(app):
             with urllib.request.urlopen(url, timeout=10) as r:
                 data = json.loads(r.read())
             return data.get('data', [])
-        except:
+        except Exception as e:
+            current_app.logger.warning("deezer_search failed: %s", e)
             return []
 
     def deezer_get_track(track_id):
         try:
             with urllib.request.urlopen(f'{DEEZER_API}/track/{track_id}', timeout=10) as r:
                 return json.loads(r.read())
-        except:
+        except Exception as e:
+            current_app.logger.warning("deezer_get_track(%s) failed: %s", track_id, e)
             return None
 
     def deezer_get_album(album_id):
         try:
             with urllib.request.urlopen(f'{DEEZER_API}/album/{album_id}', timeout=10) as r:
                 return json.loads(r.read())
-        except:
+        except Exception as e:
+            current_app.logger.warning("deezer_get_album(%s) failed: %s", album_id, e)
             return None
 
     def deezer_get_artist(artist_id):
         try:
             with urllib.request.urlopen(f'{DEEZER_API}/artist/{artist_id}', timeout=10) as r:
                 return json.loads(r.read())
-        except:
+        except Exception as e:
+            current_app.logger.warning("deezer_get_artist(%s) failed: %s", artist_id, e)
             return None
 
     def deezer_get_artist_top(artist_id, limit=10):
         try:
             with urllib.request.urlopen(f'{DEEZER_API}/artist/{artist_id}/top?limit={limit}', timeout=10) as r:
                 return json.loads(r.read()).get('data', [])
-        except:
+        except Exception as e:
+            current_app.logger.warning("deezer_get_artist_top(%s) failed: %s", artist_id, e)
             return []
 
     def deezer_get_charts(limit=20):
         try:
             with urllib.request.urlopen(f'{DEEZER_API}/chart/0/tracks?limit={limit}', timeout=10) as r:
                 return json.loads(r.read()).get('data', [])
-        except:
+        except Exception as e:
+            current_app.logger.warning("deezer_get_charts failed: %s", e)
             return []
 
     def deezer_get_playlist(playlist_id):
         try:
             with urllib.request.urlopen(f'{DEEZER_API}/playlist/{playlist_id}', timeout=10) as r:
                 return json.loads(r.read())
-        except:
+        except Exception as e:
+            current_app.logger.warning("deezer_get_playlist(%s) failed: %s", playlist_id, e)
             return None
 
     def track_from_deezer(d):
@@ -144,7 +151,8 @@ def register_routes(app):
     @login_required
     def music_local_track(track_id):
         track = MusicTrack.query.get_or_404(track_id)
-        if track.source == 'upload' and track.file_url:
+        audio_url = track.file_url if track.source == 'upload' else track.preview_url
+        if audio_url:
             h = ListeningHistory(user_id=current_user.id, track_id=track.id)
             db.session.add(h)
             db.session.commit()
@@ -152,7 +160,8 @@ def register_routes(app):
                 'id': track.id,
                 'title': track.title,
                 'artist': track.artist,
-                'file_url': track.file_url,
+                'file_url': track.file_url or '',
+                'preview_url': track.preview_url or '',
                 'cover_url': track.cover_url or '',
                 'duration': track.duration
             })

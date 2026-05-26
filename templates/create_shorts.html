@@ -4,8 +4,9 @@
 <style>
 .create-shorts-page {
     padding-top: 60px;
-    padding-bottom: 70px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
     min-height: 100vh;
+    overflow-y: auto;
 }
 .create-shorts-form {
     padding: 20px;
@@ -257,8 +258,8 @@ textarea {
     </header>
     
     <div class="switch-mode">
-        <button type="button" class="active" onclick="showMode('upload')">📤 Загрузить</button>
-        <button type="button" onclick="showMode('camera')">🎥 Записать</button>
+        <button type="button" class="active" onclick="showMode('upload')"><i class="fa-solid fa-upload"></i> Загрузить</button>
+        <button type="button" onclick="showMode('camera')"><i class="fa-solid fa-video"></i> Записать</button>
     </div>
     
         <form method="POST" enctype="multipart/form-data" class="create-shorts-form" id="shortsForm">
@@ -266,7 +267,7 @@ textarea {
             <input type="hidden" name="video_url" id="videoUrlInput" value="{{ video_url or '' }}">
         <div id="uploadMode">
             <div class="upload-area" id="uploadAreaEl" onclick="document.getElementById('videoInput').click()" {% if video_url %}style="display: none;"{% endif %}>
-                <div class="upload-icon" id="uploadIcon">🎬</div>
+                <div class="upload-icon" id="uploadIcon"><i class="fa-solid fa-clapperboard" style="font-size:48px;color:var(--text-muted);"></i></div>
                 <p id="uploadText">Нажмите для выбора видео</p>
                 <p style="font-size: 12px; color: var(--text-muted);">или перетащите файл сюда</p>
                 <input type="file" name="video" id="videoInput" accept="video/mp4,video/webm" style="display: none;" onchange="showPreview(this)">
@@ -276,7 +277,7 @@ textarea {
                 <button type="button" onclick="removeVideo()" style="margin-top: 10px; padding: 8px 16px; background: var(--danger); color: #fff; border: none; border-radius: var(--radius-md);">Удалить</button>
             </div>
             {% if current_user.is_authenticated and current_user.is_staff %}
-            <a href="{{ url_for('proxy_video_editor') }}" class="btn btn-primary" style="display: block; text-align: center; margin-top: 10px;">🎬 Открыть видеоредактор</a>
+            <a href="{{ url_for('proxy_video_editor') }}" class="btn btn-primary" style="display: block; text-align: center; margin-top: 10px;"><i class="fa-solid fa-film"></i> Открыть видеоредактор</a>
             {% endif %}
         </div>
         
@@ -352,7 +353,7 @@ async function startCamera() {
         document.getElementById('cameraVideo').srcObject = stream;
     } catch(e) {
         console.log('Camera error:', e);
-        alert('Не удалось получить доступ к камере');
+        showToast('Не удалось получить доступ к камере', 'error');
     }
 }
 

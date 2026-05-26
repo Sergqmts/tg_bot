@@ -277,7 +277,8 @@ async function handleSDPOffer(data) {
 }
 
 async function handleSDPAnswer(data) {
-    if (!callPeerConnection || callPeerConnection.remoteDescription) return;
+    if (!callPeerConnection) return;
+    if (callPeerConnection.signalingState !== 'have-local-offer') return;
     try {
         await callPeerConnection.setRemoteDescription(data.sdp);
         flushIceCandidateQueue();
@@ -304,17 +305,8 @@ function flushIceCandidateQueue() {
 async function createPeerConnection() {
     var config = { iceServers: ICE_SERVERS.iceServers.slice() };
     var creds = await fetchTurnCredentials();
-    if (creds && creds.username && creds.credential) {
-        config.iceServers.push({
-            urls: 'turn:turn.cloudflare.com:3478',
-            username: creds.username,
-            credential: creds.credential
-        });
-        config.iceServers.push({
-            urls: 'turns:turn.cloudflare.com:5349',
-            username: creds.username,
-            credential: creds.credential
-        });
+    if (Array.isArray(creds)) {
+        creds.forEach(function(server) { config.iceServers.push(server); });
     }
     callPeerConnection = new RTCPeerConnection(config);
     if (callLocalStream) {
@@ -323,11 +315,19 @@ async function createPeerConnection() {
         });
     }
     callPeerConnection.ontrack = function (ev) {
-        callRemoteStream = ev.streams[0];
+        console.log('[WebRTC] ontrack:', ev.track.kind, 'streams:', ev.streams.length);
+        if (ev.streams && ev.streams[0]) {
+            callRemoteStream = ev.streams[0];
+        } else {
+            if (!callRemoteStream) callRemoteStream = new MediaStream();
+            callRemoteStream.addTrack(ev.track);
+        }
         var vid = document.getElementById('remoteVideo');
-        if (vid) {
+        if (vid && callRemoteStream) {
             vid.srcObject = callRemoteStream;
-            vid.play().catch(function (e) { });
+            if (vid.paused) {
+                vid.play().catch(function (e) { console.warn('[WebRTC] play() rejected:', e); });
+            }
         }
     };
     callPeerConnection.onicecandidate = function (ev) {
@@ -338,7 +338,20 @@ async function createPeerConnection() {
             });
         }
     };
+    callPeerConnection.oniceconnectionstatechange = function () {
+        var state = callPeerConnection.iceConnectionState;
+        console.log('[WebRTC] ICE state:', state);
+        if (state === 'connected' || state === 'completed') {
+            updateCallScreenStatus('connected');
+        } else if (state === 'failed') {
+            console.error('[WebRTC] ICE failed — нет TURN-сервера или NAT блокирует соединение');
+            updateCallScreenStatus('Ошибка связи');
+        } else if (state === 'disconnected') {
+            updateCallScreenStatus('Нет связи...');
+        }
+    };
     callPeerConnection.onconnectionstatechange = function () {
+        console.log('[WebRTC] Connection state:', callPeerConnection.connectionState);
         if (callPeerConnection.connectionState === 'disconnected' ||
             callPeerConnection.connectionState === 'failed') {
             if (callActive) {

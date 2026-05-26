@@ -1,13 +1,13 @@
 def register_routes(app):
     import base64, io, os
-    from flask import render_template, redirect, url_for, flash, request, abort
+    from flask import render_template, redirect, url_for, flash, request, abort, current_app
     from flask_login import login_required, current_user
     from werkzeug.utils import secure_filename
     from werkzeug.datastructures import FileStorage
     from datetime import datetime, timedelta
     from sqlalchemy import and_
     from extensions import db
-    from models import Story, StoryReaction, StoryComment, User, Message, followers
+    from models import Story, StoryReaction, StoryComment, StoryView, User, Message, followers
 
     def get_approved_followers():
         return User.query.join(followers, and_(
@@ -21,6 +21,7 @@ def register_routes(app):
     def create_story():
         if request.method == 'POST':
             media_data = request.form.get('media_data')
+            from helpers import cloudinary_configured, upload_to_cloudinary, create_notification
             
             if media_data:
                 header, data = media_data.split(',', 1)
@@ -36,27 +37,28 @@ def register_routes(app):
                 
                 try:
                     binary = base64.b64decode(data)
-                except:
+                except Exception as e:
+                    current_app.logger.warning("story base64 decode failed: %s", e)
                     return 'Invalid base64 data', 400
                 
                 filename = f'story_{datetime.now().timestamp()}.{ext}'
                 file = FileStorage(io.BytesIO(binary), filename=filename, content_type=f'image/{ext}' if media_type == 'image' else f'video/{ext}')
                 
-                from helpers import cloudinary_configured, upload_to_cloudinary, create_notification
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='stories')
-                    if url:
-                        story = Story(
-                            user_id=current_user.id,
-                            media_url=url,
-                            media_type=media_type,
-                            expires_at=datetime.utcnow() + timedelta(hours=24)
-                        )
-                        db.session.add(story)
-                        db.session.commit()
-                        for follower in get_approved_followers():
-                            create_notification(follower.id, current_user.id, 'new_story')
-                        return redirect(url_for('index'))
+                    if not url:
+                        return 'Ошибка загрузки медиа', 500
+                    story = Story(
+                        user_id=current_user.id,
+                        media_url=url,
+                        media_type=media_type,
+                        expires_at=datetime.utcnow() + timedelta(hours=24)
+                    )
+                    db.session.add(story)
+                    db.session.commit()
+                    for follower in get_approved_followers():
+                        create_notification(follower.id, current_user.id, 'new_story')
+                    return redirect(url_for('index'))
                 else:
                     filename_save = secure_filename(filename)
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename_save)
@@ -79,18 +81,21 @@ def register_routes(app):
             if file and allowed_file(file.filename):
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='stories')
-                    if url:
-                        ext = file.filename.rsplit('.', 1)[1].lower()
-                        media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
-                        story = Story(
-                            user_id=current_user.id,
-                            media_url=url,
-                            media_type=media_type,
-                            expires_at=datetime.utcnow() + timedelta(hours=24)
-                        )
-                        db.session.add(story)
-                        db.session.commit()
-                        return redirect(url_for('index'))
+                    if not url:
+                        return 'Ошибка загрузки медиа', 500
+                    ext = file.filename.rsplit('.', 1)[1].lower()
+                    media_type = 'video' if ext in {'mp4', 'webm', 'mov'} else 'image'
+                    story = Story(
+                        user_id=current_user.id,
+                        media_url=url,
+                        media_type=media_type,
+                        expires_at=datetime.utcnow() + timedelta(hours=24)
+                    )
+                    db.session.add(story)
+                    db.session.commit()
+                    for follower in get_approved_followers():
+                        create_notification(follower.id, current_user.id, 'new_story')
+                    return redirect(url_for('index'))
                 else:
                     filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
@@ -234,6 +239,18 @@ def register_routes(app):
         story = Story.query.get_or_404(story_id)
         if story.is_expired() and not story.is_saved and not (story.is_archived and story.user_id == current_user.id):
             abort(404)
+
+        # Записываем просмотр (только если не автор)
+        if story.user_id != current_user.id:
+            existing_view = StoryView.query.filter_by(story_id=story.id, user_id=current_user.id).first()
+            if not existing_view:
+                view = StoryView(story_id=story.id, user_id=current_user.id)
+                db.session.add(view)
+                try:
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
         reactions = story.reactions.all()
         comments = story.comments.order_by(StoryComment.created_at.desc()).all()
         user_stories = Story.query.filter(
@@ -242,4 +259,10 @@ def register_routes(app):
         ).order_by(Story.created_at.desc()).all()
         all_stories = [{'id': s.id} for s in user_stories]
         current_index = next((i for i, s in enumerate(user_stories) if s.id == story.id), 0)
-        return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories, current_index=current_index)
+
+        # Список просмотревших — только для автора истории
+        viewers = []
+        if story.user_id == current_user.id:
+            viewers = story.views.order_by(StoryView.viewed_at.desc()).all()
+
+        return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories, current_index=current_index, viewers=viewers)

@@ -274,6 +274,7 @@ class Story(db.Model):
     user = db.relationship('User', backref='stories')
     reactions = db.relationship('StoryReaction', backref='story', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('StoryComment', backref='story', lazy='dynamic', cascade='all, delete-orphan')
+    views = db.relationship('StoryView', backref='story', lazy='dynamic', cascade='all, delete-orphan')
     hidden_for = db.relationship('User', secondary=story_hidden, lazy='dynamic')
     
     def is_expired(self):
@@ -296,8 +297,18 @@ class StoryComment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     user = db.relationship('User', backref='story_comments')
+
+
+class StoryView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    story_id = db.Column(db.Integer, db.ForeignKey('story.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='story_views')
+    __table_args__ = (db.UniqueConstraint('story_id', 'user_id', name='unique_story_view'),)
 
 
 class Post(db.Model):
@@ -537,7 +548,8 @@ class Shorts(db.Model):
     views = db.Column(db.Integer, default=0)
     likes = db.relationship('ShortsLike', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('ShortsComment', backref='shorts', lazy='dynamic', cascade='all, delete-orphan')
-    
+    saved_by = db.relationship('ShortsSaved', backref='shorts_ref', lazy='dynamic', cascade='all, delete-orphan')
+
     user = db.relationship('User', backref='shorts_videos')
     audio = db.relationship('MusicTrack', backref='shorts_videos')
     
@@ -566,8 +578,18 @@ class ShortsComment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
-    
+
     author = db.relationship('User', foreign_keys=[user_id])
+
+
+class ShortsSaved(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    shorts_id = db.Column(db.Integer, db.ForeignKey('shorts.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', foreign_keys=[user_id])
+    shorts = db.relationship('Shorts', foreign_keys=[shorts_id])
 
 
 class Comment(db.Model):

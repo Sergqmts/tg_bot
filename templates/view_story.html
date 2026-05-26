@@ -24,8 +24,11 @@
     <style>
         :root { --ig-bg: #000; --ig-text: #fff; --ig-surface: rgba(255,255,255,0.15); }
         .light-mode { --ig-bg: #fff; --ig-text: #000; --ig-surface: rgba(0,0,0,0.1); }
-        html, body { background: var(--ig-bg); height: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
+        html, body { background: var(--ig-bg); height: 100dvh; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
+        #storyViewer { padding-bottom: env(safe-area-inset-bottom); }
         .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        /* Prevent iOS zoom on input focus */
+        input, select, textarea { font-size: 16px !important; }
     </style>
 </head>
 <body class="bg-[#000] dark:bg-[#000] text-white">
@@ -84,9 +87,59 @@
                 <div class="text-2xl p-2 cursor-pointer rounded-full bg-black/30 hover:bg-black/50 transition-colors" onclick="react('🔥')">🔥</div>
             </div>
             
-            {% if viewers %}
-            <div class="absolute bottom-[88px] left-3 text-[12px] text-white/50 z-[100]">
-                Просмотров: {{ viewers.count() }}
+            {% if viewers is defined and story.user_id == current_user.id %}
+            <!-- Кнопка просмотревших для автора -->
+            <div class="absolute bottom-[88px] left-3 z-[100]" id="viewersBtn" onclick="openViewersSheet()">
+                <div class="flex items-center gap-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 cursor-pointer hover:bg-black/60 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span class="text-white text-[13px] font-semibold">{{ viewers|length }}</span>
+                </div>
+            </div>
+
+            <!-- Sheet просмотревших -->
+            <div id="viewersSheet" class="fixed inset-0 z-[200] hidden" onclick="closeViewersSheet(event)">
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+                <div id="viewersPanel" class="absolute bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-[#1c1c1e] rounded-t-3xl overflow-hidden transition-transform duration-300 translate-y-full" style="max-height:70dvh;">
+                    <!-- Handle -->
+                    <div class="flex justify-center pt-3 pb-2">
+                        <div class="w-10 h-1 bg-white/30 rounded-full"></div>
+                    </div>
+                    <div class="px-4 pb-2 flex items-center justify-between">
+                        <span class="text-white font-semibold text-[15px]">Просмотры <span class="text-white/50 font-normal">{{ viewers|length }}</span></span>
+                    </div>
+                    <div class="overflow-y-auto" style="max-height:calc(70dvh - 80px);">
+                        {% if viewers %}
+                        {% for v in viewers %}
+                        <a href="{{ url_for('user_profile', username=v.user.username) }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors no-underline" onclick="closeViewersSheet(event, true)">
+                            <div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center">
+                                {% set av = get_avatar_url(v.user) %}
+                                {% if av %}
+                                <img src="{{ av }}" class="w-full h-full object-cover">
+                                {% else %}
+                                <span class="text-white font-bold text-sm">{{ v.user.username[0].upper() }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-white font-semibold text-[14px] truncate">{{ v.user.username }}</p>
+                                <p class="text-white/40 text-[12px]">{{ v.viewed_at.strftime('%H:%M') }}</p>
+                            </div>
+                        </a>
+                        {% endfor %}
+                        {% else %}
+                        <div class="flex flex-col items-center justify-center py-12 text-white/40">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <p class="text-[14px]">Пока никто не смотрел</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="pb-safe h-6"></div>
+                </div>
             </div>
             {% endif %}
         </div>
@@ -205,8 +258,38 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') nextStory();
             if (e.key === 'ArrowLeft') prevStory();
-            if (e.key === 'Escape') window.location.href = '{{ url_for("index") }}';
+            if (e.key === 'Escape') {
+                const sheet = document.getElementById('viewersSheet');
+                if (sheet && !sheet.classList.contains('hidden')) {
+                    closeViewersSheet(null, true);
+                } else {
+                    window.location.href = '{{ url_for("index") }}';
+                }
+            }
         });
+
+        function openViewersSheet() {
+            const sheet = document.getElementById('viewersSheet');
+            const panel = document.getElementById('viewersPanel');
+            if (!sheet) return;
+            sheet.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                panel.classList.remove('translate-y-full');
+            });
+            // Пауза таймера истории
+            clearInterval(progressInterval);
+        }
+
+        function closeViewersSheet(e, force) {
+            const sheet = document.getElementById('viewersSheet');
+            const panel = document.getElementById('viewersPanel');
+            if (!sheet) return;
+            if (!force && e && panel.contains(e.target)) return;
+            panel.classList.add('translate-y-full');
+            setTimeout(() => sheet.classList.add('hidden'), 300);
+            // Возобновляем прогресс
+            startProgress();
+        }
         
         window.addEventListener('load', () => {
             createProgressBars();

@@ -1,28 +1,35 @@
-import hmac
-import hashlib
-import base64
+import json
 import time
+import urllib.request
 from datetime import datetime, timedelta
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from extensions import db
 from models import Call, User, Message, Chat, ChatMember
 
+_turn_cache = {'creds': None, 'expires': 0}
+
 
 def get_turn_credentials():
-    key_id = current_app.config.get('CLOUDFLARE_TURN_KEY_ID', '')
-    api_token = current_app.config.get('CLOUDFLARE_TURN_API_TOKEN', '')
-    if not key_id or not api_token:
+    app_name = current_app.config.get('METERED_APP_NAME', '')
+    api_key = current_app.config.get('METERED_API_KEY', '')
+    if not app_name or not api_key:
         return None
-    timestamp = int(time.time()) + 86400
-    username = f"{timestamp}:{key_id}"
-    sig = hmac.new(
-        api_token.encode('utf-8'),
-        username.encode('utf-8'),
-        hashlib.sha256
-    ).digest()
-    credential = base64.b64encode(sig).decode('utf-8')
-    return {'username': username, 'credential': credential}
+    now = time.time()
+    if _turn_cache['creds'] and now < _turn_cache['expires']:
+        return _turn_cache['creds']
+    try:
+        url = f'https://{app_name}.metered.live/api/v1/turn/credentials?apiKey={api_key}'
+        req = urllib.request.Request(url, method='GET')
+        with urllib.request.urlopen(req, timeout=5) as r:
+            servers = json.loads(r.read())
+        if isinstance(servers, list) and servers:
+            _turn_cache['creds'] = servers
+            _turn_cache['expires'] = now + 43200  # cache 12 h
+            return servers
+    except Exception as e:
+        current_app.logger.warning('TURN credential fetch failed: %s', e)
+    return None
 
 
 def format_duration(seconds):
@@ -217,7 +224,11 @@ def register_routes(app):
     @app.route('/api/turn/credentials', methods=['GET'])
     @login_required
     def turn_credentials():
+        app_name = current_app.config.get('METERED_APP_NAME', '')
+        api_key = current_app.config.get('METERED_API_KEY', '')
+        if not app_name or not api_key:
+            return jsonify({'error': 'TURN not configured'}), 501
         creds = get_turn_credentials()
         if not creds:
-            return jsonify({'error': 'TURN not configured'}), 501
+            return jsonify({'error': 'TURN fetch failed'}), 501
         return jsonify(creds)

@@ -52,3 +52,4 @@ docs/
 
 # Project specific
 site/
+.gstack/

@@ -23,7 +23,7 @@
                     {% if user.id in active_users %}
                     <span class="online-badge" title="В сети">🟢</span>
                     {% elif user.last_seen %}
-                    <span class="last-seen" title="Был(а) в сети">был(а) {{ moment(user.last_seen).fromNow() if moment else user.last_seen.strftime('%d.%m.%Y %H:%M') }}</span>
+                    <span class="last-seen" data-ts="{{ user.last_seen.timestamp()|int }}" title="Был(а) в сети">был(а) {{ user.last_seen.strftime('%d.%m.%Y %H:%M') }}</span>
                     {% endif %}
                 </div>
                 <div class="profile-stats">
@@ -80,7 +80,7 @@
     
     {% if current_user.is_authenticated and user.id == current_user.id and linked_accounts %}
     <div class="linked-accounts-section" style="margin-top: 1rem; padding: 1rem; background: var(--bg-card); border-radius: 12px;">
-        <div style="display: flex; align-items: center; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; overflow-x: auto; overflow-y: hidden; padding-bottom: 0.25rem; -webkit-overflow-scrolling: touch; scrollbar-width: none;" class="linked-accounts-scroll">
             {% for m in linked_accounts %}
             <a href="{% if m.user_id == current_user.id %}{{ url_for('user_profile', username=current_user.username) }}{% else %}{{ url_for('switch_account', account_id=m.user_id) }}{% endif %}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 10px; text-decoration: none; color: inherit; {% if m.user_id == current_user.id %}background: var(--bg-hover);{% else %}border: 1px solid var(--border-color);{% endif %} flex-shrink: 0;">
                 {% set m_avatar = get_avatar_url(m.user) %}
@@ -92,7 +92,7 @@
                     {% endif %}
                 </div>
                 <div style="display: flex; flex-direction: column;">
-                    <span style="font-size: 0.875rem; font-weight: 500; white-space: nowrap;">{{ m.business_name or m.user.username }}</span>
+                    <span style="font-size: 0.875rem; font-weight: 500; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ m.business_name or m.user.username }}</span>
                     <span style="font-size: 0.7rem; color: var(--text-secondary);">
                         {% if m.account_type == 'business' %}Бизнес{% else %}Личный{% endif %}
                         {% if m.user_id == current_user.id %}· Активен{% endif %}
@@ -258,9 +258,31 @@
     margin-left: 0.5rem;
 }
 .last-seen {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
+    font-size: 0.75rem;
+    color: var(--text-muted);
     margin-left: 0.5rem;
+    font-style: italic;
 }
 </style>
+<script>
+(function() {
+    var el = document.querySelector('.last-seen[data-ts]');
+    if (!el) return;
+    var ts = parseInt(el.dataset.ts, 10) * 1000;
+    var now = Date.now();
+    var diff = Math.floor((now - ts) / 1000);
+    var text;
+    if (diff < 60)         text = 'только что';
+    else if (diff < 3600)  text = 'был(а) ' + Math.floor(diff / 60) + ' мин. назад';
+    else if (diff < 7200)  text = 'был(а) час назад';
+    else if (diff < 86400) text = 'был(а) ' + Math.floor(diff / 3600) + ' ч. назад';
+    else if (diff < 172800) text = 'был(а) вчера';
+    else if (diff < 604800) text = 'был(а) ' + Math.floor(diff / 86400) + ' дн. назад';
+    else {
+        var d = new Date(ts);
+        text = 'был(а) ' + d.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+    }
+    el.textContent = text;
+})();
+</script>
 {% endblock %}

@@ -229,7 +229,7 @@ function toggleMusicLike(trackId, btn) {
         .then(d => { btn.textContent = d.liked ? '♥' : '♡'; btn.classList.toggle('liked', d.liked); });
 }
 function showReactions(postId) {
-    alert('Выберите реакцию');
+    showToast('Выберите реакцию', 'info');
 }
 function showRepostMenu(postId) {
     var menu = document.getElementById('repostMenu' + postId);

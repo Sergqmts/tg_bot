@@ -33,6 +33,7 @@ def register_routes(app):
         caption = data.get('caption', '')
         target = data.get('target', 'feed')
         user_id = data.get('user_id')
+        return_url = data.get('return_url')
 
         if not image_url or not user_id:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
@@ -44,7 +45,7 @@ def register_routes(app):
             media = Media(filename='editor', cloudinary_url=image_url, media_type='image', post_id=post.id)
             db.session.add(media)
             db.session.commit()
-            return jsonify({'post_id': post.id})
+            response = {'post_id': post.id}
 
         elif target == 'story':
             story = Story(
@@ -55,21 +56,26 @@ def register_routes(app):
             )
             db.session.add(story)
             db.session.commit()
-            return jsonify({'post_id': story.id})
+            response = {'post_id': story.id}
 
         elif target == 'shorts':
             shorts = Shorts(video_url=image_url, caption=caption, user_id=user_id)
             db.session.add(shorts)
             db.session.commit()
-            return jsonify({'post_id': shorts.id})
+            response = {'post_id': shorts.id}
 
         elif target == 'draft':
             draft = Draft(user_id=user_id, caption=caption, media_data=image_url)
             db.session.add(draft)
             db.session.commit()
-            return jsonify({'post_id': draft.id})
+            response = {'post_id': draft.id}
 
-        return jsonify({'status': 'error', 'message': 'Invalid target'}), 400
+        else:
+            return jsonify({'status': 'error', 'message': 'Invalid target'}), 400
+
+        if return_url:
+            response['redirect_url'] = return_url
+        return jsonify(response)
 
     @app.route('/api/editor/publish-video', methods=['POST'])
     def editor_publish_video():
@@ -84,7 +90,7 @@ def register_routes(app):
         if not cloudinary_url or not user_id:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
 
-        audio = MusicTrack.query.get(audio_id) if audio_id else None
+        audio = db.session.get(MusicTrack, audio_id) if audio_id else None
 
         shorts = Shorts(
             video_url=cloudinary_url,
@@ -100,31 +106,17 @@ def register_routes(app):
     @app.route('/api/editor/draft/<int:draft_id>')
     def editor_get_draft(draft_id):
         check_service_token()
-        draft = Draft.query.get(draft_id)
+        draft = db.session.get(Draft, draft_id)
         if not draft:
-            return jsonify({'status': 'error', 'message': 'Draft not found'})
+            return jsonify({'status': 'error', 'message': 'Draft not found'}), 404
         return jsonify({'media_data': draft.media_data, 'caption': draft.caption})
 
     @app.route('/proxy/edit/photo')
     @login_required
     def proxy_photo_editor():
-        if not EDITOR_SERVICE_TOKEN:
-            return redirect(url_for('photo_editor', **request.args))
-        token = generate_editor_token(current_user)
-        url = f"{EDITOR_SERVICE_URL}/photo?token={token}"
-        draft_id = request.args.get('draft')
-        target = request.args.get('target')
-        if draft_id:
-            url += f"&draft={draft_id}"
-        if target:
-            url += f"&target={target}"
-        return redirect(url)
+        return redirect(url_for('photo_editor', **request.args))
 
     @app.route('/proxy/edit/video')
     @login_required
     def proxy_video_editor():
-        if not EDITOR_SERVICE_TOKEN:
-            return redirect(url_for('video_editor'))
-        token = generate_editor_token(current_user)
-        url = f"{EDITOR_SERVICE_URL}/video?token={token}"
-        return redirect(url)
+        return redirect(url_for('video_editor'))

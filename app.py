@@ -46,11 +46,11 @@ if not app.config['SECRET_KEY']:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', '')
 app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET', '')
-app.config['CLOUDFLARE_TURN_KEY_ID'] = os.environ.get('CLOUDFLARE_TURN_KEY_ID', '')
-app.config['CLOUDFLARE_TURN_API_TOKEN'] = os.environ.get('CLOUDFLARE_TURN_API_TOKEN', '')
+app.config['METERED_APP_NAME'] = os.environ.get('METERED_APP_NAME', '')
+app.config['METERED_API_KEY'] = os.environ.get('METERED_API_KEY', '')
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'webm', 'mov', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'pdf', 'doc', 'docx', 'txt'}
 
 # Custom Jinja2 filters
@@ -59,7 +59,7 @@ def from_json_filter(value):
     import json
     try:
         return json.loads(value) if value else {}
-    except:
+    except (ValueError, TypeError):
         return {}
 
 
@@ -130,7 +130,7 @@ def init_db():
                     "SELECT COUNT(*) FROM pragma_table_info(:table) WHERE name=:column"
                 ), {'table': table, 'column': column})
             return result.scalar() > 0
-        except:
+        except Exception:
             return False
 
     for attempt in range(3):
@@ -238,7 +238,7 @@ def handle_connect():
         current_user.last_seen = datetime.utcnow()
         try:
             db.session.commit()
-        except:
+        except Exception:
             pass
         emit('user_online', {'user_id': current_user.id}, broadcast=True)
 
@@ -293,7 +293,7 @@ def run_migrations():
                 try:
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
-                except:
+                except Exception:
                     db.session.rollback()
         privacy_cols = [('is_private', 'BOOLEAN DEFAULT 0'), ('hide_followers', 'BOOLEAN DEFAULT 0'), ('hide_following', 'BOOLEAN DEFAULT 0'), ('approve_followers', 'BOOLEAN DEFAULT 0')]
         for col, typ in privacy_cols:
@@ -301,7 +301,7 @@ def run_migrations():
                 try:
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
-                except:
+                except Exception:
                     db.session.rollback()
         phone_cols = [('phone', 'VARCHAR(20)'), ('phone_verified', 'BOOLEAN DEFAULT 0'), ('phone_otp', 'VARCHAR(6)'), ('phone_otp_expires', 'TIMESTAMP')]
         for col, typ in phone_cols:
@@ -309,19 +309,19 @@ def run_migrations():
                 try:
                     db.session.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {typ}'))
                     db.session.commit()
-                except:
+                except Exception:
                     db.session.rollback()
         if 'google_id' not in existing:
             try:
                 db.session.execute(text('ALTER TABLE "user" ADD COLUMN google_id VARCHAR(200) UNIQUE'))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
         if 'is_business' not in existing:
             try:
                 db.session.execute(text('ALTER TABLE "user" ADD COLUMN is_business BOOLEAN DEFAULT 0'))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
     except Exception as e:
         app.logger.info(f"User migration: {e}")
@@ -331,7 +331,7 @@ def run_migrations():
             try:
                 db.session.execute(text('ALTER TABLE community ADD COLUMN is_private BOOLEAN DEFAULT 0'))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
     except Exception as e:
         app.logger.info(f"Community migration: {e}")
@@ -341,7 +341,7 @@ def run_migrations():
             try:
                 db.session.execute(text("ALTER TABLE community_member ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
     except Exception as e:
         app.logger.info(f"Member migration: {e}")
@@ -351,7 +351,7 @@ def run_migrations():
             try:
                 db.session.execute(text("ALTER TABLE post ADD COLUMN is_community_post BOOLEAN DEFAULT 0"))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
     except Exception as e:
         app.logger.info(f"Post migration: {e}")
@@ -361,7 +361,7 @@ def run_migrations():
             try:
                 db.session.execute(text("ALTER TABLE followers ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
     except Exception as e:
         app.logger.info(f"Followers migration: {e}")
@@ -435,13 +435,13 @@ def run_migrations():
             try:
                 db.session.execute(text("ALTER TABLE chat ADD COLUMN background_type VARCHAR(20) DEFAULT 'default'"))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
         if 'background_value' not in chat_columns:
             try:
                 db.session.execute(text("ALTER TABLE chat ADD COLUMN background_value VARCHAR(500) DEFAULT ''"))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
         
         columns = get_table_columns('message')
@@ -449,13 +449,13 @@ def run_migrations():
             try:
                 db.session.execute(text("ALTER TABLE message ADD COLUMN chat_id INTEGER"))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
         if 'forwarded_from_id' not in columns:
             try:
                 db.session.execute(text('ALTER TABLE message ADD COLUMN forwarded_from_id INTEGER REFERENCES "user"(id)'))
                 db.session.commit()
-            except:
+            except Exception:
                 db.session.rollback()
         
         try:
@@ -486,6 +486,12 @@ def update_last_seen():
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(app.static_folder, 'favicon.ico')
+
+@app.route('/sw.js')
+def service_worker():
+    response = send_from_directory(app.static_folder, 'sw.js')
+    response.headers['Service-Worker-Allowed'] = '/'
+    return response
 
 
 # Register all route handlers from routes/ package
@@ -690,6 +696,19 @@ with app.app_context():
             ('🎬', 'Видеоредактор для Shorts', 'Редактируйте видео для Shorts: обрезка, фильтры, скорость. Обработка через Cloudinary — без нагрузки на сервер.'),
             ('📸', 'Фоторедактор', 'Улучшайте свои фотографии перед публикацией: регулируйте яркость, контрастность, насыщенность, применяйте фильтры, рамки и стикеры прямо в приложении.'),
             ('🎵', 'Shorts с музыкой', 'Создавайте короткие видео с фоновой музыкой. Доступна библиотека треков, поиск на FreeSound и загрузка собственных аудиофайлов.'),
+            ('📞', 'VoIP-звонки', 'Голосовые и видеозвонки прямо в приложении — без сторонних сервисов. Работает через WebRTC с поддержкой TURN для надёжного соединения.'),
+            ('🔑', 'Вход через Google', 'Быстрая авторизация через Google OAuth — без пароля, одним нажатием.'),
+            ('🛡️', 'Автомодерация контента', 'NSFW-фильтр анализирует публикации в реальном времени. Нарушители автоматически получают предупреждения или блокировку.'),
+            ('⚙️', 'Админ-панель', 'Полноценная панель управления: жалобы пользователей, блокировки, управление сообществами и правами модераторов.'),
+            ('👥', 'Мультиаккаунты', 'Переключайтесь между личным и бизнес-аккаунтами без выхода из системы.'),
+            ('🎶', 'Музыкальный плеер', 'Слушайте музыку прямо в VIBE: треки через Deezer, личные плейлисты и умные рекомендации.'),
+            ('📅', 'События в сообществах', 'Организуйте мероприятия внутри сообществ с подтверждением участия (RSVP).'),
+            ('📖', 'Stories', 'Истории исчезают через 24 часа — как в Instagram. Реакции, комментарии, архив и возможность скрыть от отдельных пользователей.'),
+            ('📝', 'Черновики публикаций', 'Сохраняйте недописанные посты как черновики и возвращайтесь к ним позже.'),
+            ('🤖', 'Бот-платформа', 'Создавайте собственных ботов с Telegram-совместимым API: 25+ методов, вебхуки, управление сообществами через API.'),
+            ('🔒', 'Приватность профиля', 'Гибкие настройки: приватный аккаунт, блокировка пользователей, верификация телефона, управление подписчиками.'),
+            ('🏷️', 'Хештеги и поиск', 'Находите посты, пользователей и сообщества по хештегам. Поиск работает в реальном времени.'),
+            ('🎨', 'Кастомные фоны чатов', 'Персонализируйте интерфейс: выбирайте фоновое изображение для каждого чата.'),
         ]
         for icon, title, body in features:
             existing = FeatureAnnouncement.query.filter_by(title=title).first()

@@ -47,7 +47,8 @@
 .history-bar button:hover { background: #405de6; color: #fff; }
 .history-bar .sep { width: 1px; background: #2a2a4a; margin: 4px 0; }
 .save-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.85); z-index: 9999; display: none; align-items: center; justify-content: center; }
-.save-dialog { background: #16213e; border-radius: 16px; padding: 24px; width: 400px; max-width: 90vw; max-height: 90vh; overflow-y: auto; }
+.save-dialog { background: #16213e; border-radius: 16px; padding: 24px; width: 400px; max-width: 90vw; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; }
+.save-dialog .btn-row { position: sticky; bottom: -24px; margin: 12px -24px -24px; padding: 12px 24px; background: #16213e; border-top: 1px solid #2a2a4a; border-radius: 0 0 16px 16px; }
 .save-dialog h3 { margin: 0 0 16px; color: #fff; }
 .save-dialog .preview { width: 100%; max-height: 240px; object-fit: contain; border-radius: 8px; margin-bottom: 16px; background: #0f0f1a; }
 .save-dialog textarea { width: 100%; min-height: 60px; padding: 10px; border: 1px solid #2a2a4a; border-radius: 8px; background: #1a1a2e; color: #eee; resize: vertical; margin-bottom: 12px; font-size: 13px; }
@@ -329,12 +330,12 @@ const FILTERS = {
 const ASPECTS = { free:0, '1:1':1, '4:5':4/5, '9:16':9/16, '16:9':16/9, '3:2':3/2, '4:3':4/3, '2:3':2/3, '21:9':21/9 };
 
 const FRAMES = [
-  {name:'Тонкая',style:'4px solid #fff',border:'',bg:''},
-  {name:'Двойная',style:'4px solid #fff;box-shadow:0 0 0 4px #405de6',border:'',bg:''},
-  {name:'Полярнойд',style:'background:#fff;padding:12px',border:'1px solid #ddd',bg:'#fff'},
-  {name:'Неон',style:'3px solid #ff3cac;box-shadow:0 0 12px #ff3cac',border:'',bg:''},
-  {name:'Золото',style:'3px solid #d4a017;box-shadow:0 0 8px rgba(212,160,23,.5)',border:'',bg:''},
-  {name:'VHS',style:'2px solid #00ff88;box-shadow:4px 4px 0 rgba(0,255,136,.3)',border:'',bg:''}
+  {id:'thin',   name:'Тонкая',    color:'#fff',    width:4, glow:null, offset:null, bg:''},
+  {id:'double', name:'Двойная',   color:'#fff',    width:4, glow:null, offset:null, bg:'', inner:{color:'#405de6',width:3,gap:7}},
+  {id:'polar',  name:'Полярнойд', color:'#ccc',    width:1, glow:null, offset:null, bg:'#fff', pad:16},
+  {id:'neon',   name:'Неон',      color:'#ff3cac', width:3, glow:{color:'#ff3cac',blur:14}, offset:null, bg:''},
+  {id:'gold',   name:'Золото',    color:'#d4a017', width:3, glow:{color:'rgba(212,160,23,0.6)',blur:10}, offset:null, bg:''},
+  {id:'vhs',    name:'VHS',       color:'#00ff88', width:2, glow:{color:'rgba(0,255,136,0.35)',blur:0}, offset:{x:5,y:5}, bg:''}
 ];
 
 const COLLAGE = [
@@ -369,6 +370,9 @@ let state = {
   drawTool: 'marker',
   isDrawing: false,
   drawLayer: null,
+  currentStroke: null,
+  bgSnap: null,
+  strokePoints: [],
   animFrame: null,
   animType: null,
   time: 0,
@@ -520,6 +524,11 @@ function render() {
     } catch(e) { console.error('Render image error:', e); }
   }
   
+  // Apply pixel-level adjustments not supported by CSS filters
+  if (a.sharpness || a.shadows || a.highlights || a.temp || a.tint) {
+    applyPixelAdjust(ctx, w, h, a);
+  }
+
   if (state.effects.vintage) applyEffectVintage(ctx, w, h);
   if (state.effects.bw) applyEffectBW(ctx, w, h);
   if (state.effects.lomo) applyEffectLOMO(ctx, w, h);
@@ -604,10 +613,39 @@ function render() {
   if (state.frameStyle) {
     const fs = state.frameStyle;
     ctx.save();
-    if (fs.bg) { ctx.fillStyle = fs.bg; ctx.fillRect(0,0,w,h); }
-    ctx.strokeStyle = fs.border || '#fff';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(2,2,w-4,h-4);
+    const id = fs.id;
+
+    if (id === 'polar') {
+      // Polaroid: white background, image sits inside with padding, thin inner border
+      const pad = fs.pad || 16;
+      ctx.fillStyle = fs.bg || '#fff';
+      ctx.fillRect(0, 0, w, h);
+      // Redraw image inset
+      ctx.drawImage(state.image, pad, pad, w - pad * 2, h - pad * 2);
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+    } else {
+      // For glow/shadow frames: apply shadow first, then stroke
+      if (fs.glow) {
+        ctx.shadowColor = fs.glow.color;
+        ctx.shadowBlur = fs.glow.blur;
+        if (fs.offset) { ctx.shadowOffsetX = fs.offset.x; ctx.shadowOffsetY = fs.offset.y; }
+      }
+      ctx.strokeStyle = fs.color || '#fff';
+      ctx.lineWidth = fs.width || 4;
+      ctx.strokeRect(2, 2, w - 4, h - 4);
+
+      if (id === 'double' && fs.inner) {
+        // Second inner ring
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = fs.inner.color;
+        ctx.lineWidth = fs.inner.width;
+        const g = fs.inner.gap;
+        ctx.strokeRect(2 + g, 2 + g, w - 4 - g * 2, h - 4 - g * 2);
+      }
+    }
     ctx.restore();
   }
   
@@ -712,6 +750,72 @@ function applyEffectSoft(ctx, w, h) {
   applyVignette(ctx,w,h,0.3);
 }
 
+function applyPixelAdjust(ctx, w, h, a) {
+  const d = ctx.getImageData(0, 0, w, h);
+  const p = d.data;
+  const shadows = a.shadows / 100;      // -1..1
+  const highlights = a.highlights / 100; // -1..1
+  const temp = a.temp / 100;             // -1..1 (warm/cool)
+  const tint = a.tint / 100;             // -1..1 (green/magenta)
+  const sharpness = a.sharpness / 100;   // 0..1
+
+  for (let i = 0; i < p.length; i += 4) {
+    let r = p[i], g = p[i+1], b = p[i+2];
+    const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+
+    // Shadows: boost or reduce dark areas
+    if (shadows !== 0) {
+      const shadowMask = Math.max(0, 1 - lum * 2.5);
+      r = Math.max(0, Math.min(255, r + shadows * shadowMask * 80));
+      g = Math.max(0, Math.min(255, g + shadows * shadowMask * 80));
+      b = Math.max(0, Math.min(255, b + shadows * shadowMask * 80));
+    }
+
+    // Highlights: boost or reduce bright areas
+    if (highlights !== 0) {
+      const highlightMask = Math.max(0, lum * 2.5 - 1.5);
+      r = Math.max(0, Math.min(255, r + highlights * highlightMask * 80));
+      g = Math.max(0, Math.min(255, g + highlights * highlightMask * 80));
+      b = Math.max(0, Math.min(255, b + highlights * highlightMask * 80));
+    }
+
+    // Temperature: warm = +R -B, cool = -R +B
+    if (temp !== 0) {
+      r = Math.max(0, Math.min(255, r + temp * 30));
+      b = Math.max(0, Math.min(255, b - temp * 30));
+    }
+
+    // Tint: positive = magenta (+R +B -G), negative = green (-R -B +G)
+    if (tint !== 0) {
+      r = Math.max(0, Math.min(255, r + tint * 20));
+      g = Math.max(0, Math.min(255, g - tint * 20));
+      b = Math.max(0, Math.min(255, b + tint * 20));
+    }
+
+    p[i] = r; p[i+1] = g; p[i+2] = b;
+  }
+  ctx.putImageData(d, 0, 0);
+
+  // Sharpness: unsharp mask approximation via a second canvas
+  if (sharpness > 0) {
+    const blurCanvas = document.createElement('canvas');
+    blurCanvas.width = w; blurCanvas.height = h;
+    const blurCtx = blurCanvas.getContext('2d');
+    blurCtx.filter = 'blur(1px)';
+    blurCtx.drawImage(ctx.canvas, 0, 0);
+    blurCtx.filter = 'none';
+    const orig = ctx.getImageData(0, 0, w, h);
+    const blurred = blurCtx.getImageData(0, 0, w, h);
+    const op = orig.data, bp = blurred.data;
+    for (let i = 0; i < op.length; i += 4) {
+      op[i]   = Math.max(0, Math.min(255, op[i]   + (op[i]   - bp[i])   * sharpness * 2));
+      op[i+1] = Math.max(0, Math.min(255, op[i+1] + (op[i+1] - bp[i+1]) * sharpness * 2));
+      op[i+2] = Math.max(0, Math.min(255, op[i+2] + (op[i+2] - bp[i+2]) * sharpness * 2));
+    }
+    ctx.putImageData(orig, 0, 0);
+  }
+}
+
 function applyEffectGlitter(ctx, w, h) {
   const d = ctx.getImageData(0,0,w,h);
   const p = d.data;
@@ -774,14 +878,20 @@ function switchTool(tool) {
 
 function applyFilter(name) {
   state.filter = name;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    // Match by the onclick attribute value
+    b.classList.toggle('active', b.getAttribute('onclick') === `applyFilter('${name}')`);
+  });
   render();
 }
 
 function toggleEffect(name) {
   state.effects[name] = !state.effects[name];
-  if (event && event.currentTarget) event.currentTarget.classList.toggle('active');
+  document.querySelectorAll('.effect-btn').forEach(b => {
+    if (b.getAttribute('onclick') === `toggleEffect('${name}')`) {
+      b.classList.toggle('active', !!state.effects[name]);
+    }
+  });
   render();
 }
 
@@ -809,8 +919,9 @@ function resetAdjust() {
 
 function setAspect(aspect) {
   state.crop.aspect = aspect;
-  document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
-  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  document.querySelectorAll('.aspect-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick') === `setAspect('${aspect}')`);
+  });
   if (state.crop.active) updateCropBox();
 }
 
@@ -832,20 +943,33 @@ function updateCropBox() {
   const box = document.getElementById('cropBox');
   const canvas = state.canvas;
   const rect = canvas.getBoundingClientRect();
+  // FIX ISSUE-001: offset cropBox by canvas position within canvasWrap
+  const wrap = document.getElementById('canvasWrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const offsetX = rect.left - wrapRect.left;
+  const offsetY = rect.top - wrapRect.top;
   let x = state.crop.x, y = state.crop.y, w = state.crop.w, h = state.crop.h;
+  x = Math.max(0, Math.min(x, rect.width - 50));
+  y = Math.max(0, Math.min(y, rect.height - 50));
+  // FIX ISSUE-002: enforce aspect ratio without breaking due to independent clamps
   if (state.crop.aspect !== 'free') {
     const ratio = ASPECTS[state.crop.aspect];
     if (ratio) {
-      if (w / h > ratio) h = w / ratio;
-      else w = h * ratio;
+      const maxW = rect.width - x;
+      const maxH = rect.height - y;
+      w = Math.min(w, maxW, maxH * ratio);
+      w = Math.max(50, w);
+      h = w / ratio;
+    } else {
+      w = Math.max(50, Math.min(w, rect.width - x));
+      h = Math.max(50, Math.min(h, rect.height - y));
     }
+  } else {
+    w = Math.max(50, Math.min(w, rect.width - x));
+    h = Math.max(50, Math.min(h, rect.height - y));
   }
-  w = Math.max(50, Math.min(w, rect.width - x));
-  h = Math.max(50, Math.min(h, rect.height - y));
-  x = Math.max(0, Math.min(x, rect.width - w));
-  y = Math.max(0, Math.min(y, rect.height - h));
   state.crop.x = x; state.crop.y = y; state.crop.w = w; state.crop.h = h;
-  box.style.left = x + 'px'; box.style.top = y + 'px';
+  box.style.left = (offsetX + x) + 'px'; box.style.top = (offsetY + y) + 'px';
   box.style.width = w + 'px'; box.style.height = h + 'px';
 }
 
@@ -884,7 +1008,7 @@ function cancelCrop() {
 function rotateCW() {
   if (!state.image) return;
   const oc = document.createElement('canvas');
-  octx = oc.getContext('2d');
+  const octx = oc.getContext('2d');
   oc.width = state.height; oc.height = state.width;
   octx.translate(oc.width/2, oc.height/2);
   octx.rotate(Math.PI/2);
@@ -898,7 +1022,7 @@ function flipH() {
   if (!state.image) return;
   const oc = document.createElement('canvas');
   oc.width = state.width; oc.height = state.height;
-  octx = oc.getContext('2d');
+  const octx = oc.getContext('2d');
   octx.translate(oc.width, 0);
   octx.scale(-1, 1);
   octx.drawImage(state.image, 0, 0);
@@ -911,7 +1035,7 @@ function flipV() {
   if (!state.image) return;
   const oc = document.createElement('canvas');
   oc.width = state.width; oc.height = state.height;
-  octx = oc.getContext('2d');
+  const octx = oc.getContext('2d');
   octx.translate(0, oc.height);
   octx.scale(1, -1);
   octx.drawImage(state.image, 0, 0);
@@ -929,7 +1053,7 @@ function straighten() {
   const cw = w * Math.abs(Math.cos(rad)) + h * Math.abs(Math.sin(rad));
   const ch = w * Math.abs(Math.sin(rad)) + h * Math.abs(Math.cos(rad));
   oc.width = Math.ceil(cw); oc.height = Math.ceil(ch);
-  octx = oc.getContext('2d');
+  const octx = oc.getContext('2d');
   octx.translate(oc.width/2, oc.height/2);
   octx.rotate(rad);
   octx.drawImage(state.image, -w/2, -h/2);
@@ -991,10 +1115,12 @@ function toggleTextStyle(style) {
 }
 
 function toggleTextAlign() {
-  const aligns = ['center','left','right'];
+  const aligns = ['center', 'left', 'right'];
+  // ☰ = center, ≡ = left (lines left-heavy), ᴝ not available — use text labels
+  const labels = { center: '≡ Центр', left: '≡ Лево', right: '≡ Право' };
   const cur = aligns.indexOf(textState.align);
-  textState.align = aligns[(cur+1) % 3];
-  document.getElementById('txtAlign').textContent = textState.align === 'center' ? '≡' : textState.align === 'left' ? '≡' : '≡';
+  textState.align = aligns[(cur + 1) % 3];
+  document.getElementById('txtAlign').textContent = labels[textState.align];
 }
 
 function addSticker(emoji) {
@@ -1059,11 +1185,68 @@ function activateDrawLayer() {
   oc.width = state.width; oc.height = state.height;
   state.drawLayer = oc;
   state.drawing = true;
+  const cs = document.createElement('canvas');
+  cs.width = state.width; cs.height = state.height;
+  state.currentStroke = cs;
 }
 
 function deactivateDrawLayer() {
   state.drawing = false;
 }
+
+// ── Drawing performance helpers ──────────────────────────────────────────────
+var _drawRafId = null;
+
+// Called on mousedown/touchstart: snapshots the canvas so we can fast-composite
+// during the stroke without running the expensive full render() each event.
+function beginStroke(x, y) {
+  state.strokePoints = [{x: x, y: y}];
+  if (state.currentStroke) {
+    state.currentStroke.getContext('2d').clearRect(0, 0, state.width, state.height);
+  }
+  // Snapshot the current canvas (includes any previously drawn strokes)
+  var snap = document.createElement('canvas');
+  snap.width = state.canvas.width;
+  snap.height = state.canvas.height;
+  snap.getContext('2d').drawImage(state.canvas, 0, 0);
+  state.bgSnap = snap;
+}
+
+// Cheap composite: bgSnap (image+effects+old strokes) + currentStroke overlay.
+// Used for brush/marker — avoids the full render() pipeline during a stroke.
+function fastPaint() {
+  if (!state.ctx || !state.bgSnap) return;
+  state.ctx.drawImage(state.bgSnap, 0, 0);
+  if (state.currentStroke) state.ctx.drawImage(state.currentStroke, 0, 0);
+}
+
+// RAF-throttled fastPaint (brush/marker path)
+function scheduleFastPaint() {
+  if (_drawRafId) return;
+  _drawRafId = requestAnimationFrame(function() { _drawRafId = null; fastPaint(); });
+}
+
+// RAF-throttled full render (spray/eraser path — these modify drawLayer directly)
+function scheduleRender() {
+  if (_drawRafId) return;
+  _drawRafId = requestAnimationFrame(function() { _drawRafId = null; render(); });
+}
+
+// Called on mouseup/touchend: merges currentStroke into drawLayer, then renders once.
+function endStroke() {
+  if (_drawRafId) { cancelAnimationFrame(_drawRafId); _drawRafId = null; }
+  // Merge current stroke into the persistent draw layer
+  if (state.drawTool !== 'eraser' && state.drawTool !== 'spray') {
+    if (state.currentStroke && state.drawLayer) {
+      state.drawLayer.getContext('2d').drawImage(state.currentStroke, 0, 0);
+      state.currentStroke.getContext('2d').clearRect(0, 0, state.width, state.height);
+    }
+  }
+  state.strokePoints = [];
+  state.bgSnap = null;
+  render();
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 function toggleDrawing() {
   if (!state.drawLayer) activateDrawLayer();
@@ -1146,6 +1329,7 @@ function initCanvasEvents() {
     const pos = getCanvasCoords(e);
     if (state.isDrawing && state.drawLayer) {
       state.lastDrawPos = pos;
+      beginStroke(pos.x, pos.y);
       drawAt(pos.x, pos.y);
     } else if (state.image) {
       if (state.selectedLayer >= 0 && hitTestResizeHandle(pos)) {
@@ -1196,13 +1380,14 @@ function initCanvasEvents() {
       if (state.selectedLayer >= 0) saveHistory();
     }
     state.lastDrawPos = null;
-    if (state.isDrawing) { saveHistory(); render(); }
+    if (state.isDrawing) { saveHistory(); endStroke(); }
   });
   state.canvas.addEventListener('touchstart', function(e) {
     if (state.isDrawing && state.drawLayer) {
       e.preventDefault();
       const pos = getCanvasCoords(e);
       state.lastDrawPos = pos;
+      beginStroke(pos.x, pos.y);
       drawAt(pos.x, pos.y);
     } else if (state.image) {
       const pos = getCanvasCoords(e);
@@ -1258,68 +1443,67 @@ function initCanvasEvents() {
       if (state.selectedLayer >= 0) saveHistory();
     }
     state.lastDrawPos = null;
-    if (state.isDrawing) { saveHistory(); render(); }
+    if (state.isDrawing) { saveHistory(); endStroke(); }
   });
 }
 
 function drawAt(x, y) {
   if (!state.drawLayer) return;
-  const ctx = state.drawLayer.getContext('2d');
   const size = parseInt(document.getElementById('brushSize').value);
   const color = document.getElementById('brushColor').value;
   const opacity = parseInt(document.getElementById('brushOpacity').value) / 100;
-  ctx.save();
-  ctx.globalAlpha = opacity;
-  if (state.drawTool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
-  ctx.beginPath();
-  if (state.drawTool === 'spray') {
-    for (let i=0; i<30; i++) {
+
+  if (state.drawTool === 'eraser') {
+    // Eraser: draw directly on drawLayer with destination-out
+    const ctx = state.drawLayer.getContext('2d');
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    scheduleRender();
+  } else if (state.drawTool === 'spray') {
+    // Spray: draw directly on drawLayer, scheduleRender for display
+    const ctx = state.drawLayer.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = color;
+    for (let i = 0; i < 30; i++) {
       const angle = Math.random() * 2 * Math.PI;
       const radius = Math.random() * size;
-      const sx = x + Math.cos(angle) * radius;
-      const sy = y + Math.sin(angle) * radius;
-      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(sx, sy, size * 0.3, 0, Math.PI*2);
+      ctx.arc(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, size * 0.3, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
+    scheduleRender();
   } else {
+    // Brush/Marker: draw initial dot on currentStroke, fast-composite for display
+    if (!state.currentStroke) return;
+    const ctx = state.currentStroke.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = opacity;
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, y, size/2, 0, Math.PI*2);
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+    scheduleFastPaint();
   }
-  ctx.restore();
-  render();
 }
 
 function drawLine(x1, y1, x2, y2) {
   if (!state.drawLayer) return;
-  const ctx = state.drawLayer.getContext('2d');
   const size = parseInt(document.getElementById('brushSize').value);
   const color = document.getElementById('brushColor').value;
   const opacity = parseInt(document.getElementById('brushOpacity').value) / 100;
-  ctx.save();
-  ctx.globalAlpha = opacity;
-  if (state.drawTool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
-  if (state.drawTool === 'spray') {
-    const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
-    const steps = Math.max(1, Math.floor(dist / 2));
-    for (let s=0; s<=steps; s++) {
-      const t = s/steps;
-      const x = x1 + (x2-x1)*t;
-      const y = y1 + (y2-y1)*t;
-      for (let i=0; i<10; i++) {
-        const angle = Math.random() * 2 * Math.PI;
-        const radius = Math.random() * size;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x + Math.cos(angle)*radius, y + Math.sin(angle)*radius, size*0.3, 0, Math.PI*2);
-        ctx.fill();
-      }
-    }
-  } else {
-    ctx.strokeStyle = color;
+
+  if (state.drawTool === 'eraser') {
+    // Eraser: straight lineTo on drawLayer with destination-out is fine
+    const ctx = state.drawLayer.getContext('2d');
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
     ctx.lineWidth = size;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -1327,9 +1511,80 @@ function drawLine(x1, y1, x2, y2) {
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
+    ctx.restore();
+    scheduleRender();
+    return;
+  }
+
+  if (state.drawTool === 'spray') {
+    // Spray: interpolate dots along segment, draw on drawLayer
+    const ctx = state.drawLayer.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    const dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+    const steps = Math.max(1, Math.floor(dist / 3));
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      const sx = x1 + (x2 - x1) * t;
+      const sy = y1 + (y2 - y1) * t;
+      for (let i = 0; i < 8; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const radius = Math.random() * size;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(sx + Math.cos(angle) * radius, sy + Math.sin(angle) * radius, size * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+    scheduleRender();
+    return;
+  }
+
+  // ── Brush / Marker ────────────────────────────────────────────────────────
+  // Accumulate points in strokePoints, then redraw the whole current stroke
+  // on currentStroke using quadratic Bézier midpoints for smooth curves.
+  // This avoids any call to render() during the stroke; fastPaint() composites
+  // bgSnap + currentStroke in a single requestAnimationFrame.
+  if (!state.currentStroke) return;
+  const pts = state.strokePoints;
+  pts.push({x: x2, y: y2});
+
+  const ctx = state.currentStroke.getContext('2d');
+  ctx.clearRect(0, 0, state.width, state.height);
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = size;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (pts.length === 1) {
+    ctx.beginPath();
+    ctx.arc(pts[0].x, pts[0].y, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (pts.length === 2) {
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[1].x, pts[1].y);
+    ctx.stroke();
+  } else {
+    // Smooth curve: use midpoints between consecutive points as anchors,
+    // and each actual sampled point as the quadratic control point.
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i].x + pts[i + 1].x) / 2;
+      const my = (pts[i].y + pts[i + 1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+    }
+    const last = pts[pts.length - 1];
+    ctx.lineTo(last.x, last.y);
+    ctx.stroke();
   }
   ctx.restore();
-  render();
+  scheduleFastPaint();
 }
 
 function applyPortrait(type) {
@@ -1409,8 +1664,9 @@ function applyPortrait(type) {
 
 function applyFrame(idx) {
   state.frameStyle = FRAMES[idx];
-  document.querySelectorAll('.frame-item').forEach(b => b.classList.remove('active'));
-  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  document.querySelectorAll('.frame-item').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+  });
   render();
 }
 
@@ -1423,8 +1679,9 @@ function removeFrame() {
 let selectedCollage = null;
 function selectCollage(idx) {
   selectedCollage = idx;
-  document.querySelectorAll('.collage-item').forEach(b => b.classList.remove('active'));
-  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  document.querySelectorAll('.collage-item').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+  });
 }
 
 function loadCollageImages(files) {
@@ -1490,8 +1747,9 @@ function toggleAnimation(type) {
     return;
   }
   state.animType = type;
-  document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
-  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  document.querySelectorAll('.anim-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick') === `toggleAnimation('${type}')`);
+  });
   animateLoop();
 }
 
@@ -1502,6 +1760,8 @@ function animateLoop() {
   if (state.animType) {
     if (state.animType === 'sparkles' || state.animType === 'hearts' || state.animType === 'stars') {
       drawParticles();
+    } else if (state.animType === 'bubbles') {
+      drawBubbles();
     } else if (state.animType === 'rainbow') {
       drawRainbow();
     } else if (state.animType === 'glitch') {
@@ -1525,6 +1785,32 @@ function drawParticles() {
     const alpha = 0.3 + Math.sin(state.time * 3 + i) * 0.3;
     ctx.globalAlpha = Math.max(0, alpha);
     ctx.fillText(emoji, x, y);
+  }
+  ctx.restore();
+}
+
+function drawBubbles() {
+  const ctx = state.ctx;
+  const w = state.canvas.width, h = state.canvas.height;
+  ctx.save();
+  for (let i = 0; i < 10; i++) {
+    const seed = i * 137.5;
+    const x = (seed * 31 + state.time * 15) % w;
+    const y = h - ((state.time * 25 + seed * 47) % (h + 40));
+    const r = 8 + (seed % 20);
+    const alpha = 0.15 + Math.sin(state.time * 2 + i) * 0.1;
+    ctx.globalAlpha = Math.max(0.05, alpha);
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `hsl(${(state.time * 40 + i * 36) % 360}, 80%, 70%)`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Shine dot
+    ctx.globalAlpha = Math.max(0, alpha * 0.6);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.2, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -1568,6 +1854,29 @@ function stopAnimation() {
 
 function uploadAnimation(file) {
   if (!file) return;
+  // GIF/WebP: add as an image_sticker layer (browser will animate it in drawImage)
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const layer = {
+        type: 'image_sticker',
+        img: img,
+        x: state.width / 2,
+        y: state.height / 2,
+        w: Math.min(img.naturalWidth || 200, state.width * 0.4),
+        h: Math.min(img.naturalHeight || 200, state.height * 0.4)
+      };
+      state.layers.push(layer);
+      saveHistory();
+      render();
+      flash('GIF-стикер добавлен');
+    };
+    img.onerror = function() { flash('Не удалось загрузить анимацию'); };
+    img.src = e.target.result;
+  };
+  reader.onerror = function() { flash('Ошибка чтения файла'); };
+  reader.readAsDataURL(file);
 }
 
 function exportAnimated() {
@@ -1641,9 +1950,26 @@ function resetAll() {
   state.layers = [];
   state.frameStyle = null;
   state.drawLayer = null;
+  state.drawing = false;
+  state.isDrawing = false;
   state.collageImages = [];
+  state.selectedLayer = -1;
+  state.animType = null;
+  if (state.animFrame) { cancelAnimationFrame(state.animFrame); state.animFrame = null; }
+  // Reset slider DOM elements to match reset state
+  ['brightness','contrast','saturate','exposure','sharpness','shadows','highlights','temp','tint','noise','vignette'].forEach(id => {
+    const el = document.getElementById('adj' + id.charAt(0).toUpperCase() + id.slice(1));
+    const valEl = document.getElementById('adj' + id.charAt(0).toUpperCase() + id.slice(1) + 'Val');
+    if (el) { el.value = 0; }
+    if (valEl) { valEl.textContent = '0'; }
+  });
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.filter-btn')?.classList.add('active'); // re-activate "none"
   document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('drawToggle').textContent = 'Рисовать';
+  state.canvas.style.cursor = 'default';
+  updateTextList();
   setupCanvas();
   saveHistory();
 }
@@ -1680,13 +2006,13 @@ function publishPhoto() {
       .then(res => res.json())
       .then(data => {
         if (data.status === 'ok') window.location.href = '{{ url_for("index") }}';
-        else alert('Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+        else showToast('Ошибка: ' + (data.message || 'Неизвестная ошибка'), 'error');
       })
-      .catch(err => { alert('Ошибка: ' + err); });
+      .catch(err => { showToast('Ошибка: ' + err, 'error'); });
     return;
   }
   
-  if (RETURN_URL && (target === 'feed' || target === 'story')) {
+  if (RETURN_URL && target === 'feed') {
     sessionStorage.setItem('editor_photo', dataUrl);
     window.location.href = RETURN_URL;
     return;
@@ -1703,8 +2029,8 @@ function publishPhoto() {
   else if (target === 'draft') url = '{{ url_for("create") }}?draft=1';
   
   fetch(url, { method: 'POST', body: formData })
-    .then(res => { if (res.ok) window.location.href = '{{ url_for("index") }}'; else alert('Ошибка ' + res.status); })
-    .catch(err => { alert('Ошибка: ' + err); });
+    .then(res => { if (res.ok) window.location.href = '{{ url_for("index") }}'; else showToast('Ошибка ' + res.status, 'error'); })
+    .catch(err => { showToast('Ошибка: ' + err, 'error'); });
 }
 
 function generateThumbs() {
@@ -1815,5 +2141,31 @@ if (fi) {
 } else {
   console.error('[editor] fileInput not found!');
 }
+
+// Drag-and-drop support on the upload zone and canvas wrap
+(function() {
+  const zones = [document.getElementById('uploadZone'), document.getElementById('canvasWrap')];
+  zones.forEach(function(zone) {
+    if (!zone) return;
+    zone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.style.opacity = '0.7';
+    });
+    zone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      zone.style.opacity = '';
+    });
+    zone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.style.opacity = '';
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadFile(file);
+      }
+    });
+  });
+})();
 </script>
 {% endblock %}

@@ -103,7 +103,8 @@ def register_routes(app):
         try:
             Message.query.filter_by(sender=other_user, recipient=current_user, read=False).update({'read': True})
             db.session.commit()
-        except:
+        except Exception as e:
+            current_app.logger.warning("mark-as-read failed: %s", e)
             db.session.rollback()
 
         if request.method == 'POST':
@@ -161,6 +162,13 @@ def register_routes(app):
                     enqueue_webhook_dispatch(msg.id)
                     create_notification(other_user.id, current_user.id, 'message', message_id=msg.id)
                     current_app.logger.info(f"Message saved with media: {media_url}")
+                    # If recipient is a bot, trigger its command handler
+                    if other_user.is_bot and body:
+                        try:
+                            from helpers import handle_newsbot_command
+                            handle_newsbot_command(other_user, current_user, body)
+                        except Exception as _bot_err:
+                            current_app.logger.warning(f"Bot command handler: {_bot_err}")
                 except Exception as e:
                     current_app.logger.error(f"Message error: {e}", exc_info=True)
                     db.session.rollback()
@@ -1074,3 +1082,39 @@ def register_routes(app):
             return redirect(url_for('chat_view', chat_id=chat_id))
 
         return render_template('chat_edit.html', chat=chat, bg_data=chat.get_background_data() if chat else {})
+
+    @app.route('/api/contacts')
+    @login_required
+    def api_contacts():
+        from sqlalchemy import and_
+        from models import followers as followers_table
+        # users that follow current_user or current_user follows — approved only
+        following = User.query.join(
+            followers_table,
+            and_(
+                followers_table.c.follower_id == current_user.id,
+                followers_table.c.followed_id == User.id,
+                followers_table.c.status == 'approved'
+            )
+        ).all()
+        followers_list = User.query.join(
+            followers_table,
+            and_(
+                followers_table.c.followed_id == current_user.id,
+                followers_table.c.follower_id == User.id,
+                followers_table.c.status == 'approved'
+            )
+        ).all()
+        seen = set()
+        result = []
+        for u in following + followers_list:
+            if u.id not in seen:
+                seen.add(u.id)
+                from helpers import get_avatar_url
+                result.append({
+                    'id': u.id,
+                    'username': u.username,
+                    'avatar': get_avatar_url(u) or ''
+                })
+        return jsonify({'users': result})
+
