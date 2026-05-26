@@ -134,6 +134,7 @@
         let recordedChunks = [];
         let isRecording = false;
         let currentCamera = 'user';
+        let selectedFile = null;
         
         async function openCamera() {
             try {
@@ -174,11 +175,15 @@
             const btn = document.getElementById('recordBtn');
             if (!isRecording) {
                 recordedChunks = [];
-                mediaRecorder = new MediaRecorder(stream);
+                // Detect supported MIME type — Android records webm, iOS records mp4
+                const mimeType = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+                mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
                 mediaRecorder.ondataavailable = e => { if (e.data.size) recordedChunks.push(e.data); };
                 mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/mp4' });
-                    showPreview(new File([blob], 'video.mp4', { type: 'video/mp4' }));
+                    const actualType = mediaRecorder.mimeType || mimeType || 'video/webm';
+                    const ext = actualType.includes('mp4') ? 'mp4' : 'webm';
+                    const blob = new Blob(recordedChunks, { type: actualType });
+                    showPreview(new File([blob], `video.${ext}`, { type: actualType }));
                 };
                 mediaRecorder.start();
                 isRecording = true;
@@ -196,13 +201,19 @@
         }
         
         function showPreview(file) {
+            selectedFile = file;
             document.getElementById('cameraSection').classList.add('hidden');
             const container = document.getElementById('previewContainer');
             const img = document.getElementById('previewImg');
             const video = document.getElementById('previewVideo');
             const submitBtn = document.getElementById('submitBtn');
             const filtersPanel = document.getElementById('filtersPanel');
-            
+
+            // Warn if file is suspiciously large (>100MB) — will be slow on mobile
+            if (file.size > 100 * 1024 * 1024) {
+                showToast('Файл большой — загрузка может занять время', 'warning');
+            }
+
             container.classList.remove('hidden');
             if (file.type.startsWith('image/')) {
                 filtersPanel.classList.remove('hidden');
@@ -215,12 +226,9 @@
                 video.classList.remove('hidden');
                 video.src = URL.createObjectURL(file);
             }
+            // Enable button immediately — file object is stored, no async needed
             submitBtn.classList.remove('disabled');
             submitBtn.disabled = false;
-            
-            const reader = new FileReader();
-            reader.onload = () => { document.getElementById('mediaData').value = reader.result; };
-            reader.readAsDataURL(file);
         }
         
         function applyFilter(filter) {
@@ -231,20 +239,34 @@
         
         document.getElementById('storyForm').onsubmit = async function(e) {
             e.preventDefault();
+            if (!selectedFile) { showToast('Выберите фото или видео', 'warning'); return; }
+
             const btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = 'Публикация...';
-            
+
+            // Send file directly — no base64 conversion, 33% smaller payload, no race condition
             const formData = new FormData();
-            formData.append('media_data', document.getElementById('mediaData').value);
+            formData.append('media', selectedFile, selectedFile.name);
             const csrfInput = document.querySelector('input[name="csrf_token"]');
             if (csrfInput) formData.append('csrf_token', csrfInput.value);
-            
+
             try {
                 const resp = await fetch('{{ url_for("create_story") }}', { method: 'POST', body: formData });
-                if (resp.ok) window.location.href = '{{ url_for("index") }}';
-                else { showToast('Ошибка публикации', 'error'); btn.disabled = false; btn.textContent = 'Опубликовать'; }
-            } catch (err) { showToast(err.message, 'error'); btn.disabled = false; }
+                if (resp.ok) {
+                    window.location.href = '{{ url_for("index") }}';
+                } else {
+                    const errText = await resp.text().catch(() => '');
+                    const msg = errText && errText.length < 120 ? errText : 'Ошибка публикации (' + resp.status + ')';
+                    showToast(msg, 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Опубликовать';
+                }
+            } catch (err) {
+                showToast('Ошибка сети: ' + err.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Опубликовать';
+            }
         };
     </script>
 </body>

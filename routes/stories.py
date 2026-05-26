@@ -93,6 +93,8 @@ def register_routes(app):
                     )
                     db.session.add(story)
                     db.session.commit()
+                    for follower in get_approved_followers():
+                        create_notification(follower.id, current_user.id, 'new_story')
                     return redirect(url_for('index'))
                 else:
                     filename = secure_filename(f"{datetime.now().timestamp()}_{file.filename}")

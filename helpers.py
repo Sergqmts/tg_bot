@@ -35,7 +35,7 @@ def upload_to_cloudinary(file, folder='social'):
                 file,
                 folder=folder,
                 resource_type='auto',
-                timeout=30,
+                timeout=120,
             )
             return result['secure_url']
         except Exception as e:
