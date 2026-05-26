@@ -107,8 +107,9 @@ header.fixed.top-0 { display: none !important; }
     top: 10px;
     right: 10px;
     display: flex;
-    gap: 16px;
+    gap: 10px;
     z-index: 10;
+    align-items: center;
 }
 .shorts-view-nav a {
     color: #fff;
@@ -117,6 +118,20 @@ header.fixed.top-0 { display: none !important; }
     background: rgba(255,255,255,0.2);
     padding: 8px 16px;
     border-radius: 20px;
+}
+.shorts-view-mute-btn {
+    background: rgba(0,0,0,0.55);
+    border: none;
+    color: #fff;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    backdrop-filter: blur(4px);
 }
 .shorts-comments {
     position: absolute;
@@ -145,9 +160,10 @@ header.fixed.top-0 { display: none !important; }
     <a href="{{ url_for('shorts') }}" class="shorts-view-close">✕</a>
     <div class="shorts-view-nav">
         <a href="{{ url_for('explore') }}">Explore</a>
+        <button class="shorts-view-mute-btn" id="viewMuteBtn" onclick="toggleViewMute()" title="Звук">🔇</button>
     </div>
-    
-    <video class="shorts-view-video" src="{{ shorts.video_url }}" autoplay loop muted playsinline></video>
+
+    <video class="shorts-view-video" id="shortsViewVideo" src="{{ shorts.video_url }}" autoplay loop muted playsinline></video>
     
     <div class="shorts-view-sidebar">
         <form method="POST" action="{{ url_for('like_shorts', shorts_id=shorts.id) }}" class="shorts-view-action {% if current_user.is_authenticated and shorts.liked_by(current_user) %}liked{% endif %}">
@@ -197,4 +213,21 @@ header.fixed.top-0 { display: none !important; }
     </form>
     {% endif %}
 </div>
+<script>
+(function() {
+    var muted = localStorage.getItem('shorts_muted') !== 'false';
+    var video = document.getElementById('shortsViewVideo');
+    var btn = document.getElementById('viewMuteBtn');
+    video.muted = muted;
+    btn.textContent = muted ? '🔇' : '🔊';
+})();
+
+function toggleViewMute() {
+    var video = document.getElementById('shortsViewVideo');
+    var btn = document.getElementById('viewMuteBtn');
+    video.muted = !video.muted;
+    localStorage.setItem('shorts_muted', video.muted ? 'true' : 'false');
+    btn.textContent = video.muted ? '🔇' : '🔊';
+}
+</script>
 {% endblock %}
