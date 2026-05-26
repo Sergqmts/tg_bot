@@ -274,6 +274,7 @@ class Story(db.Model):
     user = db.relationship('User', backref='stories')
     reactions = db.relationship('StoryReaction', backref='story', lazy='dynamic', cascade='all, delete-orphan')
     comments = db.relationship('StoryComment', backref='story', lazy='dynamic', cascade='all, delete-orphan')
+    views = db.relationship('StoryView', backref='story', lazy='dynamic', cascade='all, delete-orphan')
     hidden_for = db.relationship('User', secondary=story_hidden, lazy='dynamic')
     
     def is_expired(self):
@@ -296,8 +297,18 @@ class StoryComment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     user = db.relationship('User', backref='story_comments')
+
+
+class StoryView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    story_id = db.Column(db.Integer, db.ForeignKey('story.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='story_views')
+    __table_args__ = (db.UniqueConstraint('story_id', 'user_id', name='unique_story_view'),)
 
 
 class Post(db.Model):

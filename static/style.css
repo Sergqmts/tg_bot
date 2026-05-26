@@ -439,6 +439,21 @@ img, video {
     text-align: center;
 }
 
+.story-views-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 20px;
+    white-space: nowrap;
+    pointer-events: none;
+    border: 1.5px solid rgba(255,255,255,0.3);
+}
+
 /* ===== STORY SKELETON / EMPTY STATE ===== */
 @keyframes shimmer {
     0%   { background-position: -200% 0; }

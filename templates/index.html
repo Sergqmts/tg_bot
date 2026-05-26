@@ -4,6 +4,36 @@
 <div class="feed">
     <div class="stories-bar glass" style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
         <div class="stories-scroll">
+            {% if my_story %}
+            <div class="story-item story-add-desktop" style="position:relative;">
+                <a href="{{ url_for('view_story', story_id=my_story.id) }}" class="story-ring" style="position:relative;">
+                    <div class="story-ring-inner">
+                        {% set avatar_url = get_avatar_url(current_user) %}
+                        {% if avatar_url %}
+                        <img src="{{ avatar_url }}" class="story-avatar-img">
+                        {% else %}
+                        <div class="story-avatar-placeholder">{{ current_user.username[0].upper() }}</div>
+                        {% endif %}
+                    </div>
+                    <span class="story-views-badge">👁 {{ my_story.views.count() }}</span>
+                </a>
+                <span class="story-username">Ваша</span>
+            </div>
+            <div class="story-item story-add-mobile" style="position:relative;">
+                <a href="{{ url_for('view_story', story_id=my_story.id) }}" class="story-ring" style="position:relative;">
+                    <div class="story-ring-inner">
+                        {% set avatar_url = get_avatar_url(current_user) %}
+                        {% if avatar_url %}
+                        <img src="{{ avatar_url }}" class="story-avatar-img">
+                        {% else %}
+                        <div class="story-avatar-placeholder">{{ current_user.username[0].upper() }}</div>
+                        {% endif %}
+                    </div>
+                    <span class="story-views-badge">👁 {{ my_story.views.count() }}</span>
+                </a>
+                <span class="story-username">Ваша</span>
+            </div>
+            {% else %}
             <div class="story-item story-add-desktop">
                 <a href="{{ url_for('create_story') }}" class="story-ring">
                     <div class="story-ring-inner">
@@ -20,6 +50,7 @@
                 </a>
                 <span class="story-username">Ваша</span>
             </div>
+            {% endif %}
             {% set other_stories = top_stories | selectattr('user_id', '!=', current_user.id) | list if top_stories else [] %}
             {% if other_stories %}
             {% for story in other_stories %}

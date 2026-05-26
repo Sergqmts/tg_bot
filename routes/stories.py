@@ -7,7 +7,7 @@ def register_routes(app):
     from datetime import datetime, timedelta
     from sqlalchemy import and_
     from extensions import db
-    from models import Story, StoryReaction, StoryComment, User, Message, followers
+    from models import Story, StoryReaction, StoryComment, StoryView, User, Message, followers
 
     def get_approved_followers():
         return User.query.join(followers, and_(
@@ -239,6 +239,18 @@ def register_routes(app):
         story = Story.query.get_or_404(story_id)
         if story.is_expired() and not story.is_saved and not (story.is_archived and story.user_id == current_user.id):
             abort(404)
+
+        # Записываем просмотр (только если не автор)
+        if story.user_id != current_user.id:
+            existing_view = StoryView.query.filter_by(story_id=story.id, user_id=current_user.id).first()
+            if not existing_view:
+                view = StoryView(story_id=story.id, user_id=current_user.id)
+                db.session.add(view)
+                try:
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
         reactions = story.reactions.all()
         comments = story.comments.order_by(StoryComment.created_at.desc()).all()
         user_stories = Story.query.filter(
@@ -247,4 +259,10 @@ def register_routes(app):
         ).order_by(Story.created_at.desc()).all()
         all_stories = [{'id': s.id} for s in user_stories]
         current_index = next((i for i, s in enumerate(user_stories) if s.id == story.id), 0)
-        return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories, current_index=current_index)
+
+        # Список просмотревших — только для автора истории
+        viewers = []
+        if story.user_id == current_user.id:
+            viewers = story.views.order_by(StoryView.viewed_at.desc()).all()
+
+        return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories, current_index=current_index, viewers=viewers)
