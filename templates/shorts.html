@@ -149,20 +149,17 @@ header.fixed.top-0 { display: none !important; }
     display: flex; align-items: center; justify-content: center;
     backdrop-filter: blur(4px);
 }
-.shorts-mute-btn {
-    position: fixed;
-    top: 12px; right: 12px;
-    z-index: 70;
-    background: rgba(0,0,0,0.5);
-    border: none; color: #fff;
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 17px;
-    backdrop-filter: blur(4px);
-    transition: background 0.2s;
+.shorts-sound-hint {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 60;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
 }
-.shorts-mute-btn:hover { background: rgba(0,0,0,0.72); }
 
 /* ── Follow button ── */
 .shorts-follow-btn {
@@ -296,12 +293,11 @@ header.fixed.top-0 { display: none !important; }
 </style>
 
 <div class="shorts-page">
-    <button class="shorts-mute-btn" id="shortsMuteBtn" title="Звук" onclick="toggleMute()">🔇</button>
-
     <div class="shorts-container" id="shortsContainer">
         {% for s in shorts_list %}
         <div class="shorts-item" id="shorts-{{ s.id }}" data-index="{{ loop.index0 }}" data-id="{{ s.id }}">
             <video src="{{ s.video_url }}" class="shorts-video" autoplay loop muted playsinline preload="none"></video>
+            <div class="shorts-sound-hint"></div>
 
             <a href="{{ url_for('index') }}" class="shorts-item-close">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -461,12 +457,26 @@ function showToast(msg, duration) {
 function csrf() { return document.getElementById('csrfToken').value; }
 
 // ── Mute ─────────────────────────────────────────────────────
-var _muted = localStorage.getItem('shorts_muted') !== 'false';
+// Default: sound ON. Browser forces initial autoplay to be muted,
+// first tap on the video unmutes (fulfilling the sound-on intent).
+var _muted = localStorage.getItem('shorts_muted') === 'true';
+var _soundHintTimer = null;
+
 function toggleMute() {
     _muted = !_muted;
     localStorage.setItem('shorts_muted', String(_muted));
     document.querySelectorAll('.shorts-video').forEach(function (v) { v.muted = _muted; });
-    document.getElementById('shortsMuteBtn').textContent = _muted ? '🔇' : '🔊';
+    // Show animated hint on current video
+    var items = document.querySelectorAll('.shorts-item');
+    if (items[_currentIndex]) {
+        var hint = items[_currentIndex].querySelector('.shorts-sound-hint');
+        if (hint) {
+            hint.textContent = _muted ? '🔇' : '🔊';
+            hint.style.opacity = '1';
+            clearTimeout(_soundHintTimer);
+            _soundHintTimer = setTimeout(function () { hint.style.opacity = '0'; }, 700);
+        }
+    }
 }
 
 // ── Playback ─────────────────────────────────────────────────
@@ -482,8 +492,6 @@ function playAt(idx) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('shortsMuteBtn').textContent = _muted ? '🔇' : '🔊';
-
     var container = document.getElementById('shortsContainer');
     if (!container) return;
 
@@ -502,6 +510,14 @@ document.addEventListener('DOMContentLoaded', function () {
         observer.observe(item);
     });
     playAt(0);
+
+    // ── Tap on video area to toggle mute ─────────────────────
+    container.querySelectorAll('.shorts-video').forEach(function (video) {
+        video.addEventListener('click', function (e) {
+            e.stopPropagation();
+            toggleMute();
+        });
+    });
 
     // ── Sidebar actions ───────────────────────────────────────
     container.addEventListener('click', function (e) {
