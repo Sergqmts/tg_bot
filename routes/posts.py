@@ -271,7 +271,7 @@ def register_routes(app):
                     import cloudinary.uploader
                     result = cloudinary.uploader.upload(
                         video, folder='shorts', resource_type='video',
-                        timeout=30
+                        timeout=120
                     )
                     return jsonify({
                         'public_id': result['public_id'],
