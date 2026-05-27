@@ -27,6 +27,7 @@ uvicorn==0.34.0
 starlette==0.46.0
 websockets==15.0
 requests==2.32.3
+sendgrid==6.11.0
 Pillow==11.1.0
 faster-whisper==1.2.1
 pytest==8.3.5
