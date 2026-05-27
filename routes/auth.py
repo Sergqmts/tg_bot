@@ -5,6 +5,7 @@ def register_routes(app):
     from models import User, RegistrationForm, LoginForm
     from authlib.integrations.flask_client import OAuth
     import secrets
+    from datetime import datetime, timedelta
 
     oauth = OAuth(app)
     google_client_id = app.config.get('GOOGLE_CLIENT_ID', '')
@@ -34,8 +35,8 @@ def register_routes(app):
                 send_welcome_dm(user)
             except Exception as e:
                 current_app.logger.warning(f"Welcome DM failed: {e}")
-            flash('Регистрация прошла успешно! Войдите в аккаунт.')
-            return redirect(url_for('login'))
+            login_user(user)
+            return redirect(url_for('onboarding'))
         return render_template('register.html', form=form)
 
     @app.route('/login', methods=['GET', 'POST'])
@@ -130,11 +131,60 @@ def register_routes(app):
         except Exception as e:
             current_app.logger.warning(f"Welcome DM (Google) failed: {e}")
         login_user(user)
-        flash(f'Добро пожаловать! Ваш username: {username}')
-        return redirect(url_for('index'))
+        return redirect(url_for('onboarding'))
 
     @app.route('/logout')
     @login_required
     def logout():
         logout_user()
         return redirect(url_for('index'))
+
+    # ── Восстановление пароля ──────────────────────────────────────────────
+
+    @app.route('/forgot-password', methods=['GET', 'POST'])
+    def forgot_password():
+        if current_user.is_authenticated:
+            return redirect(url_for('index'))
+        if request.method == 'POST':
+            email = request.form.get('email', '').strip()
+            user = User.query.filter_by(email=email).first()
+            if user:
+                token = secrets.token_urlsafe(32)
+                user.reset_token = token
+                user.reset_token_expires = datetime.utcnow() + timedelta(hours=24)
+                db.session.commit()
+                reset_url = url_for('reset_password', token=token, _external=True)
+                try:
+                    from helpers import send_password_reset_email
+                    send_password_reset_email(user, reset_url)
+                except Exception as e:
+                    current_app.logger.error(f"Reset email error: {e}")
+            # Всегда показываем одно и то же сообщение (защита от перебора)
+            flash('Если этот email зарегистрирован, мы отправили инструкции по сбросу пароля.')
+            return redirect(url_for('forgot_password'))
+        return render_template('forgot_password.html')
+
+    @app.route('/reset-password/<token>', methods=['GET', 'POST'])
+    def reset_password(token):
+        if current_user.is_authenticated:
+            return redirect(url_for('index'))
+        user = User.query.filter_by(reset_token=token).first()
+        if not user or not user.reset_token_expires or user.reset_token_expires < datetime.utcnow():
+            flash('Ссылка для сброса пароля недействительна или истекла.')
+            return redirect(url_for('forgot_password'))
+        if request.method == 'POST':
+            password = request.form.get('password', '')
+            confirm = request.form.get('confirm_password', '')
+            if len(password) < 6:
+                flash('Пароль должен содержать не менее 6 символов.')
+                return render_template('reset_password.html', token=token)
+            if password != confirm:
+                flash('Пароли не совпадают.')
+                return render_template('reset_password.html', token=token)
+            user.set_password(password)
+            user.reset_token = None
+            user.reset_token_expires = None
+            db.session.commit()
+            flash('Пароль успешно изменён. Войдите в аккаунт.')
+            return redirect(url_for('login'))
+        return render_template('reset_password.html', token=token)

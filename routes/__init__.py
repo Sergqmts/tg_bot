@@ -1,4 +1,5 @@
 from routes.auth import register_routes as register_auth_routes
+from routes.onboarding import register_routes as register_onboarding_routes
 from routes.posts import register_routes as register_post_routes
 from routes.profiles import register_routes as register_profile_routes
 from routes.stories import register_routes as register_story_routes
@@ -13,6 +14,7 @@ from routes.editor import register_routes as register_editor_routes
 
 def register_all_routes(app):
     register_auth_routes(app)
+    register_onboarding_routes(app)
     register_post_routes(app)
     register_profile_routes(app)
     register_story_routes(app)

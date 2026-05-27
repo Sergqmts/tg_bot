@@ -77,7 +77,41 @@
             </div>
         </div>
     </div>
-    
+
+    {% if current_user.is_authenticated and user.id == current_user.id and user.onboarding_done and profile_pct < 100 %}
+    <div id="profile-completion-banner" class="mt-4 p-4 rounded-2xl bg-gradient-to-r from-brand-start/10 to-brand-middle/10 border border-brand-middle/20 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {{ profile_pct }}%
+            </div>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Профиль заполнен на {{ profile_pct }}%</p>
+                <p class="text-xs text-slate-500 truncate">Заполни профиль полностью, чтобы тебя находили</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <a href="{{ url_for('edit_profile') }}" class="px-3 py-1.5 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-xl text-xs font-bold hover:shadow-md transition-all whitespace-nowrap">
+                Настроить
+            </a>
+            <button type="button" id="dismiss-completion-banner" class="w-7 h-7 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg leading-none">
+                ×
+            </button>
+        </div>
+    </div>
+    <script>
+    (function(){
+        var key = 'vibe_profile_hint_dismissed';
+        var banner = document.getElementById('profile-completion-banner');
+        if (localStorage.getItem(key)) { banner && banner.remove(); return; }
+        var btn = document.getElementById('dismiss-completion-banner');
+        if (btn) btn.addEventListener('click', function(){
+            localStorage.setItem(key, '1');
+            banner && banner.remove();
+        });
+    })();
+    </script>
+    {% endif %}
+
     {% if current_user.is_authenticated and user.id == current_user.id and linked_accounts %}
     <div class="linked-accounts-section" style="margin-top: 1rem; padding: 1rem; background: var(--bg-card); border-radius: 12px;">
         <div style="display: flex; align-items: center; gap: 0.75rem; overflow-x: auto; overflow-y: hidden; padding-bottom: 0.25rem; -webkit-overflow-scrolling: touch; scrollbar-width: none;" class="linked-accounts-scroll">
