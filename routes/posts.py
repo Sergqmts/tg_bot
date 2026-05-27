@@ -303,6 +303,8 @@ def register_routes(app):
                     'vivid': 'e_saturation:50',
                     'cool': 'e_hue:200',
                     'warm': 'e_hue:-10',
+                    'invert': 'e_negate',
+                    'sharp': 'e_contrast:50',
                 }
 
                 tx_parts = []
