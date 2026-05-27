@@ -326,8 +326,7 @@ def register_routes(app):
     @app.route('/sharts')
     def shorts():
         shorts_list = Shorts.query.order_by(Shorts.created_at.desc()).limit(20).all()
-        tracks = MusicTrack.query.order_by(MusicTrack.created_at.desc()).limit(20).all()
-        return render_template('shorts.html', shorts_list=shorts_list, tracks=tracks)
+        return render_template('shorts.html', shorts_list=shorts_list)
 
 
     @app.route('/shorts/create', methods=['GET', 'POST'])
@@ -402,8 +401,7 @@ def register_routes(app):
                 return redirect(url_for('create_shorts'))
 
         video_url = request.args.get('video_url')
-        tracks = MusicTrack.query.order_by(MusicTrack.created_at.desc()).all()
-        return render_template('create_shorts.html', tracks=tracks, video_url=video_url)
+        return render_template('create_shorts.html', video_url=video_url)
 
 
     @app.route('/shorts/<int:shorts_id>', methods=['GET', 'POST'])
