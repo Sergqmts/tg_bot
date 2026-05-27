@@ -776,23 +776,16 @@ async function startExport() {
     var recorder = new MediaRecorder(combined, { mimeType: mimeType, videoBitsPerSecond: 5000000 });
     var chunks = [];
     recorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
-    // НЕ стартуем recorder здесь — сначала запускаем видео
+    recorder.start(200);
 
     msgEl.textContent = 'Запись...';
     barEl.style.width = '10%';
 
     video.playbackRate = selectedSpeed;
-    // video уже на trimStart после seekTo выше — повторный seek убран
+    // video.currentTime уже = trimStart после seekTo выше — повторный seek убран
+    // (именно этот seek во время активной записи вызывал 2 глитч-кадра и баг аудио)
     await video.play();
     if (musicBuf) playMusic(0);
-
-    // Ждём первый реальный кадр (timeupdate = видео действительно воспроизводится)
-    // Только после этого стартуем запись — исключает глитч-кадры инициализации
-    await new Promise(function(resolve) {
-      var handler = function() { video.removeEventListener('timeupdate', handler); resolve(); };
-      video.addEventListener('timeupdate', handler);
-    });
-    recorder.start(200);
 
     var clipDuration = (trimEnd - trimStart) / selectedSpeed;
     var elapsed = 0;
