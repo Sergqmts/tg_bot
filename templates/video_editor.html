@@ -443,6 +443,7 @@ var rafId = null;
 var videoDuration = 0;
 var trimStart = 0;
 var trimEnd   = 0;
+var _activeObjectUrl = null; // удерживает blob-URL от GC браузера
 var selectedFilter = 'original';
 var selectedSpeed  = 1;
 var selectedAudioId  = null;
@@ -484,8 +485,11 @@ function onFileSelected(e) {
   if (f) loadFile(f);
 }
 function loadFile(file) {
-  var url = URL.createObjectURL(file);
-  video.src = url;
+  // Отзываем предыдущий URL и создаём новый, сохраняя ссылку в модульной
+  // переменной — иначе браузер GC удаляет File через ~5 мин → чёрный экран
+  if (_activeObjectUrl) { URL.revokeObjectURL(_activeObjectUrl); }
+  _activeObjectUrl = URL.createObjectURL(file);
+  video.src = _activeObjectUrl;
   video.load();
   video.onloadedmetadata = function() { onVideoLoaded(); };
 }
@@ -575,7 +579,11 @@ function generateThumbnails() {
   var octx = offscreen.getContext('2d');
   var i = 0;
   function nextThumb() {
-    if (i >= N) { video.currentTime = trimStart; return; }
+    if (i >= N) {
+      video.onseeked = null; // сбрасываем — иначе бесконечный цикл seek→handler→seek
+      video.currentTime = trimStart;
+      return;
+    }
     var t = (i / (N - 1)) * videoDuration;
     i++;
     video.onseeked = function() {
