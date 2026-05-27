@@ -313,7 +313,10 @@ def register_routes(app):
                 if effect and effect in filter_map and effect != 'original':
                     tx_parts.append(filter_map[effect])
                 if speed and speed != 1:
-                    tx_parts.append(f'e_accelerate:{speed}')
+                    # Cloudinary e_accelerate expects percentage: (speed - 1) * 100
+                    # e.g. 2x → 100, 1.5x → 50, 0.5x → -50
+                    accelerate_pct = int((speed - 1) * 100)
+                    tx_parts.append(f'e_accelerate:{accelerate_pct}')
 
                 audio_id = data.get('audio_id')
                 if audio_id:
