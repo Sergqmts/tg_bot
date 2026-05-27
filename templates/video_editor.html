@@ -759,11 +759,15 @@ async function startExport() {
     await seekTo(trimStart);
 
     var canvasStream = canvas.captureStream(30);
-    var audioDest    = audioCtx.createMediaStreamDestination();
-    videoGain.connect(audioDest);
-    if (musicGain) musicGain.connect(audioDest);
+    var allTracks = canvasStream.getVideoTracks();
 
-    var allTracks = canvasStream.getVideoTracks().concat(audioDest.stream.getAudioTracks());
+    if (audioCtx) {
+      var audioDest = audioCtx.createMediaStreamDestination();
+      videoGain.connect(audioDest);
+      if (musicGain) musicGain.connect(audioDest);
+      allTracks = allTracks.concat(audioDest.stream.getAudioTracks());
+    }
+
     var combined  = new MediaStream(allTracks);
 
     var mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']
