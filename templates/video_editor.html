@@ -1,416 +1,857 @@
 {% extends "base.html" %}
-{% block title %}Видеоредактор — Cloudinary{% endblock %}
+{% block title %}Видеоредактор{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-            <a href="{{ url_for('create_shorts') }}" class="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                <i class="fa-solid fa-arrow-left"></i>
-            </a>
-            <h1 class="text-xl font-bold">Видеоредактор</h1>
-            <span id="statusBadge" class="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">Cloudinary</span>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="previewVideoCloudinary()" id="previewBtn" disabled
-                class="px-3 py-2 rounded-2xl border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all disabled:opacity-50">
-                <i class="fa-solid fa-eye"></i> Предпросмотр
-            </button>
-            <button onclick="saveVideo()" id="saveBtn" disabled
-                class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-medium text-sm hover:shadow-lg transition-all disabled:opacity-50">
-                <i class="fa-solid fa-video"></i> Экспорт в Shorts
-            </button>
-        </div>
+<style>
+.ve-root {
+  display: flex;
+  height: calc(100vh - 60px);
+  background: #0f0f1a;
+  color: #eee;
+  position: fixed;
+  top: 60px; left: 0; right: 0;
+  overflow: hidden;
+}
+.ve-sidebar {
+  width: 68px;
+  background: #16213e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 2px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  border-right: 1px solid #1e2a4a;
+  z-index: 10;
+}
+.ve-tool-btn {
+  width: 52px; height: 52px;
+  border: none; background: transparent;
+  color: #8e8e9e; border-radius: 12px;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px; font-size: 9px;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+.ve-tool-btn:hover { background: rgba(255,255,255,.07); color: #fff; }
+.ve-tool-btn.active { background: #784BA0; color: #fff; }
+.ve-tool-btn .icon { font-size: 20px; }
+.ve-sidebar-sep { width: 40px; height: 1px; background: #1e2a4a; margin: 4px 0; }
+.ve-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.ve-canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f0f1a;
+  position: relative;
+  overflow: hidden;
+}
+#ve-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  position: absolute;
+  inset: 0;
+  transition: background .2s;
+}
+#ve-upload-zone:hover { background: rgba(120,75,160,.08); }
+#ve-upload-zone .upload-icon { font-size: 56px; opacity: .5; }
+#ve-upload-zone p { color: #8e8e9e; font-size: 15px; }
+#ve-upload-zone small { color: #555; font-size: 12px; }
+#ve-upload-zone.drag-over { background: rgba(120,75,160,.15); }
+#ve-canvas { display: none; object-fit: contain; max-width: 100%; max-height: 100%; }
+.ve-playback {
+  position: absolute;
+  bottom: 8px; left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15,15,26,.85);
+  padding: 6px 14px;
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+  z-index: 20;
+}
+.ve-playback.visible { display: flex; }
+.ve-play-btn {
+  width: 36px; height: 36px;
+  border: none; border-radius: 50%;
+  background: #784BA0; color: #fff; font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+}
+.ve-play-btn:hover { background: #9b6cc2; }
+.ve-time-label { font-size: 11px; color: #aaa; font-variant-numeric: tabular-nums; min-width: 70px; text-align: center; }
+.ve-timeline-wrap {
+  background: #12122a;
+  border-top: 1px solid #1e2a4a;
+  padding: 10px 12px 12px;
+  flex-shrink: 0;
+  display: none;
+}
+.ve-timeline-wrap.visible { display: block; }
+.ve-timeline-label {
+  font-size: 10px; color: #666;
+  margin-bottom: 6px;
+  display: flex; justify-content: space-between;
+}
+.ve-timeline {
+  position: relative;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1a2e;
+  cursor: crosshair;
+  user-select: none;
+}
+.ve-thumbnails {
+  display: flex;
+  height: 100%;
+  gap: 1px;
+  overflow: hidden;
+}
+.ve-thumbnails canvas {
+  flex: 1; height: 100%;
+}
+.ve-trim-overlay-left,
+.ve-trim-overlay-right {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(0,0,0,.6);
+  pointer-events: none;
+}
+.ve-trim-overlay-left { left: 0; }
+.ve-trim-overlay-right { right: 0; }
+.ve-playhead {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px; background: #fff;
+  pointer-events: none; z-index: 5;
+}
+.ve-playhead::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -4px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #fff;
+}
+.ve-handle {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 14px;
+  background: #FF3CAC;
+  cursor: ew-resize;
+  z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+.ve-handle::after { content: '|||'; color: rgba(255,255,255,.7); font-size: 9px; letter-spacing: -1px; }
+#ve-handle-start { border-radius: 4px 0 0 4px; }
+#ve-handle-end   { border-radius: 0 4px 4px 0; }
+.ve-panel {
+  width: 280px;
+  background: #16213e;
+  border-left: 1px solid #1e2a4a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ve-panel-content {
+  flex: 1; overflow-y: auto; padding: 14px;
+}
+.ve-panel-title {
+  font-size: 13px; font-weight: 600; color: #ccc;
+  margin-bottom: 12px; padding-bottom: 8px;
+  border-bottom: 1px solid #1e2a4a;
+  display: flex; align-items: center;
+}
+.ve-panel-section { margin-bottom: 18px; }
+.ve-panel-section-title { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+.ve-slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ve-slider-row label { min-width: 80px; font-size: 12px; color: #aaa; }
+.ve-slider-row input[type="range"] {
+  flex: 1; height: 3px;
+  -webkit-appearance: none;
+  background: #2a2a4a; border-radius: 2px; cursor: pointer;
+}
+.ve-slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  background: #784BA0; border-radius: 50%; cursor: pointer;
+}
+.ve-slider-row .val { min-width: 30px; text-align: right; font-size: 11px; color: #888; }
+.ve-filter-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.ve-filter-btn {
+  padding: 7px 4px; border: 2px solid transparent; border-radius: 8px;
+  background: #1a1a2e; color: #ccc; cursor: pointer;
+  text-align: center; font-size: 11px; transition: all .2s;
+}
+.ve-filter-btn:hover { border-color: #784BA0; }
+.ve-filter-btn.active { border-color: #FF3CAC; background: rgba(255,60,172,.1); color: #fff; }
+.ve-speed-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ve-speed-btn {
+  padding: 6px 2px; border: 2px solid transparent; border-radius: 8px;
+  background: #1a1a2e; color: #ccc; cursor: pointer;
+  text-align: center; font-size: 11px; transition: all .2s;
+}
+.ve-speed-btn:hover { border-color: #784BA0; }
+.ve-speed-btn.active { border-color: #FF3CAC; background: rgba(255,60,172,.1); color: #fff; }
+.ve-audio-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  transition: all .2s; font-size: 12px; margin-bottom: 4px;
+  border: 1px solid transparent;
+}
+.ve-audio-item:hover { background: #1a1a2e; }
+.ve-audio-item.active { background: rgba(120,75,160,.2); border-color: #784BA0; color: #fff; }
+.ve-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; background: #16213e;
+  border-bottom: 1px solid #1e2a4a;
+  position: fixed; top: 60px; left: 0; right: 0;
+  z-index: 100; height: 49px;
+}
+.ve-topbar-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.ve-back-btn {
+  width: 32px; height: 32px;
+  border: none; border-radius: 8px;
+  background: transparent; color: #aaa;
+  cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.ve-back-btn:hover { background: rgba(255,255,255,.07); color: #fff; }
+.ve-status-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; background: #1a1a2e; color: #666; }
+.ve-status-badge.ok { background: rgba(16,185,129,.1); color: #10b981; }
+.ve-export-btn {
+  padding: 8px 16px; border: none; border-radius: 12px;
+  background: linear-gradient(90deg, #FF3CAC, #784BA0, #2B86C5);
+  color: #fff; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: opacity .2s;
+}
+.ve-export-btn:hover { opacity: .85; }
+.ve-export-btn:disabled { opacity: .4; cursor: not-allowed; }
+.ve-export-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.8); z-index: 9999;
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
+}
+.ve-export-overlay.visible { display: flex; }
+.ve-export-overlay p { color: #eee; font-size: 16px; }
+.ve-progress-bar-wrap { width: 280px; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+.ve-progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, #FF3CAC, #784BA0); border-radius: 3px; transition: width .3s; }
+@media (max-width: 768px) {
+  .ve-root { flex-direction: column; }
+  .ve-sidebar { width: 100%; height: 56px; flex-direction: row; padding: 4px 8px; overflow-x: auto; border-right: none; border-bottom: 1px solid #1e2a4a; }
+  .ve-tool-btn { width: 48px; height: 48px; font-size: 8px; flex-shrink: 0; }
+  .ve-tool-btn .icon { font-size: 18px; }
+  .ve-center { flex: 1; min-height: 0; }
+  .ve-panel { width: 100%; position: fixed; left: 0; right: 0; bottom: -100%; height: 50vh; border-left: none; border-top: 1px solid #1e2a4a; border-radius: 20px 20px 0 0; transition: bottom .3s ease; z-index: 200; }
+  .ve-panel.open { bottom: 0; }
+  .ve-panel::before { content: ''; display: block; width: 40px; height: 4px; background: #333; border-radius: 2px; margin: 8px auto 0; }
+}
+</style>
+
+<div class="ve-export-overlay" id="ve-export-overlay">
+  <p id="ve-export-msg">Экспортирование...</p>
+  <div class="ve-progress-bar-wrap"><div class="ve-progress-bar" id="ve-progress-bar"></div></div>
+  <small style="color:#aaa;" id="ve-export-sub">Запись видео...</small>
+</div>
+
+<div class="ve-topbar">
+  <div class="ve-topbar-title">
+    <button class="ve-back-btn" onclick="window.history.back()"><i class="fa-solid fa-arrow-left"></i></button>
+    Видеоредактор
+    <span class="ve-status-badge" id="ve-status">Без файла</span>
+  </div>
+  <button class="ve-export-btn" id="ve-export-btn" disabled onclick="startExport()">
+    <i class="fa-solid fa-video"></i> Экспорт в Shorts
+  </button>
+</div>
+
+<div class="ve-root" style="margin-top:49px; height:calc(100vh - 109px);">
+
+  <div class="ve-sidebar">
+    <button class="ve-tool-btn active" data-tool="timeline" onclick="switchTool('timeline')">
+      <span class="icon"><i class="fa-solid fa-film"></i></span>Timeline
+    </button>
+    <button class="ve-tool-btn" data-tool="audio" onclick="switchTool('audio')">
+      <span class="icon"><i class="fa-solid fa-music"></i></span>Аудио
+    </button>
+    <button class="ve-tool-btn" data-tool="filters" onclick="switchTool('filters')">
+      <span class="icon"><i class="fa-solid fa-palette"></i></span>Фильтры
+    </button>
+    <button class="ve-tool-btn" data-tool="speed" onclick="switchTool('speed')">
+      <span class="icon"><i class="fa-solid fa-gauge-high"></i></span>Скорость
+    </button>
+    <div class="ve-sidebar-sep"></div>
+  </div>
+
+  <div class="ve-center">
+    <div class="ve-canvas-wrap" id="ve-canvas-wrap">
+      <div id="ve-upload-zone"
+           onclick="document.getElementById('ve-file-input').click()"
+           ondragover="onDragOver(event)"
+           ondragleave="onDragLeave(event)"
+           ondrop="onDrop(event)">
+        <div class="upload-icon">&#127916;</div>
+        <p>Нажмите или перетащите видео</p>
+        <small>MP4, WebM, MOV, AVI</small>
+        <input type="file" id="ve-file-input" accept="video/*" style="display:none" onchange="onFileSelected(event)">
+      </div>
+      <canvas id="ve-canvas"></canvas>
+      <div class="ve-playback" id="ve-playback">
+        <button class="ve-play-btn" id="ve-play-btn" onclick="togglePlay()">
+          <i class="fa-solid fa-play" id="ve-play-icon"></i>
+        </button>
+        <span class="ve-time-label" id="ve-time-label">0:00 / 0:00</span>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="lg:col-span-2">
-            <div id="uploadZone"
-                class="glass rounded-2xl flex flex-col items-center justify-center p-8 min-h-[400px] border-2 border-dashed border-slate-300 dark:border-slate-600 cursor-pointer hover:border-brand-middle transition-all"
-                onclick="document.getElementById('videoInput').click()">
-                <i class="fa-solid fa-cloud-upload-alt text-5xl text-slate-300 dark:text-slate-600 mb-4"></i>
-                <p class="text-lg font-medium text-slate-500">Нажмите или перетащите видео</p>
-                <p class="text-sm text-slate-400 mt-1">MP4, WebM, MOV — загружается в Cloudinary</p>
-                <input type="file" id="videoInput" accept="video/*" class="hidden">
-            </div>
-            <div id="previewArea" class="hidden">
-                <div class="glass rounded-2xl overflow-hidden bg-black">
-                    <video id="previewVideo" class="w-full max-h-[500px] mx-auto" controls playsinline></video>
-                </div>
-                <div id="uploadProgress" class="hidden mt-2 text-sm text-center text-slate-400">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Загрузка в Cloudinary...
-                </div>
-            </div>
-        </div>
-
-        <div class="space-y-3">
-            <div class="glass rounded-2xl p-4">
-                <h3 class="font-semibold text-sm mb-3">Инструменты</h3>
-                <div class="space-y-1">
-                    <button onclick="togglePanel('trimPanel')"
-                        class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-scissors text-slate-400"></i> Обрезка
-                    </button>
-                    <button onclick="togglePanel('filterPanel')"
-                        class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-palette text-slate-400"></i> Фильтры
-                    </button>
-                    <button onclick="togglePanel('speedPanel')"
-                        class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-gauge-high text-slate-400"></i> Скорость
-                    </button>
-                    <button onclick="togglePanel('audioPanel')"
-                        class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-music text-slate-400"></i> Аудио
-                    </button>
-                </div>
-            </div>
-
-            <div id="trimPanel" class="panel-content hidden glass rounded-2xl p-4">
-                <h3 class="font-semibold text-sm mb-3">Обрезка</h3>
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-xs text-slate-400">Начало: <span id="trimStartLabel">0:00</span></label>
-                        <input type="range" id="trimStart" min="0" max="100" value="0" class="w-full">
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-400">Конец: <span id="trimEndLabel">0:00</span></label>
-                        <input type="range" id="trimEnd" min="0" max="100" value="100" class="w-full">
-                    </div>
-                    <p class="text-xs text-slate-400 text-center">Длительность: <span id="trimDurationLabel">0:00</span></p>
-                </div>
-            </div>
-
-            <div id="filterPanel" class="panel-content hidden glass rounded-2xl p-4">
-                <h3 class="font-semibold text-sm mb-3">Фильтры</h3>
-                <div class="grid grid-cols-2 gap-2">
-                    {% set filters = [
-                        ('original', 'Оригинал'), ('grayscale', 'Ч/Б'), ('sepia', 'Сепия'),
-                        ('vintage', 'Винтаж'), ('cinematic', 'Кино'), ('vivid', 'Яркий'),
-                        ('cool', 'Холодный'), ('warm', 'Тёплый')
-                    ] %}
-                    {% for key, label in filters %}
-                    <button onclick="selectFilter('{{ key }}')"
-                        class="filter-btn px-3 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all {% if key == 'original' %}bg-brand-middle text-white border-brand-middle{% endif %}"
-                        data-filter="{{ key }}">{{ label }}</button>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div id="speedPanel" class="panel-content hidden glass rounded-2xl p-4">
-                <h3 class="font-semibold text-sm mb-3">Скорость</h3>
-                <div class="grid grid-cols-5 gap-1">
-                    {% set speeds = [(0.25, '0.25x'), (0.5, '0.5x'), (1, '1x'), (1.5, '1.5x'), (2, '2x')] %}
-                    {% for val, label in speeds %}
-                    <button onclick="selectSpeed({{ val }})"
-                        class="speed-btn px-2 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all {% if val == 1 %}bg-brand-middle text-white border-brand-middle{% endif %}"
-                        data-speed="{{ val }}">{{ label }}</button>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div id="audioPanel" class="panel-content hidden glass rounded-2xl p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-semibold text-sm">Аудио</h3>
-                    <button onclick="document.getElementById('audioUpload').click()"
-                        class="text-xs px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Загрузить</button>
-                    <input type="file" id="audioUpload" accept="audio/*" class="hidden">
-                </div>
-                <div class="space-y-1 max-h-[160px] overflow-y-auto" id="audioList">
-                    {% for track in tracks %}
-                    <div class="audio-item flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-all text-sm"
-                        data-id="{{ track.id }}" data-url="{{ track.preview_url or track.file_url }}" data-title="{{ track.title }}">
-                        <span><i class="fa-solid fa-music text-slate-400 mr-2"></i>{{ track.title }}{% if track.artist %} — {{ track.artist }}{% endif %}</span>
-                        <span class="text-xs text-slate-400">{{ track.duration }}с</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                <div id="selectedAudioInfo" class="hidden mt-2 text-xs text-green-500 flex items-center gap-1">
-                    <i class="fa-solid fa-check-circle"></i> <span id="selectedAudioName"></span>
-                </div>
-            </div>
-        </div>
+    <div class="ve-timeline-wrap" id="ve-timeline-wrap">
+      <div class="ve-timeline-label">
+        <span id="tl-start-label">0:00</span>
+        <span style="color:#555;">Перетащите ручки для обрезки</span>
+        <span id="tl-end-label">0:00</span>
+      </div>
+      <div class="ve-timeline" id="ve-timeline">
+        <div class="ve-thumbnails" id="ve-thumbnails"></div>
+        <div class="ve-trim-overlay-left" id="tl-overlay-left"></div>
+        <div class="ve-trim-overlay-right" id="tl-overlay-right"></div>
+        <div class="ve-playhead" id="ve-playhead"></div>
+        <div class="ve-handle" id="ve-handle-start" onpointerdown="startDrag(event,'start')"></div>
+        <div class="ve-handle" id="ve-handle-end"   onpointerdown="startDrag(event,'end')"></div>
+      </div>
     </div>
+  </div>
+
+  <div class="ve-panel" id="ve-panel">
+    <div class="ve-panel-content" id="ve-panel-content">
+
+      <div id="panel-timeline">
+        <div class="ve-panel-title"><i class="fa-solid fa-film" style="margin-right:8px;color:#784BA0;"></i>Timeline</div>
+        <div class="ve-panel-section">
+          <div class="ve-panel-section-title">Обрезка</div>
+          <div class="ve-slider-row"><label>Начало</label><span class="val" id="trim-start-val">0:00</span></div>
+          <div class="ve-slider-row"><label>Конец</label><span class="val" id="trim-end-val">0:00</span></div>
+          <div class="ve-slider-row"><label>Длительность</label><span class="val" id="trim-dur-val">0:00</span></div>
+        </div>
+        <div class="ve-panel-section">
+          <div class="ve-panel-section-title">Подсказка</div>
+          <p style="font-size:11px;color:#555;line-height:1.5;">Перетащите розовые ручки на timeline. Нажмите &#9654; для воспроизведения. Нажмите на timeline для перемотки.</p>
+        </div>
+      </div>
+
+      <div id="panel-audio" style="display:none;">
+        <div class="ve-panel-title"><i class="fa-solid fa-music" style="margin-right:8px;color:#784BA0;"></i>Аудио</div>
+        <div class="ve-panel-section">
+          <div class="ve-panel-section-title">Громкость</div>
+          <div class="ve-slider-row">
+            <label>Оригинал</label>
+            <input type="range" id="ve-orig-vol" min="0" max="100" value="100" oninput="setOrigVolume(this.value)">
+            <span class="val" id="orig-vol-val">100%</span>
+          </div>
+          <div class="ve-slider-row">
+            <label>Музыка</label>
+            <input type="range" id="ve-music-vol" min="0" max="100" value="80" oninput="setMusicVolume(this.value)">
+            <span class="val" id="music-vol-val">80%</span>
+          </div>
+        </div>
+        <div class="ve-panel-section">
+          <div class="ve-panel-section-title">Треки</div>
+          <div id="ve-audio-list">
+            {% for track in tracks %}
+            <div class="ve-audio-item" data-id="{{ track.id }}"
+                 data-url="{{ track.preview_url or track.file_url }}"
+                 data-title="{{ track.title }}"
+                 onclick="selectAudio(this)">
+              <span><i class="fa-solid fa-music" style="color:#784BA0;margin-right:6px;"></i>{{ track.title }}{% if track.artist %} — {{ track.artist }}{% endif %}</span>
+              <span style="color:#555;font-size:10px;">{{ track.duration }}с</span>
+            </div>
+            {% else %}
+            <p style="color:#555;font-size:12px;text-align:center;padding:16px 0;">Треки не добавлены</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div id="panel-filters" style="display:none;">
+        <div class="ve-panel-title"><i class="fa-solid fa-palette" style="margin-right:8px;color:#784BA0;"></i>Фильтры</div>
+        <div class="ve-filter-grid">
+          <button class="ve-filter-btn active" data-filter="original" onclick="selectFilter(this,'original')">Оригинал</button>
+          <button class="ve-filter-btn" data-filter="grayscale" onclick="selectFilter(this,'grayscale')">Ч/Б</button>
+          <button class="ve-filter-btn" data-filter="sepia" onclick="selectFilter(this,'sepia')">Сепия</button>
+          <button class="ve-filter-btn" data-filter="vintage" onclick="selectFilter(this,'vintage')">Винтаж</button>
+          <button class="ve-filter-btn" data-filter="cinematic" onclick="selectFilter(this,'cinematic')">Кино</button>
+          <button class="ve-filter-btn" data-filter="vivid" onclick="selectFilter(this,'vivid')">Яркий</button>
+          <button class="ve-filter-btn" data-filter="cool" onclick="selectFilter(this,'cool')">Холодный</button>
+          <button class="ve-filter-btn" data-filter="warm" onclick="selectFilter(this,'warm')">Тёплый</button>
+          <button class="ve-filter-btn" data-filter="invert" onclick="selectFilter(this,'invert')">Инверсия</button>
+          <button class="ve-filter-btn" data-filter="sharp" onclick="selectFilter(this,'sharp')">Контраст</button>
+        </div>
+      </div>
+
+      <div id="panel-speed" style="display:none;">
+        <div class="ve-panel-title"><i class="fa-solid fa-gauge-high" style="margin-right:8px;color:#784BA0;"></i>Скорость</div>
+        <div class="ve-panel-section">
+          <div class="ve-panel-section-title">Скорость воспроизведения</div>
+          <div class="ve-speed-grid">
+            <button class="ve-speed-btn" data-speed="0.5" onclick="selectSpeed(this,0.5)">0.5x</button>
+            <button class="ve-speed-btn active" data-speed="1" onclick="selectSpeed(this,1)">1x</button>
+            <button class="ve-speed-btn" data-speed="1.5" onclick="selectSpeed(this,1.5)">1.5x</button>
+            <button class="ve-speed-btn" data-speed="2" onclick="selectSpeed(this,2)">2x</button>
+          </div>
+        </div>
+        <div class="ve-panel-section">
+          <p style="font-size:11px;color:#555;line-height:1.5;">Скорость влияет на воспроизведение и результат экспорта.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <script>
-let publicId = null;
-let version = null;
-let originalUrl = null;
-let videoDuration = 0;
-let selectedFilter = 'original';
-let selectedSpeed = 1;
-let selectedAudioId = null;
-let isPreviewing = false;
+// STATE
+var video = document.createElement('video');
+video.crossOrigin = 'anonymous';
+video.playsInline = true;
+video.muted = false;
 
-const videoInput = document.getElementById('videoInput');
-const uploadZone = document.getElementById('uploadZone');
-const previewArea = document.getElementById('previewArea');
-const previewVideo = document.getElementById('previewVideo');
-const uploadProgress = document.getElementById('uploadProgress');
-const saveBtn = document.getElementById('saveBtn');
-const previewBtn = document.getElementById('previewBtn');
+var canvas = document.getElementById('ve-canvas');
+var ctx = canvas.getContext('2d');
 
-videoInput.addEventListener('change', function() {
-    if (this.files && this.files[0]) uploadVideo(this.files[0]);
-});
+var isPlaying = false;
+var rafId = null;
+var videoDuration = 0;
+var trimStart = 0;
+var trimEnd   = 0;
+var _activeObjectUrl = null; // удерживает blob-URL от GC браузера
+var selectedFilter = 'original';
+var selectedSpeed  = 1;
+var selectedAudioId  = null;
+var selectedAudioUrl = null;
 
-uploadZone.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    this.classList.add('border-brand-middle');
-});
-uploadZone.addEventListener('dragleave', function(e) {
-    e.preventDefault();
-    this.classList.remove('border-brand-middle');
-});
-uploadZone.addEventListener('drop', function(e) {
-    e.preventDefault();
-    this.classList.remove('border-brand-middle');
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) uploadVideo(e.dataTransfer.files[0]);
-});
+// WebAudio
+var audioCtx = null;
+var videoSrc = null;
+var videoGain = null;
+var musicBuf  = null;
+var musicSrc  = null;
+var musicGain = null;
 
-async function uploadVideo(file) {
-    const formData = new FormData();
-    formData.append('video', file);
-    uploadProgress.classList.remove('hidden');
-    uploadZone.classList.add('hidden');
-    previewArea.classList.remove('hidden');
-    saveBtn.disabled = true;
-    previewBtn.disabled = true;
+// Filter map
+var FILTERS = {
+  original:   '',
+  grayscale:  'grayscale(1)',
+  sepia:      'sepia(0.85)',
+  vintage:    'sepia(0.45) contrast(0.85) brightness(0.9)',
+  cinematic:  'contrast(1.25) brightness(0.8) saturate(1.3)',
+  vivid:      'contrast(1.1) saturate(1.6) brightness(1.05)',
+  cool:       'hue-rotate(200deg) saturate(0.75)',
+  warm:       'sepia(0.3) saturate(1.3) hue-rotate(-10deg)',
+  invert:     'invert(1)',
+  sharp:      'contrast(1.5) saturate(0.9)'
+};
 
-    try {
-        const resp = await fetch('{{ url_for("video_editor") }}', { method: 'POST', body: formData });
-        const data = await resp.json();
-        if (!data.success) throw new Error(data.error || 'Upload failed');
+// FILE HANDLING
+function onDragOver(e) { e.preventDefault(); document.getElementById('ve-upload-zone').classList.add('drag-over'); }
+function onDragLeave(e) { document.getElementById('ve-upload-zone').classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('ve-upload-zone').classList.remove('drag-over');
+  var f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('video/')) loadFile(f);
+}
+function onFileSelected(e) {
+  var f = e.target.files[0];
+  if (f) loadFile(f);
+}
+function loadFile(file) {
+  // Отзываем предыдущий URL и создаём новый, сохраняя ссылку в модульной
+  // переменной — иначе браузер GC удаляет File через ~5 мин → чёрный экран
+  if (_activeObjectUrl) { URL.revokeObjectURL(_activeObjectUrl); }
+  _activeObjectUrl = URL.createObjectURL(file);
+  video.src = _activeObjectUrl;
+  video.load();
+  video.onloadedmetadata = function() { onVideoLoaded(); };
+}
+function onVideoLoaded() {
+  videoDuration = video.duration;
+  trimStart = 0;
+  trimEnd   = videoDuration;
+  video.currentTime = 0;
 
-        publicId = data.public_id;
-        version = data.version;
-        originalUrl = data.url;
+  var wrap  = document.getElementById('ve-canvas-wrap');
+  var wrapH = wrap.clientHeight || 500;
+  var wrapW = wrap.clientWidth  || 400;
+  var targetW = Math.min(wrapW, Math.round(wrapH * 9 / 16));
+  var targetH = Math.round(targetW * 16 / 9);
+  canvas.width  = targetW;
+  canvas.height = targetH;
+  canvas.style.display = 'block';
+  canvas.style.width  = targetW + 'px';
+  canvas.style.height = targetH + 'px';
 
-        previewVideo.onloadedmetadata = function() {
-            if (!previewVideo.duration || isNaN(previewVideo.duration)) return;
-            videoDuration = previewVideo.duration;
-            document.getElementById('trimStart').max = Math.floor(videoDuration);
-            document.getElementById('trimEnd').max = Math.floor(videoDuration);
-            document.getElementById('trimEnd').value = Math.floor(videoDuration);
-            updateTrimLabels();
-            saveBtn.disabled = false;
-            previewBtn.disabled = false;
-        };
-        previewVideo.ondurationchange = function() {
-            if (!previewVideo.duration || isNaN(previewVideo.duration)) return;
-            if (videoDuration > 0) return;
-            videoDuration = previewVideo.duration;
-            document.getElementById('trimStart').max = Math.floor(videoDuration);
-            document.getElementById('trimEnd').max = Math.floor(videoDuration);
-            document.getElementById('trimEnd').value = Math.floor(videoDuration);
-            updateTrimLabels();
-            saveBtn.disabled = false;
-            previewBtn.disabled = false;
-        };
-        previewVideo.src = data.url;
-        previewVideo.load();
+  document.getElementById('ve-upload-zone').style.display = 'none';
+  document.getElementById('ve-playback').classList.add('visible');
+  document.getElementById('ve-timeline-wrap').classList.add('visible');
+  document.getElementById('ve-export-btn').disabled = false;
 
-        document.getElementById('statusBadge').textContent = 'Cloudinary ✓';
-        document.getElementById('statusBadge').className = 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400';
-    } catch (e) {
-        console.error(e);
-        uploadProgress.innerHTML = '<span class="text-red-400">Ошибка: ' + e.message + '</span>';
-    }
-    uploadProgress.classList.add('hidden');
+  var badge = document.getElementById('ve-status');
+  badge.textContent = 'Готов';
+  badge.classList.add('ok');
+
+  updateTrimUI();
+  generateThumbnails();
+  startRenderLoop();
 }
 
-function togglePanel(id) {
-    const panel = document.getElementById(id);
-    const hidden = panel.classList.contains('hidden');
-    document.querySelectorAll('.panel-content').forEach(function(p) { p.classList.add('hidden'); });
-    if (hidden) panel.classList.remove('hidden');
+// RENDER LOOP
+function renderFrame() {
+  if (!canvas.width) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  var f = FILTERS[selectedFilter] || '';
+  if (f) ctx.filter = f;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (f) ctx.filter = 'none';
+
+  var pct = videoDuration > 0 ? video.currentTime / videoDuration : 0;
+  document.getElementById('ve-playhead').style.left = (pct * 100) + '%';
+  document.getElementById('ve-time-label').textContent = formatTime(video.currentTime) + ' / ' + formatTime(videoDuration);
+
+  if (isPlaying && video.currentTime >= trimEnd - 0.05) {
+    video.pause();
+    video.currentTime = trimStart;
+    setPlayIcon(false);
+    isPlaying = false;
+    pauseMusic();
+  }
+}
+function startRenderLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  function loop() { renderFrame(); rafId = requestAnimationFrame(loop); }
+  rafId = requestAnimationFrame(loop);
 }
 
-function formatTime(secs) {
-    if (!secs || isNaN(secs)) return '0:00';
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return m + ':' + (s < 10 ? '0' : '') + s;
+// PLAYBACK
+function togglePlay() {
+  if (!videoDuration) return;
+  initAudioContext();
+  if (isPlaying) {
+    video.pause(); pauseMusic(); setPlayIcon(false); isPlaying = false;
+  } else {
+    if (video.currentTime < trimStart || video.currentTime >= trimEnd) video.currentTime = trimStart;
+    video.playbackRate = selectedSpeed;
+    video.play().catch(function(e) { console.warn(e); });
+    playMusic(video.currentTime - trimStart);
+    setPlayIcon(true); isPlaying = true;
+  }
+}
+function setPlayIcon(playing) {
+  document.getElementById('ve-play-icon').className = playing ? 'fa-solid fa-pause' : 'fa-solid fa-play';
 }
 
-const trimStartEl = document.getElementById('trimStart');
-const trimEndEl = document.getElementById('trimEnd');
-
-function updateTrimLabels() {
-    const start = parseFloat(trimStartEl.value);
-    const end = parseFloat(trimEndEl.value);
-    document.getElementById('trimStartLabel').textContent = formatTime(start);
-    document.getElementById('trimEndLabel').textContent = formatTime(end);
-    document.getElementById('trimDurationLabel').textContent = formatTime(end - start);
-}
-
-trimStartEl.addEventListener('input', function() {
-    if (parseFloat(this.value) >= parseFloat(trimEndEl.value)) {
-        this.value = Math.max(0, parseFloat(trimEndEl.value) - 1);
+// THUMBNAILS
+function generateThumbnails() {
+  var wrap = document.getElementById('ve-thumbnails');
+  while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+  var N = 16;
+  var offscreen = document.createElement('canvas');
+  offscreen.width = 40; offscreen.height = 48;
+  var octx = offscreen.getContext('2d');
+  var i = 0;
+  function nextThumb() {
+    if (i >= N) {
+      video.onseeked = null; // сбрасываем — иначе бесконечный цикл seek→handler→seek
+      video.currentTime = trimStart;
+      return;
     }
-    updateTrimLabels();
-    previewVideo.currentTime = parseFloat(this.value);
+    var t = (i / (N - 1)) * videoDuration;
+    i++;
+    video.onseeked = function() {
+      octx.drawImage(video, 0, 0, 40, 48);
+      var thumb = document.createElement('canvas');
+      thumb.width = 40; thumb.height = 48;
+      thumb.style.flex = '1';
+      thumb.style.minWidth = '0';
+      thumb.style.display = 'block';
+      thumb.getContext('2d').drawImage(offscreen, 0, 0);
+      wrap.appendChild(thumb);
+      nextThumb();
+    };
+    video.currentTime = t;
+  }
+  nextThumb();
+}
+
+function seekTo(t) {
+  return new Promise(function(resolve) {
+    var handler = function() { video.removeEventListener('seeked', handler); resolve(); };
+    video.addEventListener('seeked', handler);
+    video.currentTime = t;
+  });
+}
+
+// DRAG HANDLES
+var dragging = null;
+function startDrag(e, which) {
+  e.preventDefault();
+  dragging = which;
+  document.addEventListener('pointermove', onDragMove);
+  document.addEventListener('pointerup', stopDrag);
+}
+function onDragMove(e) {
+  if (!dragging) return;
+  var tl = document.getElementById('ve-timeline');
+  var rect = tl.getBoundingClientRect();
+  var pct = (e.clientX - rect.left) / rect.width;
+  pct = Math.max(0, Math.min(1, pct));
+  var t = pct * videoDuration;
+  if (dragging === 'start') {
+    trimStart = Math.max(0, Math.min(t, trimEnd - 0.2));
+    video.currentTime = trimStart;
+  } else {
+    trimEnd = Math.min(videoDuration, Math.max(t, trimStart + 0.2));
+  }
+  updateTrimUI();
+}
+function stopDrag() {
+  dragging = null;
+  document.removeEventListener('pointermove', onDragMove);
+  document.removeEventListener('pointerup', stopDrag);
+}
+document.getElementById('ve-timeline').addEventListener('click', function(e) {
+  if (dragging) return;
+  var rect = this.getBoundingClientRect();
+  var pct = (e.clientX - rect.left) / rect.width;
+  video.currentTime = Math.max(0, Math.min(videoDuration, pct * videoDuration));
 });
-
-trimEndEl.addEventListener('input', function() {
-    if (parseFloat(this.value) <= parseFloat(trimStartEl.value)) {
-        this.value = Math.min(videoDuration, parseFloat(trimStartEl.value) + 1);
-    }
-    updateTrimLabels();
-});
-
-function selectFilter(name) {
-    selectedFilter = name;
-    document.querySelectorAll('.filter-btn').forEach(function(b) {
-        b.classList.remove('bg-brand-middle', 'text-white', 'border-brand-middle');
-        b.classList.add('border-slate-200', 'dark:border-slate-700');
-    });
-    const btn = document.querySelector('.filter-btn[data-filter="' + name + '"]');
-    if (btn) {
-        btn.classList.remove('border-slate-200', 'dark:border-slate-700');
-        btn.classList.add('bg-brand-middle', 'text-white', 'border-brand-middle');
-    }
-    if (!isPreviewing) {
-        const cssFilters = {
-            original: 'none',
-            grayscale: 'grayscale(1)',
-            sepia: 'sepia(0.8)',
-            vintage: 'sepia(0.5) contrast(0.8) brightness(0.9)',
-            cinematic: 'contrast(1.2) brightness(0.8) saturate(1.3)',
-            vivid: 'contrast(1.1) saturate(1.5) brightness(1.05)',
-            cool: 'hue-rotate(200deg) saturate(0.8)',
-            warm: 'sepia(0.3) saturate(1.2) hue-rotate(-10deg)',
-        };
-        previewVideo.style.filter = cssFilters[name] || 'none';
-    }
+function updateTrimUI() {
+  if (!videoDuration) return;
+  var sp = (trimStart / videoDuration) * 100;
+  var ep = (trimEnd   / videoDuration) * 100;
+  document.getElementById('ve-handle-start').style.left = 'calc(' + sp + '% - 7px)';
+  document.getElementById('ve-handle-end').style.left   = 'calc(' + ep + '% - 7px)';
+  document.getElementById('tl-overlay-left').style.width  = sp + '%';
+  document.getElementById('tl-overlay-right').style.width = (100 - ep) + '%';
+  document.getElementById('tl-start-label').textContent  = formatTime(trimStart);
+  document.getElementById('tl-end-label').textContent    = formatTime(trimEnd);
+  document.getElementById('trim-start-val').textContent  = formatTime(trimStart);
+  document.getElementById('trim-end-val').textContent    = formatTime(trimEnd);
+  document.getElementById('trim-dur-val').textContent    = formatTime(trimEnd - trimStart);
 }
 
-function selectSpeed(val) {
-    selectedSpeed = val;
-    document.querySelectorAll('.speed-btn').forEach(function(b) {
-        b.classList.remove('bg-brand-middle', 'text-white', 'border-brand-middle');
-        b.classList.add('border-slate-200', 'dark:border-slate-700');
-    });
-    const btn = document.querySelector('.speed-btn[data-speed="' + val + '"]');
-    if (btn) {
-        btn.classList.remove('border-slate-200', 'dark:border-slate-700');
-        btn.classList.add('bg-brand-middle', 'text-white', 'border-brand-middle');
-    }
-    if (!isPreviewing) {
-        previewVideo.playbackRate = val;
-    }
+// WEBAUDIO MIXER
+function initAudioContext() {
+  if (audioCtx) return;
+  try {
+    audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+    videoSrc  = audioCtx.createMediaElementSource(video);
+    videoGain = audioCtx.createGain();
+    musicGain = audioCtx.createGain();
+    videoGain.gain.value = document.getElementById('ve-orig-vol').value / 100;
+    musicGain.gain.value = document.getElementById('ve-music-vol').value / 100;
+    videoSrc.connect(videoGain);
+    videoGain.connect(audioCtx.destination);
+    musicGain.connect(audioCtx.destination);
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch(e) { console.warn('AudioContext init failed:', e); }
+}
+function setOrigVolume(v) {
+  document.getElementById('orig-vol-val').textContent = v + '%';
+  if (videoGain) videoGain.gain.value = v / 100;
+}
+function setMusicVolume(v) {
+  document.getElementById('music-vol-val').textContent = v + '%';
+  if (musicGain) musicGain.gain.value = v / 100;
+}
+function loadMusicTrack(url) {
+  if (!audioCtx) initAudioContext();
+  stopMusic();
+  fetch(url)
+    .then(function(r) { return r.arrayBuffer(); })
+    .then(function(buf) { return audioCtx.decodeAudioData(buf); })
+    .then(function(decoded) { musicBuf = decoded; })
+    .catch(function(e) { console.warn('Music load failed:', e); musicBuf = null; });
+}
+function playMusic(offsetSec) {
+  if (!musicBuf || !audioCtx) return;
+  stopMusic();
+  musicSrc = audioCtx.createBufferSource();
+  musicSrc.buffer = musicBuf;
+  musicSrc.loop   = true;
+  musicSrc.playbackRate.value = selectedSpeed;
+  musicSrc.connect(musicGain);
+  var safeOffset = ((offsetSec || 0) % musicBuf.duration + musicBuf.duration) % musicBuf.duration;
+  musicSrc.start(0, safeOffset);
+}
+function pauseMusic() {
+  if (musicSrc) { try { musicSrc.stop(); } catch(e) {} musicSrc = null; }
+}
+function stopMusic() {
+  if (musicSrc) { try { musicSrc.stop(); } catch(e) {} musicSrc = null; }
+}
+function selectAudio(el) {
+  document.querySelectorAll('.ve-audio-item').forEach(function(a) { a.classList.remove('active'); });
+  el.classList.add('active');
+  selectedAudioId  = el.dataset.id;
+  selectedAudioUrl = el.dataset.url;
+  loadMusicTrack(selectedAudioUrl);
 }
 
-document.querySelectorAll('.audio-item').forEach(function(el) {
-    el.addEventListener('click', function() {
-        document.querySelectorAll('.audio-item').forEach(function(a) {
-            a.classList.remove('bg-brand-middle/10', 'border', 'border-brand-middle/30');
-        });
-        this.classList.add('bg-brand-middle/10', 'border', 'border-brand-middle/30');
-        selectedAudioId = this.dataset.id;
-        document.getElementById('selectedAudioName').textContent = this.dataset.title;
-        document.getElementById('selectedAudioInfo').classList.remove('hidden');
-    });
-});
-
-document.getElementById('audioUpload').addEventListener('change', function() {
-    if (this.files && this.files[0]) {
-        selectedAudioId = 'upload';
-        document.getElementById('selectedAudioName').textContent = this.files[0].name;
-        document.getElementById('selectedAudioInfo').classList.remove('hidden');
-    }
-});
-
-async function getTransformedUrl() {
-    const startVal = parseFloat(trimStartEl.value) || 0;
-    const endVal = parseFloat(trimEndEl.value) || 0;
-    const resp = await fetch('{{ url_for("video_editor") }}', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            public_id: publicId,
-            version: version,
-            original_url: originalUrl,
-            start_offset: startVal > 0 ? startVal : 0,
-            end_offset: endVal < videoDuration ? endVal : 0,
-            filter: selectedFilter,
-            speed: selectedSpeed,
-            audio_id: selectedAudioId,
-        })
-    });
-    return resp.json();
+// FILTERS
+function selectFilter(el, name) {
+  selectedFilter = name;
+  document.querySelectorAll('.ve-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
 }
 
-async function previewVideoCloudinary() {
-    if (!originalUrl) return;
-
-    if (isPreviewing) {
-        previewVideo.style.filter = '';
-        previewVideo.src = originalUrl;
-        previewVideo.load();
-        previewVideo.playbackRate = selectedSpeed;
-        const cssFilters = {
-            original: 'none', grayscale: 'grayscale(1)', sepia: 'sepia(0.8)',
-            vintage: 'sepia(0.5) contrast(0.8) brightness(0.9)', cinematic: 'contrast(1.2) brightness(0.8) saturate(1.3)',
-            vivid: 'contrast(1.1) saturate(1.5) brightness(1.05)', cool: 'hue-rotate(200deg) saturate(0.8)',
-            warm: 'sepia(0.3) saturate(1.2) hue-rotate(-10deg)',
-        };
-        if (selectedFilter !== 'original') previewVideo.style.filter = cssFilters[selectedFilter] || 'none';
-        previewVideo.playbackRate = selectedSpeed;
-        isPreviewing = false;
-        previewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> Предпросмотр';
-        return;
-    }
-
-    if (!publicId) {
-        previewBtn.innerHTML = '<i class="fa-solid fa-eye"></i> Предпросмотр';
-        return;
-    }
-
-    previewBtn.disabled = true;
-    previewBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Загрузка...';
-
-    try {
-        const data = await getTransformedUrl();
-        if (!data.success) throw new Error(data.error || 'Preview failed');
-
-        previewVideo.style.filter = '';
-        previewVideo.playbackRate = 1;
-        previewVideo.src = data.url;
-        previewVideo.load();
-        previewVideo.onloadeddata = function() { previewVideo.play(); };
-
-        isPreviewing = true;
-        previewBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Оригинал';
-    } catch (e) {
-        console.error(e);
-        showToast('Ошибка предпросмотра: ' + e.message, 'error');
-    }
-    previewBtn.disabled = false;
+// SPEED
+function selectSpeed(el, val) {
+  selectedSpeed = val;
+  video.playbackRate = val;
+  if (musicSrc) musicSrc.playbackRate.value = val;
+  document.querySelectorAll('.ve-speed-btn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
 }
 
-async function saveVideo() {
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Сохранение...';
+// TOOL SWITCHING
+function switchTool(name) {
+  document.querySelectorAll('.ve-tool-btn').forEach(function(b) { b.classList.remove('active'); });
+  var btn = document.querySelector('.ve-tool-btn[data-tool="' + name + '"]');
+  if (btn) btn.classList.add('active');
+  ['timeline','audio','filters','speed'].forEach(function(p) {
+    var el = document.getElementById('panel-' + p);
+    if (el) el.style.display = (p === name) ? 'block' : 'none';
+  });
+  if (window.innerWidth <= 768) {
+    document.getElementById('ve-panel').classList.add('open');
+  }
+}
 
-    try {
-        let url;
-        if (publicId) {
-            const data = await getTransformedUrl();
-            if (!data.success) throw new Error(data.error || 'Save failed');
-            url = data.url;
-        } else if (originalUrl) {
-            url = originalUrl;
-        } else {
-            throw new Error('Видео не загружено');
+// EXPORT via MediaRecorder
+async function startExport() {
+  if (!videoDuration) return;
+  initAudioContext();
+
+  var overlay = document.getElementById('ve-export-overlay');
+  var msgEl   = document.getElementById('ve-export-msg');
+  var subEl   = document.getElementById('ve-export-sub');
+  var barEl   = document.getElementById('ve-progress-bar');
+
+  overlay.classList.add('visible');
+  msgEl.textContent = 'Подготовка...';
+  subEl.textContent = 'Инициализация потоков';
+  barEl.style.width = '5%';
+
+  try {
+    if (isPlaying) { video.pause(); setPlayIcon(false); isPlaying = false; }
+    await seekTo(trimStart);
+
+    var canvasStream = canvas.captureStream(30);
+    var allTracks = canvasStream.getVideoTracks();
+
+    if (audioCtx) {
+      var audioDest = audioCtx.createMediaStreamDestination();
+      videoGain.connect(audioDest);
+      if (musicGain) musicGain.connect(audioDest);
+      allTracks = allTracks.concat(audioDest.stream.getAudioTracks());
+    }
+
+    var combined  = new MediaStream(allTracks);
+
+    var mimeType = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']
+      .find(function(t) { return MediaRecorder.isTypeSupported(t); }) || 'video/webm';
+
+    var recorder = new MediaRecorder(combined, { mimeType: mimeType, videoBitsPerSecond: 5000000 });
+    var chunks = [];
+    recorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
+    recorder.start(200);
+
+    msgEl.textContent = 'Запись...';
+    barEl.style.width = '10%';
+
+    video.playbackRate = selectedSpeed;
+    // video.currentTime уже = trimStart после seekTo выше — повторный seek убран
+    // (именно этот seek во время активной записи вызывал 2 глитч-кадра и баг аудио)
+    await video.play();
+    if (musicBuf) playMusic(0);
+
+    var clipDuration = (trimEnd - trimStart) / selectedSpeed;
+    var elapsed = 0;
+
+    await new Promise(function(resolve) {
+      var iv = setInterval(function() {
+        elapsed += 0.15;
+        barEl.style.width = Math.min(88, 10 + (elapsed / clipDuration) * 78) + '%';
+        subEl.textContent = formatTime(Math.min(elapsed * selectedSpeed, trimEnd - trimStart)) + ' / ' + formatTime(trimEnd - trimStart);
+        if (video.currentTime >= trimEnd - 0.05 || elapsed >= clipDuration + 0.3) {
+          clearInterval(iv); resolve();
         }
-        window.location.href = '{{ url_for("create_shorts") }}?video_url=' + encodeURIComponent(url);
-    } catch (e) {
-        console.error(e);
-        showToast('Ошибка: ' + e.message, 'error');
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fa-solid fa-video"></i> Экспорт в Shorts';
-    }
+      }, 150);
+    });
+
+    video.pause(); stopMusic(); recorder.stop();
+    barEl.style.width = '92%';
+    msgEl.textContent = 'Загрузка на сервер...';
+    subEl.textContent = 'Отправка файла';
+
+    await new Promise(function(resolve) { recorder.onstop = resolve; });
+
+    var blob = new Blob(chunks, { type: mimeType });
+    var formData = new FormData();
+    formData.append('video', blob, 'shorts_export.webm');
+
+    var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    var headers = {};
+    if (csrfMeta) headers['X-CSRFToken'] = csrfMeta.content;
+
+    var resp = await fetch('{{ url_for("video_editor") }}', { method: 'POST', headers: headers, body: formData });
+    var data = await resp.json();
+    barEl.style.width = '100%';
+
+    if (!data.success) throw new Error(data.error || 'Upload failed');
+
+    msgEl.textContent = 'Готово!';
+    subEl.textContent = 'Переход в редактор Shorts...';
+    await new Promise(function(r) { setTimeout(r, 800); });
+    window.location.href = '{{ url_for("create_shorts") }}?video_url=' + encodeURIComponent(data.url);
+
+  } catch(e) {
+    console.error('Export error:', e);
+    overlay.classList.remove('visible');
+    if (typeof showToast === 'function') { showToast('Ошибка экспорта: ' + e.message, 'error'); }
+    else { alert('Ошибка экспорта: ' + e.message); }
+  }
 }
+
+// UTILS
+function formatTime(s) {
+  if (s === undefined || s === null || isNaN(s) || s < 0) return '0:00';
+  var m = Math.floor(s / 60);
+  var sec = Math.floor(s % 60);
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+// Init
+switchTool('timeline');
 </script>
 {% endblock %}

@@ -52,7 +52,15 @@ def register_routes(app):
             saved = SavedPost.query.filter_by(user_id=current_user.id).order_by(SavedPost.created_at.desc()).all()
             saved_posts = [Post.query.get(s.post_id) for s in saved if s.post_id]
 
-        return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count, user_shorts=user_shorts, shorts_likes=shorts_likes, shorts_comments=shorts_comments, saved_posts=saved_posts)
+        profile_pct = 0
+        if current_user.is_authenticated and user.id == current_user.id and getattr(user, 'onboarding_done', False):
+            try:
+                from helpers import profile_completion
+                profile_pct = profile_completion(user)
+            except Exception:
+                pass
+
+        return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count, user_shorts=user_shorts, shorts_likes=shorts_likes, shorts_comments=shorts_comments, saved_posts=saved_posts, profile_pct=profile_pct)
 
 
     @app.route('/follow/<username>', methods=['POST'])
@@ -326,8 +334,7 @@ def register_routes(app):
     @app.route('/sharts')
     def shorts():
         shorts_list = Shorts.query.order_by(Shorts.created_at.desc()).limit(20).all()
-        tracks = MusicTrack.query.order_by(MusicTrack.created_at.desc()).limit(20).all()
-        return render_template('shorts.html', shorts_list=shorts_list, tracks=tracks)
+        return render_template('shorts.html', shorts_list=shorts_list)
 
 
     @app.route('/shorts/create', methods=['GET', 'POST'])
@@ -402,8 +409,7 @@ def register_routes(app):
                 return redirect(url_for('create_shorts'))
 
         video_url = request.args.get('video_url')
-        tracks = MusicTrack.query.order_by(MusicTrack.created_at.desc()).all()
-        return render_template('create_shorts.html', tracks=tracks, video_url=video_url)
+        return render_template('create_shorts.html', video_url=video_url)
 
 
     @app.route('/shorts/<int:shorts_id>', methods=['GET', 'POST'])

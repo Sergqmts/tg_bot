@@ -17,6 +17,60 @@ FREESOUND_API_KEY = os.environ.get('FREESOUND_API_KEY', '')
 _webhook_queue = []
 
 
+def send_password_reset_email(user, reset_url):
+    """Отправляет письмо со ссылкой сброса пароля через Gmail SMTP."""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    mail_sender = os.environ.get('MAIL_SENDER', '')
+    mail_password = os.environ.get('MAIL_PASSWORD', '')
+
+    if not mail_sender or not mail_password:
+        current_app.logger.warning("MAIL_SENDER / MAIL_PASSWORD not set — password reset email not sent")
+        return False
+
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Сброс пароля — Vibe'
+        msg['From'] = mail_sender
+        msg['To'] = user.email
+
+        html = (
+            f'<p>Привет, {user.username}!</p>'
+            f'<p>Для сброса пароля перейди по ссылке:</p>'
+            f'<p><a href="{reset_url}">{reset_url}</a></p>'
+            f'<p>Ссылка действует 24 часа.</p>'
+            f'<p>Если ты не запрашивал(а) сброс пароля — просто проигнорируй это письмо.</p>'
+        )
+        msg.attach(MIMEText(html, 'html', 'utf-8'))
+
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(mail_sender, mail_password)
+            server.sendmail(mail_sender, user.email, msg.as_string())
+
+        return True
+    except Exception as e:
+        current_app.logger.error(f"SMTP error: {e}")
+        return False
+
+
+def profile_completion(user):
+    """Возвращает процент заполненности профиля (0–100)."""
+    fields = [
+        user.avatar_cloudinary_url,
+        user.bio,
+        user.occupation,
+        user.location,
+        user.interests,
+        (user.phone and user.phone_verified),
+    ]
+    filled = sum(1 for f in fields if f)
+    return int(filled / len(fields) * 100)
+
+
 def generate_bot_token():
     return f"{secrets.randbelow(900000000) + 100000000}:{secrets.token_urlsafe(32)}"
 

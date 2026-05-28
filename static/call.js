@@ -243,20 +243,26 @@ async function onCallAnswered(data) {
 }
 
 function onCallDeclined(data) {
+    var peerName = callPeerUsername;
     stopCall();
     updateCallScreenStatus('declined');
     setTimeout(function () {
         hideCallScreen();
-        redirectToChat();
+        if (peerName) {
+            window.location.href = '/messages/' + encodeURIComponent(peerName);
+        }
     }, 1500);
 }
 
 function onRemoteEnded(data) {
+    var peerName = callPeerUsername;
     stopCall();
     updateCallScreenStatus('ended');
     setTimeout(function () {
         hideCallScreen();
-        redirectToChat();
+        if (peerName) {
+            window.location.href = '/messages/' + encodeURIComponent(peerName);
+        }
     }, 1000);
 }
 
@@ -695,3 +701,12 @@ function stopRingtone() {
 if (typeof document !== 'undefined') {
     document.addEventListener('pictureInPictureClosed', function () { });
 }
+
+// Предотвращаем случайное обновление страницы во время звонка
+window.addEventListener('beforeunload', function (e) {
+    if (callActive) {
+        e.preventDefault();
+        e.returnValue = 'Вы сейчас в звонке. Если вы обновите страницу, звонок завершится.';
+        return e.returnValue;
+    }
+});

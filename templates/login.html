@@ -31,6 +31,7 @@
                         <input type="checkbox" name="remember" class="w-4 h-4 rounded border-slate-300 text-brand-middle focus:ring-brand-middle">
                         <span class="text-sm text-slate-600 dark:text-slate-300">Запомнить меня</span>
                     </label>
+                    <a href="{{ url_for('forgot_password') }}" class="text-xs text-slate-400 hover:text-brand-middle transition-colors">Забыл пароль?</a>
                 </div>
                 {{ form.submit(class="w-full py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer") }}
             </form>

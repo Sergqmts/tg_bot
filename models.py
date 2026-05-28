@@ -64,6 +64,14 @@ class User(UserMixin, db.Model):
     webhook_url = db.Column(db.String(500), nullable=True)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     is_banned = db.Column(db.Boolean, default=False)
+
+    # Password reset
+    reset_token = db.Column(db.String(64), nullable=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
+
+    # Onboarding
+    onboarding_done = db.Column(db.Boolean, default=False)
+
     is_staff = db.Column(db.Boolean, default=False)
     is_business = db.Column(db.Boolean, default=False)
     
@@ -889,3 +897,14 @@ class CommunityPostForm(FlaskForm):
     body = TextAreaField('Текст записи')
     media = FileField('Фото/Видео', validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'mov'], 'Только изображения и видео!')])
     submit = SubmitField('Опубликовать')
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Отправить ссылку')
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Новый пароль', validators=[DataRequired(), Length(min=6)])
+    confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли не совпадают')])
+    submit = SubmitField('Сохранить пароль')

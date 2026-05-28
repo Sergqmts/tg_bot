@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}Добро пожаловать — Vibe{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-lg">
+
+        <!-- Заголовок -->
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-tr from-brand-start via-brand-middle to-brand-end rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-4 shadow-lg">
+                <i class="fa-solid fa-bolt-lightning"></i>
+            </div>
+            <h1 class="text-2xl font-extrabold tracking-tighter text-slate-900 dark:text-white">Настроим твой профиль</h1>
+            <p class="text-slate-500 mt-1 text-sm">Займёт меньше минуты</p>
+        </div>
+
+        <!-- Прогресс-бар (4 точки) -->
+        <div class="flex justify-center gap-3 mb-8" id="progress-dots">
+            <span class="dot w-3 h-3 rounded-full bg-gradient-to-r from-brand-start to-brand-middle" data-step="1"></span>
+            <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="2"></span>
+            <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="3"></span>
+            <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="4"></span>
+        </div>
+
+        <div class="glass rounded-3xl shadow-lg overflow-hidden">
+
+            <!-- ── Шаг 1: Аватар ── -->
+            <div class="step-section p-8" id="step-1">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Фото профиля</h2>
+                <p class="text-sm text-slate-500 mb-6">Загрузи аватар, чтобы тебя узнавали</p>
+
+                <div class="flex flex-col items-center gap-4 mb-6">
+                    <div id="avatar-preview-wrap" class="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
+                        <span id="avatar-initial">{{ current_user.username[0].upper() }}</span>
+                        <img id="avatar-preview-img" src="" alt="" class="hidden w-full h-full object-cover">
+                    </div>
+                    <label class="cursor-pointer px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <i class="fa-solid fa-camera mr-2"></i>Выбрать фото
+                        <input type="file" id="avatar-file" accept="image/*" class="hidden">
+                    </label>
+                </div>
+
+                <div id="avatar-warning" class="hidden mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl text-sm text-amber-700 dark:text-amber-300">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>Ты не выбрал(а) фото
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" id="step1-skip" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                        Продолжить без фото
+                    </button>
+                    <button type="button" id="step1-next" class="flex-1 py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all">
+                        Далее
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Шаг 2: О себе ── -->
+            <div class="step-section hidden p-8" id="step-2">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">О себе</h2>
+                <p class="text-sm text-slate-500 mb-6">Расскажи немного — это не обязательно</p>
+
+                <div class="space-y-3 mb-6">
+                    <textarea
+                        id="bio"
+                        name="bio"
+                        rows="3"
+                        placeholder="Пару слов о себе..."
+                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none"
+                    ></textarea>
+                    <input
+                        id="occupation"
+                        name="occupation"
+                        type="text"
+                        placeholder="Чем занимаешься?"
+                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                    >
+                    <input
+                        id="location"
+                        name="location"
+                        type="text"
+                        placeholder="Откуда ты?"
+                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                    >
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="2">
+                        Пропустить
+                    </button>
+                    <button type="button" class="flex-1 py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="2">
+                        Далее
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Шаг 3: Интересы ── -->
+            <div class="step-section hidden p-8" id="step-3">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Интересы</h2>
+                <p class="text-sm text-slate-500 mb-6">Что тебя увлекает? (через запятую)</p>
+
+                <div class="mb-6">
+                    <input
+                        id="interests"
+                        name="interests"
+                        type="text"
+                        placeholder="музыка, спорт, путешествия..."
+                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                    >
+                </div>
+
+                <!-- Быстрые теги -->
+                <div class="flex flex-wrap gap-2 mb-6" id="interest-tags">
+                    {% for tag in ['🎵 Музыка','🎮 Игры','📚 Книги','🏃 Спорт','✈️ Путешествия','🍕 Еда','🎨 Арт','💻 Технологии','📸 Фото','🎬 Кино'] %}
+                    <button type="button" class="tag-btn px-3 py-1.5 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-middle hover:text-white transition-colors" data-tag="{{ tag }}">
+                        {{ tag }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="3">
+                        Пропустить
+                    </button>
+                    <button type="button" class="flex-1 py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="3">
+                        Далее
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Шаг 4: Приватность ── -->
+            <div class="step-section hidden p-8" id="step-4">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Приватность</h2>
+                <p class="text-sm text-slate-500 mb-6">Настрой видимость профиля</p>
+
+                <div class="space-y-4 mb-8">
+                    <label class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl cursor-pointer">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Закрытый профиль</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Публикации видны только подписчикам</p>
+                        </div>
+                        <input type="checkbox" id="is_private" name="is_private" class="w-5 h-5 rounded border-slate-300 text-brand-middle focus:ring-brand-middle">
+                    </label>
+
+                    <label class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl cursor-pointer">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Одобрять подписчиков</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Запросы на подписку нужно подтверждать</p>
+                        </div>
+                        <input type="checkbox" id="approve_followers" name="approve_followers" class="w-5 h-5 rounded border-slate-300 text-brand-middle focus:ring-brand-middle">
+                    </label>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="4">
+                        Завершить позже
+                    </button>
+                    <button type="button" class="flex-1 py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="4">
+                        Готово!
+                    </button>
+                </div>
+            </div>
+
+        </div><!-- /glass -->
+    </div>
+</div>
+
+<script>
+(function () {
+    const TOTAL = 4;
+    let current = 1;
+    let uploading = false;
+
+    function showStep(n) {
+        document.querySelectorAll('.step-section').forEach(el => el.classList.add('hidden'));
+        document.getElementById('step-' + n).classList.remove('hidden');
+
+        document.querySelectorAll('#progress-dots .dot').forEach((dot, i) => {
+            if (i + 1 <= n) {
+                dot.classList.remove('bg-slate-300', 'dark:bg-slate-600');
+                dot.classList.add('bg-gradient-to-r', 'from-brand-start', 'to-brand-middle');
+            } else {
+                dot.classList.add('bg-slate-300');
+                dot.classList.remove('bg-gradient-to-r', 'from-brand-start', 'to-brand-middle');
+            }
+        });
+        current = n;
+    }
+
+    async function postStep(step, formData) {
+        const resp = await fetch('/onboarding/step/' + step, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': '{{ csrf_token() }}' },
+        });
+        return resp.ok;
+    }
+
+    async function finish() {
+        const resp = await fetch('/onboarding/finish', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}',
+            },
+        });
+        const data = await resp.json();
+        window.location.href = data.redirect || '/';
+    }
+
+    // ── Шаг 1 ──
+    const avatarFile = document.getElementById('avatar-file');
+    const previewImg = document.getElementById('avatar-preview-img');
+    const previewInitial = document.getElementById('avatar-initial');
+    const avatarWarning = document.getElementById('avatar-warning');
+
+    avatarFile.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            previewImg.src = e.target.result;
+            previewImg.classList.remove('hidden');
+            previewInitial.classList.add('hidden');
+            avatarWarning.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('step1-next').addEventListener('click', async function () {
+        const file = avatarFile.files[0];
+        if (!file) {
+            avatarWarning.classList.remove('hidden');
+            return;
+        }
+        avatarWarning.classList.add('hidden');
+        this.disabled = true;
+        this.textContent = 'Загрузка...';
+        uploading = true;
+        const fd = new FormData();
+        fd.append('avatar', file);
+        await postStep(1, fd);
+        uploading = false;
+        showStep(2);
+    });
+
+    document.getElementById('step1-skip').addEventListener('click', async function () {
+        const fd = new FormData();
+        await postStep(1, fd);
+        showStep(2);
+    });
+
+    // ── Шаги 2–3 (next) ──
+    document.querySelectorAll('.next-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const step = parseInt(this.dataset.step);
+            const fd = new FormData();
+
+            if (step === 2) {
+                fd.append('bio', document.getElementById('bio').value);
+                fd.append('occupation', document.getElementById('occupation').value);
+                fd.append('location', document.getElementById('location').value);
+            } else if (step === 3) {
+                fd.append('interests', document.getElementById('interests').value);
+            } else if (step === 4) {
+                if (document.getElementById('is_private').checked) fd.append('is_private', 'on');
+                if (document.getElementById('approve_followers').checked) fd.append('approve_followers', 'on');
+            }
+
+            await postStep(step, fd);
+
+            if (step < TOTAL) {
+                showStep(step + 1);
+            } else {
+                this.disabled = true;
+                this.textContent = 'Сохраняем...';
+                await finish();
+            }
+        });
+    });
+
+    // ── Пропустить ──
+    document.querySelectorAll('.skip-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const step = parseInt(this.dataset.step);
+            const fd = new FormData();
+            await postStep(step, fd);
+            if (step < TOTAL) {
+                showStep(step + 1);
+            } else {
+                await finish();
+            }
+        });
+    });
+
+    // ── Теги интересов ──
+    document.querySelectorAll('.tag-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const tag = this.dataset.tag;
+            const input = document.getElementById('interests');
+            const parts = input.value.split(',').map(s => s.trim()).filter(Boolean);
+            if (parts.includes(tag)) {
+                const idx = parts.indexOf(tag);
+                parts.splice(idx, 1);
+                this.classList.remove('bg-brand-middle', 'text-white');
+                this.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+            } else {
+                parts.push(tag);
+                this.classList.add('bg-brand-middle', 'text-white');
+                this.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+            }
+            input.value = parts.join(', ');
+        });
+    });
+})();
+</script>
+{% endblock %}
