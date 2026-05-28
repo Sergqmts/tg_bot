@@ -691,6 +691,45 @@ with app.app_context():
     except Exception as e:
         app.logger.info(f"News community setup: {e}")
 
+    system_communities = [
+        ('TechBot',    'techbot',    'techbot@vibe.local',    'Технологии и IT',              'tech-and-it',       'Обсуждаем технологии, программирование и всё про IT'),
+        ('TravelBot',  'travelbot',  'travelbot@vibe.local',  'Все про отдых и путешествия',  'travel-and-leisure','Путешествия, отдых, советы и впечатления'),
+        ('CookingBot', 'cookingbot', 'cookingbot@vibe.local', 'Готовь как профи',             'cooking-pro',       'Рецепты, техники и секреты профессиональной кулинарии'),
+        ('AutoBot',    'autobot',    'autobot@vibe.local',    'АвтоМир',                      'auto-world',        'Всё об автомобилях: новости, советы, тест-драйвы'),
+        ('EventsBot',  'eventsbot',  'eventsbot@vibe.local',  'Афиша и куда сходить',         'events-and-places', 'Мероприятия, концерты, выставки и интересные места'),
+    ]
+    for bot_username, bot_uname, bot_email, comm_name, comm_slug, comm_desc in system_communities:
+        try:
+            bot = User.query.filter_by(username=bot_username).first()
+            if not bot:
+                bot = User(
+                    username=bot_username,
+                    email=bot_email,
+                    password_hash='',
+                    is_bot=True,
+                    bot_commands='sendPost',
+                    can_join_groups=True,
+                    is_staff=True,
+                )
+                db.session.add(bot)
+                db.session.flush()
+                app.logger.info(f"Created {bot_username}")
+            comm = Community.query.filter_by(slug=comm_slug).first()
+            if not comm:
+                comm = Community(name=comm_name, slug=comm_slug, description=comm_desc, creator_id=bot.id, is_private=False)
+                db.session.add(comm)
+                db.session.flush()
+                app.logger.info(f"Created community {comm_name}")
+            member = CommunityMember.query.filter_by(community_id=comm.id, user_id=bot.id).first()
+            if not member:
+                member = CommunityMember(community_id=comm.id, user_id=bot.id, role='admin', status='approved')
+                db.session.add(member)
+                db.session.flush()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.info(f"System community setup {comm_slug}: {e}")
+
     try:
         features = [
             ('🎬', 'Видеоредактор для Shorts', 'Редактируйте видео для Shorts: обрезка, фильтры, скорость. Обработка через Cloudinary — без нагрузки на сервер.'),
