@@ -165,25 +165,35 @@ def init_db():
                         conn.execute(text('ALTER TABLE message ADD COLUMN transcription TEXT'))
                         conn.commit()
 
-                for col in ['is_bot', 'bot_token', 'bot_commands', 'can_join_groups', 'privacy_mode', 'webhook_url', 'creator_id', 'is_banned', 'is_staff', 'google_id']:
+                user_cols_pg = {
+                    'is_bot': 'BOOLEAN DEFAULT FALSE',
+                    'bot_token': 'VARCHAR(64)',
+                    'bot_commands': "TEXT DEFAULT '[]'",
+                    'can_join_groups': 'BOOLEAN DEFAULT TRUE',
+                    'privacy_mode': 'BOOLEAN DEFAULT TRUE',
+                    'webhook_url': 'VARCHAR(500)',
+                    'creator_id': 'INTEGER REFERENCES "user"(id)',
+                    'is_banned': 'BOOLEAN DEFAULT FALSE',
+                    'is_staff': 'BOOLEAN DEFAULT FALSE',
+                    'google_id': 'VARCHAR(200) UNIQUE',
+                    'reset_token': 'VARCHAR(64)',
+                    'reset_token_expires': 'TIMESTAMP',
+                    'onboarding_done': 'BOOLEAN DEFAULT FALSE',
+                    'is_business': 'BOOLEAN DEFAULT FALSE',
+                    'avatar_cloudinary_url': 'VARCHAR(500)',
+                }
+                user_cols_sqlite = {
+                    'creator_id': 'INTEGER', 'is_banned': 'BOOLEAN', 'is_staff': 'BOOLEAN',
+                    'reset_token': 'TEXT', 'reset_token_expires': 'TIMESTAMP',
+                    'onboarding_done': 'BOOLEAN', 'is_business': 'BOOLEAN',
+                    'avatar_cloudinary_url': 'TEXT',
+                }
+                for col in user_cols_pg:
                     if not column_exists_conn(conn, 'user', col):
                         if is_postgres:
-                            type_map = {
-                                'is_bot': 'BOOLEAN DEFAULT FALSE',
-                                'bot_token': 'VARCHAR(64)',
-                                'bot_commands': "TEXT DEFAULT '[]'",
-                                'can_join_groups': 'BOOLEAN DEFAULT TRUE',
-                                'privacy_mode': 'BOOLEAN DEFAULT TRUE',
-                                'webhook_url': 'VARCHAR(500)',
-                                'creator_id': 'INTEGER REFERENCES "user"(id)',
-                                'is_banned': 'BOOLEAN DEFAULT FALSE',
-                                'is_staff': 'BOOLEAN DEFAULT FALSE',
-                                'google_id': 'VARCHAR(200) UNIQUE',
-                            }
-                            conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {type_map[col]}'))
+                            conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {user_cols_pg[col]}'))
                         else:
-                            col_type_map = {'creator_id': 'INTEGER', 'is_banned': 'BOOLEAN', 'is_staff': 'BOOLEAN'}
-                            col_type = col_type_map.get(col, 'TEXT')
+                            col_type = user_cols_sqlite.get(col, 'TEXT')
                             conn.execute(text(f'ALTER TABLE "user" ADD COLUMN {col} {col_type}'))
                         conn.commit()
                 if not column_exists_conn(conn, 'community', 'is_banned'):
