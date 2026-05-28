@@ -717,6 +717,7 @@ with app.app_context():
                     email=bot_email,
                     password_hash='',
                     is_bot=True,
+                    bot_token=generate_bot_token(),
                     bot_commands='sendPost',
                     can_join_groups=True,
                     is_staff=True,
@@ -724,6 +725,10 @@ with app.app_context():
                 db.session.add(bot)
                 db.session.flush()
                 app.logger.info(f"Created {bot_username}")
+            elif not bot.bot_token:
+                bot.bot_token = generate_bot_token()
+                db.session.flush()
+                app.logger.info(f"Assigned token to existing {bot_username}")
             comm = Community.query.filter_by(slug=comm_slug).first()
             if not comm:
                 comm = Community(name=comm_name, slug=comm_slug, description=comm_desc, creator_id=bot.id, is_private=False)
