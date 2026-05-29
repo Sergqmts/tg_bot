@@ -860,20 +860,64 @@ def linkify_filter(text):
     return Markup(result)
 
 
-_lp_cache = {}
+# Bounded LRU cache for link previews (max 1000 entries)
+class _BoundedCache(dict):
+    def __init__(self, maxsize=1000):
+        super().__init__()
+        self._maxsize = maxsize
+        self._keys = []
+
+    def __setitem__(self, key, value):
+        if key not in self:
+            if len(self._keys) >= self._maxsize:
+                oldest = self._keys.pop(0)
+                super().pop(oldest, None)
+            self._keys.append(key)
+        super().__setitem__(key, value)
+
+_lp_cache = _BoundedCache(maxsize=1000)
+
+def _is_ssrf_safe(url):
+    import socket as _socket
+    import ipaddress as _ipaddress
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(url)
+        host = parsed.hostname
+        if not host:
+            return False
+        infos = _socket.getaddrinfo(host, None)
+        for info in infos:
+            addr = info[4][0]
+            ip = _ipaddress.ip_address(addr)
+            if (ip.is_private or ip.is_loopback or ip.is_link_local
+                    or ip.is_multicast or ip.is_reserved
+                    or str(ip) in ('169.254.169.254', '::1')):
+                return False
+        return True
+    except Exception:
+        return False
+
 
 @app.route('/api/link-preview')
 @login_required
 def link_preview_api():
-    import re
     from html.parser import HTMLParser
 
     url = request.args.get('url', '').strip()
     if not url.startswith(('http://', 'https://')):
         return jsonify({'error': 'invalid url'}), 400
 
-    if url in _lp_cache:
-        return jsonify(_lp_cache[url])
+    # Normalize cache key (lowercase host, strip fragment)
+    from urllib.parse import urlparse, urlunparse
+    p = urlparse(url)
+    cache_key = urlunparse(p._replace(netloc=p.netloc.lower(), fragment=''))
+
+    if cache_key in _lp_cache:
+        return jsonify(_lp_cache[cache_key])
+
+    if not _is_ssrf_safe(url):
+        return jsonify({'error': 'invalid url'}), 400
 
     class OGParser(HTMLParser):
         def __init__(self):
@@ -905,22 +949,34 @@ def link_preview_api():
 
     try:
         resp = requests.get(
-            url, timeout=5,
+            url, stream=True, timeout=(3, 5),
             headers={'User-Agent': 'Mozilla/5.0 (compatible; VIBEBot/1.0)'},
-            allow_redirects=True
+            allow_redirects=False
         )
+        content_type = resp.headers.get('Content-Type', '')
+        if 'text/html' not in content_type:
+            return jsonify({'error': 'not html'}), 200
+        chunks = []
+        size = 0
+        for chunk in resp.iter_content(chunk_size=8192):
+            chunks.append(chunk)
+            size += len(chunk)
+            if size >= 51200:  # 50 KB
+                break
+        html = b''.join(chunks).decode('utf-8', errors='replace')
         parser = OGParser()
-        parser.feed(resp.text[:50000])
+        parser.feed(html)
         og = parser.og
+        image = og.get('image', '')
+        if image and len(image) > 500:
+            image = ''
         result = {
             'url': url,
-            'title': og.get('title') or parser.title_text.strip() or '',
-            'description': og.get('description', ''),
-            'image': og.get('image', ''),
+            'title': (og.get('title') or parser.title_text.strip() or '')[:120],
+            'description': og.get('description', '')[:200],
+            'image': image,
         }
-        result['title'] = result['title'][:120]
-        result['description'] = result['description'][:200]
-        _lp_cache[url] = result
+        _lp_cache[cache_key] = result
         return jsonify(result)
     except Exception:
         return jsonify({'error': 'fetch failed'}), 200
