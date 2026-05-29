@@ -49,7 +49,12 @@
                     <a href="{{ url_for('user_profile', username=story.user.username) }}" class="text-sm font-bold text-white no-underline">{{ story.user.username }}</a>
                     <span class="text-[12px] text-white/50 ml-2">{{ story.created_at|timeago }}</span>
                 </div>
-                <a href="{{ url_for('index') }}" class="w-8 h-8 flex items-center justify-center text-white text-2xl no-underline bg-white/20 rounded-full hover:bg-white/30 transition-colors">×</a>
+                <div class="flex items-center gap-2">
+                    {% if story.media_type == 'video' %}
+                    <button id="storyMuteBtn" onclick="toggleStoryMute()" class="w-8 h-8 flex items-center justify-center text-white text-lg bg-white/20 rounded-full hover:bg-white/30 transition-colors border-none cursor-pointer">🔇</button>
+                    {% endif %}
+                    <a href="{{ url_for('index') }}" class="w-8 h-8 flex items-center justify-center text-white text-2xl no-underline bg-white/20 rounded-full hover:bg-white/30 transition-colors">×</a>
+                </div>
             </div>
             
             <div class="absolute top-[60px] bottom-[80px] w-[30%] left-0 z-[50] cursor-pointer" onclick="prevStory()"></div>
@@ -291,6 +296,13 @@
             startProgress();
         }
         
+        function toggleStoryMute() {
+            if (!media || media.tagName !== 'VIDEO') return;
+            media.muted = !media.muted;
+            const btn = document.getElementById('storyMuteBtn');
+            if (btn) btn.textContent = media.muted ? '🔇' : '🔊';
+        }
+
         window.addEventListener('load', () => {
             createProgressBars();
             startProgress();
