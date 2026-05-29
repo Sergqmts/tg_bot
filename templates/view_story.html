@@ -204,19 +204,21 @@
             updateProgressBars();
         }
         
+        const storyIds = {{ all_stories | map(attribute='id') | list | tojson }};
+
         function nextStory() {
             if (currentIndex < totalStories - 1) {
                 currentIndex++;
-                window.location.href = '/view_story/' + currentIndex;
+                window.location.href = '/story/' + storyIds[currentIndex];
             } else {
                 window.location.href = '{{ url_for("index") }}';
             }
         }
-        
+
         function prevStory() {
             if (currentIndex > 0) {
                 currentIndex--;
-                window.location.href = '/view_story/' + currentIndex;
+                window.location.href = '/story/' + storyIds[currentIndex];
             }
         }
         
@@ -225,13 +227,12 @@
         }
         
         function react(emoji) {
-            fetch('/story/' + {{ story.id }} + '/react', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ emoji: emoji })
-            }).then(() => {
-                document.getElementById('reactionPicker').classList.add('hidden');
-            });
+            const fd = new FormData();
+            fd.append('emoji', emoji);
+            const csrf = document.querySelector('meta[name="csrf-token"]');
+            if (csrf) fd.append('csrf_token', csrf.content);
+            fetch('/story/' + {{ story.id }} + '/react', { method: 'POST', body: fd })
+                .then(() => { document.getElementById('reactionPicker').classList.add('hidden'); });
         }
         
         function focusReply() {
@@ -245,13 +246,12 @@
         function sendReply() {
             const input = document.getElementById('replyInput');
             if (!input.value.trim()) return;
-            fetch('/story/' + {{ story.id }} + '/reply', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ body: input.value })
-            }).then(() => {
-                input.value = '';
-            });
+            const fd = new FormData();
+            fd.append('body', input.value);
+            const csrf = document.querySelector('meta[name="csrf-token"]');
+            if (csrf) fd.append('csrf_token', csrf.content);
+            fetch('/story/' + {{ story.id }} + '/comment', { method: 'POST', body: fd })
+                .then(() => { input.value = ''; });
         }
         
         function deleteStory() {

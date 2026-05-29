@@ -265,4 +265,7 @@ def register_routes(app):
         if story.user_id == current_user.id:
             viewers = story.views.order_by(StoryView.viewed_at.desc()).all()
 
-        return render_template('view_story.html', story=story, reactions=reactions, comments=comments, all_stories=all_stories, current_index=current_index, viewers=viewers)
+        durations = [15000 if s.media_type == 'video' else 5000 for s in user_stories]
+        return render_template('view_story.html', story=story, reactions=reactions, comments=comments,
+                               all_stories=all_stories, current_index=current_index, viewers=viewers,
+                               index=current_index, total=len(user_stories), durations=durations)
