@@ -262,9 +262,10 @@
   .ve-sidebar { width: 100%; height: 56px; flex-direction: row; padding: 4px 8px; overflow-x: auto; border-right: none; border-bottom: 1px solid #1e2a4a; }
   .ve-tool-btn { width: 48px; height: 48px; font-size: 8px; flex-shrink: 0; }
   .ve-tool-btn .icon { font-size: 18px; }
-  .ve-center { flex: 1; min-height: 0; }
-  .ve-panel { width: 100%; position: fixed; left: 0; right: 0; bottom: -100%; height: 50vh; border-left: none; border-top: 1px solid #1e2a4a; border-radius: 20px 20px 0 0; transition: bottom .3s ease; z-index: 200; }
-  .ve-panel.open { bottom: 0; }
+  .ve-center { flex: 1; min-height: 0; overflow: hidden; }
+  .ve-panel { width: 100%; position: relative; left: auto; right: auto; bottom: auto; max-height: 0; overflow: hidden; border-left: none; border-top: 1px solid #1e2a4a; border-radius: 20px 20px 0 0; transition: max-height .35s ease; flex-shrink: 0; }
+  .ve-panel.open { max-height: 45vh; }
+  .ve-panel-content { overflow-y: auto; max-height: calc(45vh - 20px); }
   .ve-panel::before { content: ''; display: block; width: 40px; height: 4px; background: #333; border-radius: 2px; margin: 8px auto 0; }
 }
 </style>
