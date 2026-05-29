@@ -15,13 +15,15 @@
             <form method="POST" class="space-y-4">
                 {{ form.hidden_tag() }}
                 <div class="form-group">
-                    {{ form.username(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400", placeholder="Имя пользователя") }}
+                    <label for="{{ form.username.id }}" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 ml-1">Имя пользователя</label>
+                    {{ form.username(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400", placeholder="Введите имя пользователя") }}
                     {% for error in form.username.errors %}
                     <span class="form-error text-xs text-red-500 mt-1 block">{{ error }}</span>
                     {% endfor %}
                 </div>
                 <div class="form-group">
-                    {{ form.password(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400", placeholder="Пароль") }}
+                    <label for="{{ form.password.id }}" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 ml-1">Пароль</label>
+                    {{ form.password(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400", placeholder="Введите пароль") }}
                     {% for error in form.password.errors %}
                     <span class="form-error text-xs text-red-500 mt-1 block">{{ error }}</span>
                     {% endfor %}
