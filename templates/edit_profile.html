@@ -67,6 +67,31 @@
     margin-top: 10px;
     background: var(--primary-gradient);
 }
+input[type="file"].form-input {
+    background: none;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color var(--transition);
+}
+input[type="file"].form-input:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+input[type="file"].form-input::file-selector-button {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 5px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 10px;
+}
 .avatar-preview img {
     width: 100%;
     height: 100%;
