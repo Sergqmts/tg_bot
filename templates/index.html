@@ -262,9 +262,9 @@
         </div>
 
         {% if post.body %}
-        <div class="post-caption">
+        <div class="post-caption" data-lp>
             <strong>{{ post.author.username }}</strong>
-            {{ post.body }}
+            {{ post.body | linkify }}
         </div>
         {% endif %}
 

@@ -39,7 +39,7 @@
         </div>
 
         {% if post.body %}
-        <div class="post-body">{{ post.body }}</div>
+        <div class="post-body" data-lp>{{ post.body | linkify }}</div>
         {% endif %}
 
         {% for m in post.media %}

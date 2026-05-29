@@ -843,6 +843,89 @@ def timeago_filter(dt):
         return dt.strftime('%d %b %Y')
 
 
+@app.template_filter('linkify')
+def linkify_filter(text):
+    import re
+    from markupsafe import escape, Markup
+    if not text:
+        return Markup('')
+    escaped = str(escape(text))
+    url_re = re.compile(r'(https?://[^\s<>"\')\]]+)')
+    result = url_re.sub(
+        r'<a href="\1" target="_blank" rel="noopener noreferrer" '
+        r'class="text-brand-middle underline underline-offset-2 hover:opacity-75 break-all" '
+        r'data-lp-url="\1">\1</a>',
+        escaped
+    )
+    return Markup(result)
+
+
+_lp_cache = {}
+
+@app.route('/api/link-preview')
+@login_required
+def link_preview_api():
+    import re
+    from html.parser import HTMLParser
+
+    url = request.args.get('url', '').strip()
+    if not url.startswith(('http://', 'https://')):
+        return jsonify({'error': 'invalid url'}), 400
+
+    if url in _lp_cache:
+        return jsonify(_lp_cache[url])
+
+    class OGParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.og = {}
+            self.title_text = ''
+            self._in_title = False
+
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if tag == 'meta':
+                prop = attrs.get('property', '') or attrs.get('name', '')
+                content = attrs.get('content', '')
+                if prop in ('og:title', 'og:description', 'og:image', 'og:url',
+                            'twitter:title', 'twitter:description', 'twitter:image'):
+                    key = prop.split(':')[1]
+                    if key not in self.og:
+                        self.og[key] = content
+            elif tag == 'title':
+                self._in_title = True
+
+        def handle_data(self, data):
+            if self._in_title:
+                self.title_text += data
+
+        def handle_endtag(self, tag):
+            if tag == 'title':
+                self._in_title = False
+
+    try:
+        resp = requests.get(
+            url, timeout=5,
+            headers={'User-Agent': 'Mozilla/5.0 (compatible; VIBEBot/1.0)'},
+            allow_redirects=True
+        )
+        parser = OGParser()
+        parser.feed(resp.text[:50000])
+        og = parser.og
+        result = {
+            'url': url,
+            'title': og.get('title') or parser.title_text.strip() or '',
+            'description': og.get('description', ''),
+            'image': og.get('image', ''),
+        }
+        result['title'] = result['title'][:120]
+        result['description'] = result['description'][:200]
+        _lp_cache[url] = result
+        return jsonify(result)
+    except Exception:
+        return jsonify({'error': 'fetch failed'}), 200
+
+
 # Manually exempt specific AJAX endpoints from CSRF protection
 # These endpoints receive CSRF token in FormData from JavaScript
 csrf._exempt_views.add('send_voice')

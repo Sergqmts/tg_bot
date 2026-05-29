@@ -107,8 +107,23 @@
                 {% endif %}
                 {% endif %}
                 
-                {% if msg.body and msg.body != '[удалено]' %}
-                <div class="text-sm leading-snug">{{ msg.body }}</div>
+                {% if msg.body and msg.body.startswith('[shorts:') %}
+                {% set _shorts_id = msg.body[8:].split(']')[0] %}
+                {% set _video_url = msg.body.split('] ', 1)[1] if '] ' in msg.body else '' %}
+                <a href="/shorts/{{ _shorts_id }}" class="block rounded-xl overflow-hidden mb-1 mt-1 max-w-[180px] relative group/sv">
+                    <video src="{{ _video_url }}" muted playsinline preload="metadata" class="w-full max-h-[280px] object-cover bg-black"></video>
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/sv:opacity-100 transition-opacity bg-black/20">
+                        <div class="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center">
+                            <i class="fa-solid fa-play text-sm text-black ml-0.5"></i>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 flex items-center gap-1">
+                        <i class="fa-solid fa-film text-white text-[10px]"></i>
+                        <span class="text-white text-[10px] font-medium">Shorts</span>
+                    </div>
+                </a>
+                {% elif msg.body and msg.body != '[удалено]' %}
+                <div class="text-sm leading-snug" data-lp>{{ msg.body | linkify }}</div>
                 {% elif msg.body == '[удалено]' %}
                 <div class="text-sm italic opacity-60">Сообщение удалено</div>
                 {% endif %}

@@ -21,7 +21,7 @@
             <div class="preview-content">
                 <span class="preview-username">{{ message.sender.username }}</span>
                 {% if message.body %}
-                <p class="preview-text">{{ message.body[:80] }}{% if message.body|length > 80 %}...{% endif %}</p>
+                <p class="preview-text">{% if message.body.startswith('[shorts:') %}🎬 Shorts{% else %}{{ message.body[:80] }}{% if message.body|length > 80 %}...{% endif %}{% endif %}</p>
                 {% endif %}
                 {% if message.medias|length > 0 %}
                 <div class="preview-media">
