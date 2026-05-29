@@ -22,6 +22,10 @@
     --story-viewed: #E2E8F0;
     --danger: #EF4444;
     --success: #10B981;
+    --primary: #784BA0;
+    --border-color: #E2E8F0;
+    --bg-secondary: #F1F5F9;
+    --bg-hover: rgba(120, 75, 160, 0.06);
     --font-main: 'Inter', system-ui, -apple-system, sans-serif;
     --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
     --font-logo: 'Space Grotesk', sans-serif;
@@ -47,6 +51,9 @@
     --text-muted: #64748B;
     --border: #334155;
     --border-light: #475569;
+    --border-color: #334155;
+    --bg-secondary: #1E293B;
+    --bg-hover: rgba(120, 75, 160, 0.12);
     --accent-pink: #FFE4E8;
     --accent-purple: #F0E6FF;
     --accent-blue: #E6F4FF;
