@@ -707,6 +707,7 @@ with app.app_context():
         ('CookingBot', 'cookingbot', 'cookingbot@vibe.local', 'Готовь как профи',             'cooking-pro',       'Рецепты, техники и секреты профессиональной кулинарии'),
         ('AutoBot',    'autobot',    'autobot@vibe.local',    'АвтоМир',                      'auto-world',        'Всё об автомобилях: новости, советы, тест-драйвы'),
         ('EventsBot',  'eventsbot',  'eventsbot@vibe.local',  'Афиша и куда сходить',         'events-and-places', 'Мероприятия, концерты, выставки и интересные места'),
+        ('EntertainBot','entertainbot','entertainbot@vibe.local','Игры, кино и сериалы',         'games-and-cinema',  'Обсуждаем игры, фильмы и сериалы: обзоры, новинки, рекомендации'),
     ]
     for bot_username, bot_uname, bot_email, comm_name, comm_slug, comm_desc in system_communities:
         try:

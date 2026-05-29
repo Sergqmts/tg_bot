@@ -332,7 +332,7 @@ def register_routes(app):
     @login_required
     def delete_community(slug):
         comm = Community.query.filter_by(slug=slug).first_or_404()
-        if comm.creator != current_user:
+        if comm.creator != current_user and not (current_user.is_staff and comm.creator and comm.creator.is_bot):
             abort(403)
         db.session.delete(comm)
         db.session.commit()

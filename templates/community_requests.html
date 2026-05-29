@@ -25,12 +25,12 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <form method="POST" action="{{ url_for('approve_member', slug=community.slug, user_id=request.user_id) }}"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <form method="POST" action="{{ url_for('approve_member', slug=community.slug, user_id=request.user_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary">Принять</button>
                     </form>
-                    <form method="POST" action="{{ url_for('deny_member', slug=community.slug, user_id=request.user_id) }}"
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <form method="POST" action="{{ url_for('deny_member', slug=community.slug, user_id=request.user_id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-secondary">Отклонить</button>
                     </form>
                 </div>

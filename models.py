@@ -246,6 +246,8 @@ class User(UserMixin, db.Model):
             db.session.delete(repost)
 
     def is_admin(self, community):
+        if self.is_staff and community.creator and community.creator.is_bot:
+            return True
         member = CommunityMember.query.filter_by(user_id=self.id, community_id=community.id, status='approved').first()
         return member and member.role in ('admin', 'creator')
 
