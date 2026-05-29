@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <div class="notifications-header">
-        <h2>Уведомления</h2>
+        <h1 class="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle">Уведомления</h1>
         {% if unread_count > 0 %}
         <form method="POST" action="{{ url_for('mark_all_read') }}" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -91,9 +91,8 @@
     padding: 1rem;
     border-bottom: 1px solid var(--border);
 }
-.notifications-header h2 {
+.notifications-header h1 {
     margin: 0;
-    font-size: 1.25rem;
 }
 .btn-link {
     background: none;
