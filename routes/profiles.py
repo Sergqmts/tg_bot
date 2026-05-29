@@ -48,9 +48,12 @@ def register_routes(app):
         shorts_comments = {s.id: s.comments.count() for s in user_shorts}
 
         saved_posts = []
+        saved_shorts = []
         if current_user.is_authenticated and user.id == current_user.id:
             saved = SavedPost.query.filter_by(user_id=current_user.id).order_by(SavedPost.created_at.desc()).all()
             saved_posts = [Post.query.get(s.post_id) for s in saved if s.post_id]
+            saved_shorts_records = ShortsSaved.query.filter_by(user_id=current_user.id).order_by(ShortsSaved.created_at.desc()).all()
+            saved_shorts = [s.shorts for s in saved_shorts_records if s.shorts]
 
         profile_pct = 0
         if current_user.is_authenticated and user.id == current_user.id and getattr(user, 'onboarding_done', False):
@@ -60,7 +63,7 @@ def register_routes(app):
             except Exception:
                 pass
 
-        return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count, user_shorts=user_shorts, shorts_likes=shorts_likes, shorts_comments=shorts_comments, saved_posts=saved_posts, profile_pct=profile_pct)
+        return render_template('profile.html', user=user, posts=posts, user_reposts=user_reposts, repost_counts=repost_counts, is_following=is_following, is_blocked=is_blocked, is_pending=is_pending, can_view=can_view, pending_count=pending_count, user_shorts=user_shorts, shorts_likes=shorts_likes, shorts_comments=shorts_comments, saved_posts=saved_posts, saved_shorts=saved_shorts, profile_pct=profile_pct)
 
 
     @app.route('/follow/<username>', methods=['POST'])

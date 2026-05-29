@@ -258,12 +258,22 @@
                 <span>💬 {{ post.comments.count() }}</span>
             </div>
         </a>
-        {% else %}
+        {% endfor %}
+        {% for s in saved_shorts %}
+        <a href="{{ url_for('view_shorts', shorts_id=s.id) }}" class="grid-item" style="position:relative;">
+            <video src="{{ s.video_url }}" muted preload="metadata"></video>
+            <div class="grid-overlay" style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:linear-gradient(transparent,rgba(0,0,0,.6));display:flex;align-items:center;gap:6px;">
+                <span style="font-size:11px;">▶ Shorts</span>
+                <span>❤️ {{ s.likes.count() }}</span>
+            </div>
+        </a>
+        {% endfor %}
+        {% if not saved_posts and not saved_shorts %}
         <div class="empty-state" style="grid-column: 1/-1;">
             <div class="empty-icon">🔖</div>
             <h3 class="empty-title">Нет сохранённых</h3>
         </div>
-        {% endfor %}
+        {% endif %}
     </div>
     <script>
     function switchTab(tab) {
