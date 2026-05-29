@@ -1466,6 +1466,18 @@ img, video {
     box-shadow: var(--shadow-md);
 }
 
+.btn-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-hover);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
 .btn-outline {
     background: transparent;
     color: var(--text);
