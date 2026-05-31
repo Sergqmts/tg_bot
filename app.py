@@ -28,7 +28,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__,
              template_folder=os.path.join(BASE_DIR, 'templates'),
              static_folder=os.path.join(BASE_DIR, 'static'))
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
+app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
