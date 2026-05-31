@@ -193,6 +193,8 @@ tg_bot/
 - `google_id` на User для привязки
 - Авто-генерация username для новых пользователей
 - Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- В Google Cloud Console → Authorized redirect URIs: `https://ВАШ-ДОМЕН/login/google/callback`
+- `ProxyFix(x_proto=1)` + `PREFERRED_URL_SCHEME='https'` в `app.py` — нужны чтобы `url_for(..., _external=True)` генерировал `https://` за Railway-прокси. Без этого Google блокирует вход с ошибкой "недопустимый запрос"
 
 ### Музыкальный плеер
 - Интеграция с Deezer API (поиск, популярное, альбомы)
@@ -267,3 +269,8 @@ PORT=8080
 4. `Message.body NOT NULL` в PostgreSQL — всегда передавать `body=''`
 5. Нет requirements.txt generation — при новых зависимостях обновлять вручную
 6. JWT key < 32 bytes вызывает `InsecureKeyLengthWarning` — рекомендуется ключ длиннее 32 символов
+
+## 🔒 Безопасность
+- `ProxyFix(x_proto=1)` — только `x_proto`, без `x_host`. Включение `x_host=1` открывает host-header injection: атакующий может подменить домен в письмах и редиректах
+- `PREFERRED_URL_SCHEME='https'` — гарантирует https в generated URLs независимо от заголовков
+- CSRF защита обязательна на всех POST-формах (`flask_wtf`), Bot API эндпоинты — `csrf.exempt`
