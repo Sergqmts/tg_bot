@@ -3,6 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from flask_socketio import emit, join_room, leave_room
 
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
 from datetime import datetime, timedelta
 from socket import gethostname, gethostbyname
 import os
@@ -27,6 +28,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__,
              template_folder=os.path.join(BASE_DIR, 'templates'),
              static_folder=os.path.join(BASE_DIR, 'static'))
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
