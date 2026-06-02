@@ -24,7 +24,7 @@ def register_routes(app):
             query = Post.query
             if blocked_ids:
                 query = query.filter(~Post.user_id.in_(blocked_ids))
-            posts = query.order_by(Post.created_at.desc()).limit(100).all()
+            posts = query.order_by(Post.created_at.desc()).limit(20).all()
             
             repost_counts = {p.id: Repost.query.filter_by(post_id=p.id).count() for p in posts}
             
@@ -35,6 +35,25 @@ def register_routes(app):
             repost_counts = {}
             shorts_list = []
         return render_template('index.html', posts=posts, repost_counts=repost_counts, shorts_list=shorts_list)
+
+    @app.route('/feed')
+    @login_required
+    def feed_api():
+        before_id = request.args.get('before', type=int)
+        if not before_id:
+            return jsonify({'html': '', 'has_more': False, 'last_id': 0})
+
+        blocked_ids = [u.id for u in current_user.blocked]
+        query = Post.query.filter(Post.id < before_id)
+        if blocked_ids:
+            query = query.filter(~Post.user_id.in_(blocked_ids))
+        posts = query.order_by(Post.created_at.desc()).limit(20).all()
+
+        html = ''.join(render_template('_post_card.html', post=p) for p in posts)
+        has_more = len(posts) == 20
+        last_id = posts[-1].id if posts else before_id
+
+        return jsonify({'html': html, 'has_more': has_more, 'last_id': last_id})
 
     @app.route('/create', methods=['GET', 'POST'])
     @login_required
