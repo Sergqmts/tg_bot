@@ -244,13 +244,15 @@ img, video {
     top: 0;
     left: 0;
     right: 0;
-    height: 60px;
+    height: calc(60px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding-left: 16px;
+    padding-right: 16px;
     z-index: 100;
 }
 
@@ -329,7 +331,7 @@ img, video {
 /* ===== STORIES BAR ===== */
 .stories-bar {
     position: fixed;
-    top: 60px;
+    top: calc(60px + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
     height: 90px;
@@ -1782,7 +1784,7 @@ img, video {
     }
 
     .stories-bar {
-        top: 60px;
+        top: calc(60px + env(safe-area-inset-top, 0px));
         height: 82px;
     }
 

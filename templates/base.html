@@ -333,25 +333,25 @@
         <audio id="playerAudio" style="display:none;"></audio>
     </div>
     <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border md:hidden" style="z-index: 110; padding-bottom: env(safe-area-inset-bottom);">
-        <div class="flex items-center justify-around h-16 px-2">
-            <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+        <div class="flex items-center h-16">
+            <a href="{{ url_for('index') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-house text-xl"></i>
                 <span>Лента</span>
             </a>
-            <a href="{{ url_for('shorts') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+            <a href="{{ url_for('shorts') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-clapperboard text-xl"></i>
                 <span>Shorts</span>
             </a>
-            <a href="{{ url_for('messages') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+            <a href="{{ url_for('messages') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-paper-plane text-xl"></i>
                 <span>Сообщения</span>
             </a>
-            <a href="{{ url_for('communities') }}" class="flex flex-col items-center gap-0.5 text-xs {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+            <a href="{{ url_for('communities') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
                 <i class="fa-solid fa-users text-xl"></i>
                 <span>Сообщества</span>
             </a>
-            <div class="relative" id="moreMenuContainer">
-                <button onclick="toggleMoreMenu()" class="flex flex-col items-center gap-0.5 text-xs text-slate-400 hover:text-brand-middle transition-colors p-2">
+            <div class="flex-1 relative" id="moreMenuContainer">
+                <button onclick="toggleMoreMenu()" class="w-full flex flex-col items-center justify-center gap-0.5 text-xs text-slate-400 hover:text-brand-middle transition-colors py-2">
                     <i class="fa-solid fa-ellipsis text-xl"></i>
                     <span>Ещё</span>
                 </button>
