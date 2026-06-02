@@ -196,4 +196,50 @@ document.addEventListener('click', function(e) {
     });
 });
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"
+        integrity="sha384-C5g1ZoYBpnvKyArNZI21kaBEk3egHOYfHj/cUOHmyJ7CSDMyNMyM+STqfkBt8m2Y"
+        crossorigin="anonymous"></script>
+
+<script>
+(function () {
+    var feed = document.getElementById('posts-feed');
+    var sentinel = document.getElementById('feed-sentinel');
+    var spinner = document.getElementById('feed-spinner');
+    var endMsg = document.getElementById('feed-end');
+    if (!feed || !sentinel) return;
+
+    var loading = false;
+
+    var observer = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting || loading) return;
+        var lastId = parseInt(feed.dataset.lastId, 10);
+        if (!lastId) { observer.disconnect(); return; }
+        loading = true;
+        spinner.style.display = 'block';
+
+        fetch('/feed?before=' + lastId)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.html) {
+                    var clean = DOMPurify.sanitize(data.html, { FORCE_BODY: true });
+                    feed.insertAdjacentHTML('beforeend', clean);
+                    feed.dataset.lastId = data.last_id;
+                }
+                spinner.style.display = 'none';
+                loading = false;
+                if (!data.has_more) {
+                    observer.disconnect();
+                    endMsg.style.display = 'block';
+                }
+            })
+            .catch(function () {
+                spinner.style.display = 'none';
+                loading = false;
+            });
+    }, { rootMargin: '200px' });
+
+    observer.observe(sentinel);
+})();
+</script>
 {% endblock %}
