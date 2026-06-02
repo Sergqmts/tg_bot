@@ -1,0 +1,173 @@
+    <article class="post-card" style="position: relative;">
+        <div class="post-header">
+            {% if post.is_community_post and post.community %}
+            <a href="{{ url_for('community', slug=post.community.slug) }}" class="post-avatar">
+                {% if post.community.image and post.community.image.startswith('http') %}
+                <img src="{{ post.community.image }}" alt="">
+                {% elif post.community.image and post.community.image != 'community_default.png' %}
+                <img src="{{ url_for('uploaded_file', filename=post.community.image) }}" alt="">
+                {% else %}
+                <div class="post-avatar-placeholder">{{ post.community.name[0].upper() }}</div>
+                {% endif %}
+            </a>
+            <div class="post-author-group">
+                <a href="{{ url_for('community', slug=post.community.slug) }}" class="post-author">{{ post.community.name }}</a>
+                <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author-sub text-xs text-slate-500 hover:underline">{{ post.author.username }}</a>
+            </div>
+            {% else %}
+            <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-avatar">
+                {% set avatar_url = get_avatar_url(post.author) %}
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="">
+                {% else %}
+                <div class="post-avatar-placeholder">{{ post.author.username[0].upper() }}</div>
+                {% endif %}
+            </a>
+            <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author">{{ post.author.username }}</a>
+            {% endif %}
+            <span class="post-time">{{ post.created_at.strftime('%H:%M') }}</span>
+            <button class="post-more">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+            </button>
+        </div>
+
+        {% if post.media.count() > 0 %}
+        {% set media_list = post.media.all() %}
+        {% set media_count = media_list|length %}
+        <div class="post-media" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
+            {% for m in media_list %}
+            <div class="media-slide" data-post="{{ post.id }}" style="display: {% if loop.index == 1 %}block{% else %}none{% endif %};">
+                {% if m.cloudinary_url %}
+                {% if m.media_type == 'video' %}
+                <video src="{{ m.cloudinary_url }}" crossorigin="anonymous" muted playsinline></video>
+                {% elif m.media_type == 'audio' %}
+                <div class="audio-player" data-media-id="{{ m.id }}">
+                    <audio src="{{ m.cloudinary_url }}" preload="metadata"></audio>
+                    <div class="audio-player-content">
+                        <div class="audio-player-icon">🎵</div>
+                        <div class="audio-player-title">Аудиозапись</div>
+                        <div class="audio-player-controls">
+                            <button class="audio-player-play" onclick="toggleAudio(this)">▶</button>
+                            <input type="range" class="audio-player-progress" value="0" max="100" oninput="seekAudio(this)">
+                            <span class="audio-player-time">0:00</span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <img src="{{ m.cloudinary_url }}" alt="Пост">
+                {% endif %}
+                {% else %}
+                {% if m.media_type == 'video' %}
+                <video src="{{ url_for('uploaded_file', filename=m.filename) }}" muted playsinline></video>
+                {% elif m.media_type == 'audio' %}
+                <div class="audio-player" data-media-id="{{ m.id }}">
+                    <audio src="{{ url_for('uploaded_file', filename=m.filename) }}" preload="metadata"></audio>
+                    <div class="audio-player-content">
+                        <div class="audio-player-icon">🎵</div>
+                        <div class="audio-player-title">Аудиозапись</div>
+                        <div class="audio-player-controls">
+                            <button class="audio-player-play" onclick="toggleAudio(this)">▶</button>
+                            <input type="range" class="audio-player-progress" value="0" max="100" oninput="seekAudio(this)">
+                            <span class="audio-player-time">0:00</span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <img src="{{ url_for('uploaded_file', filename=m.filename) }}" alt="Пост">
+                {% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            {% if media_count > 1 %}
+            <div class="gallery-nav">
+                <button class="gallery-arrow" onclick="changeMedia(event, {{ post.id }}, {{ media_count }}, 'prev')">‹</button>
+                <button class="gallery-arrow" onclick="changeMedia(event, {{ post.id }}, {{ media_count }}, 'next')">›</button>
+            </div>
+            <div class="gallery-dots">
+                {% for i in range(media_count) %}
+                <span class="dot {% if loop.index == 1 %}active{% endif %}"></span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% elif post.body %}
+        <div class="post-text" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">
+            {{ post.body[:100] }}{% if post.body|length > 100 %}...{% endif %}
+        </div>
+        {% endif %}
+
+        {% if post.music_track %}
+        {% set t = post.music_track %}
+        <div class="music-attachment" onclick="event.stopPropagation();playMusicFromPost({{ t.id }})">
+            {% if t.cover_url %}
+            <img src="{{ t.cover_url }}" class="music-attachment-cover">
+            {% else %}
+            <div class="music-attachment-cover-placeholder">🎵</div>
+            {% endif %}
+            <div class="music-attachment-info">
+                <div class="music-attachment-title">{{ t.title }}</div>
+                <div class="music-attachment-artist">{{ t.artist }}</div>
+            </div>
+            <button class="music-attachment-play" onclick="event.stopPropagation();playMusicFromPost({{ t.id }})">▶</button>
+            <button class="btn-music-like" onclick="event.stopPropagation();toggleMusicLike({{ t.id }}, this)" title="В избранное">♡</button>
+        </div>
+        {% endif %}
+
+        <div class="post-actions">
+            <button class="action-btn like-btn" data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+            </button>
+            <a href="{{ url_for('view_post', post_id=post.id) }}" class="action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+            </a>
+            <button class="action-btn share-btn" onclick="showShareMenu({{ post.id }})">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+            </button>
+            <div class="share-menu" id="shareMenu{{ post.id }}" style="display:none;position:absolute;bottom:50px;right:0;width:min(200px,calc(100vw - 2rem));background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 0;z-index:100;">
+                <a href="{{ url_for('repost', post_id=post.id) }}" style="display:block;padding:10px 16px;color:var(--text);">Репост себе</a>
+                <a href="{{ url_for('forward_post', post_id=post.id) }}" style="display:block;padding:10px 16px;color:var(--text);">Поделиться</a>
+            </div>
+            <form method="POST" action="{{ url_for('save_post', post_id=post.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="action-btn save-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </button>
+            </form>
+            <div class="relative inline-block">
+                <button class="action-btn text-xs text-slate-400 hover:text-red-400 transition-colors" onclick="document.getElementById('report-form-{{ post.id }}').classList.toggle('hidden')">
+                    <i class="fa-regular fa-flag"></i>
+                </button>
+                <form method="POST" action="{{ url_for('submit_report') }}" id="report-form-{{ post.id }}" class="hidden absolute bottom-full right-0 mb-2 z-50 bg-white dark:bg-dark-card rounded-xl p-3 shadow-lg border dark:border-dark-border" style="width:min(280px,calc(100vw - 2rem));">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="target_post_id" value="{{ post.id }}">
+                    <input type="hidden" name="target_user_id" value="{{ post.user_id }}">
+                    <textarea name="reason" rows="2" placeholder="Reason for report..." class="w-full text-xs rounded-lg border p-2 dark:bg-dark-bg dark:border-dark-border outline-none mb-2" required></textarea>
+                    <button type="submit" class="w-full bg-red-500 text-white text-xs py-1.5 rounded-lg hover:bg-red-600 transition-colors">Report</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="post-likes">
+            <strong>{{ post.likes.count() }}</strong> отметок "Нравится"
+        </div>
+
+        {% if post.body %}
+        <div class="post-caption" data-lp>
+            <strong>{{ post.author.username }}</strong>
+            {{ post.body | linkify }}
+        </div>
+        {% endif %}
+
+        <div class="post-time">
+            {{ post.created_at.strftime('%d %b %Y г. в %H:%M') }}
+        </div>
+    </article>
