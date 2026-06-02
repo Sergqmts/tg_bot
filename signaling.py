@@ -1,11 +1,25 @@
 import json
 import logging
+import os
+import jwt as pyjwt
 from starlette.websockets import WebSocket
 
 logger = logging.getLogger(__name__)
 
 connections: dict[int, list[WebSocket]] = {}
 call_rooms: dict[int, set[int]] = {}
+
+
+def _verify_ws_token(token: str) -> int | None:
+    """Verify WebSocket JWT and return user_id, or None on failure."""
+    secret = os.environ.get('SECRET_KEY', '')
+    if not secret or not token:
+        return None
+    try:
+        payload = pyjwt.decode(token, secret, algorithms=['HS256'])
+        return int(payload['user_id'])
+    except Exception:
+        return None
 
 
 async def send_to_user(user_id: int, data: dict):
@@ -33,10 +47,14 @@ async def handle_call_ws(websocket: WebSocket):
             msg_type = msg.get('type')
 
             if msg_type == 'auth':
-                user_id = msg.get('user_id')
-                if user_id:
-                    connections.setdefault(user_id, []).append(websocket)
-                    await websocket.send_json({'type': 'auth:ok', 'user_id': user_id})
+                token = msg.get('token')
+                verified_id = _verify_ws_token(token)
+                if not verified_id:
+                    await websocket.send_json({'type': 'error', 'message': 'auth failed'})
+                    return
+                user_id = verified_id
+                connections.setdefault(user_id, []).append(websocket)
+                await websocket.send_json({'type': 'auth:ok', 'user_id': user_id})
                 continue
 
             if msg_type == 'ping':

@@ -75,14 +75,13 @@ function connectCallWS(userId) {
                 callSocket.send(JSON.stringify({ type: 'ping' }));
             }
         }, 15000);
-        wsSend({ type: 'auth', user_id: userId });
-        flushWsQueue();
-        if (callActive && currentCallId) {
-            wsSend({
-                type: 'call:rejoin',
-                data: { call_id: currentCallId }
-            });
-        }
+        fetch('/api/ws-token').then(function(r) { return r.json(); }).then(function(d) {
+            wsSend({ type: 'auth', token: d.token });
+            flushWsQueue();
+            if (callActive && currentCallId) {
+                wsSend({ type: 'call:rejoin', data: { call_id: currentCallId } });
+            }
+        });
     };
     callSocket.onmessage = function (ev) {
         var msg = JSON.parse(ev.data);

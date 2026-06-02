@@ -611,10 +611,17 @@ def register_routes(app):
         return bot_json_response({'ok': True})
 
     def bot_set_webhook(bot):
+        from urllib.parse import urlparse
+        from app import _is_ssrf_safe
         data = request.json or request.form
         url = data.get('url', '').strip()
         if not url:
             return bot_json_response('url is required', 400)
+        parsed = urlparse(url)
+        if parsed.scheme != 'https':
+            return bot_json_response('Webhook URL must use HTTPS', 400)
+        if not _is_ssrf_safe(url):
+            return bot_json_response('Webhook URL points to a forbidden address', 400)
         bot.webhook_url = url
         db.session.commit()
         return bot_json_response({'ok': True, 'url': url})

@@ -7,12 +7,13 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from datetime import datetime, timedelta
 from socket import gethostname, gethostbyname
 import os
+import jwt as pyjwt
 import cloudinary
 import cloudinary.uploader
 import tempfile
 import io
 
-from extensions import db, login_manager, socketio, csrf
+from extensions import db, login_manager, socketio, csrf, limiter
 from helpers import (
     cloudinary_configured, FREESOUND_API_KEY,
     allowed_file, upload_to_cloudinary, get_cloudinary_url, get_avatar_url,
@@ -43,9 +44,9 @@ else:
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 if not app.config['SECRET_KEY']:
-    import secrets
-    app.config['SECRET_KEY'] = secrets.token_hex(32)
-    app.logger.warning("SECRET_KEY not set - generating random key. Sessions will reset on restart.")
+    import secrets as _secrets
+    app.config['SECRET_KEY'] = _secrets.token_hex(32)
+    app.logger.warning("SECRET_KEY not set — generating random key; sessions will reset on restart. Set SECRET_KEY in environment for production.")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
@@ -102,7 +103,7 @@ def inject_stories():
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
 cloud_secret = os.environ.get('CLOUDINARY_API_SECRET')
-app.logger.info(f"Cloudinary config: cloud_name={cloud_name}, has_key={bool(cloud_key)}, has_secret={bool(cloud_secret)}")
+app.logger.debug(f"Cloudinary config: has_name={bool(cloud_name)}, has_key={bool(cloud_key)}, has_secret={bool(cloud_secret)}")
 if cloudinary_configured:
     cloudinary.config(
         cloud_name=cloud_name,
@@ -222,9 +223,32 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите для доступа'
 
-socketio.init_app(app, cors_allowed_origins="*", manage_session=False, async_mode='threading')
+_allowed_origin = os.environ.get('ALLOWED_ORIGIN', '*')
+socketio.init_app(app, cors_allowed_origins=_allowed_origin, manage_session=False, async_mode='threading')
 
 active_users = {}  # user_id -> sid
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    if not app.debug:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; "
+        "font-src 'self' fonts.gstatic.com; "
+        "img-src 'self' data: blob: https: res.cloudinary.com; "
+        "media-src 'self' blob: https: res.cloudinary.com; "
+        "connect-src 'self' wss: https:; "
+        "frame-src 'none';"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    return response
 
 
 @app.after_request
@@ -277,6 +301,7 @@ def handle_message(data):
         }, room=f'user_{recipient_id}')
 
 csrf.init_app(app)
+limiter.init_app(app)
 
 
 
@@ -673,7 +698,7 @@ with app.app_context():
                 username='NewsBot',
                 email='newsbot@vibe.local',
                 password='', is_bot=True,
-                bot_token='657313327:peqDnhI7QJEPa3yHzwH_ycugww-0BgNgHbvCyBiTd_A',
+                bot_token=os.environ.get('NEWS_BOT_TOKEN', ''),
                 bot_commands='sendPost', can_join_groups=True,
                 is_staff=True, email_confirmed=True
             )
@@ -983,6 +1008,18 @@ def link_preview_api():
         return jsonify(result)
     except Exception:
         return jsonify({'error': 'fetch failed'}), 200
+
+
+@app.route('/api/ws-token')
+@login_required
+def ws_token():
+    """Issue a short-lived JWT so the WebSocket can verify user identity."""
+    payload = {
+        'user_id': current_user.id,
+        'exp': datetime.utcnow() + timedelta(minutes=5),
+    }
+    token = pyjwt.encode(payload, app.config['SECRET_KEY'], algorithm='HS256')
+    return jsonify({'token': token})
 
 
 # Manually exempt specific AJAX endpoints from CSRF protection

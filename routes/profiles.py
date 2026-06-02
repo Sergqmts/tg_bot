@@ -68,7 +68,6 @@ def register_routes(app):
 
     @app.route('/follow/<username>', methods=['POST'])
     @login_required
-    @csrf.exempt
     def follow(username):
         user = User.query.filter_by(username=username).first_or_404()
         if user != current_user:
@@ -88,7 +87,6 @@ def register_routes(app):
 
     @app.route('/unfollow/<username>', methods=['POST'])
     @login_required
-    @csrf.exempt
     def unfollow(username):
         user = User.query.filter_by(username=username).first_or_404()
         current_user.unfollow(user)
@@ -99,7 +97,6 @@ def register_routes(app):
 
     @app.route('/block/<username>', methods=['POST'])
     @login_required
-    @csrf.exempt
     def block_user(username):
         user = User.query.filter_by(username=username).first_or_404()
         if user != current_user:
@@ -111,7 +108,6 @@ def register_routes(app):
 
     @app.route('/unblock/<username>', methods=['POST'])
     @login_required
-    @csrf.exempt
     def unblock_user(username):
         user = User.query.filter_by(username=username).first_or_404()
         current_user.unblock(user)

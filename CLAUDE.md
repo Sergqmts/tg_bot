@@ -44,16 +44,32 @@ static/style.css    — 2169 строк стилей (Tailwind + кастомн�
 
 ### Важные правила и решения
 - Сообщества идентифицируются по **slug**, числовые ID нигде не хардкожатся
-- Стафф-пользователи (`is_staff=True`) имеют права админа во всех сообществах системных ботов — логика в `User.is_admin()` в `models.py`
+- Стафф-пользователи (`is_staff=True`) имеют права админа во всех сообществах системных ботов — логика в `User.is_admin()` в `models.py`. **Не давать им авто-admin при вступлении в приватные сообщества.**
 - Медиа: Cloudinary (продакшн) или локальный `UPLOAD_FOLDER` (dev)
 - `Message.body` требует пустую строку `''`, не NULL
 - Socket.IO не работает с gunicorn sync workers — только Starlette WebSocket
-- CSRF токены обязательны во всех POST-формах
+- CSRF токены обязательны во всех POST-формах; **никогда не добавлять `@csrf.exempt` на state-changing endpoints** (follow/block/etc.)
 - **ProxyFix**: `app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)` + `PREFERRED_URL_SCHEME='https'` — обязательно для корректной генерации `https://` URL за Railway-прокси. `x_host=1` НЕ включать — уязвимость host-header injection
 - **Google OAuth callback URI**: в Google Cloud Console → Authorized redirect URIs должен быть `https://ВАШ-ДОМЕН/login/google/callback` (именно https, иначе ошибка "недопустимый запрос")
+- **WebSocket auth**: `/ws/call` требует JWT-токен, получаемый через `GET /api/ws-token` (требует авторизации). Токен 5-минутный. Клиент обязан запросить токен перед auth-сообщением.
+- **Editor service**: endpoint `/api/editor/publish` защищён `X-Service-Token` + server-side session token. Сессионный токен выдаётся через `POST /api/editor/session` (требует авторизации, 30 мин).
+- **Open redirect**: все использования `redirect(request.args.get('next'))` должны проходить через `_is_safe_redirect()` из `routes/auth.py`.
+- **Минимальная длина пароля**: 10 символов (форма + роут).
+
+### Безопасность — что нельзя делать
+- Хардкодить токены/секреты в коде (все в env vars, смотри `.env.example`)
+- Доверять `user_id` из тела внешних запросов без валидации сессионным токеном
+- Принимать webhook URL без проверки HTTPS и SSRF (`_is_ssrf_safe()` в `app.py`)
+- Добавлять пользователей в групповой чат без проверки, что `current_user` с ними знаком (подписки/подписчики)
+
+### Security headers
+Устанавливаются автоматически в `@app.after_request set_security_headers` (app.py):
+`X-Content-Type-Options`, `X-Frame-Options: DENY`, `X-XSS-Protection`, `Strict-Transport-Security` (только prod), `Content-Security-Policy`, `Referrer-Policy`
 
 ### Переменные окружения
-`DATABASE_URL`, `SECRET_KEY`, `CLOUDINARY_*`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CLOUDFLARE_TURN_*`, `FREESOUND_API_KEY`, `EDITOR_SERVICE_URL`, `EDITOR_SERVICE_TOKEN`, `EDITOR_JWT_SECRET`, `JWT_SECRET`
+`DATABASE_URL`, `SECRET_KEY`, `CLOUDINARY_*`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `METERED_APP_NAME`, `METERED_API_KEY`, `FREESOUND_API_KEY`, `EDITOR_SERVICE_URL`, `EDITOR_SERVICE_TOKEN`, `EDITOR_JWT_SECRET`, `ALLOWED_ORIGIN`, `NEWS_BOT_TOKEN`, `GITHUB_WEBHOOK_SECRET`
+
+Полный список с примерами — в `.env.example`.
 
 ### Деплой
 Railway (основной) + Vercel (API функции). Procfile: gunicorn.

@@ -240,6 +240,13 @@ def register_routes(app):
         if story.is_expired() and not story.is_saved and not (story.is_archived and story.user_id == current_user.id):
             abort(404)
 
+        if story.user_id != current_user.id:
+            author = story.user
+            if author.is_private and not current_user.is_following(author):
+                abort(403)
+            if current_user.is_blocking(author) or author.is_blocking(current_user):
+                abort(403)
+
         # Записываем просмотр (только если не автор)
         if story.user_id != current_user.id:
             existing_view = StoryView.query.filter_by(story_id=story.id, user_id=current_user.id).first()

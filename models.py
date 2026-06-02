@@ -813,7 +813,7 @@ class FeatureAnnouncement(db.Model):
 class RegistrationForm(FlaskForm):
     username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=3, max=50)])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Пароль', validators=[DataRequired(), Length(min=6)])
+    password = PasswordField('Пароль', validators=[DataRequired(), Length(min=10)])
     confirm = PasswordField('Повторите пароль', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Регистрация')
 
@@ -907,6 +907,6 @@ class ForgotPasswordForm(FlaskForm):
 
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField('Новый пароль', validators=[DataRequired(), Length(min=6)])
+    password = PasswordField('Новый пароль', validators=[DataRequired(), Length(min=10)])
     confirm = PasswordField('Подтвердите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли не совпадают')])
     submit = SubmitField('Сохранить пароль')

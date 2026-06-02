@@ -1,5 +1,6 @@
 def register_routes(app):
     import os
+    import secrets
     from datetime import datetime, timedelta
     from flask import request, jsonify, redirect, url_for, abort, current_app
     from flask_login import login_required, current_user
@@ -8,12 +9,21 @@ def register_routes(app):
     import jwt as pyjwt
 
     EDITOR_SERVICE_TOKEN = os.environ.get('EDITOR_SERVICE_TOKEN')
-    JWT_SECRET = os.environ.get('EDITOR_JWT_SECRET') or app.config.get('SECRET_KEY', 'dev-secret')
+    JWT_SECRET = os.environ.get('EDITOR_JWT_SECRET') or app.config.get('SECRET_KEY')
     EDITOR_SERVICE_URL = os.environ.get('EDITOR_SERVICE_URL', 'http://localhost:8080').rstrip('/')
+
+    # Short-lived server-side sessions: {session_token: (user_id, expires_at)}
+    _editor_sessions: dict = {}
+
+    def _cleanup_sessions():
+        now = datetime.utcnow()
+        expired = [k for k, (_, exp) in _editor_sessions.items() if exp < now]
+        for k in expired:
+            del _editor_sessions[k]
 
     def check_service_token():
         token = request.headers.get('X-Service-Token')
-        if not token or token != EDITOR_SERVICE_TOKEN:
+        if not EDITOR_SERVICE_TOKEN or not token or token != EDITOR_SERVICE_TOKEN:
             abort(403)
 
     def generate_editor_token(user):
@@ -24,6 +34,15 @@ def register_routes(app):
         }
         return pyjwt.encode(payload, JWT_SECRET, algorithm='HS256')
 
+    @app.route('/api/editor/session', methods=['POST'])
+    @login_required
+    def editor_create_session():
+        """Create a short-lived session token to bind the editor request to the current user."""
+        _cleanup_sessions()
+        token = secrets.token_urlsafe(32)
+        _editor_sessions[token] = (current_user.id, datetime.utcnow() + timedelta(minutes=30))
+        return jsonify({'session_token': token})
+
     @app.route('/api/editor/publish', methods=['POST'])
     def editor_publish():
         check_service_token()
@@ -32,8 +51,18 @@ def register_routes(app):
         image_url = data.get('image_url')
         caption = data.get('caption', '')
         target = data.get('target', 'feed')
-        user_id = data.get('user_id')
         return_url = data.get('return_url')
+
+        # Resolve user_id from server-side session token (trusted) or fall back to body (trusted service)
+        session_token = data.get('session_token')
+        if session_token:
+            _cleanup_sessions()
+            session = _editor_sessions.pop(session_token, None)
+            if not session or session[1] < datetime.utcnow():
+                return jsonify({'status': 'error', 'message': 'Invalid or expired session'}), 403
+            user_id = session[0]
+        else:
+            user_id = data.get('user_id')
 
         if not image_url or not user_id:
             return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400

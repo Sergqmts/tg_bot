@@ -211,10 +211,20 @@ def register_routes(app):
             member = ChatMember(chat_id=chat.id, user_id=current_user.id, role='admin')
             db.session.add(member)
 
+            allowed_ids = set(u.id for u in User.query.filter_by(is_bot=True).all())
+            allowed_ids.update(u.id for u in current_user.followed)
+            allowed_ids.update(u.id for u in current_user.followers)
             for member_id in member_ids:
-                if int(member_id) != current_user.id:
-                    member = ChatMember(chat_id=chat.id, user_id=int(member_id), role='member')
-                    db.session.add(member)
+                try:
+                    mid = int(member_id)
+                except (ValueError, TypeError):
+                    continue
+                if mid == current_user.id:
+                    continue
+                if mid not in allowed_ids:
+                    continue
+                member = ChatMember(chat_id=chat.id, user_id=mid, role='member')
+                db.session.add(member)
 
             db.session.commit()
             flash(f'Чат "{name}" создан')

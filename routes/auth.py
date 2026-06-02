@@ -1,11 +1,17 @@
 def register_routes(app):
     from flask import render_template, redirect, url_for, flash, request, current_app
     from flask_login import login_user, logout_user, login_required, current_user
-    from extensions import db
+    from extensions import db, limiter
     from models import User, RegistrationForm, LoginForm
     from authlib.integrations.flask_client import OAuth
     import secrets
     from datetime import datetime, timedelta
+    from urllib.parse import urlparse, urljoin
+
+    def _is_safe_redirect(target):
+        ref = urlparse(request.host_url)
+        test = urlparse(urljoin(request.host_url, target))
+        return test.scheme in ('http', 'https') and ref.netloc == test.netloc
 
     oauth = OAuth(app)
     google_client_id = app.config.get('GOOGLE_CLIENT_ID', '')
@@ -21,6 +27,7 @@ def register_routes(app):
         )
 
     @app.route('/register', methods=['GET', 'POST'])
+    @limiter.limit('10 per hour')
     def register():
         if current_user.is_authenticated:
             return redirect(url_for('index'))
@@ -40,6 +47,7 @@ def register_routes(app):
         return render_template('register.html', form=form)
 
     @app.route('/login', methods=['GET', 'POST'])
+    @limiter.limit('10 per minute', methods=['POST'])
     def login():
         if current_user.is_authenticated:
             return redirect(url_for('index'))
@@ -52,7 +60,9 @@ def register_routes(app):
                     return render_template('login.html', form=form)
                 login_user(user, remember=form.remember.data)
                 next_page = request.args.get('next')
-                return redirect(next_page) if next_page else redirect(url_for('index'))
+                if next_page and _is_safe_redirect(next_page):
+                    return redirect(next_page)
+                return redirect(url_for('index'))
             flash('Неверное имя пользователя или пароль')
         return render_template('login.html', form=form)
 
@@ -142,6 +152,7 @@ def register_routes(app):
     # ── Восстановление пароля ──────────────────────────────────────────────
 
     @app.route('/forgot-password', methods=['GET', 'POST'])
+    @limiter.limit('5 per hour', methods=['POST'])
     def forgot_password():
         if current_user.is_authenticated:
             return redirect(url_for('index'))
@@ -175,8 +186,8 @@ def register_routes(app):
         if request.method == 'POST':
             password = request.form.get('password', '')
             confirm = request.form.get('confirm_password', '')
-            if len(password) < 6:
-                flash('Пароль должен содержать не менее 6 символов.')
+            if len(password) < 10:
+                flash('Пароль должен содержать не менее 10 символов.')
                 return render_template('reset_password.html', token=token)
             if password != confirm:
                 flash('Пароли не совпадают.')
