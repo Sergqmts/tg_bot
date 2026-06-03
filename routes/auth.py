@@ -59,9 +59,11 @@ def register_routes(app):
                     flash('Ваш аккаунт заблокирован за нарушение правил')
                     return render_template('login.html', form=form)
                 if user.totp_enabled:
+                    import time
                     from flask import session as flask_session
                     flask_session['totp_pending_user_id'] = user.id
                     flask_session['totp_remember'] = bool(form.remember.data)
+                    flask_session['totp_pending_at'] = time.time()
                     next_page = request.args.get('next')
                     if next_page and _is_safe_redirect(next_page):
                         flask_session['totp_next'] = next_page
@@ -109,11 +111,21 @@ def register_routes(app):
         user = User.query.filter_by(google_id=google_id).first()
 
         if user:
+            if user.totp_enabled:
+                import time
+                from flask import session as flask_session
+                flask_session['totp_pending_user_id'] = user.id
+                flask_session['totp_remember'] = False
+                flask_session['totp_pending_at'] = time.time()
+                return redirect(url_for('login_2fa'))
             login_user(user)
             return redirect(url_for('index'))
 
         user_by_email = User.query.filter_by(email=email).first()
         if user_by_email:
+            if user_by_email.totp_enabled:
+                flash('Этот аккаунт защищён 2FA. Войдите через пароль, чтобы связать Google.')
+                return redirect(url_for('login'))
             user_by_email.google_id = google_id
             if picture and not user_by_email.avatar_cloudinary_url:
                 user_by_email.avatar_cloudinary_url = picture
@@ -220,16 +232,35 @@ def register_routes(app):
         if not user or not user.totp_enabled:
             flask_session.pop('totp_pending_user_id', None)
             return redirect(url_for('login'))
+        import time
+        pending_at = flask_session.get('totp_pending_at', 0)
+        if time.time() - pending_at > 300:
+            for k in ('totp_pending_user_id', 'totp_remember', 'totp_next', 'totp_pending_at', 'totp_attempts'):
+                flask_session.pop(k, None)
+            flash('Сессия истекла. Войдите снова.')
+            return redirect(url_for('login'))
         if request.method == 'POST':
             code = request.form.get('code', '').strip()
             if not code or not code.isdigit() or len(code) != 6:
                 flash('Код должен содержать 6 цифр.')
                 return render_template('login_2fa.html')
+            attempts = flask_session.get('totp_attempts', 0) + 1
+            flask_session['totp_attempts'] = attempts
+            if attempts > 5:
+                flask_session.pop('totp_pending_user_id', None)
+                flask_session.pop('totp_attempts', None)
+                flask_session.pop('totp_remember', None)
+                flask_session.pop('totp_next', None)
+                flask_session.pop('totp_pending_at', None)
+                flash('Слишком много неверных попыток. Войдите снова.')
+                return redirect(url_for('login'))
             totp = pyotp.TOTP(user.totp_secret)
             if totp.verify(code, valid_window=1):
                 remember = flask_session.pop('totp_remember', False)
                 next_page = flask_session.pop('totp_next', None)
                 flask_session.pop('totp_pending_user_id', None)
+                flask_session.pop('totp_attempts', None)
+                flask_session.pop('totp_pending_at', None)
                 login_user(user, remember=remember)
                 if next_page and _is_safe_redirect(next_page):
                     return redirect(next_page)
