@@ -185,12 +185,15 @@ def init_db():
                     'onboarding_done': 'BOOLEAN DEFAULT FALSE',
                     'is_business': 'BOOLEAN DEFAULT FALSE',
                     'avatar_cloudinary_url': 'VARCHAR(500)',
+                    'totp_secret': 'VARCHAR(32)',
+                    'totp_enabled': 'BOOLEAN DEFAULT FALSE',
                 }
                 user_cols_sqlite = {
                     'creator_id': 'INTEGER', 'is_banned': 'BOOLEAN', 'is_staff': 'BOOLEAN',
                     'reset_token': 'TEXT', 'reset_token_expires': 'TIMESTAMP',
                     'onboarding_done': 'BOOLEAN', 'is_business': 'BOOLEAN',
                     'avatar_cloudinary_url': 'TEXT',
+                    'totp_secret': 'TEXT', 'totp_enabled': 'BOOLEAN',
                 }
                 for col in user_cols_pg:
                     if not column_exists_conn(conn, 'user', col):

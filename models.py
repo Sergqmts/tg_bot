@@ -69,6 +69,10 @@ class User(UserMixin, db.Model):
     reset_token = db.Column(db.String(64), nullable=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
 
+    # 2FA
+    totp_secret = db.Column(db.String(32), nullable=True)
+    totp_enabled = db.Column(db.Boolean, default=False)
+
     # Onboarding
     onboarding_done = db.Column(db.Boolean, default=False)
 
