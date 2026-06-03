@@ -58,6 +58,14 @@ def register_routes(app):
                 if user.is_banned:
                     flash('Ваш аккаунт заблокирован за нарушение правил')
                     return render_template('login.html', form=form)
+                if user.totp_enabled:
+                    from flask import session as flask_session
+                    flask_session['totp_pending_user_id'] = user.id
+                    flask_session['totp_remember'] = bool(form.remember.data)
+                    next_page = request.args.get('next')
+                    if next_page and _is_safe_redirect(next_page):
+                        flask_session['totp_next'] = next_page
+                    return redirect(url_for('login_2fa'))
                 login_user(user, remember=form.remember.data)
                 next_page = request.args.get('next')
                 if next_page and _is_safe_redirect(next_page):
@@ -199,3 +207,32 @@ def register_routes(app):
             flash('Пароль успешно изменён. Войдите в аккаунт.')
             return redirect(url_for('login'))
         return render_template('reset_password.html', token=token)
+
+    @app.route('/login/2fa', methods=['GET', 'POST'])
+    @limiter.limit('10 per minute', methods=['POST'])
+    def login_2fa():
+        from flask import session as flask_session
+        import pyotp
+        user_id = flask_session.get('totp_pending_user_id')
+        if not user_id:
+            return redirect(url_for('login'))
+        user = User.query.get(user_id)
+        if not user or not user.totp_enabled:
+            flask_session.pop('totp_pending_user_id', None)
+            return redirect(url_for('login'))
+        if request.method == 'POST':
+            code = request.form.get('code', '').strip()
+            if not code or not code.isdigit() or len(code) != 6:
+                flash('Код должен содержать 6 цифр.')
+                return render_template('login_2fa.html')
+            totp = pyotp.TOTP(user.totp_secret)
+            if totp.verify(code, valid_window=1):
+                remember = flask_session.pop('totp_remember', False)
+                next_page = flask_session.pop('totp_next', None)
+                flask_session.pop('totp_pending_user_id', None)
+                login_user(user, remember=remember)
+                if next_page and _is_safe_redirect(next_page):
+                    return redirect(next_page)
+                return redirect(url_for('index'))
+            flash('Неверный код. Попробуйте снова.')
+        return render_template('login_2fa.html')
