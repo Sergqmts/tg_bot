@@ -28,6 +28,8 @@ starlette==0.46.0
 websockets==15.0
 requests==2.32.3
 Pillow==11.1.0
+pyotp==2.9.0
+qrcode[pil]==8.0
 faster-whisper==1.2.1
 pytest==8.3.5
 PyJWT==2.10.1
