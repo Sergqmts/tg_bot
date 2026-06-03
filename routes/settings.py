@@ -1,7 +1,7 @@
 def register_routes(app):
     from flask import render_template, redirect, url_for, flash, request, session
     from flask_login import login_required, current_user
-    from extensions import db
+    from extensions import db, limiter
     from models import User
     import pyotp
     import qrcode
@@ -34,9 +34,13 @@ def register_routes(app):
 
     @app.route('/settings/2fa/enable', methods=['POST'])
     @login_required
+    @limiter.limit('5 per minute')
     def settings_2fa_enable():
         secret = session.get('totp_setup_secret')
         code = request.form.get('code', '').strip()
+        if not code or not code.isdigit() or len(code) != 6:
+            flash('Код должен содержать 6 цифр.')
+            return redirect(url_for('settings_2fa'))
         if not secret:
             flash('Сессия истекла. Начните заново.')
             return redirect(url_for('settings_2fa'))
@@ -53,8 +57,12 @@ def register_routes(app):
 
     @app.route('/settings/2fa/disable', methods=['POST'])
     @login_required
+    @limiter.limit('5 per minute')
     def settings_2fa_disable():
         code = request.form.get('code', '').strip()
+        if not code or not code.isdigit() or len(code) != 6:
+            flash('Код должен содержать 6 цифр.')
+            return redirect(url_for('settings_2fa'))
         if not current_user.totp_enabled or not current_user.totp_secret:
             flash('2FA не включена.')
             return redirect(url_for('settings_2fa'))
