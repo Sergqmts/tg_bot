@@ -199,7 +199,21 @@ input[type="file"].form-input::file-selector-button {
                 <label for="approve_followers">{{ form.approve_followers.label.text }}</label>
             </div>
         </div>
-        
+
+        <div class="form-section">
+            <div class="form-section-title">Безопасность</div>
+            <a href="{{ url_for('settings_2fa') }}" class="flex items-center justify-between py-3 px-4 bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-shield-halved text-brand-middle"></i>
+                    <div>
+                        <div class="text-sm font-semibold">Двухфакторная аутентификация</div>
+                        <div class="text-xs text-slate-400">{% if current_user.totp_enabled %}Включена{% else %}Выключена{% endif %}</div>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+            </a>
+        </div>
+
         <div class="form-actions">
             {{ form.submit(class="btn btn-primary") }}
             <a href="{{ url_for('user_profile', username=current_user.username) }}" class="btn btn-secondary">Отмена</a>
