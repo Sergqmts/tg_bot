@@ -29,7 +29,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__,
              template_folder=os.path.join(BASE_DIR, 'templates'),
              static_folder=os.path.join(BASE_DIR, 'static'))
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -47,6 +47,16 @@ if not app.config['SECRET_KEY']:
     import secrets as _secrets
     app.config['SECRET_KEY'] = _secrets.token_hex(32)
     app.logger.warning("SECRET_KEY not set — generating random key; sessions will reset on restart. Set SECRET_KEY in environment for production.")
+
+# Session / cookie hardening
+app.config['SESSION_COOKIE_SECURE'] = True        # HTTPS only
+app.config['SESSION_COOKIE_HTTPONLY'] = True       # no JS access
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # CSRF mitigation
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=14)
+app.config['REMEMBER_COOKIE_SECURE'] = True
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
@@ -187,6 +197,8 @@ def init_db():
                     'avatar_cloudinary_url': 'VARCHAR(500)',
                     'totp_secret': 'VARCHAR(32)',
                     'totp_enabled': 'BOOLEAN DEFAULT FALSE',
+                    'email_confirmed': 'BOOLEAN DEFAULT FALSE',
+                    'email_confirm_token': 'VARCHAR(64)',
                 }
                 user_cols_sqlite = {
                     'creator_id': 'INTEGER', 'is_banned': 'BOOLEAN', 'is_staff': 'BOOLEAN',
@@ -194,6 +206,7 @@ def init_db():
                     'onboarding_done': 'BOOLEAN', 'is_business': 'BOOLEAN',
                     'avatar_cloudinary_url': 'TEXT',
                     'totp_secret': 'TEXT', 'totp_enabled': 'BOOLEAN',
+                    'email_confirmed': 'BOOLEAN', 'email_confirm_token': 'TEXT',
                 }
                 for col in user_cols_pg:
                     if not column_exists_conn(conn, 'user', col):
@@ -225,6 +238,7 @@ with app.app_context():
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите для доступа'
+login_manager.session_protection = 'strong'
 
 _allowed_origin = os.environ.get('ALLOWED_ORIGIN', '*')
 socketio.init_app(app, cors_allowed_origins=_allowed_origin, manage_session=False, async_mode='threading')
@@ -326,7 +340,14 @@ def run_migrations():
     _migration_done = True
     
     from sqlalchemy import text
-    
+
+    try:
+        # Backfill: treat all existing users as email-confirmed so they keep access
+        db.session.execute(text('UPDATE "user" SET email_confirmed = TRUE WHERE email_confirmed IS NULL OR email_confirmed = FALSE'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     try:
         existing = get_table_columns('user')
         for col, typ in [('location', 'VARCHAR(100)'), ('website', 'VARCHAR(200)'), ('birthday', 'DATE'), ('interests', 'TEXT'), ('occupation', 'VARCHAR(100)')]:

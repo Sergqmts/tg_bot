@@ -33,21 +33,33 @@ def register_routes(app):
             return redirect(url_for('index'))
         form = RegistrationForm()
         if form.validate_on_submit():
-            user = User(username=form.username.data, email=form.email.data)
+            confirm_token = secrets.token_urlsafe(32)
+            user = User(
+                username=form.username.data,
+                email=form.email.data,
+                email_confirmed=False,
+                email_confirm_token=confirm_token,
+            )
             user.set_password(form.password.data)
             db.session.add(user)
             db.session.commit()
+            verify_url = url_for('verify_email', token=confirm_token, _external=True)
+            try:
+                from helpers import send_verification_email
+                send_verification_email(user, verify_url)
+            except Exception as e:
+                current_app.logger.warning(f"Verification email failed: {e}")
             try:
                 from helpers import send_welcome_dm
                 send_welcome_dm(user)
             except Exception as e:
                 current_app.logger.warning(f"Welcome DM failed: {e}")
-            login_user(user)
-            return redirect(url_for('onboarding'))
+            flash('Регистрация прошла успешно! Проверьте почту и подтвердите email.')
+            return redirect(url_for('login'))
         return render_template('register.html', form=form)
 
     @app.route('/login', methods=['GET', 'POST'])
-    @limiter.limit('10 per minute', methods=['POST'])
+    @limiter.limit('5 per minute', methods=['POST'])
     def login():
         if current_user.is_authenticated:
             return redirect(url_for('index'))
@@ -58,6 +70,13 @@ def register_routes(app):
                 if user.is_banned:
                     flash('Ваш аккаунт заблокирован за нарушение правил')
                     return render_template('login.html', form=form)
+                if not user.email_confirmed:
+                    flash('Подтвердите email перед входом. Проверьте почту или запросите новое письмо.')
+                    return render_template('login.html', form=form, resend_email=user.email)
+                # Transparent re-hash: upgrade old PBKDF2 hashes to scrypt on login
+                if user.needs_rehash:
+                    user.set_password(form.password.data)
+                    db.session.commit()
                 if user.totp_enabled:
                     import time
                     from flask import session as flask_session
@@ -127,6 +146,7 @@ def register_routes(app):
                 flash('Этот аккаунт защищён 2FA. Войдите через пароль, чтобы связать Google.')
                 return redirect(url_for('login'))
             user_by_email.google_id = google_id
+            user_by_email.email_confirmed = True  # Google verified the address
             if picture and not user_by_email.avatar_cloudinary_url:
                 user_by_email.avatar_cloudinary_url = picture
             db.session.commit()
@@ -149,6 +169,7 @@ def register_routes(app):
             username=username,
             email=email or f'{google_id}@google.local',
             google_id=google_id,
+            email_confirmed=True,  # Google already verified the address
         )
         user.set_password(password)
         if picture:
@@ -182,7 +203,7 @@ def register_routes(app):
             if user:
                 token = secrets.token_urlsafe(32)
                 user.reset_token = token
-                user.reset_token_expires = datetime.utcnow() + timedelta(hours=24)
+                user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
                 db.session.commit()
                 reset_url = url_for('reset_password', token=token, _external=True)
                 try:
@@ -267,3 +288,37 @@ def register_routes(app):
                 return redirect(url_for('index'))
             flash('Неверный код. Попробуйте снова.')
         return render_template('login_2fa.html')
+
+    # ── Email verification ────────────────────────────────────────────────
+
+    @app.route('/verify-email/<token>')
+    def verify_email(token):
+        user = User.query.filter_by(email_confirm_token=token).first()
+        if not user:
+            flash('Недействительная или уже использованная ссылка подтверждения.')
+            return redirect(url_for('login'))
+        user.email_confirmed = True
+        user.email_confirm_token = None
+        db.session.commit()
+        login_user(user)
+        flash('Email подтверждён! Добро пожаловать в Vibe.')
+        return redirect(url_for('onboarding') if not user.onboarding_done else url_for('index'))
+
+    @app.route('/resend-verification', methods=['POST'])
+    @limiter.limit('3 per hour', methods=['POST'])
+    def resend_verification():
+        email = request.form.get('email', '').strip()
+        user = User.query.filter_by(email=email).first()
+        # Always show same message to prevent user enumeration
+        if user and not user.email_confirmed:
+            token = secrets.token_urlsafe(32)
+            user.email_confirm_token = token
+            db.session.commit()
+            verify_url = url_for('verify_email', token=token, _external=True)
+            try:
+                from helpers import send_verification_email
+                send_verification_email(user, verify_url)
+            except Exception as e:
+                current_app.logger.warning(f"Resend verification failed: {e}")
+        flash('Если этот email зарегистрирован и не подтверждён, мы отправили новое письмо.')
+        return redirect(url_for('login'))

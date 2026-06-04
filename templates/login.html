@@ -54,9 +54,21 @@
         </div>
         
         <p class="text-center mt-6 text-sm text-slate-500">
-            Нет аккаунта? 
+            Нет аккаунта?
             <a href="{{ url_for('register') }}" class="text-brand-middle font-bold hover:text-brand-end transition-colors">Зарегистрируйтесь</a>
         </p>
+        {% if resend_email %}
+        <div class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl text-sm text-amber-700 dark:text-amber-300">
+            <p class="mb-2">Не получили письмо с подтверждением?</p>
+            <form method="POST" action="{{ url_for('resend_verification') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="email" value="{{ resend_email }}">
+                <button type="submit" class="text-brand-middle font-semibold underline underline-offset-2 hover:text-brand-end transition-colors">
+                    Отправить повторно
+                </button>
+            </form>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

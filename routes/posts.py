@@ -603,6 +603,12 @@ def register_routes(app):
     @app.route('/post/<int:post_id>')
     def view_post(post_id):
         post = Post.query.get_or_404(post_id)
+        author = post.author
+        if author and author.is_private:
+            if not current_user.is_authenticated:
+                abort(403)
+            if current_user.id != author.id and not current_user.is_following(author) and not current_user.is_staff:
+                abort(403)
         if current_user.is_authenticated and current_user.id != post.user_id:
             view = PostView(post_id=post.id, viewer_id=current_user.id)
             db.session.add(view)

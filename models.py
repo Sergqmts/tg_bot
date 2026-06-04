@@ -65,6 +65,10 @@ class User(UserMixin, db.Model):
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     is_banned = db.Column(db.Boolean, default=False)
 
+    # Email verification
+    email_confirmed = db.Column(db.Boolean, default=False)
+    email_confirm_token = db.Column(db.String(64), nullable=True)
+
     # Password reset
     reset_token = db.Column(db.String(64), nullable=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
@@ -101,10 +105,16 @@ class User(UserMixin, db.Model):
     messages_received = db.relationship('Message', foreign_keys='Message.recipient_id', backref='recipient', lazy='dynamic')
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        # scrypt is memory-hard (comparable to bcrypt/argon2); no extra dependency needed
+        self.password_hash = generate_password_hash(password, method='scrypt')
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def needs_rehash(self):
+        """True when stored hash uses old PBKDF2 — should be re-hashed on next login."""
+        return self.password_hash and self.password_hash.startswith('pbkdf2:')
 
     @property
     def warning_count(self):

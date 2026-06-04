@@ -131,6 +131,8 @@ def register_routes(app):
     @login_required
     def save_story(story_id):
         story = Story.query.get_or_404(story_id)
+        if story.user_id != current_user.id:
+            abort(403)
         story.is_saved = not story.is_saved
         db.session.commit()
         return redirect(request.referrer or url_for('index'))

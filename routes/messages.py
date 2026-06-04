@@ -673,81 +673,6 @@ def register_routes(app):
         return render_template('forward_message.html', message=message, chats=chats, other_user=other_user, following=following, Post=Post)
 
 
-    @app.route('/message/<int:message_id>/forward', methods=['POST'])
-    @login_required
-    def forward_message_post(message_id):
-        message = Message.query.get_or_404(message_id)
-
-        action = request.form.get('action')
-
-        if action == 'to_chat':
-            chat_id = request.form.get('chat_id')
-            if chat_id:
-                chat = Chat.query.get(int(chat_id))
-                member = ChatMember.query.filter_by(chat_id=chat.id, user_id=current_user.id).first()
-                if member:
-                    if message.body:
-                        forward_body = message.body
-                    else:
-                        forward_body = None
-
-                    new_msg = Message(
-                        body=forward_body,
-                        sender_id=current_user.id,
-                        chat_id=chat.id,
-                        post_id=message.post_id,
-                        forwarded_from_id=message.sender_id
-                    )
-                    db.session.add(new_msg)
-                    db.session.flush()
-
-                    for m in message.medias:
-                        new_media = MessageMedia(
-                            message_id=new_msg.id,
-                            media_url=m.media_url,
-                            media_type=m.media_type
-                        )
-                        db.session.add(new_media)
-
-                    db.session.commit()
-                    flash(f'Сообщение переслано в чат {chat.name}')
-                    return redirect(url_for('chat_view', chat_id=chat.id))
-
-        elif action == 'to_user':
-            username = request.form.get('username', '').strip()
-            user = User.query.filter_by(username=username).first()
-            if user:
-                if message.body:
-                    forward_body = message.body
-                else:
-                    forward_body = None
-
-                new_msg = Message(
-                    body=forward_body,
-                    sender_id=current_user.id,
-                    recipient_id=user.id,
-                    post_id=message.post_id,
-                    forwarded_from_id=message.sender_id
-                )
-                db.session.add(new_msg)
-                db.session.flush()
-
-                for m in message.medias:
-                    new_media = MessageMedia(
-                        message_id=new_msg.id,
-                        media_url=m.media_url,
-                        media_type=m.media_type
-                    )
-                    db.session.add(new_media)
-
-                db.session.commit()
-                flash(f'Сообщение переслано пользователю {user.username}')
-                return redirect(url_for('conversation', username=user.username))
-
-        flash('Ошибка при пересылке')
-        return redirect(url_for('messages'))
-
-
     @app.route('/message/<int:message_id>/delete', methods=['POST'])
     @login_required
     def delete_message(message_id):
@@ -959,26 +884,35 @@ def register_routes(app):
         chat = Chat.query.get_or_404(chat_id)
         member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
 
-        if not member:
-            flash('Вы не состоите в этом чате')
+        if not member or member.role != 'admin':
+            flash('Только администратор может добавлять участников')
             return redirect(url_for('messages'))
 
+        allowed_ids = set(u.id for u in User.query.filter_by(is_bot=True).all())
+        allowed_ids.update(u.id for u in current_user.followed)
+        allowed_ids.update(u.id for u in current_user.followers)
+
         if request.method == 'POST':
-            user_id = request.form.get('user_id')
-            if user_id:
+            user_id = request.form.get('user_id', type=int)
+            if user_id and user_id in allowed_ids:
                 user = User.query.get(user_id)
-                if user:
+                if user and not ChatMember.query.filter_by(chat_id=chat_id, user_id=user.id).first():
                     new_member = ChatMember(chat_id=chat_id, user_id=user.id, role='member')
                     db.session.add(new_member)
                     db.session.commit()
                     flash(f'{user.username} добавлен в чат')
+                elif user_id not in allowed_ids:
+                    flash('Нельзя добавить пользователя, с которым вы не знакомы')
             return redirect(url_for('chat_members', chat_id=chat_id))
 
         members = ChatMember.query.filter_by(chat_id=chat_id).all()
-        current_member_ids = [m.user_id for m in members]
-        all_users = User.query.filter(User.id.notin_(current_member_ids)).all()
+        current_member_ids = {m.user_id for m in members}
+        available_users = User.query.filter(
+            User.id.in_(allowed_ids),
+            User.id.notin_(current_member_ids)
+        ).all()
 
-        return render_template('chat_add_member.html', chat=chat, users=all_users)
+        return render_template('chat_add_member.html', chat=chat, users=available_users)
 
 
     @app.route('/chat/<int:chat_id>/remove_member/<int:user_id>', methods=['POST'])

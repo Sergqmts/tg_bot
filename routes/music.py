@@ -232,7 +232,7 @@ def register_routes(app):
         p = Playlist.query.get_or_404(playlist_id)
         if p.user_id != current_user.id:
             abort(403)
-        item = PlaylistItem.query.get_or_404(item_id)
+        item = PlaylistItem.query.filter_by(id=item_id, playlist_id=p.id).first_or_404()
         db.session.delete(item)
         db.session.commit()
         return redirect(url_for('music_playlist', playlist_id=p.id))

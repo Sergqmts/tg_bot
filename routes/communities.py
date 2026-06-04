@@ -114,6 +114,8 @@ def register_routes(app):
         is_admin = current_user.is_admin(comm)
 
         if request.method == 'POST':
+            if not is_admin:
+                abort(403)
             title = request.form.get('title', '').strip()
             description = request.form.get('description', '').strip()
             event_date = request.form.get('event_date')
@@ -283,7 +285,13 @@ def register_routes(app):
 
     @app.route('/community/<slug>/members')
     def community_members(slug):
+        from flask_login import current_user
         comm = Community.query.filter_by(slug=slug).first_or_404()
+        if comm.is_private:
+            is_member = current_user.is_authenticated and current_user.is_member(comm)
+            is_staff = current_user.is_authenticated and current_user.is_staff
+            if not is_member and not is_staff:
+                abort(403)
         members = comm.members.filter_by(status='approved').order_by(CommunityMember.created_at.desc()).all()
         return render_template('community_members.html', community=comm, members=members)
 
