@@ -17,6 +17,44 @@ FREESOUND_API_KEY = os.environ.get('FREESOUND_API_KEY', '')
 _webhook_queue = []
 
 
+def send_sms_otp(phone: str, otp: str) -> bool:
+    """Отправляет OTP-код через SMS.ru (SMS_PROVIDER=smsru) или пишет в лог (SMS_PROVIDER=log/не задан)."""
+    import urllib.request, urllib.parse, json as _json
+
+    provider = os.environ.get('SMS_PROVIDER', 'log').lower()
+
+    if provider == 'smsru':
+        api_id = os.environ.get('SMSRU_API_ID', '')
+        if not api_id:
+            current_app.logger.error('SMSRU_API_ID not set — SMS not sent')
+            return False
+        # Нормализуем номер: оставляем только цифры, заменяем 8 → 7
+        digits = ''.join(c for c in phone if c.isdigit())
+        if digits.startswith('8'):
+            digits = '7' + digits[1:]
+        params = urllib.parse.urlencode({
+            'api_id': api_id,
+            'to': digits,
+            'msg': f'Ваш код подтверждения VIBE: {otp}',
+            'json': 1,
+        })
+        url = f'https://sms.ru/sms/send?{params}'
+        try:
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                data = _json.loads(resp.read().decode())
+            if data.get('status') == 'OK':
+                return True
+            current_app.logger.error(f'SMS.ru error: {data}')
+            return False
+        except Exception as e:
+            current_app.logger.error(f'SMS.ru request failed: {e}')
+            return False
+
+    # log-режим (dev/staging)
+    current_app.logger.info(f'[SMS OTP] phone={phone} otp={otp}')
+    return True
+
+
 def send_password_reset_email(user, reset_url):
     """Отправляет письмо со ссылкой сброса пароля через Gmail SMTP."""
     import smtplib

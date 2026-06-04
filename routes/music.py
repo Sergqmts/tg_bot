@@ -258,8 +258,9 @@ def register_routes(app):
     @app.route('/music/favorites')
     @login_required
     def music_favorites():
-        favs = FavoriteTrack.query.filter_by(user_id=current_user.id).order_by(FavoriteTrack.created_at.desc()).all()
-        return render_template('music_favorites.html', favs=favs)
+        page = request.args.get('page', 1, type=int)
+        pagination = FavoriteTrack.query.filter_by(user_id=current_user.id).order_by(FavoriteTrack.created_at.desc()).paginate(page=page, per_page=30, error_out=False)
+        return render_template('music_favorites.html', favs=pagination.items, pagination=pagination)
 
     @app.route('/music/recommendations')
     @login_required

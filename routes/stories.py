@@ -6,7 +6,7 @@ def register_routes(app):
     from werkzeug.datastructures import FileStorage
     from datetime import datetime, timedelta
     from sqlalchemy import and_
-    from extensions import db
+    from extensions import db, limiter
     from models import Story, StoryReaction, StoryComment, StoryView, User, Message, followers
 
     def get_approved_followers():
@@ -18,6 +18,7 @@ def register_routes(app):
 
     @app.route('/story/create', methods=['GET', 'POST'])
     @login_required
+    @limiter.limit('10 per hour', methods=['POST'])
     def create_story():
         if request.method == 'POST':
             media_data = request.form.get('media_data')
@@ -150,6 +151,7 @@ def register_routes(app):
 
     @app.route('/story/<int:story_id>/react', methods=['POST'])
     @login_required
+    @limiter.limit('60 per minute')
     def react_story(story_id):
         story = Story.query.get_or_404(story_id)
         emoji = request.form.get('emoji')
@@ -173,6 +175,7 @@ def register_routes(app):
 
     @app.route('/story/<int:story_id>/comment', methods=['POST'])
     @login_required
+    @limiter.limit('10 per minute')
     def comment_story(story_id):
         story = Story.query.get_or_404(story_id)
         body = request.form.get('body', '').strip()

@@ -76,6 +76,56 @@ Railway (основной) + Vercel (API функции). Procfile: gunicorn.
 
 ---
 
+## Бэклог доработок (реализовать после критичных)
+
+### Push-уведомления (Web Push / VAPID)
+- Добавить модель `PushSubscription(user_id, endpoint, p256dh, auth)` в `models.py`
+- Установить `pywebpush`, сгенерировать VAPID-ключи (`VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY` в env)
+- Добавить роут `POST /api/push/subscribe` — сохраняет подписку
+- Добавить роут `POST /api/push/unsubscribe`
+- В `helpers.py` → `send_push_notification(user_id, title, body, url)` через pywebpush
+- В `sw.js` добавить обработчики событий `push` и `notificationclick`
+- Вызывать при: новом сообщении, лайке, подписчике, упоминании
+
+### 2FA (TOTP)
+- Установить `pyotp`, `qrcode`
+- Добавить поля `User.totp_secret`, `User.totp_enabled` в `models.py`
+- Роуты: `GET /settings/2fa` (показ QR), `POST /settings/2fa/enable`, `POST /settings/2fa/disable`
+- Вставить проверку TOTP-кода в `login` после пароля (если `totp_enabled`)
+- Шаблоны: `settings_2fa.html`, `login_2fa.html`
+
+### Freesound API — поиск звуков для Shorts/Stories
+- Переменная `FREESOUND_API_KEY` уже есть в `helpers.py` и `.env.example`
+- Шаблон `upload_shorts_audio.html` уже есть
+- Добавить в `routes/music.py`: `GET /api/freesound/search?q=` → проксирует Freesound `/apiv2/search/text/`
+- Добавить `GET /api/freesound/preview/<sound_id>` — отдаёт preview URL
+- Использовать в `upload_shorts_audio.html` для поиска и выбора трека
+
+### Бот-платформа — недостающие методы
+- `editMessage(chat_id, message_id, text)` — POST `/bot/<token>/editMessageText`
+- `pinMessage(chat_id, message_id)` / `unpinMessage` — `Message.is_pinned` уже есть в модели
+- `answerCallbackQuery` — нужна модель `CallbackQuery`, inline keyboards
+- `sendPoll(chat_id, question, options[])` — новая модель `Poll`
+- `getUpdates` — polling для ботов без webhook
+- Задокументировать новые методы в `bot_docs.html`
+
+### Алгоритм рекомендаций — оптимизация
+- Текущий код в `routes/profiles.py` `recommendations()` делает N+1 запросы в Python-цикле
+- Переписать через JOIN + подзапросы на уровне SQLAlchemy
+- Добавить кеш (Flask-Caching или простой dict в памяти на 10 мин) — ключ `recommendations:{user_id}`
+- Заменить перебор 50 юзеров на scored subquery с LIMIT
+
+### Тесты — расширить покрытие
+Нет тестов для: `messages`, `communities`, `music`, `bots API`, `profiles`, `accounts`, `onboarding`, `recommendations`.
+Приоритет: messages (критичная функциональность), communities, bot API endpoints.
+
+### Онбординг — улучшить
+- Добавить шаг выбора языка интерфейса (поле `User.language`, сейчас не используется)
+- Добавить туториал-оверлей на первый вход (показ основных фич)
+- Добавить рекомендации пользователей для подписки на шаге 3
+
+---
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.

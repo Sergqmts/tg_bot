@@ -6,7 +6,7 @@ def register_routes(app):
     from werkzeug.datastructures import FileStorage
     from datetime import datetime
     from PIL import Image, ImageEnhance, ImageFilter
-    from extensions import db
+    from extensions import db, limiter
     from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog, PostView
 
     @app.route('/')
@@ -420,6 +420,7 @@ def register_routes(app):
 
     @app.route('/post/<int:post_id>/react', methods=['POST'])
     @login_required
+    @limiter.limit('60 per minute')
     def react_post(post_id):
         post = Post.query.get_or_404(post_id)
         emoji = request.form.get('emoji', '❤️')
@@ -508,6 +509,7 @@ def register_routes(app):
 
     @app.route('/post/<int:post_id>/like', methods=['GET', 'POST'])
     @login_required
+    @limiter.limit('60 per minute')
     def like(post_id):
         post = Post.query.get_or_404(post_id)
         liked = False
@@ -525,6 +527,7 @@ def register_routes(app):
 
     @app.route('/post/<int:post_id>/comment', methods=['POST'])
     @login_required
+    @limiter.limit('10 per minute')
     def add_comment(post_id):
         app.logger.info(f"Adding comment to post {post_id} by user {current_user.id}")
         post = Post.query.get_or_404(post_id)
@@ -584,6 +587,7 @@ def register_routes(app):
 
     @app.route('/comment/<int:comment_id>/react', methods=['POST'])
     @login_required
+    @limiter.limit('60 per minute')
     def react_comment(comment_id):
         emoji = request.form.get('emoji', '👍')
         comment = Comment.query.get_or_404(comment_id)

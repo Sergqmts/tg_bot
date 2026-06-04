@@ -4,7 +4,7 @@ def register_routes(app):
     from flask_login import login_required, current_user
     from werkzeug.utils import secure_filename
     from datetime import datetime, timedelta
-    from extensions import db, csrf
+    from extensions import db, csrf, limiter
     from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsSaved, MusicTrack, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit, SavedPost, Story, Message
 
     @app.route('/user/<username>')
@@ -68,6 +68,7 @@ def register_routes(app):
 
     @app.route('/follow/<username>', methods=['POST'])
     @login_required
+    @limiter.limit('30 per minute')
     def follow(username):
         user = User.query.filter_by(username=username).first_or_404()
         if user != current_user:
@@ -97,6 +98,7 @@ def register_routes(app):
 
     @app.route('/block/<username>', methods=['POST'])
     @login_required
+    @limiter.limit('20 per hour')
     def block_user(username):
         user = User.query.filter_by(username=username).first_or_404()
         if user != current_user:
@@ -248,29 +250,35 @@ def register_routes(app):
 
     @app.route('/verify_phone', methods=['GET', 'POST'])
     @login_required
+    @limiter.limit('5 per hour', methods=['GET'])
     def verify_phone():
         if request.method == 'POST':
-            otp = request.form.get('otp', '')
+            otp = request.form.get('otp', '').strip()
             if current_user.phone_otp and current_user.phone_otp == otp:
                 if current_user.phone_otp_expires and current_user.phone_otp_expires > datetime.utcnow():
                     current_user.phone_verified = True
                     current_user.phone_otp = None
                     current_user.phone_otp_expires = None
                     db.session.commit()
-                    flash('Номер телефона подтверждён!')
+                    flash('Номер телефона подтверждён!', 'success')
                 else:
-                    flash('Код истёк. Запросите новый код.')
+                    flash('Код истёк. Запросите новый код.', 'warning')
             else:
-                flash('Неверный код')
+                flash('Неверный код.', 'danger')
             return redirect(url_for('verify_phone'))
 
         if current_user.phone and not current_user.phone_verified:
-            import random
-            otp = str(random.randint(100000, 999999))
+            import secrets as _sec
+            otp = str(int(_sec.token_hex(3), 16) % 900000 + 100000)
             current_user.phone_otp = otp
             current_user.phone_otp_expires = datetime.utcnow() + timedelta(minutes=5)
             db.session.commit()
-            flash(f'Код {otp} отправлен (демо-режим: код показан в flash-сообщении)')
+            from helpers import send_sms_otp
+            sent = send_sms_otp(current_user.phone, otp)
+            if sent:
+                flash('SMS с кодом отправлен на ваш номер.', 'info')
+            else:
+                flash('Не удалось отправить SMS. Проверьте настройки сервиса.', 'danger')
 
         return render_template('verify_phone.html')
 

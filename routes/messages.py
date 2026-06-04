@@ -18,7 +18,7 @@ def register_routes(app):
     from werkzeug.utils import secure_filename
     from werkzeug.datastructures import FileStorage
     from datetime import datetime
-    from extensions import db
+    from extensions import db, limiter
     from models import Message, MessageMedia, Chat, ChatMember, User, Post
     from helpers import enqueue_webhook_dispatch, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary
 
@@ -85,6 +85,7 @@ def register_routes(app):
 
     @app.route('/messages/<username>', methods=['GET', 'POST'])
     @login_required
+    @limiter.limit('60 per minute', methods=['POST'])
     def conversation(username):
         other_user = User.query.filter_by(username=username).first_or_404()
 
@@ -354,6 +355,7 @@ def register_routes(app):
 
     @app.route('/chat/<int:chat_id>', methods=['GET', 'POST'])
     @login_required
+    @limiter.limit('60 per minute', methods=['POST'])
     def chat_view(chat_id):
         chat = Chat.query.get_or_404(chat_id)
         member = ChatMember.query.filter_by(chat_id=chat_id, user_id=current_user.id).first()
