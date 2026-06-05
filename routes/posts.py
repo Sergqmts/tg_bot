@@ -8,6 +8,11 @@ def register_routes(app):
     from PIL import Image, ImageEnhance, ImageFilter
     from extensions import db, limiter
     from models import Post, Repost, SavedPost, Reaction, Comment, CommentReaction, CommentMedia, MessageReaction, Message, Media, Tag, PostTag, Draft, Shorts, User, Community, Chat, ChatMember, MusicTrack, Notification, ModerationLog, PostView
+    from validators import (
+        validate_emoji, validate_text, validate_base64_media,
+        clamp_int, clamp_float, clamp_page,
+        MAX_POST_BODY, MAX_COMMENT_BODY, MAX_CAPTION,
+    )
 
     @app.route('/')
     def index():
@@ -40,6 +45,8 @@ def register_routes(app):
     @login_required
     def feed_api():
         before_id = request.args.get('before', type=int)
+        if before_id is not None:
+            before_id = clamp_int(before_id, min_val=1, max_val=2_147_483_647)
         if not before_id:
             return jsonify({'html': '', 'has_more': False, 'last_id': 0})
 
@@ -60,8 +67,8 @@ def register_routes(app):
     def create():
         if request.method == 'POST':
             try:
-                body = request.form.get('body', '').strip()
-                
+                body = validate_text(request.form.get('body', ''), MAX_POST_BODY, 'Текст поста')
+
                 is_draft = request.args.get('draft') == '1'
                 if is_draft:
                     media_data = request.form.get('media_data')
@@ -105,18 +112,19 @@ def register_routes(app):
                 
                 if media_data:
                     header, data = media_data.split(',', 1)
-                    if 'image/jpeg' in header:
-                        ext = 'jpg'
-                        media_type = 'image'
-                    elif 'image/png' in header:
+                    mime = validate_base64_media(header, data)
+                    if mime == 'image/png':
                         ext = 'png'
-                        media_type = 'image'
+                    elif mime in ('video/mp4', 'video/quicktime'):
+                        ext = 'mp4'
+                    elif mime == 'video/webm':
+                        ext = 'webm'
                     else:
                         ext = 'jpg'
-                        media_type = 'image'
-                    
+                    media_type = 'video' if mime.startswith('video/') else 'image'
+
                     binary = base64.b64decode(data)
-                    file = FileStorage(io.BytesIO(binary), filename=f'photo.{ext}', content_type=f'image/{ext}')
+                    file = FileStorage(io.BytesIO(binary), filename=f'photo.{ext}', content_type=mime)
                     
                     if cloudinary_configured:
                         url = upload_to_cloudinary(file, folder='posts')
@@ -178,6 +186,7 @@ def register_routes(app):
             if media_data:
                 import base64, io
                 header, data = media_data.split(',', 1)
+                validate_base64_media(header, data)
                 binary = base64.b64decode(data)
                 from werkzeug.datastructures import FileStorage
                 file = FileStorage(io.BytesIO(binary), filename=f'avatar_{current_user.id}.jpg', content_type='image/jpeg')
@@ -229,23 +238,29 @@ def register_routes(app):
     def photo_transform():
         try:
             preview_data = request.form.get('preview_data')
-            transform_type = request.form.get('transform_type')
-            transform_value = request.form.get('transform_value')
-            
+            transform_type = request.form.get('transform_type', '')
+            transform_value = request.form.get('transform_value', '')
+
             if not preview_data:
                 return '', 400
-            
+
+            if transform_type not in ('rotate', 'flip', 'crop'):
+                return jsonify({'error': 'Недопустимый тип трансформации'}), 400
+
             header, data = preview_data.split(',', 1)
+            validate_base64_media(header, data)
             binary = base64.b64decode(data)
-            
+
             img = Image.open(io.BytesIO(binary))
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            
+
             if transform_type == 'rotate':
-                angle = int(transform_value) if transform_value else 0
+                angle = clamp_int(transform_value, min_val=-360, max_val=360, default=0)
                 img = img.rotate(angle, expand=True)
             elif transform_type == 'flip':
+                if transform_value not in ('h', 'v'):
+                    return jsonify({'error': 'Недопустимое значение flip'}), 400
                 if transform_value == 'h':
                     img = img.transpose(Image.FLIP_LEFT_RIGHT)
                 elif transform_value == 'v':
@@ -308,11 +323,13 @@ def register_routes(app):
             data = request.get_json()
             if data and data.get('public_id'):
                 public_id = data['public_id']
+                if not isinstance(public_id, str) or len(public_id) > 500:
+                    return jsonify({'error': 'Invalid public_id', 'success': False}), 400
                 version = data.get('version')
-                start_offset = data.get('start_offset', 0)
-                end_offset = data.get('end_offset', 0)
+                start_offset = clamp_float(data.get('start_offset', 0), min_val=0.0, max_val=3600.0)
+                end_offset = clamp_float(data.get('end_offset', 0), min_val=0.0, max_val=3600.0)
                 effect = data.get('filter', '')
-                speed = data.get('speed', 1)
+                speed = clamp_float(data.get('speed', 1), min_val=0.25, max_val=4.0, default=1.0)
 
                 filter_map = {
                     'grayscale': 'e_grayscale',
@@ -325,6 +342,10 @@ def register_routes(app):
                     'invert': 'e_negate',
                     'sharp': 'e_contrast:50',
                 }
+
+                # Reject unknown filter names to prevent injection into Cloudinary URLs
+                if effect and effect not in filter_map and effect != 'original':
+                    effect = ''
 
                 tx_parts = []
                 if start_offset > 0:
@@ -339,7 +360,7 @@ def register_routes(app):
                     accelerate_pct = int((speed - 1) * 100)
                     tx_parts.append(f'e_accelerate:{accelerate_pct}')
 
-                audio_id = data.get('audio_id')
+                audio_id = clamp_int(data.get('audio_id'), min_val=1, max_val=2_147_483_647, default=0) or None
                 if audio_id:
                     from helpers import cloudinary_configured, cloud_name
                     audio_track = MusicTrack.query.get(audio_id)
@@ -423,7 +444,7 @@ def register_routes(app):
     @limiter.limit('60 per minute')
     def react_post(post_id):
         post = Post.query.get_or_404(post_id)
-        emoji = request.form.get('emoji', '❤️')
+        emoji = validate_emoji(request.form.get('emoji', '❤️'))
         
         existing = Reaction.query.filter_by(user_id=current_user.id, post_id=post_id).first()
         if existing:
@@ -531,7 +552,7 @@ def register_routes(app):
     def add_comment(post_id):
         app.logger.info(f"Adding comment to post {post_id} by user {current_user.id}")
         post = Post.query.get_or_404(post_id)
-        body = request.form.get('body', '').strip()
+        body = validate_text(request.form.get('body', ''), MAX_COMMENT_BODY, 'Текст комментария')
         reply_to_comment_id = request.form.get('reply_to_comment_id', type=int)
         media_url = None
         media_type = None
@@ -589,7 +610,7 @@ def register_routes(app):
     @login_required
     @limiter.limit('60 per minute')
     def react_comment(comment_id):
-        emoji = request.form.get('emoji', '👍')
+        emoji = validate_emoji(request.form.get('emoji', '👍'))
         comment = Comment.query.get_or_404(comment_id)
         existing = CommentReaction.query.filter_by(comment_id=comment_id, user_id=current_user.id, emoji=emoji).first()
         if existing:

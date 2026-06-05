@@ -278,7 +278,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 let selectedFile = null;
 let mediaMode = 'voice';
 let mediaRecorder, audioChunks = [], recordingTimer, recordingSeconds = 0, recordedBlob = null, recordingPromise, recordingResolve;

@@ -6,6 +6,12 @@ def register_routes(app):
     from datetime import datetime, timedelta
     from extensions import db, csrf, limiter
     from models import User, Post, Repost, Shorts, ShortsComment, ShortsLike, ShortsReaction, ShortsSaved, MusicTrack, Notification, Tag, Community, Media, SavedPost, EditProfileForm, ProfileVisit, SavedPost, Story, Message
+    from validators import (
+        validate_emoji, validate_text, validate_base64_media,
+        clamp_int, clamp_page,
+        validate_webhook_url,
+        MAX_COMMENT_BODY, MAX_CAPTION, MAX_SEARCH_QUERY, MAX_PAGE,
+    )
 
     @app.route('/user/<username>')
     def user_profile(username):
@@ -148,7 +154,7 @@ def register_routes(app):
     @app.route('/notifications')
     @login_required
     def notifications():
-        page = request.args.get('page', 1, type=int)
+        page = clamp_page(request.args.get('page', 1, type=int))
         notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
         unread_count = Notification.query.filter_by(user_id=current_user.id, read=False).count()
         return render_template('notifications.html', notifications=notifications, unread_count=unread_count)
@@ -286,8 +292,10 @@ def register_routes(app):
     @app.route('/explore')
     @app.route('/search')
     def explore():
-        search_query = request.args.get('q', '')
+        search_query = request.args.get('q', '')[:MAX_SEARCH_QUERY]
         search_type = request.args.get('type', 'users')
+        if search_type not in ('users', 'tags', 'posts', 'communities'):
+            search_type = 'users'
         blocked_ids = []
         if current_user.is_authenticated:
             blocked_ids = [u.id for u in current_user.blocked]
@@ -350,13 +358,18 @@ def register_routes(app):
         if request.method == 'POST':
             video = request.files.get('video')
             media_data = request.form.get('media_data')
-            caption = request.form.get('body') or request.form.get('caption', '')
-            audio_id = request.form.get('audio_id')
+            caption = validate_text(
+                request.form.get('body') or request.form.get('caption', ''),
+                MAX_CAPTION, 'Подпись'
+            )
+            audio_id_raw = request.form.get('audio_id')
+            audio_id = clamp_int(audio_id_raw, min_val=1, max_val=2_147_483_647, default=0) or None
 
             if media_data:
                 import base64, io
                 from werkzeug.datastructures import FileStorage
                 header, data = media_data.split(',', 1)
+                validate_base64_media(header, data)
                 binary = base64.b64decode(data)
                 file = FileStorage(io.BytesIO(binary), filename=f'shorts_{datetime.now().timestamp()}.jpg', content_type='image/jpeg')
                 from helpers import cloudinary_configured, upload_to_cloudinary
@@ -367,17 +380,26 @@ def register_routes(app):
                     with open(os.path.join(current_app.config['UPLOAD_FOLDER'], filename), 'wb') as f:
                         f.write(binary)
                     url = url_for('uploaded_file', filename=filename, _external=True)
-                shorts = Shorts(video_url=url, caption=caption, user_id=current_user.id, audio_id=int(audio_id) if audio_id else None)
+                shorts = Shorts(video_url=url, caption=caption, user_id=current_user.id, audio_id=audio_id)
                 db.session.add(shorts)
                 db.session.commit()
                 flash('Shorts опубликован!')
                 return redirect(url_for('shorts'))
 
-            video_url = request.form.get('video_url')
+            video_url = request.form.get('video_url', '').strip()
+            # Validate video_url to prevent storing arbitrary external URLs (SSRF / open redirect)
+            if video_url:
+                if not video_url.startswith(('https://', 'http://')):
+                    flash('Недопустимый URL видео')
+                    return redirect(url_for('create_shorts'))
+                from app import _is_ssrf_safe
+                if not _is_ssrf_safe(video_url):
+                    flash('Недопустимый URL видео')
+                    return redirect(url_for('create_shorts'))
 
             if not video or video.filename == '':
                 if video_url:
-                    shorts = Shorts(video_url=video_url, caption=caption, user_id=current_user.id, audio_id=int(audio_id) if audio_id else None)
+                    shorts = Shorts(video_url=video_url, caption=caption, user_id=current_user.id, audio_id=audio_id)
                     db.session.add(shorts)
                     db.session.commit()
                     flash('Shorts опубликован!')
@@ -404,7 +426,7 @@ def register_routes(app):
                     video_url=video_url,
                     caption=caption,
                     user_id=current_user.id,
-                    audio_id=int(audio_id) if audio_id else None
+                    audio_id=audio_id
                 )
                 db.session.add(shorts)
                 db.session.commit()
@@ -424,7 +446,7 @@ def register_routes(app):
         shorts_video = Shorts.query.get_or_404(shorts_id)
 
         if request.method == 'POST' and current_user.is_authenticated:
-            comment_body = request.form.get('body')
+            comment_body = validate_text(request.form.get('body', ''), MAX_COMMENT_BODY, 'Комментарий')
             if comment_body:
                 comment = ShortsComment(
                     body=comment_body,
@@ -458,7 +480,7 @@ def register_routes(app):
     @login_required
     def react_shorts(shorts_id):
         shorts_video = Shorts.query.get_or_404(shorts_id)
-        emoji = request.form.get('emoji', '❤️')
+        emoji = validate_emoji(request.form.get('emoji', '❤️'))
 
         existing = ShortsReaction.query.filter_by(user_id=current_user.id, shorts_id=shorts_id, emoji=emoji).first()
         if existing:

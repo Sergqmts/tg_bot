@@ -296,7 +296,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 const RETURN_URL = '{{ request.args.get("return", "") }}';
 const FILTERS = {
   none: '',

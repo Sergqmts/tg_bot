@@ -12,8 +12,10 @@
         </div>
         
         <div class="glass rounded-3xl p-8 shadow-lg">
-            <form method="POST" class="space-y-4">
+            <form method="POST" class="space-y-4" id="register-form">
                 {{ form.hidden_tag() }}
+                <input type="hidden" name="pow_challenge" id="pow_challenge" value="{{ pow_challenge }}">
+                <input type="hidden" name="pow_nonce"     id="pow_nonce"     value="">
                 <div class="form-group">
                     {{ form.username(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400", placeholder="Имя пользователя") }}
                     {% for error in form.username.errors %}
@@ -38,7 +40,11 @@
                     <span class="form-error text-xs text-red-500 mt-1 block">{{ error }}</span>
                     {% endfor %}
                 </div>
-                {{ form.submit(class="w-full py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer") }}
+                <button type="submit" id="submit-btn"
+                    class="w-full py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait">
+                    Зарегистрироваться
+                </button>
+                <p id="pow-status" class="text-xs text-slate-400 text-center hidden">Проверка безопасности…</p>
                 <p class="text-xs text-slate-400 text-center mt-4">Регистрируясь, вы соглашаетесь с нашими условиями</p>
             </form>
         </div>
@@ -49,4 +55,51 @@
         </p>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+(function () {
+    const DIFFICULTY = 3;
+    const prefix = '0'.repeat(DIFFICULTY);
+
+    async function sha256hex(str) {
+        const buf = new TextEncoder().encode(str);
+        const hash = await crypto.subtle.digest('SHA-256', buf);
+        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function solvePoW(challenge) {
+        let nonce = 0;
+        while (true) {
+            const hex = await sha256hex(challenge + nonce);
+            if (hex.startsWith(prefix)) return nonce;
+            nonce++;
+        }
+    }
+
+    const form = document.getElementById('register-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async function (e) {
+        const challenge = document.getElementById('pow_challenge').value;
+        if (!challenge) return;
+
+        const nonceEl = document.getElementById('pow_nonce');
+        if (nonceEl.value) return;  // already solved on re-render
+
+        e.preventDefault();
+        const btn    = document.getElementById('submit-btn');
+        const status = document.getElementById('pow-status');
+        btn.disabled = true;
+        status.classList.remove('hidden');
+
+        const nonce = await solvePoW(challenge);
+        nonceEl.value = nonce;
+        status.classList.add('hidden');
+        btn.disabled = false;
+        form.submit();
+    });
+})();
+</script>
 {% endblock %}

@@ -11,11 +11,12 @@
 
         <div class="glass rounded-2xl p-6">
             <h2 class="text-xl font-bold mb-4">Authentication</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">Each bot has a unique token. Include it in the URL path:</p>
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">Each bot has a unique token. Pass it in the <code>Authorization</code> header:</p>
             <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4 font-mono text-sm overflow-x-auto">
-                POST /bot&lt;token&gt;/&lt;method&gt;
+                POST /api/bot/&lt;method&gt;<br>
+                Authorization: Bearer &lt;token&gt;
             </div>
-            <p class="text-sm text-slate-400 mt-2">The token is generated when you create a bot. You can regenerate it in bot settings.</p>
+            <p class="text-sm text-slate-400 mt-2">The token is generated when you create a bot. You can regenerate it in bot settings. Never include the token in the URL — use the Authorization header so it stays out of server logs.</p>
         </div>
 
         <div class="glass rounded-2xl p-6">
@@ -27,7 +28,7 @@
                         <span class="font-semibold text-sm font-mono">sendMessage</span>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Send a text message to a chat or direct message.</p>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/sendMessage
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/sendMessage
 {
   "chat_id": 123,        // chat ID, user ID, or @username
   "text": "Hello!"
@@ -41,7 +42,7 @@
                         <span class="font-semibold text-sm font-mono">sendPhoto / sendVideo / sendVoice / sendDocument</span>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Send media files (multipart/form-data with file in <code>media</code> field).</p>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/sendPhoto
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/sendPhoto
 chat_id: 123
 media: &lt;file&gt;
 caption: "Optional caption"
@@ -54,7 +55,7 @@ caption: "Optional caption"
                         <span class="font-semibold text-sm font-mono">forwardMessage</span>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Forward a message from one chat to another.</p>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/forwardMessage
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/forwardMessage
 {
   "chat_id": 123,
   "from_chat_id": 456,
@@ -69,7 +70,7 @@ caption: "Optional caption"
                         <span class="font-semibold text-sm font-mono">deleteMessage</span>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Delete a message sent by the bot.</p>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/deleteMessage
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/deleteMessage
 {
   "chat_id": 123,
   "message_id": 456
@@ -90,7 +91,7 @@ caption: "Optional caption"
                         and sends a reply back to the user. Called automatically by the platform when a user
                         messages the bot directly; you can also call it externally.
                     </p>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/receiveMessage
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/receiveMessage
 {
   "user_id": 123,      // ID of the user whose message to process
   "text": "/help"      // text to handle (command or free-form)
@@ -109,7 +110,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
                         <span class="font-semibold text-sm font-mono">getChat</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getChat?chat_id=123</pre>
+                    <pre class="text-xs overflow-x-auto">GET /api/bot/getChat?chat_id=123</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
@@ -117,7 +118,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
                         <span class="font-semibold text-sm font-mono">getChatMembers</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getChatMembers?chat_id=123</pre>
+                    <pre class="text-xs overflow-x-auto">GET /api/bot/getChatMembers?chat_id=123</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
@@ -125,7 +126,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
                         <span class="font-semibold text-sm font-mono">banChatMember</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/banChatMember
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/banChatMember
 {
   "chat_id": 123,
   "user_id": 456
@@ -138,7 +139,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
                         <span class="font-semibold text-sm font-mono">unbanChatMember</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/unbanChatMember
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/unbanChatMember
 {
   "chat_id": 123,
   "user_id": 456
@@ -151,7 +152,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
                         <span class="font-semibold text-sm font-mono">promoteChatMember</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/promoteChatMember
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/promoteChatMember
 {
   "chat_id": 123,
   "user_id": 456
@@ -169,7 +170,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
                         <span class="font-semibold text-sm font-mono">getCommunity</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getCommunity?community_id=news</pre>
+                    <pre class="text-xs overflow-x-auto">GET /api/bot/getCommunity?community_id=news</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
@@ -177,7 +178,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-mono">GET</span>
                         <span class="font-semibold text-sm font-mono">getCommunityMembers</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getCommunityMembers?community_id=news</pre>
+                    <pre class="text-xs overflow-x-auto">GET /api/bot/getCommunityMembers?community_id=news</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
@@ -186,7 +187,7 @@ caption: "Optional caption"
                         <span class="font-semibold text-sm font-mono">joinCommunity</span>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Bot joins a community as admin.</p>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/joinCommunity
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/joinCommunity
 {
   "community_id": "news"    // slug or numeric id
 }
@@ -199,7 +200,7 @@ caption: "Optional caption"
                         <span class="font-semibold text-sm font-mono">sendPost</span>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Create a post in a community (bot must be admin).</p>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/sendPost
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/sendPost
 {
   "community_id": "news",   // slug or numeric id
   "body": "Post text here"
@@ -213,7 +214,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
                         <span class="font-semibold text-sm font-mono">deletePost</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/deletePost
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/deletePost
 {
   "post_id": 123
 }
@@ -225,7 +226,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
                         <span class="font-semibold text-sm font-mono">approveJoinRequest / denyJoinRequest</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/approveJoinRequest
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/approveJoinRequest
 {
   "community_id": "news",
   "user_id": 123
@@ -238,7 +239,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
                         <span class="font-semibold text-sm font-mono">kickMember</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/kickMember
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/kickMember
 {
   "community_id": "news",
   "user_id": 123
@@ -251,7 +252,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
                         <span class="font-semibold text-sm font-mono">promoteToAdmin</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/promoteToAdmin
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/promoteToAdmin
 {
   "community_id": "news",
   "user_id": 123
@@ -270,7 +271,7 @@ caption: "Optional caption"
                         <span class="font-semibold text-sm font-mono">getMe</span>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Get bot profile info.</p>
-                    <pre class="text-xs overflow-x-auto">GET /bot&lt;token&gt;/getMe</pre>
+                    <pre class="text-xs overflow-x-auto">GET /api/bot/getMe</pre>
                 </div>
 
                 <div class="bg-slate-100 dark:bg-dark-card rounded-xl p-4">
@@ -279,7 +280,7 @@ caption: "Optional caption"
                         <span class="font-semibold text-sm font-mono">setWebhook</span>
                     </div>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Set a URL to receive events (new messages, etc.).</p>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/setWebhook
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/setWebhook
 {
   "url": "https://example.com/webhook"
 }
@@ -291,7 +292,7 @@ caption: "Optional caption"
                         <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-mono">POST</span>
                         <span class="font-semibold text-sm font-mono">deleteWebhook</span>
                     </div>
-                    <pre class="text-xs overflow-x-auto">POST /bot&lt;token&gt;/deleteWebhook</pre>
+                    <pre class="text-xs overflow-x-auto">POST /api/bot/deleteWebhook</pre>
                 </div>
             </div>
         </div>
@@ -395,7 +396,7 @@ caption: "Optional caption"
   }
 }</pre>
                     <p class="text-xs text-slate-400 mt-2">
-                        Respond to this by calling <code>POST /bot&lt;token&gt;/sendMessage</code>
+                        Respond to this by calling <code>POST /api/bot/sendMessage</code>
                         with <code>chat_id</code> = the sender's user ID.
                     </p>
                 </div>

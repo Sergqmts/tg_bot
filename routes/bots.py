@@ -8,6 +8,8 @@ def register_routes(app):
     from extensions import db, csrf
     from models import User, Chat, ChatMember, Message, MessageMedia, Post, Media, Community, CommunityMember, Report, BotForm
     from helpers import moderate_post, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary, generate_bot_token, enqueue_webhook_dispatch
+    from validators import validate_webhook_url, validate_bot_commands
+    from middleware.abuse_protection import _counter, require_github_signature
     import cloudinary
     import cloudinary.uploader
 
@@ -288,14 +290,22 @@ def register_routes(app):
                 bot.bio = request.form.get('description', bot.bio)
                 commands_raw = request.form.get('commands', '[]')
                 try:
-                    json.loads(commands_raw)
+                    validate_bot_commands(commands_raw)
                     bot.bot_commands = commands_raw
-                except (ValueError, KeyError) as e:
-                    current_app.logger.warning("bot commands JSON invalid: %s", e)
-                    flash('Ошибка в JSON команд')
+                except Exception as e:
+                    flash(str(e) if hasattr(e, 'description') else 'Ошибка в JSON команд')
+                    return redirect(url_for('bot_settings', bot_id=bot.id))
                 bot.can_join_groups = bool(request.form.get('can_join_groups'))
                 bot.privacy_mode = bool(request.form.get('privacy_mode'))
-                bot.webhook_url = request.form.get('webhook_url', '') or None
+                raw_webhook = (request.form.get('webhook_url', '') or '').strip()
+                if raw_webhook:
+                    try:
+                        bot.webhook_url = validate_webhook_url(raw_webhook)
+                    except Exception:
+                        flash('Webhook URL недопустим или указывает на внутренний адрес')
+                        return redirect(url_for('bot_settings', bot_id=bot.id))
+                else:
+                    bot.webhook_url = None
                 db.session.commit()
                 flash('Настройки сохранены')
             elif action == 'delete':
@@ -309,15 +319,8 @@ def register_routes(app):
 
     @app.route('/github-webhook', methods=['POST'])
     @csrf.exempt
+    @require_github_signature
     def github_webhook():
-        secret = os.environ.get('GITHUB_WEBHOOK_SECRET', '')
-        if secret:
-            sig = request.headers.get('X-Hub-Signature-256', '')
-            if not sig:
-                return 'missing signature', 403
-            expected = 'sha256=' + hmac.new(secret.encode(), request.data, hashlib.sha256).hexdigest()
-            if not hmac.compare_digest(expected, sig):
-                return 'invalid signature', 403
         event = request.headers.get('X-GitHub-Event')
         if event != 'push':
             return 'ok', 200
@@ -855,14 +858,30 @@ def register_routes(app):
                 current_app.logger.error(f"bot_receive_message error: {e}")
         return bot_json_response({'ok': True})
 
-    @app.route('/bot<token>/<method>', methods=['GET', 'POST', 'DELETE'])
-    @csrf.exempt
-    def bot_api(token, method):
+    def _resolve_bot_from_auth():
+        """Extract and validate bot token from Authorization: Bearer header."""
+        auth = request.headers.get('Authorization', '')
+        if not auth.startswith('Bearer '):
+            return None, bot_json_response('Missing or malformed Authorization header', 401)
+        token = auth[len('Bearer '):]
         bot = User.query.filter_by(bot_token=token, is_bot=True).first()
         if not bot:
-            return bot_json_response('Unauthorized: invalid bot token', 401)
+            return None, bot_json_response('Unauthorized: invalid bot token', 401)
         if not bot.can_join_groups:
-            return bot_json_response('Bot is disabled', 403)
+            return None, bot_json_response('Bot is disabled', 403)
+        return bot, None
+
+    @app.route('/api/bot/<method>', methods=['GET', 'POST', 'DELETE'])
+    @csrf.exempt
+    def bot_api(method):
+        bot, err = _resolve_bot_from_auth()
+        if err:
+            return err
+
+        # 100 requests / 60 s per bot token
+        rate_key = f'botapi:{bot.id}'
+        if not _counter.is_allowed(rate_key, 100, 60):
+            return bot_json_response('Too many requests — retry after 60 s', 429)
 
         handlers = {
             'getMe': bot_get_me,
@@ -892,6 +911,43 @@ def register_routes(app):
             'receiveMessage': bot_receive_message,
         }
 
+        handler = handlers.get(method)
+        if not handler:
+            return bot_json_response(f'Unknown method: {method}', 404)
+        return handler(bot)
+
+    @app.route('/bot<token>/<method>', methods=['GET', 'POST', 'DELETE'])
+    @csrf.exempt
+    def bot_api_legacy(token, method):
+        # Deprecated: token in URL is visible in server logs. Use /api/bot/<method>
+        # with Authorization: Bearer <token> instead.
+        current_app.logger.warning(
+            f'DEPRECATED bot API URL used for method={method}. '
+            'Switch to /api/bot/<method> with Authorization: Bearer header.'
+        )
+        bot = User.query.filter_by(bot_token=token, is_bot=True).first()
+        if not bot:
+            return bot_json_response('Unauthorized: invalid bot token', 401)
+        if not bot.can_join_groups:
+            return bot_json_response('Bot is disabled', 403)
+        rate_key = f'botapi:{bot.id}'
+        if not _counter.is_allowed(rate_key, 100, 60):
+            return bot_json_response('Too many requests — retry after 60 s', 429)
+        handlers = {
+            'getMe': bot_get_me, 'sendMessage': bot_send_message,
+            'sendPhoto': bot_send_photo, 'sendVideo': bot_send_video,
+            'sendVoice': bot_send_voice, 'sendDocument': bot_send_document,
+            'forwardMessage': bot_forward_message, 'deleteMessage': bot_delete_message,
+            'banChatMember': bot_ban_chat_member, 'unbanChatMember': bot_unban_chat_member,
+            'promoteChatMember': bot_promote_chat_member, 'getChat': bot_get_chat,
+            'getChatMembers': bot_get_chat_members, 'setWebhook': bot_set_webhook,
+            'deleteWebhook': bot_delete_webhook, 'getCommunity': bot_get_community,
+            'getCommunityMembers': bot_get_community_members,
+            'approveJoinRequest': bot_approve_join_request, 'denyJoinRequest': bot_deny_join_request,
+            'kickMember': bot_kick_member, 'promoteToAdmin': bot_promote_to_admin,
+            'deletePost': bot_delete_post, 'sendPost': bot_send_post,
+            'joinCommunity': bot_join_community, 'receiveMessage': bot_receive_message,
+        }
         handler = handlers.get(method)
         if not handler:
             return bot_json_response(f'Unknown method: {method}', 404)

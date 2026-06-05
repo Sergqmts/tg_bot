@@ -21,6 +21,7 @@ def register_routes(app):
     from extensions import db, limiter
     from models import Message, MessageMedia, Chat, ChatMember, User, Post
     from helpers import enqueue_webhook_dispatch, create_notification, allowed_file, cloudinary_configured, upload_to_cloudinary
+    from validators import validate_text, MAX_MESSAGE_BODY, MAX_CHAT_NAME
 
     @app.route('/messages')
     @login_required
@@ -109,7 +110,7 @@ def register_routes(app):
             db.session.rollback()
 
         if request.method == 'POST':
-            body = request.form.get('body', '').strip()
+            body = validate_text(request.form.get('body', ''), MAX_MESSAGE_BODY, 'Сообщение')
             media_url = None
             media_type = None
 
@@ -198,7 +199,7 @@ def register_routes(app):
     @login_required
     def create_chat():
         if request.method == 'POST':
-            name = request.form.get('name', '').strip()
+            name = validate_text(request.form.get('name', ''), MAX_CHAT_NAME, 'Название чата', required=True)
             member_ids = request.form.getlist('members')
 
             if not name:
@@ -365,7 +366,7 @@ def register_routes(app):
             return redirect(url_for('messages'))
 
         if request.method == 'POST':
-            body = request.form.get('body', '').strip()
+            body = validate_text(request.form.get('body', ''), MAX_MESSAGE_BODY, 'Сообщение')
             post_id = request.form.get('post_id')
             media_url = None
             media_type = None
@@ -968,7 +969,7 @@ def register_routes(app):
             return redirect(url_for('chat_view', chat_id=chat_id))
 
         if request.method == 'POST':
-            name = request.form.get('name', '').strip()
+            name = validate_text(request.form.get('name', ''), MAX_CHAT_NAME, 'Название чата')
             if name:
                 chat.name = name
 

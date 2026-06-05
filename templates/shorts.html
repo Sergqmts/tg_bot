@@ -440,7 +440,7 @@ header.fixed.top-0 { display: none !important; }
 <div id="toast-container"></div>
 <input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
 
-<script>
+<script nonce="{{ csp_nonce }}">
 // ── Utils ────────────────────────────────────────────────────
 function showToast(msg, duration) {
     var c = document.getElementById('toast-container');

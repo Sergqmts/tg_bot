@@ -34,7 +34,7 @@
     {% endfor %}
   </div>
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 function playLocal(trackId) {
   fetch('/music/local/' + trackId).then(r=>r.json()).then(d=>{ if(!d.error) playMusic(d); });
 }

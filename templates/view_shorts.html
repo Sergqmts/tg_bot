@@ -233,7 +233,7 @@ header.fixed.top-0 { display: none !important; }
     </form>
     {% endif %}
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
     var muted = localStorage.getItem('shorts_muted') !== 'false';
     var video = document.getElementById('shortsViewVideo');

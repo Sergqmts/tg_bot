@@ -44,7 +44,7 @@
         </form>
     </div>
     
-    <script>
+    <script nonce="{{ csp_nonce }}">
         let files = [];
         
         function handleFiles(newFiles) {
@@ -134,7 +134,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 let selectedTrackId = null;
 function openMusicSelector() {
     const overlay = document.getElementById('musicSelectorOverlay');

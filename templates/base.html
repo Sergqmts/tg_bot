@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-title" content="VIbeHub">
     <meta name="theme-color" content="#784BA0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+    <script nonce="{{ csp_nonce }}">
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -42,7 +42,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script>
+    <script nonce="{{ csp_nonce }}">
         {% if current_user.is_authenticated %}
         window.currentUserId = {{ current_user.id }};
         window.currentUsername = '{{ current_user.username }}';
@@ -289,7 +289,7 @@
     </header>
     {% endif %}
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
@@ -431,7 +431,7 @@
             </div>
         </div>
     </nav>
-    <script>
+    <script nonce="{{ csp_nonce }}">
     function toggleMoreMenu() {
         var menu = document.getElementById('moreMenu');
         menu.classList.toggle('hidden');
@@ -453,7 +453,7 @@
     </div>
     {% endif %}
     
-    <script>
+    <script nonce="{{ csp_nonce }}">
         const themeToggle = document.getElementById('theme-toggle');
         if (themeToggle) {
             themeToggle.addEventListener('click', () => {
@@ -461,7 +461,7 @@
             });
         }
     </script>
-    <script>
+    <script nonce="{{ csp_nonce }}">
     function toggleAccountMenu() {
         var menu = document.getElementById('accountMenu');
         menu.classList.toggle('hidden');
@@ -474,7 +474,7 @@
         }
     });
     </script>
-    <script>
+    <script nonce="{{ csp_nonce }}">
     /* Audio player */
     function getAudioEl(btn) {
         return btn.closest('.audio-player, .audio-player-full').querySelector('audio');
@@ -532,7 +532,7 @@
     });
     </script>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
     /* Music Player */
     var playerQueue = [];
     var playerIndex = -1;
@@ -654,7 +654,7 @@
     });
     </script>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
     {% if current_user.is_authenticated %}
     function updateNotifBadge() {
         fetch('/api/unread-count')
@@ -677,12 +677,12 @@
     </script>
 <script src="{{ url_for('static', filename='call.js') }}"></script>
 {% include "call_ui.html" %}
-<script>
+<script nonce="{{ csp_nonce }}">
     {% if current_user.is_authenticated %}
     connectCallWS({{ current_user.id }});
     {% endif %}
 </script>
-<script>
+<script nonce="{{ csp_nonce }}">
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -690,7 +690,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <div id="toast-container" style="position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;"></div>
-<script>
+<script nonce="{{ csp_nonce }}">
 function showToast(msg, type) {
     const colors = {error:'#ef4444', success:'#22c55e', info:'#3b82f6', warning:'#f59e0b'};
     const t = document.createElement('div');
@@ -707,7 +707,7 @@ document.addEventListener('error', e => {
     }
 }, true);
 </script>
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
     function renderLinkPreview(anchor, data) {
         if (!data || data.error || (!data.title && !data.image)) return;
@@ -788,5 +788,6 @@ document.addEventListener('error', e => {
 .lp-desc { font-size: 11px; color: #64748b; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .lp-host { font-size: 10px; color: #784BA0; margin-top: 4px; }
 </style>
+{% block scripts %}{% endblock %}
 </body>
 </html>

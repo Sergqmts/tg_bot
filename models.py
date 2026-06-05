@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import uuid as _uuid_mod
 from flask import current_app
 from flask_login import UserMixin
 from flask_wtf import FlaskForm
@@ -8,6 +9,10 @@ from wtforms import StringField, TextAreaField, SubmitField, PasswordField, Bool
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import db
+
+
+def _gen_uuid() -> str:
+    return str(_uuid_mod.uuid4())
 
 followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
@@ -30,6 +35,7 @@ story_hidden = db.Table('story_hidden',
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), unique=True, nullable=False, default=_gen_uuid)
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     google_id = db.Column(db.String(200), unique=True, nullable=True)
@@ -337,6 +343,7 @@ class StoryView(db.Model):
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), unique=True, nullable=False, default=_gen_uuid)
     body = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -359,6 +366,7 @@ class Post(db.Model):
 
 class Community(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), unique=True, nullable=False, default=_gen_uuid)
     name = db.Column(db.String(50), unique=True, nullable=False)
     slug = db.Column(db.String(50), unique=True, nullable=False)
     description = db.Column(db.Text)
@@ -820,6 +828,19 @@ class FeatureAnnouncement(db.Model):
             current_app.logger.error(f"Feature announcement error: {e}")
             db.session.rollback()
             return False
+
+
+class ProcessedWebhook(db.Model):
+    """Idempotency store for incoming webhook events (at-least-once providers)."""
+    __tablename__ = 'processed_webhook'
+    id         = db.Column(db.Integer, primary_key=True)
+    event_id   = db.Column(db.String(255), nullable=False)
+    provider   = db.Column(db.String(64), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        db.UniqueConstraint('event_id', 'provider', name='uq_processed_webhook'),
+    )
 
 
 # WTForms

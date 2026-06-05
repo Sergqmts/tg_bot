@@ -22,7 +22,7 @@
     <p style="text-align:center;color:var(--text-muted);padding:60px 20px;">Нет рекомендаций. Послушайте несколько треков, чтобы мы могли подобрать что-то.</p>
   {% endif %}
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 function playTrack(trackId, source, deezerId) {
   fetch('/music/track/' + deezerId + '/play').then(r=>r.json()).then(d=>{ if(!d.error) playMusic(d); });
 }

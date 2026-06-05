@@ -217,7 +217,7 @@
     {% endif %}
 </div>
     
-    <script>
+    <script nonce="{{ csp_nonce }}">
 function showShareMenu(postId) {
     var menu = document.getElementById('shareMenu' + postId);
     menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
@@ -262,7 +262,7 @@ document.addEventListener('click', function(e) {
     </div>
 </div>
 {% endif %}
-<script>
+<script nonce="{{ csp_nonce }}">
 function csrfFetch(url, opts) {
   opts = opts || {};
   opts.headers = opts.headers || {};

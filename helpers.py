@@ -1,11 +1,12 @@
 import os
+import html as _html
 import hashlib
 import secrets
 from datetime import datetime
 from flask import current_app
 from werkzeug.utils import secure_filename
 from extensions import db
-from models import User, Notification, Message, Chat, ChatMember, ModerationLog, FeatureAnnouncement
+from models import User, Notification, Message, Chat, ChatMember, ModerationLog, FeatureAnnouncement, ProcessedWebhook
 
 cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
 cloud_key = os.environ.get('CLOUDINARY_API_KEY')
@@ -74,8 +75,9 @@ def send_password_reset_email(user, reset_url):
         msg['From'] = mail_sender
         msg['To'] = user.email
 
+        safe_username = _html.escape(user.username)
         html = (
-            f'<p>Привет, {user.username}!</p>'
+            f'<p>Привет, {safe_username}!</p>'
             f'<p>Для сброса пароля перейди по ссылке:</p>'
             f'<p><a href="{reset_url}">{reset_url}</a></p>'
             f'<p>Ссылка действует 1 час.</p>'
@@ -114,8 +116,9 @@ def send_verification_email(user, verify_url):
         msg['From'] = mail_sender
         msg['To'] = user.email
 
+        safe_username = _html.escape(user.username)
         html = (
-            f'<p>Привет, {user.username}!</p>'
+            f'<p>Привет, {safe_username}!</p>'
             f'<p>Подтверди свой email, нажав на кнопку ниже:</p>'
             f'<p><a href="{verify_url}" style="background:#6366f1;color:#fff;padding:10px 20px;'
             f'border-radius:6px;text-decoration:none;">Подтвердить email</a></p>'
@@ -162,6 +165,18 @@ def allowed_file(filename):
 def upload_to_cloudinary(file, folder='social'):
     if not file.filename:
         return None
+    from validators import ALLOWED_ALL_MIME, MAX_FILE_SIZE, validate_file_size
+    # Determine effective MIME type: prefer declared content_type, fall back to
+    # extension-based guess so that internal FileStorage objects without an
+    # explicit type (e.g. base64-decoded blobs) are still accepted.
+    content_type = (getattr(file, 'content_type', None) or '').split(';')[0].strip().lower()
+    if not content_type:
+        import mimetypes
+        content_type = (mimetypes.guess_type(file.filename or '')[0] or '').lower()
+    if content_type and content_type not in ALLOWED_ALL_MIME:
+        from flask import abort
+        abort(400, description=f'Недопустимый тип файла: {content_type}')
+    validate_file_size(file, MAX_FILE_SIZE)
     if cloudinary_configured:
         import cloudinary.uploader
         try:
@@ -414,6 +429,17 @@ def process_webhook_queue():
 
 def _send_webhook_payload(bot, message, sender, chat, recipient=None):
     import json, urllib.request, urllib.error
+    from sqlalchemy.exc import IntegrityError
+
+    event_key = f"bot_{bot.id}_msg_{message.id}"
+    try:
+        record = ProcessedWebhook(event_id=event_key, provider='bot_webhook')
+        db.session.add(record)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return  # duplicate delivery — skip
+
     update = {
         'update_id': message.id,
         'message': {

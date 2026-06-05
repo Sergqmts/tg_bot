@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, abort, send_from_directory, jsonify
+from flask import Flask, render_template, redirect, url_for, flash, request, abort, send_from_directory, jsonify, g
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_socketio import emit, join_room, leave_room
 
@@ -14,6 +14,7 @@ import tempfile
 import io
 
 from extensions import db, login_manager, socketio, csrf, limiter
+from middleware.security_logging import register_security_hooks
 from helpers import (
     cloudinary_configured, FREESOUND_API_KEY,
     allowed_file, upload_to_cloudinary, get_cloudinary_url, get_avatar_url,
@@ -55,12 +56,13 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'     # CSRF mitigation
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=14)
 app.config['REMEMBER_COOKIE_SECURE'] = True
 app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB global cap; per-route limits in middleware
 app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID', '')
 app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 app.config['METERED_APP_NAME'] = os.environ.get('METERED_APP_NAME', '')
@@ -240,8 +242,32 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'Пожалуйста, войдите для доступа'
 login_manager.session_protection = 'strong'
 
-_allowed_origin = os.environ.get('ALLOWED_ORIGIN', '*')
+_allowed_origin = os.environ.get('ALLOWED_ORIGIN', '')
+if not _allowed_origin:
+    app.logger.warning(
+        'ALLOWED_ORIGIN is not set — Socket.IO will reject cross-origin connections. '
+        'Set ALLOWED_ORIGIN=https://your-domain.com in Railway Environment Variables.'
+    )
+    _allowed_origin = []  # deny all cross-origin (safest default)
 socketio.init_app(app, cors_allowed_origins=_allowed_origin, manage_session=False, async_mode='threading')
+
+
+@app.before_request
+def generate_csp_nonce():
+    import secrets as _sec
+    g.csp_nonce = _sec.token_urlsafe(16)
+
+
+@app.context_processor
+def inject_csp_nonce():
+    return {'csp_nonce': g.get('csp_nonce', '')}
+
+
+@app.before_request
+def force_https():
+    """Redirect plain HTTP to HTTPS when running behind Railway's proxy."""
+    if not app.debug and request.headers.get('X-Forwarded-Proto', 'https') == 'http':
+        return redirect(request.url.replace('http://', 'https://', 1), code=301)
 
 active_users = {}  # user_id -> sid
 
@@ -254,15 +280,16 @@ def set_security_headers(response):
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     if not app.debug:
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    nonce = g.get('csp_nonce', '')
     csp = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com cdn.tailwindcss.com; "
-        "style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net cdnjs.cloudflare.com; "
-        "font-src 'self' fonts.gstatic.com cdnjs.cloudflare.com; "
-        "img-src 'self' data: blob: https: res.cloudinary.com; "
-        "media-src 'self' blob: https: res.cloudinary.com; "
-        "connect-src 'self' wss: https:; "
-        "frame-src 'none';"
+        f"default-src 'self'; "
+        f"script-src 'self' 'nonce-{nonce}' cdn.jsdelivr.net cdnjs.cloudflare.com cdn.tailwindcss.com; "
+        f"style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net cdnjs.cloudflare.com; "
+        f"font-src 'self' fonts.gstatic.com cdnjs.cloudflare.com; "
+        f"img-src 'self' data: blob: https: res.cloudinary.com; "
+        f"media-src 'self' blob: https: res.cloudinary.com; "
+        f"connect-src 'self' wss: https:; "
+        f"frame-src 'none';"
     )
     response.headers['Content-Security-Policy'] = csp
     return response
@@ -304,22 +331,64 @@ def handle_disconnect():
 
 @socketio.on('send_message')
 def handle_message(data):
-    if current_user.is_authenticated:
-        recipient_id = data.get('recipient_id')
-        chat_id = data.get('chat_id')
-        message_body = data.get('body', '')
-        
-        emit('new_message', {
-            'sender_id': current_user.id,
-            'sender_username': current_user.username,
-            'body': message_body,
-            'chat_id': chat_id,
-            'timestamp': datetime.utcnow().isoformat()
-        }, room=f'user_{recipient_id}')
+    if not current_user.is_authenticated:
+        return
+
+    recipient_id = data.get('recipient_id')
+    chat_id = data.get('chat_id')
+    message_body = data.get('body', '')
+
+    if not isinstance(message_body, str) or len(message_body) > 10_000:
+        emit('error', {'message': 'invalid message'})
+        return
+
+    if recipient_id is not None:
+        recipient = User.query.get(recipient_id)
+        if not recipient:
+            emit('error', {'message': 'recipient not found'})
+            return
+        if recipient.is_blocking(current_user) or current_user.is_blocking(recipient):
+            emit('error', {'message': 'cannot send message'})
+            return
+
+    emit('new_message', {
+        'sender_id': current_user.id,
+        'sender_username': current_user.username,
+        'body': message_body,
+        'chat_id': chat_id,
+        'timestamp': datetime.utcnow().isoformat()
+    }, room=f'user_{recipient_id}')
 
 csrf.init_app(app)
 limiter.init_app(app)
 
+from middleware.abuse_protection import enforce_body_size
+app.before_request(enforce_body_size)
+
+register_security_hooks(app)
+
+# ─── Railway preview environment guard ────────────────────────────────────────
+_railway_env = os.environ.get('RAILWAY_ENVIRONMENT', '')
+_prod_db_url = os.environ.get('DATABASE_URL', '')
+_preview_db_url = os.environ.get('PREVIEW_DATABASE_URL', '')
+
+if _railway_env and _railway_env != 'production':
+    # In preview / staging deployments require a separate database.
+    # If PREVIEW_DATABASE_URL is set, switch to it automatically.
+    if _preview_db_url:
+        _preview_db = _preview_db_url
+        if _preview_db.startswith('postgres://'):
+            _preview_db = _preview_db.replace('postgres://', 'postgresql+psycopg://', 1)
+        elif not _preview_db.startswith('postgresql+'):
+            _preview_db = _preview_db.replace('postgresql://', 'postgresql+psycopg://', 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = _preview_db
+        app.logger.info(f'RAILWAY_ENVIRONMENT={_railway_env}: using PREVIEW_DATABASE_URL')
+    else:
+        app.logger.warning(
+            f'RAILWAY_ENVIRONMENT={_railway_env} but PREVIEW_DATABASE_URL is not set. '
+            'Preview deployments are sharing the production database — set '
+            'PREVIEW_DATABASE_URL to an isolated database for this environment.'
+        )
 
 
 @login_manager.user_loader

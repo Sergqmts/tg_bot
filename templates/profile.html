@@ -98,7 +98,7 @@
             </button>
         </div>
     </div>
-    <script>
+    <script nonce="{{ csp_nonce }}">
     (function(){
         var key = 'vibe_profile_hint_dismissed';
         var banner = document.getElementById('profile-completion-banner');
@@ -275,7 +275,7 @@
         </div>
         {% endif %}
     </div>
-    <script>
+    <script nonce="{{ csp_nonce }}">
     function switchTab(tab) {
         var tabs = document.querySelectorAll('.profile-tabs .tab');
         var grids = document.querySelectorAll('.posts-grid');
@@ -308,7 +308,7 @@
     font-style: italic;
 }
 </style>
-<script>
+<script nonce="{{ csp_nonce }}">
 (function() {
     var el = document.querySelector('.last-seen[data-ts]');
     if (!el) return;

@@ -28,8 +28,11 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 def run_migrations_online() -> None:
+    url = app.config['SQLALCHEMY_DATABASE_URI']
+    configuration = config.get_section(config.config_ini_section, {})
+    configuration['sqlalchemy.url'] = url
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

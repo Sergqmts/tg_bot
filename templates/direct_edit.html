@@ -71,7 +71,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 function toggleBgOptions() {
     var type = document.getElementById('bgTypeSelect').value;
     document.getElementById('colorOption').style.display = type === 'color' ? 'block' : 'none';

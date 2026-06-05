@@ -8,6 +8,7 @@ def register_routes(app):
     from sqlalchemy import and_
     from extensions import db, limiter
     from models import Story, StoryReaction, StoryComment, StoryView, User, Message, followers
+    from validators import validate_emoji, validate_text, validate_base64_media, MAX_STORY_COMMENT
 
     def get_approved_followers():
         return User.query.join(followers, and_(
@@ -26,24 +27,25 @@ def register_routes(app):
             
             if media_data:
                 header, data = media_data.split(',', 1)
-                if 'image/jpeg' in header or 'image/png' in header or 'image/jpg' in header:
-                    ext = 'jpg'
-                    media_type = 'image'
-                elif 'video/mp4' in header or 'video/webm' in header or 'video/quicktime' in header:
-                    ext = 'mp4'
+                try:
+                    mime = validate_base64_media(header, data)
+                except Exception:
+                    return 'Invalid media data', 400
+                if mime.startswith('video/'):
+                    ext = 'mp4' if 'mp4' in mime or 'quicktime' in mime else 'webm'
                     media_type = 'video'
                 else:
-                    ext = 'jpg'
+                    ext = 'png' if mime == 'image/png' else 'jpg'
                     media_type = 'image'
-                
+
                 try:
                     binary = base64.b64decode(data)
                 except Exception as e:
                     current_app.logger.warning("story base64 decode failed: %s", e)
                     return 'Invalid base64 data', 400
-                
+
                 filename = f'story_{datetime.now().timestamp()}.{ext}'
-                file = FileStorage(io.BytesIO(binary), filename=filename, content_type=f'image/{ext}' if media_type == 'image' else f'video/{ext}')
+                file = FileStorage(io.BytesIO(binary), filename=filename, content_type=mime)
                 
                 if cloudinary_configured:
                     url = upload_to_cloudinary(file, folder='stories')
@@ -156,9 +158,10 @@ def register_routes(app):
     @limiter.limit('60 per minute')
     def react_story(story_id):
         story = Story.query.get_or_404(story_id)
-        emoji = request.form.get('emoji')
-        if not emoji:
+        raw_emoji = request.form.get('emoji')
+        if not raw_emoji:
             return redirect(request.referrer or url_for('index'))
+        emoji = validate_emoji(raw_emoji)
         
         existing = StoryReaction.query.filter_by(story_id=story.id, user_id=current_user.id, emoji=emoji).first()
         if existing:
@@ -180,7 +183,7 @@ def register_routes(app):
     @limiter.limit('10 per minute')
     def comment_story(story_id):
         story = Story.query.get_or_404(story_id)
-        body = request.form.get('body', '').strip()
+        body = validate_text(request.form.get('body', ''), MAX_STORY_COMMENT, 'Комментарий к истории')
         if not body:
             return redirect(request.referrer or url_for('index'))
         

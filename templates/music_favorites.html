@@ -24,7 +24,7 @@
     <p style="text-align:center;color:var(--text-muted);padding:60px 20px;">У вас нет избранных треков</p>
   {% endif %}
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 function playLocal(trackId) {
   fetch('/music/local/' + trackId).then(r=>r.json()).then(d=>{ if(!d.error) playMusic(d); });
 }

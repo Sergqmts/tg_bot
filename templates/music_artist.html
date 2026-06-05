@@ -24,7 +24,7 @@
     {% endfor %}
   </div>
 </div>
-<script>
+<script nonce="{{ csp_nonce }}">
 function playTrack(trackId, source, deezerId) {
   fetch('/music/track/' + deezerId + '/play').then(r=>r.json()).then(d=>{ if(!d.error) playMusic(d); });
 }

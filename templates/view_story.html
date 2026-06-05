@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>История {{ story.user.username }} - Vibe</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+    <script nonce="{{ csp_nonce }}">
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -150,7 +150,7 @@
         </div>
     </div>
     
-    <script>
+    <script nonce="{{ csp_nonce }}">
         let currentIndex = {{ index }};
         const totalStories = {{ total }};
         const storyDurations = {{ durations|tojson }};

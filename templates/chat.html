@@ -282,7 +282,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 let selectedFile = null;
 let mediaMode = 'voice';
 let chatMediaRecorder, chatAudioChunks = [], chatRecordingTimer, chatRecordingSeconds = 0, chatRecordedBlob = null, chatRecordingPromise, chatRecordingResolve;

@@ -4,6 +4,7 @@ def register_routes(app):
     from extensions import db, limiter
     from models import User, RegistrationForm, LoginForm
     from authlib.integrations.flask_client import OAuth
+    from middleware.security_logging import log_auth_attempt, log_logout, log_register, log_oauth
     import secrets
     from datetime import datetime, timedelta
     from urllib.parse import urlparse, urljoin
@@ -27,12 +28,20 @@ def register_routes(app):
         )
 
     @app.route('/register', methods=['GET', 'POST'])
-    @limiter.limit('10 per hour')
+    @limiter.limit('3 per hour')
     def register():
+        from middleware.abuse_protection import generate_pow_challenge, verify_pow_solution
         if current_user.is_authenticated:
             return redirect(url_for('index'))
         form = RegistrationForm()
         if form.validate_on_submit():
+            challenge = request.form.get('pow_challenge', '')
+            nonce     = request.form.get('pow_nonce', '')
+            if not verify_pow_solution(challenge, nonce):
+                log_register(request.remote_addr or 'unknown', form.username.data or '', False, reason='pow_failed')
+                flash('Проверка безопасности не пройдена. Попробуйте ещё раз.')
+                pow_challenge = generate_pow_challenge()
+                return render_template('register.html', form=form, pow_challenge=pow_challenge)
             confirm_token = secrets.token_urlsafe(32)
             user = User(
                 username=form.username.data,
@@ -43,6 +52,7 @@ def register_routes(app):
             user.set_password(form.password.data)
             db.session.add(user)
             db.session.commit()
+            log_register(request.remote_addr or 'unknown', form.username.data, True)
             verify_url = url_for('verify_email', token=confirm_token, _external=True)
             try:
                 from helpers import send_verification_email
@@ -56,7 +66,8 @@ def register_routes(app):
                 current_app.logger.warning(f"Welcome DM failed: {e}")
             flash('Регистрация прошла успешно! Проверьте почту и подтвердите email.')
             return redirect(url_for('login'))
-        return render_template('register.html', form=form)
+        pow_challenge = generate_pow_challenge()
+        return render_template('register.html', form=form, pow_challenge=pow_challenge)
 
     @app.route('/login', methods=['GET', 'POST'])
     @limiter.limit('5 per minute', methods=['POST'])
@@ -65,12 +76,16 @@ def register_routes(app):
             return redirect(url_for('index'))
         form = LoginForm()
         if form.validate_on_submit():
-            user = User.query.filter_by(username=form.username.data).first()
+            ip = request.remote_addr or 'unknown'
+            username = form.username.data or ''
+            user = User.query.filter_by(username=username).first()
             if user and user.check_password(form.password.data):
                 if user.is_banned:
+                    log_auth_attempt(ip, username, False, reason='banned')
                     flash('Ваш аккаунт заблокирован за нарушение правил')
                     return render_template('login.html', form=form)
                 if not user.email_confirmed:
+                    log_auth_attempt(ip, username, False, reason='email_not_confirmed')
                     flash('Подтвердите email перед входом. Проверьте почту или запросите новое письмо.')
                     return render_template('login.html', form=form, resend_email=user.email)
                 # Transparent re-hash: upgrade old PBKDF2 hashes to scrypt on login
@@ -86,12 +101,15 @@ def register_routes(app):
                     next_page = request.args.get('next')
                     if next_page and _is_safe_redirect(next_page):
                         flask_session['totp_next'] = next_page
+                    log_auth_attempt(ip, username, True, method='password_totp_pending')
                     return redirect(url_for('login_2fa'))
                 login_user(user, remember=form.remember.data)
+                log_auth_attempt(ip, username, True)
                 next_page = request.args.get('next')
                 if next_page and _is_safe_redirect(next_page):
                     return redirect(next_page)
                 return redirect(url_for('index'))
+            log_auth_attempt(ip, username, False, reason='bad_credentials')
             flash('Неверное имя пользователя или пароль')
         return render_template('login.html', form=form)
 
@@ -115,6 +133,7 @@ def register_routes(app):
                 userinfo = oauth.google.parse_id_token(token)
         except Exception as e:
             current_app.logger.error(f'Google auth error: {e}')
+            log_oauth(request.remote_addr or 'unknown', 'google', None, False)
             flash('Ошибка входа через Google')
             return redirect(url_for('login'))
 
@@ -122,8 +141,10 @@ def register_routes(app):
         email = userinfo.get('email', '')
         name = userinfo.get('name', '')
         picture = userinfo.get('picture', '')
+        _ip = request.remote_addr or 'unknown'
 
         if not google_id:
+            log_oauth(_ip, 'google', email or None, False)
             flash('Не удалось получить данные от Google')
             return redirect(url_for('login'))
 
@@ -136,8 +157,10 @@ def register_routes(app):
                 flask_session['totp_pending_user_id'] = user.id
                 flask_session['totp_remember'] = False
                 flask_session['totp_pending_at'] = time.time()
+                log_oauth(_ip, 'google', email, True)
                 return redirect(url_for('login_2fa'))
             login_user(user)
+            log_oauth(_ip, 'google', email, True)
             return redirect(url_for('index'))
 
         user_by_email = User.query.filter_by(email=email).first()
@@ -151,6 +174,7 @@ def register_routes(app):
                 user_by_email.avatar_cloudinary_url = picture
             db.session.commit()
             login_user(user_by_email)
+            log_oauth(_ip, 'google', email, True)
             return redirect(url_for('index'))
 
         base_username = (email.split('@')[0] if email else name.replace(' ', '_').lower() or f'user_{secrets.token_hex(4)}')
@@ -182,11 +206,17 @@ def register_routes(app):
         except Exception as e:
             current_app.logger.warning(f"Welcome DM (Google) failed: {e}")
         login_user(user)
+        log_oauth(_ip, 'google', email, True)
         return redirect(url_for('onboarding'))
 
     @app.route('/logout')
     @login_required
     def logout():
+        log_logout(
+            ip=request.remote_addr or 'unknown',
+            user_id=current_user.id,
+            username=current_user.username,
+        )
         logout_user()
         return redirect(url_for('index'))
 
