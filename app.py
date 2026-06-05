@@ -786,6 +786,25 @@ with app.app_context():
         app.logger.info(f"Migration shorts.audio_id: {e}")
 
     try:
+        import uuid as _uuid
+        for _tbl in ('user', 'post', 'community'):
+            if not column_exists(_tbl, 'public_id'):
+                db.session.execute(text(f'ALTER TABLE "{_tbl}" ADD COLUMN public_id VARCHAR(36)'))
+                rows = db.session.execute(text(f'SELECT id FROM "{_tbl}"')).fetchall()
+                for (row_id,) in rows:
+                    db.session.execute(
+                        text(f'UPDATE "{_tbl}" SET public_id = :uid WHERE id = :id'),
+                        {'uid': str(_uuid.uuid4()), 'id': row_id},
+                    )
+                db.session.execute(text(f'ALTER TABLE "{_tbl}" ALTER COLUMN public_id SET NOT NULL'))
+                db.session.execute(text(f'CREATE UNIQUE INDEX IF NOT EXISTS uq_{_tbl}_public_id ON "{_tbl}" (public_id)'))
+                db.session.commit()
+                app.logger.info(f"Migration: added public_id to {_tbl}")
+    except Exception as e:
+        db.session.rollback()
+        app.logger.info(f"Migration public_id: {e}")
+
+    try:
         if not User.query.filter_by(username='NewsBot').first():
             bot = User(
                 username='NewsBot',
