@@ -135,6 +135,31 @@ tg_bot/
 └── templates/              # 68 Jinja2 шаблонов
 ```
 
+## 🔐 Аутентификация и безопасность
+
+### 2FA TOTP
+- Поля `User.totp_secret` (String 32), `User.totp_enabled` (Boolean)
+- Роуты: `GET /settings/2fa`, `POST /settings/2fa/enable`, `POST /settings/2fa/disable`
+- Логин: после пароля при `totp_enabled=True` → редирект на `login_2fa.html` для ввода кода
+- Защита: rate limiting (5 попыток/мин), брут-форс-защита, 5-минутный session expiry для незавершённого 2FA
+- Google OAuth обходит 2FA (intentional — отдельный flow)
+
+### Rate Limiting (abuse_protection.py)
+- `@user_rate_limit(limit, window)` — на уровне user_id
+- `@api_rate_limit` — 100 req/60s для API endpoints
+- `@ai_rate_limit` — отдельный лимит для AI-intensive операций
+- Security logging: `middleware/security_logging.py`
+
+### Security Headers (app.py `@after_request`)
+`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`,
+`Strict-Transport-Security` (только prod), `Content-Security-Policy`, `Referrer-Policy`
+
+### Верификация телефона
+- SMS OTP через `SMS_PROVIDER` (dev: `log`, prod: `smsru`)
+- Поля `User.phone`, `User.phone_verified`, `User.otp_code`, `User.otp_expiry`
+
+---
+
 ## 🧩 Ключевые фичи
 
 ### Бот-платформа (Telegram-style)
@@ -245,30 +270,38 @@ tg_bot/
 
 ## 🚀 Переменные окружения
 ```
-DATABASE_URL=postgresql://...
-SECRET_KEY=<random 30+ chars>
+DATABASE_URL=postgresql+psycopg://user:pass@localhost/vibe
+SECRET_KEY=<>=32 chars>
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
-CLOUDFLARE_TURN_KEY_ID=...
-CLOUDFLARE_TURN_API_TOKEN=...
+METERED_APP_NAME=...
+METERED_API_KEY=...
+SMS_PROVIDER=log              # log | smsru
+SMSRU_API_ID=...              # только при SMS_PROVIDER=smsru
 FREESOUND_API_KEY=...
 EDITOR_SERVICE_URL=https://editorservicevibehub-production.up.railway.app
 EDITOR_SERVICE_TOKEN=service-token
-EDITOR_JWT_SECRET=<общий JWT-секрет с редактором>
-JWT_SECRET=<тот же секрет для редактора>
+EDITOR_JWT_SECRET=<>=32 chars, общий с редактором>
+ALLOWED_ORIGIN=https://socnet.up.railway.app
+NEWS_BOT_TOKEN=...            # GitHub → NewsBot вебхук
+GITHUB_WEBHOOK_SECRET=...
+MAIL_SENDER=noreply@example.com
+MAIL_PASSWORD=...
 PORT=8080
 ```
 
+Полный список с комментариями: `.env.example`
+
 ## ⚠️ Известные проблемы
 1. Socket.IO не работает с gunicorn sync workers — реальное время только через Starlette WebSocket
-2. Whisper медленный на CPU (free Railway tier)
-3. Нет лимита размера файлов — большие аплоады могут вызвать 502
+2. faster-whisper работает медленно на CPU (free Railway tier)
+3. Нет ограничения размера файлов — большие аплоады могут вызвать 502
 4. `Message.body NOT NULL` в PostgreSQL — всегда передавать `body=''`
-5. Нет requirements.txt generation — при новых зависимостях обновлять вручную
-6. JWT key < 32 bytes вызывает `InsecureKeyLengthWarning` — рекомендуется ключ длиннее 32 символов
+5. При добавлении зависимостей обновлять `requirements.txt` вручную (`pip freeze > requirements.txt`)
+6. JWT key < 32 bytes вызывает `InsecureKeyLengthWarning` — использовать ключ ≥32 символа
 
 ## 🔒 Безопасность
 - `ProxyFix(x_proto=1)` — только `x_proto`, без `x_host`. Включение `x_host=1` открывает host-header injection: атакующий может подменить домен в письмах и редиректах

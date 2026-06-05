@@ -46,9 +46,9 @@ test_output.txt
 # Memory file (session context, not source code)
 MEMORY.md
 
-# Editor service docs (integration reference, not part of main app)
 EDITOR_SERVICE_SPEC.md
-docs/
+# Exclude internal planning docs and superpowers session state
+docs/superpowers/
 
 # Project specific
 site/
