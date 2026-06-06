@@ -11,16 +11,22 @@ def get_profile(username):
     u = User.query.filter_by(username=username).first_or_404()
     is_following = db.session.query(followers).filter_by(
         follower_id=uid, followed_id=u.id, status='approved').first() is not None
+    can_view_posts = (u.id == uid) or (not u.is_private) or is_following
+    posts_data = []
+    if can_view_posts:
+        posts_data = [
+            {'id': p.id, 'media': [m.cloudinary_url or m.filename for m in p.media],
+             'created_at': p.created_at.isoformat()}
+            for p in u.posts.order_by(db.desc(db.text('created_at'))).limit(30)
+        ]
     return jsonify({'ok': True, 'profile': {
         'id': u.id, 'username': u.username, 'avatar': u.avatar,
         'bio': u.bio, 'is_private': u.is_private,
         'followers_count': u.followers.count(),
         'following_count': u.following.count(),
-        'posts_count': u.posts.count() if hasattr(u.posts, 'count') else len(u.posts),
+        'posts_count': u.posts.count() if can_view_posts else 0,
         'is_following': is_following,
-        'posts': [{'id': p.id, 'media': [m.cloudinary_url or m.filename for m in p.media],
-                   'created_at': p.created_at.isoformat()} for p in u.posts.order_by(
-                       db.desc(db.text('created_at'))).limit(30)],
+        'posts': posts_data,
     }})
 
 

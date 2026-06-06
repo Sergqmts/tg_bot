@@ -26,6 +26,16 @@ def get_stories():
 @jwt_required()
 def view_story(story_id):
     uid = int(get_jwt_identity())
+    s = Story.query.get_or_404(story_id)
+    now = datetime.utcnow()
+    if s.is_archived or s.expires_at <= now:
+        abort(404)
+    if s.user_id != uid:
+        if s.user.is_private:
+            approved = db.session.query(followers).filter_by(
+                follower_id=uid, followed_id=s.user_id, status='approved').first()
+            if not approved:
+                abort(404)
     if not StoryView.query.filter_by(story_id=story_id, user_id=uid).first():
         db.session.add(StoryView(story_id=story_id, user_id=uid))
         db.session.commit()
