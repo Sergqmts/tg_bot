@@ -13,7 +13,7 @@ import cloudinary.uploader
 import tempfile
 import io
 
-from extensions import db, login_manager, socketio, csrf, limiter
+from extensions import db, login_manager, socketio, csrf, limiter, jwt_manager
 from middleware.security_logging import register_security_hooks
 from helpers import (
     cloudinary_configured, FREESOUND_API_KEY,
@@ -58,6 +58,12 @@ app.config['REMEMBER_COOKIE_SECURE'] = True
 app.config['REMEMBER_COOKIE_HTTPONLY'] = True
 app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+
+# JWT configuration for mobile API
+jwt_manager.init_app(app)
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', app.config['SECRET_KEY'])
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True}
@@ -628,6 +634,10 @@ def service_worker():
 # Register all route handlers from routes/ package
 from routes import register_all_routes
 register_all_routes(app)
+
+# Register mobile API blueprint
+from routes.api_v1 import api_v1 as api_v1_blueprint
+app.register_blueprint(api_v1_blueprint)
 
 
 
