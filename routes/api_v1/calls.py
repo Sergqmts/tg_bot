@@ -23,7 +23,11 @@ def initiate_call():
 @api_v1.route('/calls/<int:call_id>/answer', methods=['POST'])
 @jwt_required()
 def answer_call(call_id):
+    uid = int(get_jwt_identity())
     call = Call.query.get_or_404(call_id)
+    if call.callee_id != uid:
+        from flask import abort
+        abort(403)
     call.status = 'ongoing'
     call.started_at = datetime.datetime.utcnow()
     db.session.commit()
@@ -33,9 +37,15 @@ def answer_call(call_id):
 @api_v1.route('/calls/<int:call_id>/end', methods=['POST'])
 @jwt_required()
 def end_call(call_id):
+    uid = int(get_jwt_identity())
     call = Call.query.get_or_404(call_id)
+    if uid not in (call.caller_id, call.callee_id):
+        from flask import abort
+        abort(403)
     call.status = 'ended'
     call.ended_at = datetime.datetime.utcnow()
+    if call.started_at:
+        call.duration = int((call.ended_at - call.started_at).total_seconds())
     db.session.commit()
     return jsonify({'ok': True})
 

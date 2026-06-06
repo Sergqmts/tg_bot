@@ -14,7 +14,12 @@ def list_communities():
 @api_v1.route('/communities/<slug>', methods=['GET'])
 @jwt_required()
 def get_community(slug):
+    uid = int(get_jwt_identity())
     c = Community.query.filter_by(slug=slug).first_or_404()
+    is_member = CommunityMember.query.filter_by(
+        community_id=c.id, user_id=uid, status='approved').first() is not None
+    if c.is_private and not is_member:
+        return jsonify({'ok': True, 'community': _comm(c, with_posts=False)})
     return jsonify({'ok': True, 'community': _comm(c, with_posts=True)})
 
 

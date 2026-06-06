@@ -301,10 +301,11 @@ def set_security_headers(response):
     )
     response.headers['Content-Security-Policy'] = csp
     if request.path.startswith('/api/v1/'):
-        mobile_origin = os.environ.get('MOBILE_ORIGIN', '*')
-        response.headers['Access-Control-Allow-Origin'] = mobile_origin
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        mobile_origin = os.environ.get('MOBILE_ORIGIN', '')
+        if mobile_origin:
+            response.headers['Access-Control-Allow-Origin'] = mobile_origin
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     return response
 
 
