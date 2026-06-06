@@ -391,8 +391,28 @@ def create_notification(user_id, sender_id, notif_type, post_id=None, comment_id
         )
         db.session.add(notification)
         db.session.commit()
+        _try_send_push(user_id, sender_id, notif_type)
     except Exception as e:
         current_app.logger.error(f"Notification error: {e}")
+
+
+def _try_send_push(user_id, sender_id, notif_type):
+    try:
+        from utils.push import send_push
+        from models import User
+        recipient = User.query.get(user_id)
+        if not recipient or not recipient.fcm_token:
+            return
+        sender = User.query.get(sender_id) if sender_id else None
+        titles = {
+            'like': 'Новый лайк', 'comment': 'Комментарий', 'follow': 'Новый подписчик',
+            'message': 'Новое сообщение', 'call': 'Входящий звонок',
+        }
+        title = titles.get(notif_type, 'Уведомление')
+        body = sender.username if sender else ''
+        send_push(recipient.fcm_token, title=title, body=body)
+    except Exception:
+        pass
 
 
 def enqueue_webhook_dispatch(message_id):

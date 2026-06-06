@@ -82,6 +82,7 @@ class User(UserMixin, db.Model):
     # 2FA
     totp_secret = db.Column(db.String(32), nullable=True)
     totp_enabled = db.Column(db.Boolean, default=False)
+    fcm_token = db.Column(db.String(255), nullable=True)
 
     # Onboarding
     onboarding_done = db.Column(db.Boolean, default=False)

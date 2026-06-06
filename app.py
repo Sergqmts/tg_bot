@@ -207,6 +207,7 @@ def init_db():
                     'totp_enabled': 'BOOLEAN DEFAULT FALSE',
                     'email_confirmed': 'BOOLEAN DEFAULT FALSE',
                     'email_confirm_token': 'VARCHAR(64)',
+                    'fcm_token': 'VARCHAR(255)',
                 }
                 user_cols_sqlite = {
                     'creator_id': 'INTEGER', 'is_banned': 'BOOLEAN', 'is_staff': 'BOOLEAN',
@@ -215,6 +216,7 @@ def init_db():
                     'avatar_cloudinary_url': 'TEXT',
                     'totp_secret': 'TEXT', 'totp_enabled': 'BOOLEAN',
                     'email_confirmed': 'BOOLEAN', 'email_confirm_token': 'TEXT',
+                    'fcm_token': 'TEXT',
                 }
                 for col in user_cols_pg:
                     if not column_exists_conn(conn, 'user', col):
@@ -298,7 +300,17 @@ def set_security_headers(response):
         f"frame-src 'none';"
     )
     response.headers['Content-Security-Policy'] = csp
+    if request.path.startswith('/api/v1/'):
+        mobile_origin = os.environ.get('MOBILE_ORIGIN', '*')
+        response.headers['Access-Control-Allow-Origin'] = mobile_origin
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     return response
+
+
+@app.route('/api/v1/<path:path>', methods=['OPTIONS'])
+def api_v1_options(path):
+    return '', 204
 
 
 @app.after_request
