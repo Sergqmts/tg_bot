@@ -24,7 +24,10 @@ routes/
   calls.py          — WebRTC VoIP REST API
   editor.py         — прокси к внешнему редактору фото/видео
 templates/          — 73 Jinja2 шаблона
-static/style.css    — 2169 строк стилей (Tailwind + кастомные)
+static/style.css    — ~2876 строк стилей (Tailwind + кастомные, dark electric theme)
+static/manifest.json — PWA манифест (theme_color: #0A0A0A)
+static/icon-192.png  — PWA иконка 192×192 (тёмный фон #0A0A0A, логотип #00C2FF)
+static/icon-512.png  — PWA иконка 512×512
 ```
 
 ### Ключевые модели
@@ -73,6 +76,61 @@ static/style.css    — 2169 строк стилей (Tailwind + кастомн�
 
 ### Деплой
 Railway (основной) + Vercel (API функции). Procfile: gunicorn.
+
+---
+
+## Дизайн-система — Dark Electric (с 2026-06-07)
+
+**Принцип:** тёмный фон по умолчанию, один акцент без градиентов. Spec: `docs/superpowers/specs/2026-06-07-dark-electric-redesign.md`
+
+### CSS-переменные (`:root` в `static/style.css`)
+
+| Переменная | Значение | Использование |
+|---|---|---|
+| `--bg` | `#0A0A0A` | Основной фон |
+| `--surface` | `#111111` | Карточки, посты, модалки |
+| `--surface-2` | `#141414` | Вложенные элементы |
+| `--border` | `#1A1A1A` | Границы и разделители |
+| `--border-2` | `#222222` | Заметные границы |
+| `--text` | `#FFFFFF` | Основной текст |
+| `--text-2` | `#888888` | Вторичный текст |
+| `--text-3` | `#444444` | Плейсхолдеры, timestamps |
+| `--accent` | `#00C2FF` | Кнопки, иконки, лайки, активные состояния |
+| `--accent-glow` | `rgba(0,194,255,0.15)` | Свечение вокруг акцентных элементов |
+| `--accent-dark` | `#001B2E` | Фон плеера и акцентных блоков |
+| `--danger` | `#FF4455` | Только удаление и ошибки (не лайки!) |
+| `--success` | `#00E5A0` | Успех, онлайн-статус |
+
+**Шрифт:** Space Grotesk (только). Inter удалён.
+
+### Правила компонентов
+
+- **Аватары:** `border-radius: 6px` — НЕ `50%` (круглые аватары убраны)
+- **Карточки постов:** `border-radius: 10px`, `border: 1px solid var(--border)`, `box-shadow: none`
+- **Кнопки primary:** `background: var(--accent)`, `color: #000`, `border-radius: 6px`
+- **Кнопки secondary:** `background: var(--surface-2)`, `border: 1px solid var(--border-2)`, `border-radius: 6px`
+- **Story rings:** `border-radius: 8px` (квадрат), `border: 1.5px solid var(--accent)`; `.seen` → `border-color: var(--border-2)`
+- **Лайк активный:** `color: var(--accent)` — никогда не красный (`--danger` только для удаления)
+- **Аудио-плеер:** `background: var(--accent-dark)`, play-кнопка с `box-shadow: 0 0 12px var(--accent-glow)`
+- **Bottom nav:** `background: var(--bg)`, `border-top: 1px solid var(--border)`
+- **Модалки:** `background: var(--surface)`, `border: 1px solid var(--border-2)`, `border-radius: 12px`, без `backdrop-filter`
+- **Теги/лейблы:** `border-radius: 4px`
+- **Inputs:** `border-radius: 8px`
+
+### Что НЕЛЬЗЯ добавлять
+- `backdrop-filter: blur(...)` — glassmorphism удалён
+- Розово-фиолетовый градиент (`#FF3CAC → #784BA0 → #2B86C5`)
+- Instagram-градиент для сторис (`#F09433 → #BC1888`)
+- Светлые фоны (`#F8FAFC`, `#FFFFFF`) как дефолтные
+- Переменные `--brand-start`, `--brand-middle`, `--brand-end` (удалены)
+
+### Десктоп (≥1024px) / Планшет (768–1023px)
+CSS-правила добавлены в конец `style.css`. Для активации нужно добавить классы в HTML-шаблоны:
+- `.desktop-layout` — обёртка трёхколоночной сетки (240px / fluid / 300px)
+- `.sidebar-nav`, `.sidebar-nav-item` — вертикальная навигация (вместо bottom nav)
+- `.widgets-column` — правая колонка виджетов
+- `.feed-column` — центральная колонка фида
+На планшете: `.sidebar-nav-item span` скрывается (иконки без текста), `.widgets-column` скрывается.
 
 ---
 

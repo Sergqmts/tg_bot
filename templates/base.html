@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="VIbeHub">
-    <meta name="theme-color" content="#784BA0">
+    <meta name="theme-color" content="#0A0A0A">
     <script src="https://cdn.tailwindcss.com"></script>
     <script nonce="{{ csp_nonce }}">
         tailwind.config = {
@@ -20,26 +20,22 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            start: '#FF3CAC',
-                            middle: '#784BA0',
-                            end: '#2B86C5',
-                        },
                         dark: {
-                            bg: '#0F172A',
-                            card: '#1E293B',
-                            border: '#334155'
-                        }
+                            bg: '#0A0A0A',
+                            card: '#111111',
+                            border: '#1A1A1A'
+                        },
+                        accent: '#00C2FF'
                     },
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script nonce="{{ csp_nonce }}">
@@ -74,27 +70,27 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
         .dark .glass {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(17, 17, 17, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .dark #accountMenu:hover,
         .dark #moreMenu:hover {
-            background-color: #1E293B !important;
+            background-color: #111111 !important;
         }
         body {
-            scrollbar-width: thin !important;
-            scrollbar-color: #bfc5ce transparent !important;
+            scrollbar-width: thin;
+            scrollbar-color: #1A1A1A transparent;
         }
         body::-webkit-scrollbar {
-            width: 6px !important;
+            width: 6px;
         }
         body::-webkit-scrollbar-thumb {
-            background-color: #bfc5ce !important;
-            border-radius: 9999px !important;
+            background-color: #1A1A1A;
+            border-radius: 9999px;
         }
         body::-webkit-scrollbar-track {
-            background-color: transparent !important;
-            border-radius: 9999px !important;
+            background-color: transparent;
+            border-radius: 9999px;
         }
         /* Mobile app styles */
         * {
