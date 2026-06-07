@@ -1,0 +1,180 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=DM+Sans:wght@400;500;700&family=Barlow+Condensed:wght@400;600;800&display=swap');
+
+* { box-sizing: border-box; }
+.typo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.typo-card {
+  background: #0A0A0A;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.typo-card.selected { border-color: #00C2FF; transform: scale(1.02); }
+.typo-card:hover { transform: scale(1.01); }
+.typo-preview {
+  padding: 16px;
+  border-bottom: 1px solid #1A1A1A;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.typo-info {
+  padding: 12px 16px;
+}
+.typo-info h3 { margin: 0 0 3px; font-size: 13px; font-weight: 700; color: #FFF; }
+.typo-info p { margin: 0; font-size: 11px; color: #555; line-height: 1.4; }
+
+/* Sample UI elements repeated in each font */
+.ui-topbar { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #1A1A1A; }
+.ui-post-header { display: flex; align-items: center; gap: 8px; }
+.ui-avatar { width: 30px; height: 30px; border-radius: 5px; background: #1E1E1E; border: 1px solid #222; flex-shrink: 0; }
+.ui-post-img { height: 80px; background: #111; border-radius: 5px; border: 1px solid #1A1A1A; position: relative; margin: 6px 0; }
+.ui-post-img::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #0A1A2E 0%, #001833 100%); border-radius: 5px; }
+.ui-actions { display: flex; gap: 12px; align-items: center; }
+.ui-pill { height: 2px; border-radius: 1px; background: #00C2FF; }
+.ui-pill-dim { height: 2px; border-radius: 1px; background: #1E1E1E; }
+
+/* === FONT A: Barlow Condensed — Жёсткий === */
+.fa { font-family: 'Barlow Condensed', sans-serif; }
+.fa .logo { font-size: 22px; font-weight: 800; color: #00C2FF; letter-spacing: 3px; text-transform: uppercase; }
+.fa .username { font-size: 13px; font-weight: 600; color: #FFF; letter-spacing: 1px; text-transform: uppercase; }
+.fa .time { font-size: 10px; color: #444; letter-spacing: 1px; text-transform: uppercase; }
+.fa .caption { font-size: 11px; color: #666; line-height: 1.4; letter-spacing: 0.5px; }
+.fa .tag { font-size: 9px; font-weight: 800; color: #000; background: #00C2FF; padding: 2px 8px; letter-spacing: 2px; text-transform: uppercase; }
+.fa .btn { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #00C2FF; border: 1.5px solid #00C2FF; padding: 3px 10px; }
+
+/* === FONT B: Space Grotesk — Технологичный === */
+.fb { font-family: 'Space Grotesk', sans-serif; }
+.fb .logo { font-size: 18px; font-weight: 700; color: #00C2FF; letter-spacing: -0.5px; }
+.fb .username { font-size: 12px; font-weight: 700; color: #FFF; }
+.fb .time { font-size: 10px; color: #444; }
+.fb .caption { font-size: 11px; color: #666; line-height: 1.5; }
+.fb .tag { font-size: 9px; font-weight: 700; color: #000; background: #00C2FF; padding: 2px 8px; border-radius: 3px; }
+.fb .btn { font-size: 10px; font-weight: 700; letter-spacing: 0.3px; color: #00C2FF; border: 1.5px solid #00C2FF; padding: 3px 10px; border-radius: 4px; }
+
+/* === FONT C: DM Sans — Мягкий === */
+.fc { font-family: 'DM Sans', sans-serif; }
+.fc .logo { font-size: 17px; font-weight: 700; color: #00C2FF; letter-spacing: -0.3px; }
+.fc .username { font-size: 12px; font-weight: 500; color: #DDD; }
+.fc .time { font-size: 10px; color: #444; }
+.fc .caption { font-size: 11px; color: #666; line-height: 1.6; font-weight: 400; }
+.fc .tag { font-size: 9px; font-weight: 500; color: #000; background: #00C2FF; padding: 2px 10px; border-radius: 20px; }
+.fc .btn { font-size: 10px; font-weight: 500; color: #00C2FF; border: 1.5px solid #00C2FF; padding: 3px 12px; border-radius: 20px; }
+</style>
+
+<h2>Типографика</h2>
+<p class="subtitle">Один шрифт на всё приложение — меняет характер кардинально</p>
+
+<div class="typo-grid">
+
+  <!-- A: Barlow Condensed -->
+  <div class="typo-card" data-choice="barlow" onclick="toggleSelect(this)">
+    <div class="typo-preview fa">
+      <div class="ui-topbar">
+        <div class="logo">VIBE</div>
+        <div style="flex:1"></div>
+        <div class="btn">ВОЙТИ</div>
+      </div>
+      <div class="ui-post-header">
+        <div class="ui-avatar"></div>
+        <div>
+          <div class="username">RAVEMASTER</div>
+          <div class="time">2 ЧАСА НАЗАД</div>
+        </div>
+      </div>
+      <div class="ui-post-img">
+        <div style="position:absolute;bottom:6px;left:6px">
+          <span class="tag">ТРЕК</span>
+        </div>
+      </div>
+      <div class="caption">Новый сет. Слушаем всей командой этим вечером.</div>
+      <div class="ui-actions">
+        <div class="ui-pill" style="width:20px"></div>
+        <div class="ui-pill-dim" style="width:20px"></div>
+        <div class="ui-pill-dim" style="width:20px"></div>
+      </div>
+    </div>
+    <div class="typo-info">
+      <h3>A — Barlow Condensed</h3>
+      <p>Жёсткий, плакатный. Как спортивный бренд или фестивальный постер. Очень узнаваемо.</p>
+    </div>
+  </div>
+
+  <!-- B: Space Grotesk -->
+  <div class="typo-card" data-choice="grotesk" onclick="toggleSelect(this)">
+    <div class="typo-preview fb">
+      <div class="ui-topbar">
+        <div class="logo">Vibe</div>
+        <div style="flex:1"></div>
+        <div class="btn">Войти</div>
+      </div>
+      <div class="ui-post-header">
+        <div class="ui-avatar"></div>
+        <div>
+          <div class="username">ravemaster</div>
+          <div class="time">2 часа назад</div>
+        </div>
+      </div>
+      <div class="ui-post-img">
+        <div style="position:absolute;bottom:6px;left:6px">
+          <span class="tag">трек</span>
+        </div>
+      </div>
+      <div class="caption">Новый сет. Слушаем всей командой этим вечером.</div>
+      <div class="ui-actions">
+        <div class="ui-pill" style="width:20px"></div>
+        <div class="ui-pill-dim" style="width:20px"></div>
+        <div class="ui-pill-dim" style="width:20px"></div>
+      </div>
+    </div>
+    <div class="typo-info">
+      <h3>B — Space Grotesk</h3>
+      <p>Технологичный, немного геометричный. Как Figma или Linear. Уже используется в логотипе.</p>
+    </div>
+  </div>
+
+  <!-- C: DM Sans -->
+  <div class="typo-card" data-choice="dmsans" onclick="toggleSelect(this)">
+    <div class="typo-preview fc">
+      <div class="ui-topbar">
+        <div class="logo">Vibe</div>
+        <div style="flex:1"></div>
+        <div class="btn">Войти</div>
+      </div>
+      <div class="ui-post-header">
+        <div class="ui-avatar"></div>
+        <div>
+          <div class="username">ravemaster</div>
+          <div class="time">2 часа назад</div>
+        </div>
+      </div>
+      <div class="ui-post-img">
+        <div style="position:absolute;bottom:6px;left:6px">
+          <span class="tag">трек</span>
+        </div>
+      </div>
+      <div class="caption">Новый сет. Слушаем всей командой этим вечером.</div>
+      <div class="ui-actions">
+        <div class="ui-pill" style="width:20px"></div>
+        <div class="ui-pill-dim" style="width:20px"></div>
+        <div class="ui-pill-dim" style="width:20px"></div>
+      </div>
+    </div>
+    <div class="typo-info">
+      <h3>C — DM Sans</h3>
+      <p>Мягкий, читаемый, дружелюбный. Тёмный фон + этот шрифт = широкая аудитория без потери стиля.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:16px;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:12px">
+  <p style="margin:0;font-size:12px;color:#444;line-height:1.5">Шрифт влияет на всё: кнопки, никнеймы, подписи, метки времени. Один шрифт — чище и профессиональнее, чем смешивать несколько.</p>
+</div>

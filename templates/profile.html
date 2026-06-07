@@ -79,21 +79,21 @@
     </div>
 
     {% if current_user.is_authenticated and user.id == current_user.id and user.onboarding_done and profile_pct < 100 %}
-    <div id="profile-completion-banner" class="mt-4 p-4 rounded-2xl bg-[var(--accent-dark)] border border-[var(--border-2)] flex items-center justify-between gap-3">
+    <div id="profile-completion-banner" class="mt-4 p-4 rounded-[8px] bg-[var(--accent-dark)] border border-[var(--border-2)] flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            <div class="w-10 h-10 rounded-[6px] bg-[var(--accent)] flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
                 {{ profile_pct }}%
             </div>
             <div class="min-w-0">
-                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Профиль заполнен на {{ profile_pct }}%</p>
-                <p class="text-xs text-slate-500 truncate">Заполни профиль полностью, чтобы тебя находили</p>
+                <p class="text-sm font-semibold text-[var(--text)]">Профиль заполнен на {{ profile_pct }}%</p>
+                <p class="text-xs text-[var(--text-2)] truncate">Заполни профиль полностью, чтобы тебя находили</p>
             </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
-            <a href="{{ url_for('edit_profile') }}" class="px-3 py-1.5 bg-[var(--accent)] text-black rounded-xl text-xs font-bold hover:shadow-md transition-all whitespace-nowrap">
+            <a href="{{ url_for('edit_profile') }}" class="px-3 py-1.5 bg-[var(--accent)] text-black rounded-[6px] text-xs font-bold hover:opacity-90 transition-all whitespace-nowrap">
                 Настроить
             </a>
-            <button type="button" id="dismiss-completion-banner" class="w-7 h-7 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-lg leading-none">
+            <button type="button" id="dismiss-completion-banner" class="w-7 h-7 flex items-center justify-center rounded-[6px] text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface)] transition-colors text-lg leading-none">
                 ×
             </button>
         </div>

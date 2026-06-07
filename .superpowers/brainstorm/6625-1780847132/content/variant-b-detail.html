@@ -1,0 +1,526 @@
+<style>
+* { box-sizing: border-box; }
+.phone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 16px;
+}
+.phone {
+  background: #0A0A0A;
+  border-radius: 28px;
+  padding: 12px;
+  border: 1px solid #222;
+  height: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+  position: relative;
+}
+.phone-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #666;
+  margin-top: 10px;
+}
+.notch {
+  width: 60px; height: 8px;
+  background: #111;
+  border-radius: 4px;
+  margin: 0 auto 4px;
+}
+
+/* === SCREEN 1: FEED === */
+.s1-topbar {
+  display: flex;
+  align-items: center;
+  padding: 0 4px 6px;
+  border-bottom: 1px solid #1E1E1E;
+}
+.s1-logo {
+  font-size: 18px;
+  font-weight: 900;
+  color: #EEFF41;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'Arial Black', sans-serif;
+}
+.s1-stories {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  overflow: hidden;
+}
+.s1-story {
+  flex-shrink: 0;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.s1-ring {
+  width: 42px; height: 42px;
+  border-radius: 6px;
+  border: 1.5px solid #EEFF41;
+  background: #1A1A1A;
+  position: relative;
+  overflow: hidden;
+}
+.s1-ring-dim { border-color: #333; }
+.s1-ring-inner {
+  position: absolute; inset: 3px;
+  background: #2A2A2A;
+  border-radius: 4px;
+}
+.s1-story-name {
+  font-size: 8px;
+  color: #555;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+.s1-post {
+  background: #111;
+  border-radius: 8px;
+  border: 1px solid #1E1E1E;
+  overflow: hidden;
+}
+.s1-post-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+.s1-avatar {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  background: #222;
+  border: 1px solid #333;
+}
+.s1-username { font-size: 11px; color: #CCC; font-weight: 600; }
+.s1-time { font-size: 9px; color: #444; margin-left: auto; }
+.s1-post-img {
+  height: 110px;
+  background: #1A1A1A;
+  position: relative;
+  overflow: hidden;
+}
+.s1-post-img::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    #1F1F1F 0px,
+    #1F1F1F 1px,
+    transparent 1px,
+    transparent 20px
+  );
+}
+.s1-post-img-overlay {
+  position: absolute;
+  bottom: 8px; left: 8px;
+  background: #EEFF41;
+  color: #000;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 2px 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.s1-post-actions {
+  display: flex;
+  gap: 12px;
+  padding: 8px 10px;
+}
+.s1-action-dot {
+  width: 16px; height: 2px;
+  background: #333;
+  border-radius: 1px;
+}
+.s1-action-dot.active { background: #EEFF41; }
+.s1-caption {
+  padding: 0 10px 8px;
+  font-size: 9px;
+  color: #555;
+  line-height: 1.4;
+}
+.s1-bottom {
+  margin-top: auto;
+  border-top: 1px solid #1A1A1A;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 0;
+}
+.s1-navitem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.s1-navdot { width: 18px; height: 2px; background: #222; border-radius: 1px; }
+.s1-navdot.active { background: #EEFF41; }
+
+/* === SCREEN 2: PROFILE === */
+.s2-header {
+  background: #111;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #1E1E1E;
+}
+.s2-avatar-big {
+  width: 52px; height: 52px;
+  border-radius: 8px;
+  background: #222;
+  border: 1.5px solid #EEFF41;
+  flex-shrink: 0;
+}
+.s2-name { font-size: 13px; font-weight: 900; color: #FFF; letter-spacing: 0.5px; }
+.s2-handle { font-size: 9px; color: #444; letter-spacing: 1px; }
+.s2-stats {
+  display: flex;
+  gap: 0;
+  margin-top: 8px;
+}
+.s2-stat {
+  flex: 1;
+  background: #111;
+  border: 1px solid #1A1A1A;
+  padding: 8px 4px;
+  text-align: center;
+}
+.s2-stat:first-child { border-radius: 8px 0 0 8px; }
+.s2-stat:last-child { border-radius: 0 8px 8px 0; }
+.s2-stat-num { font-size: 14px; font-weight: 900; color: #EEFF41; }
+.s2-stat-label { font-size: 8px; color: #444; letter-spacing: 1px; text-transform: uppercase; }
+.s2-tabs {
+  display: flex;
+  gap: 0;
+  background: #111;
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid #1E1E1E;
+}
+.s2-tab {
+  flex: 1;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 5px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #444;
+}
+.s2-tab.active { background: #EEFF41; color: #000; }
+.s2-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 2px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.s2-cell {
+  aspect-ratio: 1;
+  background: #1A1A1A;
+  position: relative;
+}
+.s2-cell:nth-child(1) { background: #222; }
+.s2-cell:nth-child(3) { background: #2A2A2A; }
+.s2-cell:nth-child(4) { background: #1E1E1E; }
+.s2-cell-tag {
+  position: absolute;
+  bottom: 3px; left: 3px;
+  width: 16px; height: 2px;
+  background: #EEFF41;
+  border-radius: 1px;
+}
+
+/* === SCREEN 3: CHAT === */
+.s3-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1E1E1E;
+}
+.s3-back { width: 6px; height: 6px; border-left: 1.5px solid #EEFF41; border-bottom: 1.5px solid #EEFF41; transform: rotate(45deg); }
+.s3-chat-avatar {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  background: #222;
+  border: 1px solid #333;
+}
+.s3-chat-name { font-size: 11px; font-weight: 700; color: #FFF; }
+.s3-online { font-size: 8px; color: #EEFF41; letter-spacing: 0.5px; }
+.s3-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  padding: 4px 0;
+}
+.s3-msg {
+  max-width: 75%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.s3-msg.them {
+  background: #1A1A1A;
+  color: #AAA;
+  align-self: flex-start;
+  border: 1px solid #222;
+  border-radius: 2px 8px 8px 8px;
+}
+.s3-msg.me {
+  background: #EEFF41;
+  color: #000;
+  align-self: flex-end;
+  font-weight: 600;
+  border-radius: 8px 2px 8px 8px;
+}
+.s3-audio {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  width: 75%;
+}
+.s3-play-btn {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #EEFF41;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.s3-play-inner {
+  width: 0; height: 0;
+  border-left: 5px solid #EEFF41;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  margin-left: 2px;
+}
+.s3-waveform {
+  flex: 1;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 1.5px;
+}
+.s3-wave-bar {
+  width: 2px;
+  background: #333;
+  border-radius: 1px;
+}
+.s3-wave-bar.active { background: #EEFF41; }
+.s3-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: #111;
+  border: 1px solid #1E1E1E;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin-top: auto;
+}
+.s3-input-text { flex: 1; font-size: 9px; color: #333; }
+.s3-send {
+  width: 22px; height: 22px;
+  background: #EEFF41;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.s3-send-icon {
+  width: 0; height: 0;
+  border-left: 5px solid #000;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+</style>
+
+<h2>Вариант B — детально</h2>
+<p class="subtitle">Тёмный андеграунд: основные экраны приложения</p>
+
+<div class="phone-grid">
+
+  <!-- SCREEN 1: FEED -->
+  <div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="s1-topbar">
+        <div class="s1-logo">VIBE</div>
+        <div style="flex:1"></div>
+        <div style="width:18px;height:2px;background:#333;border-radius:1px;margin-right:4px;box-shadow:0 4px 0 #333, 0 8px 0 #333"></div>
+      </div>
+      <div class="s1-stories">
+        <div class="s1-story">
+          <div class="s1-ring"><div class="s1-ring-inner"></div></div>
+          <div class="s1-story-name">+добавить</div>
+        </div>
+        <div class="s1-story">
+          <div class="s1-ring"><div class="s1-ring-inner" style="background:#2E2E1A"></div></div>
+          <div class="s1-story-name">@dmitry</div>
+        </div>
+        <div class="s1-story">
+          <div class="s1-ring s1-ring-dim"><div class="s1-ring-inner"></div></div>
+          <div class="s1-story-name">@anna</div>
+        </div>
+        <div class="s1-story">
+          <div class="s1-ring s1-ring-dim"><div class="s1-ring-inner"></div></div>
+          <div class="s1-story-name">@max</div>
+        </div>
+      </div>
+      <div class="s1-post">
+        <div class="s1-post-header">
+          <div class="s1-avatar"></div>
+          <div>
+            <div class="s1-username">RAVEMASTER</div>
+            <div class="s1-time">2ч</div>
+          </div>
+        </div>
+        <div class="s1-post-img">
+          <div class="s1-post-img-overlay">TECHNO</div>
+        </div>
+        <div class="s1-post-actions">
+          <div class="s1-action-dot active"></div>
+          <div class="s1-action-dot"></div>
+          <div class="s1-action-dot"></div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <div class="s1-action-dot"></div>
+          </div>
+        </div>
+        <div class="s1-caption">Сет с прошлой пятницы. Три часа чистого кайфа.</div>
+      </div>
+      <div class="s1-bottom">
+        <div class="s1-navitem"><div class="s1-navdot active"></div></div>
+        <div class="s1-navitem"><div class="s1-navdot"></div></div>
+        <div class="s1-navitem"><div class="s1-navdot"></div></div>
+        <div class="s1-navitem"><div class="s1-navdot"></div></div>
+        <div class="s1-navitem"><div class="s1-navdot"></div></div>
+      </div>
+    </div>
+    <div class="phone-label">Лента</div>
+  </div>
+
+  <!-- SCREEN 2: PROFILE -->
+  <div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="s2-header">
+        <div class="s2-avatar-big"></div>
+        <div>
+          <div class="s2-name">RAVEMASTER</div>
+          <div class="s2-handle">@ravemaster · Москва</div>
+          <div style="margin-top:4px;display:flex;gap:4px">
+            <div style="background:#EEFF41;color:#000;font-size:8px;font-weight:900;padding:2px 8px;letter-spacing:1px">FOLLOW</div>
+            <div style="background:#111;color:#555;font-size:8px;padding:2px 8px;border:1px solid #222;letter-spacing:1px">MSG</div>
+          </div>
+        </div>
+      </div>
+      <div class="s2-stats">
+        <div class="s2-stat">
+          <div class="s2-stat-num">847</div>
+          <div class="s2-stat-label">посты</div>
+        </div>
+        <div class="s2-stat">
+          <div class="s2-stat-num">12.4K</div>
+          <div class="s2-stat-label">фолл</div>
+        </div>
+        <div class="s2-stat">
+          <div class="s2-stat-num">218</div>
+          <div class="s2-stat-label">подп</div>
+        </div>
+      </div>
+      <div class="s2-tabs">
+        <div class="s2-tab active">ПОСТЫ</div>
+        <div class="s2-tab">ТРЕКИ</div>
+        <div class="s2-tab">ТЕГИ</div>
+      </div>
+      <div class="s2-grid">
+        <div class="s2-cell"><div class="s2-cell-tag"></div></div>
+        <div class="s2-cell"></div>
+        <div class="s2-cell"><div class="s2-cell-tag"></div></div>
+        <div class="s2-cell"></div>
+        <div class="s2-cell"><div class="s2-cell-tag"></div></div>
+        <div class="s2-cell"></div>
+      </div>
+    </div>
+    <div class="phone-label">Профиль</div>
+  </div>
+
+  <!-- SCREEN 3: CHAT -->
+  <div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="s3-header">
+        <div class="s3-back"></div>
+        <div class="s3-chat-avatar"></div>
+        <div>
+          <div class="s3-chat-name">ANNA K.</div>
+          <div class="s3-online">● ONLINE</div>
+        </div>
+      </div>
+      <div class="s3-messages">
+        <div class="s3-msg them">слушай, нашла новый трек. огонь просто</div>
+        <div class="s3-audio">
+          <div class="s3-play-btn"><div class="s3-play-inner"></div></div>
+          <div class="s3-waveform">
+            <div class="s3-wave-bar active" style="height:4px"></div>
+            <div class="s3-wave-bar active" style="height:8px"></div>
+            <div class="s3-wave-bar active" style="height:12px"></div>
+            <div class="s3-wave-bar active" style="height:6px"></div>
+            <div class="s3-wave-bar active" style="height:10px"></div>
+            <div class="s3-wave-bar" style="height:14px"></div>
+            <div class="s3-wave-bar" style="height:8px"></div>
+            <div class="s3-wave-bar" style="height:5px"></div>
+            <div class="s3-wave-bar" style="height:11px"></div>
+            <div class="s3-wave-bar" style="height:7px"></div>
+            <div class="s3-wave-bar" style="height:9px"></div>
+            <div class="s3-wave-bar" style="height:4px"></div>
+          </div>
+        </div>
+        <div class="s3-msg me">уже слышу. куда едем в пятницу?</div>
+        <div class="s3-msg them">Сandwich, там сет Skee Mask</div>
+        <div class="s3-msg me">берём!</div>
+      </div>
+      <div class="s3-input-row">
+        <div class="s3-input-text">Сообщение...</div>
+        <div class="s3-send"><div class="s3-send-icon"></div></div>
+      </div>
+    </div>
+    <div class="phone-label">Чат</div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+  <div style="background:#111;border:1px solid #222;border-radius:8px;padding:12px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:#EEFF41;margin-bottom:6px">АКЦЕНТ</div>
+    <div style="font-size:11px;color:#888;line-height:1.5">Один жёлтый на весь интерфейс. Нет фиолетовых градиентов — только контраст.</div>
+  </div>
+  <div style="background:#111;border:1px solid #222;border-radius:8px;padding:12px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:#EEFF41;margin-bottom:6px">ФОРМА</div>
+    <div style="font-size:11px;color:#888;line-height:1.5">Скруглённые прямоугольники вместо полных кругов. Угловатее, не instagram-clone.</div>
+  </div>
+  <div style="background:#111;border:1px solid #222;border-radius:8px;padding:12px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:#EEFF41;margin-bottom:6px">ТИПО</div>
+    <div style="font-size:11px;color:#888;line-height:1.5">CAPS LOCK для лого и тегов. Сжатый шрифт — не «пузырьковый» как сейчас.</div>
+  </div>
+</div>

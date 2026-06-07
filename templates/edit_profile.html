@@ -202,15 +202,15 @@ input[type="file"].form-input::file-selector-button {
 
         <div class="form-section">
             <div class="form-section-title">Безопасность</div>
-            <a href="{{ url_for('settings_2fa') }}" class="flex items-center justify-between py-3 px-4 bg-slate-50 dark:bg-slate-800 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+            <a href="{{ url_for('settings_2fa') }}" class="flex items-center justify-between py-3 px-4 rounded-[8px] hover:bg-[var(--surface-2)] transition-all" style="border: 1px solid var(--border); background: var(--surface);">
                 <div class="flex items-center gap-3">
                     <i class="fa-solid fa-shield-halved text-[var(--accent)]"></i>
                     <div>
                         <div class="text-sm font-semibold">Двухфакторная аутентификация</div>
-                        <div class="text-xs text-slate-400">{% if current_user.totp_enabled %}Включена{% else %}Выключена{% endif %}</div>
+                        <div class="text-xs text-[var(--text-2)]">{% if current_user.totp_enabled %}Включена{% else %}Выключена{% endif %}</div>
                     </div>
                 </div>
-                <i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+                <i class="fa-solid fa-chevron-right text-[var(--text-3)] text-xs"></i>
             </a>
         </div>
 

@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIBE — Финальный дизайн</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #050505;
+  color: #FFF;
+  font-family: 'Space Grotesk', sans-serif;
+  min-height: 100vh;
+  padding: 32px 24px 60px;
+}
+
+h1 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #444;
+  margin-bottom: 6px;
+}
+.subtitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFF;
+  margin-bottom: 32px;
+}
+
+/* TOKEN STRIP */
+.tokens {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+.token {
+  background: #111;
+  border: 1px solid #1E1E1E;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.token-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+.token-label { font-size: 10px; color: #555; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; }
+.token-value { font-size: 12px; color: #888; font-weight: 500; font-family: monospace; }
+
+/* SCREENS GRID */
+.screens {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+.screen-wrap { display: flex; flex-direction: column; gap: 8px; }
+.screen-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #333;
+  text-align: center;
+}
+
+/* PHONE SHELL */
+.phone {
+  background: #0A0A0A;
+  border-radius: 24px;
+  border: 1px solid #1A1A1A;
+  padding: 10px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 0 1px #000, 0 20px 60px rgba(0,0,0,0.6);
+}
+.notch {
+  width: 48px; height: 6px;
+  background: #0A0A0A;
+  border: 1px solid #1E1E1E;
+  border-radius: 3px;
+  margin: 0 auto 4px;
+}
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px 4px;
+}
+.status-time { font-size: 9px; font-weight: 600; color: #555; }
+.status-icons { display: flex; gap: 3px; align-items: center; }
+.status-dot { width: 4px; height: 4px; border-radius: 50%; background: #00C2FF; }
+.status-bar-cell { width: 3px; border-radius: 1px; background: #444; }
+
+/* COMMON UI */
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid #141414;
+  gap: 8px;
+}
+.logo {
+  font-size: 16px;
+  font-weight: 700;
+  color: #00C2FF;
+  letter-spacing: -0.3px;
+}
+.icon-btn {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: #141414;
+  border: 1px solid #1E1E1E;
+  display: flex; align-items: center; justify-content: center;
+}
+.icon-bar { width: 12px; height: 1.5px; background: #555; border-radius: 1px; }
+
+/* STORIES */
+.stories-row {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  overflow: hidden;
+}
+.story-item {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.story-ring {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  border: 1.5px solid #00C2FF;
+  padding: 2px;
+  background: #0A0A0A;
+}
+.story-ring.dim { border-color: #222; }
+.story-inner {
+  width: 100%; height: 100%;
+  border-radius: 5px;
+  background: #1A1A1A;
+}
+.story-name { font-size: 7.5px; color: #444; font-weight: 500; }
+
+/* POST CARD */
+.post-card {
+  background: #111;
+  border: 1px solid #1A1A1A;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+.post-avatar {
+  width: 26px; height: 26px;
+  border-radius: 5px;
+  background: #222;
+  border: 1px solid #2A2A2A;
+  flex-shrink: 0;
+}
+.post-username { font-size: 11px; font-weight: 600; color: #DDD; }
+.post-time { font-size: 9px; color: #333; margin-left: auto; font-weight: 500; }
+.post-img {
+  height: 120px;
+  background: #141414;
+  position: relative;
+  overflow: hidden;
+}
+.post-img-gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #001B2E 0%, #00354D 100%);
+}
+.post-img-tag {
+  position: absolute;
+  bottom: 6px; left: 6px;
+  font-size: 8px;
+  font-weight: 700;
+  color: #000;
+  background: #00C2FF;
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+.post-actions {
+  display: flex;
+  gap: 10px;
+  padding: 8px 10px;
+  align-items: center;
+}
+.action-line { width: 18px; height: 2px; border-radius: 1px; }
+.action-active { background: #00C2FF; }
+.action-dim { background: #1E1E1E; }
+.post-caption {
+  padding: 0 10px 8px;
+  font-size: 9.5px;
+  color: #555;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* BOTTOM NAV */
+.bottom-nav {
+  margin-top: auto;
+  border-top: 1px solid #141414;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 2px;
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.nav-icon { width: 18px; height: 2px; border-radius: 1px; }
+.nav-active { background: #00C2FF; }
+.nav-dim { background: #1E1E1E; }
+.nav-dot { width: 4px; height: 4px; border-radius: 50%; }
+
+/* PROFILE */
+.profile-header {
+  background: #111;
+  border: 1px solid #1A1A1A;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.profile-avatar-big {
+  width: 52px; height: 52px;
+  border-radius: 10px;
+  background: #1E1E1E;
+  border: 1.5px solid #00C2FF;
+  flex-shrink: 0;
+}
+.profile-name { font-size: 14px; font-weight: 700; color: #FFF; }
+.profile-handle { font-size: 9px; color: #444; font-weight: 500; letter-spacing: 0.5px; margin-top: 2px; }
+.profile-btn-row { display: flex; gap: 5px; margin-top: 6px; }
+.btn-primary { background: #00C2FF; color: #000; font-size: 9px; font-weight: 700; padding: 4px 12px; border-radius: 5px; font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.3px; }
+.btn-secondary { background: #141414; color: #555; font-size: 9px; font-weight: 600; padding: 4px 10px; border-radius: 5px; border: 1px solid #1E1E1E; font-family: 'Space Grotesk', sans-serif; }
+.stats-row { display: flex; gap: 1px; margin: 6px 0; }
+.stat-cell {
+  flex: 1;
+  background: #111;
+  border: 1px solid #141414;
+  padding: 7px 4px;
+  text-align: center;
+}
+.stat-cell:first-child { border-radius: 6px 0 0 6px; }
+.stat-cell:last-child { border-radius: 0 6px 6px 0; }
+.stat-num { font-size: 13px; font-weight: 700; color: #00C2FF; }
+.stat-label { font-size: 7px; color: #333; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; }
+.tabs {
+  display: flex;
+  background: #111;
+  border: 1px solid #1A1A1A;
+  border-radius: 6px;
+  padding: 2px;
+  margin: 6px 0;
+}
+.tab-item {
+  flex: 1;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 5px;
+  border-radius: 4px;
+  color: #333;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.tab-active { background: #00C2FF; color: #000; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; border-radius: 6px; overflow: hidden; }
+.grid-cell { aspect-ratio: 1; background: #141414; border: 1px solid #111; position: relative; }
+.grid-cell::after { content: ''; position: absolute; bottom: 4px; left: 4px; width: 14px; height: 1.5px; background: #00C2FF; border-radius: 1px; opacity: 0.5; }
+.grid-cell:nth-child(2)::after { opacity: 0; }
+.grid-cell:nth-child(3) { background: #1A1A1A; }
+.grid-cell:nth-child(4) { background: #1E1E1E; }
+
+/* CHAT */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #141414;
+}
+.back-arrow {
+  width: 5px; height: 5px;
+  border-left: 1.5px solid #00C2FF;
+  border-bottom: 1.5px solid #00C2FF;
+  transform: rotate(45deg);
+  margin-right: 2px;
+}
+.chat-avatar { width: 26px; height: 26px; border-radius: 5px; background: #1E1E1E; border: 1px solid #222; }
+.chat-name { font-size: 11px; font-weight: 700; color: #FFF; }
+.chat-status { font-size: 8px; color: #00C2FF; font-weight: 500; letter-spacing: 0.5px; }
+.messages { display: flex; flex-direction: column; gap: 6px; flex: 1; padding: 4px 0; overflow: hidden; }
+.msg {
+  max-width: 78%;
+  padding: 7px 10px;
+  font-size: 9.5px;
+  line-height: 1.5;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 400;
+}
+.msg-them {
+  background: #141414;
+  color: #888;
+  align-self: flex-start;
+  border: 1px solid #1A1A1A;
+  border-radius: 3px 10px 10px 10px;
+}
+.msg-me {
+  background: #00C2FF;
+  color: #000;
+  align-self: flex-end;
+  font-weight: 600;
+  border-radius: 10px 3px 10px 10px;
+}
+.audio-msg {
+  background: #141414;
+  border: 1px solid #1A1A1A;
+  border-radius: 10px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  width: 70%;
+}
+.play-circle {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #00C2FF;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.play-tri { width: 0; height: 0; border-left: 6px solid #00C2FF; border-top: 4px solid transparent; border-bottom: 4px solid transparent; margin-left: 2px; }
+.waveform { flex: 1; display: flex; align-items: center; gap: 2px; height: 16px; }
+.wave { width: 2px; border-radius: 1px; }
+.wave.on { background: #00C2FF; }
+.wave.off { background: #2A2A2A; }
+.input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: #111;
+  border: 1px solid #1A1A1A;
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-top: auto;
+}
+.input-placeholder { flex: 1; font-size: 9.5px; color: #2A2A2A; font-family: 'Space Grotesk', sans-serif; }
+.send-btn { width: 22px; height: 22px; background: #00C2FF; border-radius: 5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.send-tri { width: 0; height: 0; border-left: 6px solid #000; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+
+/* PLAYER */
+.player-bg {
+  flex: 1;
+  background: linear-gradient(180deg, #0D1E2A 0%, #0A0A0A 100%);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.player-bg::before {
+  content: '';
+  position: absolute;
+  top: -40px; left: 50%; transform: translateX(-50%);
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(0,194,255,0.12) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.player-cover {
+  width: 80px; height: 80px;
+  border-radius: 10px;
+  background: #1A2A38;
+  border: 1px solid #003040;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.player-cover-inner { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #00C2FF; opacity: 0.6; }
+.player-title { font-size: 12px; font-weight: 700; color: #FFF; text-align: center; }
+.player-artist { font-size: 9px; color: #444; text-align: center; font-weight: 500; }
+.player-progress { width: 100%; height: 2px; background: #1A1A1A; border-radius: 1px; position: relative; }
+.player-progress-fill { width: 40%; height: 100%; background: #00C2FF; border-radius: 1px; }
+.player-progress-dot { width: 8px; height: 8px; border-radius: 50%; background: #00C2FF; position: absolute; top: -3px; left: 40%; box-shadow: 0 0 6px rgba(0,194,255,0.5); }
+.player-time { display: flex; justify-content: space-between; width: 100%; font-size: 8px; color: #333; font-weight: 500; }
+.player-controls { display: flex; align-items: center; gap: 14px; }
+.ctrl-btn { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+.ctrl-line { width: 14px; height: 1.5px; background: #333; border-radius: 1px; }
+.play-btn-big { width: 36px; height: 36px; border-radius: 50%; background: #00C2FF; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px rgba(0,194,255,0.3); }
+.play-tri-big { width: 0; height: 0; border-left: 10px solid #000; border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 2px; }
+
+/* DESIGN SYSTEM SECTION */
+.ds-section {
+  margin-top: 40px;
+}
+.ds-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #333;
+  margin-bottom: 14px;
+}
+.ds-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.ds-item {
+  background: #111;
+  border: 1px solid #1A1A1A;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 11px;
+}
+.ds-colors { display: flex; gap: 8px; }
+.color-block { border-radius: 6px; }
+
+/* COMPARISON */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 40px;
+}
+.compare-side {
+  background: #111;
+  border: 1px solid #1A1A1A;
+  border-radius: 10px;
+  padding: 14px;
+}
+.compare-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #333; margin-bottom: 10px; }
+.compare-label.old { color: #333; }
+.compare-label.new { color: #00C2FF; }
+.change-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.change-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.change-dot.removed { background: #FF4444; }
+.change-dot.added { background: #00C2FF; }
+.change-text { font-size: 11px; color: #666; }
+</style>
+<body>
+
+<h1>Финальный дизайн</h1>
+<div class="subtitle">VIBE — Тёмный, электрик, Space Grotesk</div>
+
+<!-- TOKEN STRIP -->
+<div class="tokens">
+  <div class="token">
+    <div class="token-swatch" style="background:#0A0A0A;border:1px solid #1A1A1A"></div>
+    <div>
+      <div class="token-label">Фон</div>
+      <div class="token-value">#0A0A0A</div>
+    </div>
+  </div>
+  <div class="token">
+    <div class="token-swatch" style="background:#111111;border:1px solid #1A1A1A"></div>
+    <div>
+      <div class="token-label">Поверхность</div>
+      <div class="token-value">#111111</div>
+    </div>
+  </div>
+  <div class="token">
+    <div class="token-swatch" style="background:#1A1A1A"></div>
+    <div>
+      <div class="token-label">Граница</div>
+      <div class="token-value">#1A1A1A</div>
+    </div>
+  </div>
+  <div class="token">
+    <div class="token-swatch" style="background:#00C2FF;box-shadow:0 0 8px rgba(0,194,255,0.4)"></div>
+    <div>
+      <div class="token-label">Акцент</div>
+      <div class="token-value">#00C2FF</div>
+    </div>
+  </div>
+  <div class="token">
+    <div class="token-swatch" style="background:#FFFFFF"></div>
+    <div>
+      <div class="token-label">Текст</div>
+      <div class="token-value">#FFFFFF / #888</div>
+    </div>
+  </div>
+  <div class="token">
+    <div class="token-swatch" style="background:#FF4455"></div>
+    <div>
+      <div class="token-label">Опасность</div>
+      <div class="token-value">#FF4455</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREENS -->
+<div class="screens">
+
+  <!-- 1. FEED -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="status-bar">
+        <div class="status-time">9:41</div>
+        <div class="status-icons">
+          <div class="status-dot"></div>
+          <div class="status-bar-cell" style="height:8px"></div>
+          <div class="status-bar-cell" style="height:6px"></div>
+          <div class="status-bar-cell" style="height:5px"></div>
+        </div>
+      </div>
+      <div class="topbar">
+        <div class="logo">Vibe</div>
+        <div style="flex:1"></div>
+        <div class="icon-btn">
+          <div style="display:flex;flex-direction:column;gap:3px;align-items:center">
+            <div class="icon-bar"></div>
+            <div class="icon-bar"></div>
+            <div class="icon-bar"></div>
+          </div>
+        </div>
+        <div class="icon-btn" style="position:relative">
+          <div class="icon-bar" style="width:8px"></div>
+          <div style="position:absolute;top:4px;right:5px;width:5px;height:5px;border-radius:50%;background:#00C2FF;border:1px solid #0A0A0A"></div>
+        </div>
+      </div>
+      <div class="stories-row">
+        <div class="story-item">
+          <div class="story-ring">
+            <div class="story-inner" style="background:#141414;display:flex;align-items:center;justify-content:center">
+              <div style="font-size:14px;color:#00C2FF;font-weight:300">+</div>
+            </div>
+          </div>
+          <div class="story-name">твой</div>
+        </div>
+        <div class="story-item">
+          <div class="story-ring"><div class="story-inner" style="background:#001B2A"></div></div>
+          <div class="story-name">dmitry</div>
+        </div>
+        <div class="story-item">
+          <div class="story-ring dim"><div class="story-inner"></div></div>
+          <div class="story-name">anna_k</div>
+        </div>
+        <div class="story-item">
+          <div class="story-ring dim"><div class="story-inner"></div></div>
+          <div class="story-name">maxim</div>
+        </div>
+      </div>
+      <div class="post-card">
+        <div class="post-header">
+          <div class="post-avatar"></div>
+          <div>
+            <div class="post-username">dmitry_beats</div>
+            <div class="post-time">2ч назад</div>
+          </div>
+          <div style="margin-left:auto;display:flex;flex-direction:column;gap:2px">
+            <div style="width:3px;height:3px;border-radius:50%;background:#333"></div>
+            <div style="width:3px;height:3px;border-radius:50%;background:#333"></div>
+            <div style="width:3px;height:3px;border-radius:50%;background:#333"></div>
+          </div>
+        </div>
+        <div class="post-img">
+          <div class="post-img-gradient"></div>
+          <div class="post-img-tag">Трек</div>
+        </div>
+        <div class="post-actions">
+          <div class="action-line action-active"></div>
+          <div class="action-line action-dim"></div>
+          <div class="action-line action-dim"></div>
+          <div style="flex:1"></div>
+          <div class="action-line action-dim"></div>
+        </div>
+        <div class="post-caption">Новый сет с пятничного вечера. Три часа чистого кайфа — слушайте</div>
+      </div>
+      <div style="background:#111;border:1px solid #1A1A1A;border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div style="width:22px;height:22px;border-radius:50%;background:#141414;border:1.5px solid #00C2FF;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <div style="width:0;height:0;border-left:6px solid #00C2FF;border-top:4px solid transparent;border-bottom:4px solid transparent;margin-left:1px"></div>
+        </div>
+        <div style="flex:1;height:2px;background:#1A1A1A;border-radius:1px;position:relative">
+          <div style="width:30%;height:100%;background:#00C2FF;border-radius:1px"></div>
+        </div>
+        <div style="font-size:8px;color:#444;font-weight:500;flex-shrink:0">1:24</div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item">
+          <div class="nav-icon nav-active"></div>
+          <div class="nav-dot" style="background:#00C2FF"></div>
+        </div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+      </div>
+    </div>
+    <div class="screen-label">Лента</div>
+  </div>
+
+  <!-- 2. PROFILE -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="status-bar">
+        <div class="status-time">9:41</div>
+        <div class="status-icons"><div class="status-dot"></div></div>
+      </div>
+      <div class="topbar">
+        <div style="font-size:12px;font-weight:600;color:#555;letter-spacing:0.5px">Профиль</div>
+        <div style="flex:1"></div>
+        <div class="icon-btn"><div class="icon-bar" style="width:10px"></div></div>
+      </div>
+      <div class="profile-header">
+        <div class="profile-avatar-big"></div>
+        <div>
+          <div class="profile-name">dmitry_beats</div>
+          <div class="profile-handle">@dmitrybeats · Москва</div>
+          <div class="profile-btn-row">
+            <div class="btn-primary">Подписаться</div>
+            <div class="btn-secondary">Сообщение</div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-cell"><div class="stat-num">847</div><div class="stat-label">Посты</div></div>
+        <div class="stat-cell"><div class="stat-num">12.4K</div><div class="stat-label">Фолл</div></div>
+        <div class="stat-cell"><div class="stat-num">218</div><div class="stat-label">Подп</div></div>
+      </div>
+      <div class="tabs">
+        <div class="tab-item tab-active">Посты</div>
+        <div class="tab-item">Треки</div>
+        <div class="tab-item">Теги</div>
+      </div>
+      <div class="grid-3">
+        <div class="grid-cell" style="background:#131D26"></div>
+        <div class="grid-cell" style="background:#161616"></div>
+        <div class="grid-cell" style="background:#1A2020"></div>
+        <div class="grid-cell" style="background:#181818"></div>
+        <div class="grid-cell" style="background:#111D2A"></div>
+        <div class="grid-cell" style="background:#1A1A1A"></div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item">
+          <div class="nav-icon nav-active"></div>
+          <div class="nav-dot" style="background:#00C2FF"></div>
+        </div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+      </div>
+    </div>
+    <div class="screen-label">Профиль</div>
+  </div>
+
+  <!-- 3. CHAT -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="status-bar">
+        <div class="status-time">9:41</div>
+        <div class="status-icons"><div class="status-dot"></div></div>
+      </div>
+      <div class="chat-header">
+        <div class="back-arrow"></div>
+        <div class="chat-avatar"></div>
+        <div>
+          <div class="chat-name">Anna K.</div>
+          <div class="chat-status">● онлайн</div>
+        </div>
+        <div style="margin-left:auto">
+          <div class="icon-btn"><div class="icon-bar" style="width:8px"></div></div>
+        </div>
+      </div>
+      <div class="messages">
+        <div class="msg msg-them">нашла новый трек. огонь просто послушай</div>
+        <div class="audio-msg">
+          <div class="play-circle"><div class="play-tri"></div></div>
+          <div class="waveform">
+            <div class="wave on" style="height:4px"></div>
+            <div class="wave on" style="height:9px"></div>
+            <div class="wave on" style="height:13px"></div>
+            <div class="wave on" style="height:7px"></div>
+            <div class="wave on" style="height:11px"></div>
+            <div class="wave off" style="height:14px"></div>
+            <div class="wave off" style="height:8px"></div>
+            <div class="wave off" style="height:5px"></div>
+            <div class="wave off" style="height:10px"></div>
+            <div class="wave off" style="height:6px"></div>
+          </div>
+          <div style="font-size:8px;color:#333;font-weight:500">1:47</div>
+        </div>
+        <div class="msg msg-me">уже слышу. куда едем в пятницу?</div>
+        <div class="msg msg-them">Sandwich, там сет Skee Mask</div>
+        <div class="msg msg-me">берём!</div>
+      </div>
+      <div class="input-row">
+        <div class="input-placeholder">Сообщение...</div>
+        <div style="display:flex;gap:5px">
+          <div style="width:22px;height:22px;border-radius:5px;background:#141414;border:1px solid #1A1A1A;display:flex;align-items:center;justify-content:center">
+            <div class="icon-bar" style="width:8px"></div>
+          </div>
+          <div class="send-btn"><div class="send-tri"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label">Чат</div>
+  </div>
+
+  <!-- 4. PLAYER -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="status-bar">
+        <div class="status-time">9:41</div>
+        <div class="status-icons"><div class="status-dot"></div></div>
+      </div>
+      <div class="topbar">
+        <div class="back-arrow" style="margin-right:4px"></div>
+        <div style="font-size:12px;font-weight:600;color:#555">Плеер</div>
+        <div style="flex:1"></div>
+        <div class="icon-btn"><div class="icon-bar" style="width:10px"></div></div>
+      </div>
+      <div class="player-bg">
+        <div class="player-cover">
+          <div class="player-cover-inner"></div>
+        </div>
+        <div>
+          <div class="player-title">Perlon Compilation #7</div>
+          <div class="player-artist" style="margin-top:3px">Markus Nikolai</div>
+        </div>
+        <div style="width:100%;display:flex;flex-direction:column;gap:5px">
+          <div class="player-progress">
+            <div class="player-progress-fill"></div>
+            <div class="player-progress-dot"></div>
+          </div>
+          <div class="player-time">
+            <span>2:14</span>
+            <span>5:48</span>
+          </div>
+        </div>
+        <div class="player-controls">
+          <div class="ctrl-btn">
+            <div style="display:flex;gap:2px">
+              <div style="width:1.5px;height:14px;background:#333;border-radius:1px"></div>
+              <div style="width:0;height:0;border-right:8px solid #333;border-top:7px solid transparent;border-bottom:7px solid transparent"></div>
+            </div>
+          </div>
+          <div class="play-btn-big"><div class="play-tri-big"></div></div>
+          <div class="ctrl-btn">
+            <div style="display:flex;gap:2px">
+              <div style="width:0;height:0;border-left:8px solid #333;border-top:7px solid transparent;border-bottom:7px solid transparent"></div>
+              <div style="width:1.5px;height:14px;background:#333;border-radius:1px"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="width:16px;height:1.5px;background:#1A1A1A;border-radius:1px"></div>
+          <div style="width:16px;height:1.5px;background:#1A1A1A;border-radius:1px"></div>
+          <div style="width:4px;height:4px;border-radius:50%;background:#00C2FF;box-shadow:0 0 4px rgba(0,194,255,0.5)"></div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item">
+          <div class="nav-icon nav-active"></div>
+          <div class="nav-dot" style="background:#00C2FF"></div>
+        </div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+        <div class="nav-item"><div class="nav-icon nav-dim"></div><div class="nav-dot" style="background:#141414"></div></div>
+      </div>
+    </div>
+    <div class="screen-label">Плеер</div>
+  </div>
+
+</div>
+
+<!-- WHAT CHANGES -->
+<div class="compare">
+  <div class="compare-side">
+    <div class="compare-label old">❌ Убрать</div>
+    <div class="change-row"><div class="change-dot removed"></div><div class="change-text">Розово-фиолетово-синий градиент (#FF3CAC → #784BA0 → #2B86C5)</div></div>
+    <div class="change-row"><div class="change-dot removed"></div><div class="change-text">Glassmorphism (backdrop-filter blur)</div></div>
+    <div class="change-row"><div class="change-dot removed"></div><div class="change-text">Белый/светлый фон по умолчанию (Slate 50)</div></div>
+    <div class="change-row"><div class="change-dot removed"></div><div class="change-text">Круглые аватары Instagram-стиля</div></div>
+    <div class="change-row"><div class="change-dot removed"></div><div class="change-text">Pill-кнопки (border-radius: 24px)</div></div>
+    <div class="change-row"><div class="change-dot removed"></div><div class="change-text">Stories gradient (Instagram-цвета)</div></div>
+  </div>
+  <div class="compare-side">
+    <div class="compare-label new">✓ Добавить</div>
+    <div class="change-row"><div class="change-dot added"></div><div class="change-text">Фон #0A0A0A, поверхности #111, границы #1A1A1A</div></div>
+    <div class="change-row"><div class="change-dot added"></div><div class="change-text">Один акцент #00C2FF — везде одинаково</div></div>
+    <div class="change-row"><div class="change-dot added"></div><div class="change-text">Space Grotesk вместо Inter (или вместе как сейчас)</div></div>
+    <div class="change-row"><div class="change-dot added"></div><div class="change-text">Скруглённые прямоугольники (border-radius 6–10px)</div></div>
+    <div class="change-row"><div class="change-dot added"></div><div class="change-text">Story-rings квадратные (8px radius), не круглые</div></div>
+    <div class="change-row"><div class="change-dot added"></div><div class="change-text">Glow-эффект только на акценте (box-shadow с #00C2FF)</div></div>
+  </div>
+</div>
+
+</body>
+</html>

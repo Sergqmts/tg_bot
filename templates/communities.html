@@ -3,18 +3,18 @@
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 pt-24 pb-24 lg:pt-28">
     <div class="flex items-center justify-between mb-8">
-        <h1 class="text-3xl font-extrabold tracking-tighter text-[var(--accent)]">Сообщества</h1>
+        <h1 class="text-3xl font-extrabold tracking-tighter">Сообщества</h1>
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('create_community') }}" class="px-4 py-2 bg-[var(--accent)] text-black rounded-2xl hover:shadow-lg transition-all text-sm font-medium">
+            <a href="{{ url_for('create_community') }}" class="px-4 py-2 bg-[var(--accent)] text-black rounded-[6px] hover:opacity-90 transition-all text-sm font-bold">
                 Создать
             </a>
         {% endif %}
     </div>
 
-    <div class="max-w-2xl mx-auto space-y-3">
+    <div class="max-w-2xl mx-auto space-y-2">
     {% for comm in communities %}
-    <div class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all group">
-        <div class="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center {% if comm.image %}overflow-hidden{% else %}bg-[var(--accent)] text-black font-bold{% endif %}">
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px;" class="p-4 flex items-center gap-4 hover:border-[var(--border-2)] transition-all">
+        <div class="w-14 h-14 rounded-[6px] overflow-hidden flex-shrink-0 flex items-center justify-center {% if not comm.image or comm.image == 'community_default.png' %}bg-[var(--accent)] text-black font-bold text-xl{% endif %}">
             {% if comm.image and comm.image.startswith('http') %}
             <img src="{{ comm.image }}" alt="" class="w-full h-full object-cover">
             {% elif comm.image and comm.image != 'community_default.png' %}
@@ -25,20 +25,20 @@
         </div>
         <div class="flex-1 min-w-0">
             <a href="{{ url_for('community', slug=comm.slug) }}" class="font-bold text-sm truncate block hover:text-[var(--accent)] transition-colors">{{ comm.name }}</a>
-            <div class="text-[11px] text-slate-500 mt-1">
+            <div class="text-[11px] text-[var(--text-2)] mt-1">
                 {{ comm.members.count() }} участников · {{ comm.posts.count() }} записей
             </div>
             {% if comm.description %}
-                <p class="text-xs text-slate-500 mt-1 truncate">{{ comm.description[:100] }}{% if comm.description|length > 100 %}...{% endif %}</p>
+                <p class="text-xs text-[var(--text-2)] mt-1 truncate">{{ comm.description[:100] }}{% if comm.description|length > 100 %}...{% endif %}</p>
             {% endif %}
         </div>
         {% if current_user.is_authenticated %}
             {% if current_user.is_member(comm) %}
-                <span class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 rounded-xl text-xs font-medium opacity-70">Участник</span>
+                <span class="px-3 py-1.5 bg-[var(--surface-2)] border border-[var(--border-2)] rounded-[4px] text-xs font-medium text-[var(--text-2)]">Участник</span>
             {% else %}
                 <form method="POST" action="{{ url_for('join_community', slug=comm.slug) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="px-4 py-1.5 bg-[var(--accent)] text-black rounded-xl text-xs font-bold hover:shadow-lg transition-all cursor-pointer border-none">
+                    <button type="submit" class="px-4 py-1.5 bg-[var(--accent)] text-black rounded-[6px] text-xs font-bold hover:opacity-90 transition-all cursor-pointer border-none">
                         Вступить
                     </button>
                 </form>
@@ -46,9 +46,9 @@
         {% endif %}
     </div>
     {% else %}
-    <div class="glass rounded-3xl p-12 text-center">
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px;" class="p-12 text-center">
         <div class="text-6xl mb-4">👥</div>
-        <p class="text-slate-500">Пока нет сообществ. <a href="{{ url_for('create_community') }}" class="text-[var(--accent)] font-bold">Создайте первое!</a></p>
+        <p class="text-[var(--text-2)]">Пока нет сообществ. <a href="{{ url_for('create_community') }}" class="text-[var(--accent)] font-bold">Создайте первое!</a></p>
     </div>
     {% endfor %}
     </div>

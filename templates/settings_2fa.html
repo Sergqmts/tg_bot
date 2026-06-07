@@ -3,61 +3,61 @@
 {% block content %}
 <div class="min-h-screen flex items-center justify-center px-4">
     <div class="w-full max-w-md">
-        <div class="glass rounded-3xl p-8 shadow-lg">
+        <div style="background: var(--surface); border: 1px solid var(--border-2); border-radius: 12px; padding: 2rem;">
             <h1 class="text-2xl font-extrabold mb-2">Двухфакторная аутентификация</h1>
-            <p class="text-slate-500 text-sm mb-6">Дополнительная защита вашего аккаунта через приложение-аутентификатор (Google Authenticator, Authy и др.).</p>
+            <p class="text-[var(--text-2)] text-sm mb-6">Дополнительная защита вашего аккаунта через приложение-аутентификатор (Google Authenticator, Authy и др.).</p>
 
             {% with messages = get_flashed_messages() %}
             {% if messages %}
-            <div class="mb-4 p-3 bg-[var(--accent)]/10 text-[var(--accent)] rounded-2xl text-sm">
+            <div class="mb-4 p-3 rounded-[8px] text-sm" style="background: rgba(0,194,255,0.1); color: var(--accent);">
                 {% for m in messages %}{{ m }}{% endfor %}
             </div>
             {% endif %}
             {% endwith %}
 
             {% if current_user.totp_enabled %}
-            <div class="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl mb-6">
-                <i class="fa-solid fa-shield-check text-green-500 text-xl"></i>
-                <span class="text-green-700 dark:text-green-400 font-semibold text-sm">2FA включена</span>
+            <div class="flex items-center gap-3 p-4 rounded-[8px] mb-6" style="background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3);">
+                <i class="fa-solid fa-shield-check text-[var(--success)] text-xl"></i>
+                <span class="text-[var(--success)] font-semibold text-sm">2FA включена</span>
             </div>
             <form method="POST" action="{{ url_for('settings_2fa_disable') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <p class="text-sm text-slate-500 mb-3">Введите код из приложения, чтобы отключить 2FA:</p>
+                <p class="text-sm text-[var(--text-2)] mb-3">Введите код из приложения, чтобы отключить 2FA:</p>
                 <input type="text" name="code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"
                     placeholder="000000"
-                    class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-red-400 text-sm text-center tracking-widest text-lg font-bold mb-4"
+                    class="w-full bg-[var(--surface-2)] border border-[var(--border-2)] rounded-[8px] py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--danger)] text-sm text-center tracking-widest text-lg font-bold mb-4 text-[var(--text)] placeholder:text-[var(--text-3)]"
                     autocomplete="one-time-code" required>
-                <button type="submit" class="w-full py-3 bg-red-500 text-white rounded-2xl font-bold text-sm hover:bg-red-600 transition-all">
+                <button type="submit" class="w-full py-3 bg-[var(--danger)] text-white rounded-[6px] font-bold text-sm hover:opacity-90 transition-all">
                     Отключить 2FA
                 </button>
             </form>
             {% else %}
-            <p class="text-sm text-slate-500 mb-4">Отсканируйте QR-код в приложении-аутентификаторе, затем введите 6-значный код для подтверждения.</p>
+            <p class="text-sm text-[var(--text-2)] mb-4">Отсканируйте QR-код в приложении-аутентификаторе, затем введите 6-значный код для подтверждения.</p>
             {% if qr_b64 %}
             <div class="flex justify-center mb-4">
-                <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR-код 2FA" class="w-48 h-48 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR-код 2FA" class="w-48 h-48 rounded-[8px] border border-[var(--border-2)]">
             </div>
             {% if secret %}
-            <div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-3 text-center font-mono text-sm tracking-widest text-slate-700 dark:text-slate-300 mb-4 select-all">
+            <div class="rounded-[8px] p-3 text-center font-mono text-sm tracking-widest text-[var(--text)] mb-4 select-all" style="background: var(--surface-2); border: 1px solid var(--border-2);">
                 {{ secret }}
             </div>
             {% endif %}
             {% endif %}
             <form method="POST" action="{{ url_for('settings_2fa_enable') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <p class="text-sm text-slate-500 mb-3">Введите код из приложения для подтверждения:</p>
+                <p class="text-sm text-[var(--text-2)] mb-3">Введите код из приложения для подтверждения:</p>
                 <input type="text" name="code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}"
                     placeholder="000000"
-                    class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-center tracking-widest text-lg font-bold mb-4"
+                    class="w-full bg-[var(--surface-2)] border border-[var(--border-2)] rounded-[8px] py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-center tracking-widest text-lg font-bold mb-4 text-[var(--text)] placeholder:text-[var(--text-3)]"
                     autocomplete="one-time-code" required>
-                <button type="submit" class="w-full py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all">
+                <button type="submit" class="w-full py-3 bg-[var(--accent)] text-black rounded-[6px] font-bold text-sm hover:opacity-90 transition-all">
                     Включить 2FA
                 </button>
             </form>
             {% endif %}
 
             <div class="mt-6 text-center">
-                <a href="{{ url_for('edit_profile') }}" class="text-sm text-slate-400 hover:text-[var(--accent)] transition-colors">← Назад к настройкам</a>
+                <a href="{{ url_for('edit_profile') }}" class="text-sm text-[var(--text-3)] hover:text-[var(--accent)] transition-colors">← Назад к настройкам</a>
             </div>
         </div>
     </div>

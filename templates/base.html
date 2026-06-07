@@ -213,12 +213,12 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="font-medium truncate">{{ member.business_name or member.user.username }}</div>
-                                    <div class="text-xs text-slate-400">@{{ member.user.username }}</div>
+                                    <div class="text-xs text-[var(--text-2)]">@{{ member.user.username }}</div>
                                 </div>
                                 {% if member.account_type == 'business' %}
-                                <span class="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded font-medium">Бизнес</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded-[4px] font-medium" style="background: rgba(0,194,255,0.12); color: var(--accent);">Бизнес</span>
                                 {% else %}
-                                <span class="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded font-medium">Личный</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded-[4px] font-medium" style="background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border-2);">Личный</span>
                                 {% endif %}
                                 {% if member.user_id == current_user.id %}
                                 <i class="fa-solid fa-check text-green-500 text-xs"></i>

@@ -1,0 +1,244 @@
+<style>
+* { box-sizing: border-box; }
+.accent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.accent-card {
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.2s;
+  background: #0A0A0A;
+}
+.accent-card.selected { border-color: #FFF; transform: scale(1.02); }
+.accent-card:hover { transform: scale(1.01); }
+
+.mini-ui {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mini-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1A1A1A;
+}
+.mini-logo {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'Arial Black', sans-serif;
+}
+.mini-post {
+  background: #111;
+  border: 1px solid #1E1E1E;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.mini-post-img {
+  height: 70px;
+  background: #1A1A1A;
+  position: relative;
+}
+.mini-badge {
+  position: absolute;
+  bottom: 6px; left: 6px;
+  font-size: 7px;
+  font-weight: 900;
+  padding: 2px 7px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.mini-actions {
+  display: flex;
+  gap: 8px;
+  padding: 7px 10px;
+  align-items: center;
+}
+.mini-dot { width: 14px; height: 2px; border-radius: 1px; }
+.mini-btn {
+  font-size: 8px;
+  font-weight: 900;
+  padding: 3px 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 3px;
+  display: inline-block;
+}
+.mini-nav {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 8px;
+  border-top: 1px solid #1A1A1A;
+}
+.mini-nav-bar { width: 16px; height: 2px; border-radius: 1px; background: #222; }
+
+.accent-info {
+  padding: 12px 14px;
+  border-top: 1px solid #1A1A1A;
+}
+.accent-info h3 { margin: 0 0 3px; font-size: 13px; font-weight: 700; color: #FFF; }
+.accent-info p { margin: 0; font-size: 11px; color: #555; line-height: 1.4; }
+.color-chip {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+</style>
+
+<h2>Акцентный цвет</h2>
+<p class="subtitle">Тёмная основа та же — меняется один акцент</p>
+
+<div class="accent-grid">
+
+  <!-- A: Electric Blue -->
+  <div class="accent-card" data-choice="blue" onclick="toggleSelect(this)">
+    <div class="mini-ui">
+      <div class="mini-topbar">
+        <div class="mini-logo" style="color:#00C2FF">VIBE</div>
+        <div style="flex:1"></div>
+        <div style="width:22px;height:22px;border-radius:4px;border:1.5px solid #00C2FF"></div>
+      </div>
+      <div class="mini-post">
+        <div class="mini-post-img">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,#001A2E,#003A5C)"></div>
+          <div class="mini-badge" style="background:#00C2FF;color:#000">LIVE</div>
+        </div>
+        <div class="mini-actions">
+          <div class="mini-dot" style="background:#00C2FF"></div>
+          <div class="mini-dot"></div>
+          <div class="mini-dot"></div>
+          <div style="flex:1"></div>
+          <div class="mini-btn" style="background:#00C2FF;color:#000">FOLLOW</div>
+        </div>
+      </div>
+      <div class="mini-nav">
+        <div class="mini-nav-bar" style="background:#00C2FF"></div>
+        <div class="mini-nav-bar"></div>
+        <div class="mini-nav-bar"></div>
+        <div class="mini-nav-bar"></div>
+      </div>
+    </div>
+    <div class="accent-info">
+      <h3><span class="color-chip" style="background:#00C2FF"></span>Электрик #00C2FF</h3>
+      <p>Цифровой, технологичный. Широко читается как «соцсеть будущего» — Discord, Twitter X.</p>
+    </div>
+  </div>
+
+  <!-- B: Coral -->
+  <div class="accent-card" data-choice="coral" onclick="toggleSelect(this)">
+    <div class="mini-ui">
+      <div class="mini-topbar">
+        <div class="mini-logo" style="color:#FF5C5C">VIBE</div>
+        <div style="flex:1"></div>
+        <div style="width:22px;height:22px;border-radius:4px;border:1.5px solid #FF5C5C"></div>
+      </div>
+      <div class="mini-post">
+        <div class="mini-post-img">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1A0A0A,#2E1010)"></div>
+          <div class="mini-badge" style="background:#FF5C5C;color:#FFF">ТРЕК</div>
+        </div>
+        <div class="mini-actions">
+          <div class="mini-dot" style="background:#FF5C5C"></div>
+          <div class="mini-dot"></div>
+          <div class="mini-dot"></div>
+          <div style="flex:1"></div>
+          <div class="mini-btn" style="background:#FF5C5C;color:#FFF">FOLLOW</div>
+        </div>
+      </div>
+      <div class="mini-nav">
+        <div class="mini-nav-bar" style="background:#FF5C5C"></div>
+        <div class="mini-nav-bar"></div>
+        <div class="mini-nav-bar"></div>
+        <div class="mini-nav-bar"></div>
+      </div>
+    </div>
+    <div class="accent-info">
+      <h3><span class="color-chip" style="background:#FF5C5C"></span>Коралл #FF5C5C</h3>
+      <p>Тёплый, человечный, энергичный. Лайки и экшен-кнопки сразу понятны. SoundCloud-аура.</p>
+    </div>
+  </div>
+
+  <!-- C: Mint / Sage Green -->
+  <div class="accent-card" data-choice="mint" onclick="toggleSelect(this)">
+    <div class="mini-ui">
+      <div class="mini-topbar">
+        <div class="mini-logo" style="color:#00E5A0">VIBE</div>
+        <div style="flex:1"></div>
+        <div style="width:22px;height:22px;border-radius:4px;border:1.5px solid #00E5A0"></div>
+      </div>
+      <div class="mini-post">
+        <div class="mini-post-img">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,#001A0F,#003020)"></div>
+          <div class="mini-badge" style="background:#00E5A0;color:#000">НОВОЕ</div>
+        </div>
+        <div class="mini-actions">
+          <div class="mini-dot" style="background:#00E5A0"></div>
+          <div class="mini-dot"></div>
+          <div class="mini-dot"></div>
+          <div style="flex:1"></div>
+          <div class="mini-btn" style="background:#00E5A0;color:#000">FOLLOW</div>
+        </div>
+      </div>
+      <div class="mini-nav">
+        <div class="mini-nav-bar" style="background:#00E5A0"></div>
+        <div class="mini-nav-bar"></div>
+        <div class="mini-nav-bar"></div>
+        <div class="mini-nav-bar"></div>
+      </div>
+    </div>
+    <div class="accent-info">
+      <h3><span class="color-chip" style="background:#00E5A0"></span>Мята #00E5A0</h3>
+      <p>Свежий, немного природный. Легко читается, не агрессивен. Подходит для широкой аудитории.</p>
+    </div>
+  </div>
+
+  <!-- D: Warm White -->
+  <div class="accent-card" data-choice="white" onclick="toggleSelect(this)">
+    <div class="mini-ui">
+      <div class="mini-topbar">
+        <div class="mini-logo" style="color:#F0EBE0">VIBE</div>
+        <div style="flex:1"></div>
+        <div style="width:22px;height:22px;border-radius:4px;border:1.5px solid #F0EBE0"></div>
+      </div>
+      <div class="mini-post">
+        <div class="mini-post-img">
+          <div style="position:absolute;inset:0;background:#1A1A1A"></div>
+          <div class="mini-badge" style="background:#F0EBE0;color:#000">ПОСТ</div>
+        </div>
+        <div class="mini-actions">
+          <div class="mini-dot" style="background:#F0EBE0"></div>
+          <div class="mini-dot"></div>
+          <div class="mini-dot"></div>
+          <div style="flex:1"></div>
+          <div class="mini-btn" style="background:#F0EBE0;color:#000">FOLLOW</div>
+        </div>
+      </div>
+      <div class="mini-nav">
+        <div class="mini-nav-bar" style="background:#F0EBE0"></div>
+        <div class="mini-nav-bar"></div>
+        <div class="mini-nav-bar"></div>
+        <div class="mini-nav-bar"></div>
+      </div>
+    </div>
+    <div class="accent-info">
+      <h3><span class="color-chip" style="background:#F0EBE0;border:1px solid #333"></span>Кремовый #F0EBE0</h3>
+      <p>Редакционный, элегантный, без «цветного шума». Как The Guardian в тёмном режиме.</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:16px;background:#111;border:1px solid #1E1E1E;border-radius:10px;padding:12px">
+  <p style="margin:0;font-size:12px;color:#444;line-height:1.5">Все варианты на одном чёрном (#0A0A0A) фоне. Акцент используется для: лого, активных кнопок, лайков, онлайн-статуса, прогресса плеера, выбранной вкладки.</p>
+</div>

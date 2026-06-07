@@ -3,31 +3,31 @@
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 pt-24 pb-24 lg:pt-28">
     <div class="flex items-center justify-between mb-8">
-        <h1 class="text-3xl font-extrabold tracking-tighter text-[var(--accent)]">Сообщения</h1>
-        <a href="{{ url_for('create_chat') }}" class="px-4 py-2 bg-[var(--accent)] text-black rounded-2xl hover:shadow-lg transition-all text-sm font-medium">
+        <h1 class="text-3xl font-extrabold tracking-tighter">Сообщения</h1>
+        <a href="{{ url_for('create_chat') }}" class="px-4 py-2 bg-[var(--accent)] text-black rounded-[6px] hover:opacity-90 transition-all text-sm font-bold">
             Новый чат
         </a>
     </div>
-    
+
     <div class="mb-6">
         <div class="relative">
-            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-[var(--text-3)]">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </span>
-            <input type="text" placeholder="Поиск сообщений..." class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-[var(--accent)] transition-all outline-none text-sm">
+            <input type="text" placeholder="Поиск сообщений..." class="w-full bg-[var(--surface)] border border-[var(--border)] rounded-[8px] py-3 pl-10 pr-4 focus:ring-2 focus:ring-[var(--accent)] transition-all outline-none text-sm text-[var(--text)] placeholder:text-[var(--text-3)]">
         </div>
     </div>
-    
+
     {% if suggested_users %}
-    <div class="glass rounded-3xl p-6 mb-8">
-        <h3 class="text-sm font-bold text-slate-500 mb-4">Написать</h3>
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 class="text-xs font-bold text-[var(--text-2)] uppercase tracking-wider mb-4">Написать</h3>
         <div class="space-y-4">
             {% for user in suggested_users[:5] %}
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <a href="{{ url_for('user_profile', username=user.username) }}">
                         {% set avatar_url = get_avatar_url(user) %}
-                        <div class="w-10 h-10 rounded-full {% if avatar_url %}overflow-hidden{% else %}bg-[var(--accent)] flex items-center justify-center text-white text-sm font-bold{% endif %}">
+                        <div class="w-10 h-10 rounded-[6px] overflow-hidden flex-shrink-0 {% if not avatar_url %}bg-[var(--accent)] flex items-center justify-center text-black text-sm font-bold{% endif %}">
                             {% if avatar_url %}
                             <img src="{{ avatar_url }}" class="w-full h-full object-cover">
                             {% else %}
@@ -37,7 +37,7 @@
                     </a>
                     <a href="{{ url_for('user_profile', username=user.username) }}" class="font-bold text-sm">{% if user.is_bot %}🤖 {% endif %}{{ user.username }}</a>
                 </div>
-                <a href="{{ url_for('conversation', username=user.username) }}" class="text-xs font-bold text-[var(--accent)] hover:text-[var(--accent)] transition-colors">
+                <a href="{{ url_for('conversation', username=user.username) }}" class="text-xs font-bold text-[var(--accent)] hover:opacity-80 transition-colors">
                     Написать
                 </a>
             </div>
@@ -45,24 +45,24 @@
         </div>
     </div>
     {% endif %}
-    
+
     {% if group_chats %}
-    <div class="mb-6">
-        <h3 class="text-sm font-bold text-slate-500 mb-4">Группы</h3>
+    <div class="mb-3">
+        <h3 class="text-xs font-bold text-[var(--text-2)] uppercase tracking-wider mb-3">Группы</h3>
     </div>
-    <div class="space-y-3 mb-8">
+    <div class="space-y-2 mb-8">
         {% for item in group_chats %}
-        <a href="{{ url_for('chat_view', chat_id=item.chat.id) }}" class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all group">
-            <div class="w-12 h-12 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-xl flex-shrink-0">
+        <a href="{{ url_for('chat_view', chat_id=item.chat.id) }}" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px;" class="p-4 flex items-center gap-4 hover:border-[var(--border-2)] transition-all block">
+            <div class="w-12 h-12 rounded-[6px] bg-[var(--accent-dark)] border border-[var(--border)] flex items-center justify-center text-xl flex-shrink-0">
                 👥
             </div>
             <div class="flex-1 min-w-0">
                 <div class="font-bold text-sm truncate">{{ item.chat.name }}</div>
-                <div class="text-xs text-slate-500 truncate">{% if item.last %}{% if item.last.body and item.last.body.startswith('[shorts:') %}🎬 Shorts{% else %}{{ item.last.body[:40] }}{% endif %}{% else %}Нет сообщений{% endif %}</div>
+                <div class="text-xs text-[var(--text-2)] truncate mt-0.5">{% if item.last %}{% if item.last.body and item.last.body.startswith('[shorts:') %}🎬 Shorts{% else %}{{ item.last.body[:40] }}{% endif %}{% else %}Нет сообщений{% endif %}</div>
             </div>
             <div class="flex flex-col items-end gap-1 flex-shrink-0">
                 {% if item.last %}
-                <div class="text-[10px] text-slate-400">{{ item.last.created_at.strftime('%H:%M') }}</div>
+                <div class="text-[11px] text-[var(--text-3)]">{{ item.last.created_at.strftime('%H:%M') }}</div>
                 {% endif %}
                 {% if item.unread > 0 %}
                 <div class="w-5 h-5 bg-[var(--accent)] text-black text-[10px] flex items-center justify-center rounded-full font-bold">{{ item.unread }}</div>
@@ -72,16 +72,16 @@
         {% endfor %}
     </div>
     {% endif %}
-    
-    <div class="mb-6">
-        <h3 class="text-sm font-bold text-slate-500 mb-4">Личные сообщения</h3>
+
+    <div class="mb-3">
+        <h3 class="text-xs font-bold text-[var(--text-2)] uppercase tracking-wider mb-3">Личные сообщения</h3>
     </div>
-    
-    <div class="space-y-3">
+
+    <div class="space-y-2">
         {% for conv in conversations %}
-        <a href="{{ url_for('conversation', username=conv.user.username) }}" class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all group">
+        <a href="{{ url_for('conversation', username=conv.user.username) }}" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px;" class="p-4 flex items-center gap-4 hover:border-[var(--border-2)] transition-all block">
             {% set avatar_url = get_avatar_url(conv.user) %}
-            <div class="w-12 h-12 rounded-full flex-shrink-0 {% if avatar_url %}overflow-hidden{% else %}bg-[var(--accent)] flex items-center justify-center text-white text-sm font-bold{% endif %}">
+            <div class="w-12 h-12 rounded-[6px] flex-shrink-0 overflow-hidden {% if not avatar_url %}bg-[var(--accent)] flex items-center justify-center text-black text-sm font-bold{% endif %}">
                 {% if avatar_url %}
                 <img src="{{ avatar_url }}" class="w-full h-full object-cover">
                 {% else %}
@@ -90,20 +90,20 @@
             </div>
             <div class="flex-1 min-w-0">
                 <div class="font-bold text-sm truncate">{% if conv.user.is_bot %}🤖 {% endif %}{{ conv.user.username }}</div>
-                <div class="text-xs text-slate-500 truncate">{% if conv.last.body and conv.last.body.startswith('[shorts:') %}🎬 Shorts{% else %}{{ conv.last.body[:40] }}{% endif %}</div>
+                <div class="text-xs text-[var(--text-2)] truncate mt-0.5">{% if conv.last.body and conv.last.body.startswith('[shorts:') %}🎬 Shorts{% else %}{{ conv.last.body[:40] }}{% endif %}</div>
             </div>
             <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                <div class="text-[10px] text-slate-400">{{ conv.last.created_at.strftime('%H:%M') }}</div>
+                <div class="text-[11px] text-[var(--text-3)]">{{ conv.last.created_at.strftime('%H:%M') }}</div>
                 {% if conv.unread > 0 %}
                 <div class="w-5 h-5 bg-[var(--accent)] text-black text-[10px] flex items-center justify-center rounded-full font-bold">{{ conv.unread }}</div>
                 {% endif %}
             </div>
         </a>
         {% else %}
-        <div class="glass rounded-3xl p-12 text-center">
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px;" class="p-12 text-center">
             <div class="text-6xl mb-4">💬</div>
             <h3 class="text-lg font-bold mb-2">Нет сообщений</h3>
-            <p class="text-sm text-slate-500">Начните общение с кем-то</p>
+            <p class="text-sm text-[var(--text-2)]">Начните общение с кем-то</p>
         </div>
         {% endfor %}
     </div>

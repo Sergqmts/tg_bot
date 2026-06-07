@@ -155,7 +155,7 @@
                 <i class="fa-solid fa-paperclip"></i>
             </label>
             <input type="text" name="body" class="comment-input" placeholder="Добавить комментарий...">
-            <span class="comment-file-name text-xs text-slate-400 max-w-[100px] truncate"></span>
+            <span class="comment-file-name text-xs text-[var(--text-2)] max-w-[100px] truncate"></span>
             <button type="submit" class="btn btn-primary btn-small">Отправить</button>
         </form>
         <div id="replyIndicator" class="reply-indicator" style="display: none;">
@@ -186,7 +186,7 @@
                     {% elif comment.media_type == 'audio' %}
                     <audio src="{{ comment.media_url }}" controls class="w-full"></audio>
                     {% elif comment.media_type == 'document' %}
-                    <a href="{{ comment.media_url }}" download class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm">
+                    <a href="{{ comment.media_url }}" download class="flex items-center gap-2 p-2 rounded-[8px] text-sm" style="background: var(--surface-2); border: 1px solid var(--border);">
                         <i class="fa-solid fa-file text-[var(--accent)]"></i>
                         <span>Скачать файл</span>
                     </a>

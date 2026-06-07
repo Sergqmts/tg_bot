@@ -12,7 +12,7 @@
             </a>
             <div class="post-author-group">
                 <a href="{{ url_for('community', slug=post.community.slug) }}" class="post-author">{{ post.community.name }}</a>
-                <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author-sub text-xs text-slate-500 hover:underline">{{ post.author.username }}</a>
+                <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-author-sub text-xs text-[var(--text-2)] hover:underline">{{ post.author.username }}</a>
             </div>
             {% else %}
             <a href="{{ url_for('user_profile', username=post.author.username) }}" class="post-avatar">
@@ -143,10 +143,10 @@
                 </button>
             </form>
             <div class="relative inline-block">
-                <button class="action-btn text-xs text-slate-400 hover:text-red-400 transition-colors" onclick="document.getElementById('report-form-{{ post.id }}').classList.toggle('hidden')">
+                <button class="action-btn text-xs text-[var(--text-3)] hover:text-[var(--danger)] transition-colors" onclick="document.getElementById('report-form-{{ post.id }}').classList.toggle('hidden')">
                     <i class="fa-regular fa-flag"></i>
                 </button>
-                <form method="POST" action="{{ url_for('submit_report') }}" id="report-form-{{ post.id }}" class="hidden absolute bottom-full right-0 mb-2 z-50 bg-white dark:bg-dark-card rounded-xl p-3 shadow-lg border dark:border-dark-border" style="width:min(280px,calc(100vw - 2rem));">
+                <form method="POST" action="{{ url_for('submit_report') }}" id="report-form-{{ post.id }}" class="hidden absolute bottom-full right-0 mb-2 z-50 rounded-[10px] p-3 shadow-lg" style="width:min(280px,calc(100vw - 2rem)); background: var(--surface); border: 1px solid var(--border-2);">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="target_post_id" value="{{ post.id }}">
                     <input type="hidden" name="target_user_id" value="{{ post.user_id }}">

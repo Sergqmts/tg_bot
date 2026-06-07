@@ -4,59 +4,57 @@
 <div class="min-h-screen flex items-center justify-center px-4 py-12">
     <div class="w-full max-w-lg">
 
-        <!-- Заголовок -->
         <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-[var(--accent)] rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-4 shadow-lg">
+            <div class="w-16 h-16 bg-[var(--accent)] rounded-[6px] flex items-center justify-center text-black text-3xl mx-auto mb-4">
                 <i class="fa-solid fa-bolt-lightning"></i>
             </div>
-            <h1 class="text-2xl font-extrabold tracking-tighter text-slate-900 dark:text-white">Настроим твой профиль</h1>
-            <p class="text-slate-500 mt-1 text-sm">Займёт меньше минуты</p>
+            <h1 class="text-2xl font-extrabold tracking-tighter">Настроим твой профиль</h1>
+            <p class="text-[var(--text-2)] mt-1 text-sm">Займёт меньше минуты</p>
         </div>
 
-        <!-- Прогресс-бар (4 точки) -->
         <div class="flex justify-center gap-3 mb-8" id="progress-dots">
             <span class="dot w-3 h-3 rounded-full bg-[var(--accent)]" data-step="1"></span>
-            <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="2"></span>
-            <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="3"></span>
-            <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="4"></span>
+            <span class="dot w-3 h-3 rounded-full bg-[var(--border-2)]" data-step="2"></span>
+            <span class="dot w-3 h-3 rounded-full bg-[var(--border-2)]" data-step="3"></span>
+            <span class="dot w-3 h-3 rounded-full bg-[var(--border-2)]" data-step="4"></span>
         </div>
 
-        <div class="glass rounded-3xl shadow-lg overflow-hidden">
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
 
-            <!-- ── Шаг 1: Аватар ── -->
+            <!-- Шаг 1: Аватар -->
             <div class="step-section p-8" id="step-1">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Фото профиля</h2>
-                <p class="text-sm text-slate-500 mb-6">Загрузи аватар, чтобы тебя узнавали</p>
+                <h2 class="text-lg font-bold mb-1">Фото профиля</h2>
+                <p class="text-sm text-[var(--text-2)] mb-6">Загрузи аватар, чтобы тебя узнавали</p>
 
                 <div class="flex flex-col items-center gap-4 mb-6">
-                    <div id="avatar-preview-wrap" class="w-24 h-24 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
+                    <div id="avatar-preview-wrap" class="w-24 h-24 rounded-[6px] bg-[var(--accent)] flex items-center justify-center text-black text-4xl font-bold overflow-hidden">
                         <span id="avatar-initial">{{ current_user.username[0].upper() }}</span>
                         <img id="avatar-preview-img" src="" alt="" class="hidden w-full h-full object-cover">
                     </div>
-                    <label class="cursor-pointer px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    <label class="cursor-pointer px-4 py-2 bg-[var(--surface-2)] border border-[var(--border-2)] rounded-[6px] text-sm font-medium text-[var(--text)] hover:border-[var(--accent)] transition-colors">
                         <i class="fa-solid fa-camera mr-2"></i>Выбрать фото
                         <input type="file" id="avatar-file" accept="image/*" class="hidden">
                     </label>
                 </div>
 
-                <div id="avatar-warning" class="hidden mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl text-sm text-amber-700 dark:text-amber-300">
+                <div id="avatar-warning" class="hidden mb-4 p-3 rounded-[8px] text-sm" style="background: rgba(255,196,0,0.08); border: 1px solid rgba(255,196,0,0.2); color: var(--text-2);">
                     <i class="fa-solid fa-triangle-exclamation mr-1"></i>Ты не выбрал(а) фото
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="button" id="step1-skip" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                    <button type="button" id="step1-skip" class="flex-1 py-3 bg-[var(--surface-2)] border border-[var(--border-2)] text-[var(--text-2)] rounded-[6px] font-medium text-sm hover:border-[var(--accent)] transition-all">
                         Продолжить без фото
                     </button>
-                    <button type="button" id="step1-next" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all">
+                    <button type="button" id="step1-next" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-[6px] font-bold text-sm hover:opacity-90 transition-all">
                         Далее
                     </button>
                 </div>
             </div>
 
-            <!-- ── Шаг 2: О себе ── -->
+            <!-- Шаг 2: О себе -->
             <div class="step-section hidden p-8" id="step-2">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">О себе</h2>
-                <p class="text-sm text-slate-500 mb-6">Расскажи немного — это не обязательно</p>
+                <h2 class="text-lg font-bold mb-1">О себе</h2>
+                <p class="text-sm text-[var(--text-2)] mb-6">Расскажи немного — это не обязательно</p>
 
                 <div class="space-y-3 mb-6">
                     <textarea
@@ -64,38 +62,38 @@
                         name="bio"
                         rows="3"
                         placeholder="Пару слов о себе..."
-                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none"
+                        class="w-full bg-[var(--surface-2)] border border-[var(--border-2)] rounded-[8px] py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-[var(--text)] placeholder:text-[var(--text-3)] resize-none"
                     ></textarea>
                     <input
                         id="occupation"
                         name="occupation"
                         type="text"
                         placeholder="Чем занимаешься?"
-                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                        class="w-full bg-[var(--surface-2)] border border-[var(--border-2)] rounded-[8px] py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-[var(--text)] placeholder:text-[var(--text-3)]"
                     >
                     <input
                         id="location"
                         name="location"
                         type="text"
                         placeholder="Откуда ты?"
-                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                        class="w-full bg-[var(--surface-2)] border border-[var(--border-2)] rounded-[8px] py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-[var(--text)] placeholder:text-[var(--text-3)]"
                     >
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="2">
+                    <button type="button" class="flex-1 py-3 bg-[var(--surface-2)] border border-[var(--border-2)] text-[var(--text-2)] rounded-[6px] font-medium text-sm hover:border-[var(--accent)] transition-all skip-btn" data-step="2">
                         Пропустить
                     </button>
-                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="2">
+                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-[6px] font-bold text-sm hover:opacity-90 transition-all next-btn" data-step="2">
                         Далее
                     </button>
                 </div>
             </div>
 
-            <!-- ── Шаг 3: Интересы ── -->
+            <!-- Шаг 3: Интересы -->
             <div class="step-section hidden p-8" id="step-3">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Интересы</h2>
-                <p class="text-sm text-slate-500 mb-6">Что тебя увлекает? (через запятую)</p>
+                <h2 class="text-lg font-bold mb-1">Интересы</h2>
+                <p class="text-sm text-[var(--text-2)] mb-6">Что тебя увлекает? (через запятую)</p>
 
                 <div class="mb-6">
                     <input
@@ -103,63 +101,63 @@
                         name="interests"
                         type="text"
                         placeholder="музыка, спорт, путешествия..."
-                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                        class="w-full bg-[var(--surface-2)] border border-[var(--border-2)] rounded-[8px] py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-[var(--text)] placeholder:text-[var(--text-3)]"
                     >
                 </div>
 
-                <!-- Быстрые теги -->
                 <div class="flex flex-wrap gap-2 mb-6" id="interest-tags">
                     {% for tag in ['🎵 Музыка','🎮 Игры','📚 Книги','🏃 Спорт','✈️ Путешествия','🍕 Еда','🎨 Арт','💻 Технологии','📸 Фото','🎬 Кино'] %}
-                    <button type="button" class="tag-btn px-3 py-1.5 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[var(--accent)] hover:text-white transition-colors" data-tag="{{ tag }}">
+                    <button type="button" class="tag-btn px-3 py-1.5 text-xs font-medium rounded-[4px] transition-colors" data-tag="{{ tag }}"
+                        style="background: var(--surface-2); border: 1px solid var(--border-2); color: var(--text-2);">
                         {{ tag }}
                     </button>
                     {% endfor %}
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="3">
+                    <button type="button" class="flex-1 py-3 bg-[var(--surface-2)] border border-[var(--border-2)] text-[var(--text-2)] rounded-[6px] font-medium text-sm hover:border-[var(--accent)] transition-all skip-btn" data-step="3">
                         Пропустить
                     </button>
-                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="3">
+                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-[6px] font-bold text-sm hover:opacity-90 transition-all next-btn" data-step="3">
                         Далее
                     </button>
                 </div>
             </div>
 
-            <!-- ── Шаг 4: Приватность ── -->
+            <!-- Шаг 4: Приватность -->
             <div class="step-section hidden p-8" id="step-4">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Приватность</h2>
-                <p class="text-sm text-slate-500 mb-6">Настрой видимость профиля</p>
+                <h2 class="text-lg font-bold mb-1">Приватность</h2>
+                <p class="text-sm text-[var(--text-2)] mb-6">Настрой видимость профиля</p>
 
-                <div class="space-y-4 mb-8">
-                    <label class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl cursor-pointer">
+                <div class="space-y-3 mb-8">
+                    <label class="flex items-center justify-between p-4 rounded-[8px] cursor-pointer" style="background: var(--surface-2); border: 1px solid var(--border);">
                         <div>
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Закрытый профиль</p>
-                            <p class="text-xs text-slate-400 mt-0.5">Публикации видны только подписчикам</p>
+                            <p class="text-sm font-semibold text-[var(--text)]">Закрытый профиль</p>
+                            <p class="text-xs text-[var(--text-2)] mt-0.5">Публикации видны только подписчикам</p>
                         </div>
-                        <input type="checkbox" id="is_private" name="is_private" class="w-5 h-5 rounded border-slate-300 text-[var(--accent)] focus:ring-[var(--accent)]">
+                        <input type="checkbox" id="is_private" name="is_private" class="w-5 h-5 rounded border-[var(--border-2)] text-[var(--accent)] focus:ring-[var(--accent)]">
                     </label>
 
-                    <label class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl cursor-pointer">
+                    <label class="flex items-center justify-between p-4 rounded-[8px] cursor-pointer" style="background: var(--surface-2); border: 1px solid var(--border);">
                         <div>
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Одобрять подписчиков</p>
-                            <p class="text-xs text-slate-400 mt-0.5">Запросы на подписку нужно подтверждать</p>
+                            <p class="text-sm font-semibold text-[var(--text)]">Одобрять подписчиков</p>
+                            <p class="text-xs text-[var(--text-2)] mt-0.5">Запросы на подписку нужно подтверждать</p>
                         </div>
-                        <input type="checkbox" id="approve_followers" name="approve_followers" class="w-5 h-5 rounded border-slate-300 text-[var(--accent)] focus:ring-[var(--accent)]">
+                        <input type="checkbox" id="approve_followers" name="approve_followers" class="w-5 h-5 rounded border-[var(--border-2)] text-[var(--accent)] focus:ring-[var(--accent)]">
                     </label>
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="4">
+                    <button type="button" class="flex-1 py-3 bg-[var(--surface-2)] border border-[var(--border-2)] text-[var(--text-2)] rounded-[6px] font-medium text-sm hover:border-[var(--accent)] transition-all skip-btn" data-step="4">
                         Завершить позже
                     </button>
-                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="4">
+                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-[6px] font-bold text-sm hover:opacity-90 transition-all next-btn" data-step="4">
                         Готово!
                     </button>
                 </div>
             </div>
 
-        </div><!-- /glass -->
+        </div>
     </div>
 </div>
 
@@ -175,11 +173,9 @@
 
         document.querySelectorAll('#progress-dots .dot').forEach((dot, i) => {
             if (i + 1 <= n) {
-                dot.classList.remove('bg-slate-300', 'dark:bg-slate-600');
-                dot.classList.add('bg-[var(--accent)]');
+                dot.style.background = 'var(--accent)';
             } else {
-                dot.classList.add('bg-slate-300');
-                dot.classList.remove('bg-[var(--accent)]');
+                dot.style.background = 'var(--border-2)';
             }
         });
         current = n;
@@ -206,7 +202,6 @@
         window.location.href = data.redirect || '/';
     }
 
-    // ── Шаг 1 ──
     const avatarFile = document.getElementById('avatar-file');
     const previewImg = document.getElementById('avatar-preview-img');
     const previewInitial = document.getElementById('avatar-initial');
@@ -248,7 +243,6 @@
         showStep(2);
     });
 
-    // ── Шаги 2–3 (next) ──
     document.querySelectorAll('.next-btn').forEach(btn => {
         btn.addEventListener('click', async function () {
             const step = parseInt(this.dataset.step);
@@ -277,7 +271,6 @@
         });
     });
 
-    // ── Пропустить ──
     document.querySelectorAll('.skip-btn').forEach(btn => {
         btn.addEventListener('click', async function () {
             const step = parseInt(this.dataset.step);
@@ -291,7 +284,6 @@
         });
     });
 
-    // ── Теги интересов ──
     document.querySelectorAll('.tag-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             const tag = this.dataset.tag;
@@ -300,12 +292,14 @@
             if (parts.includes(tag)) {
                 const idx = parts.indexOf(tag);
                 parts.splice(idx, 1);
-                this.classList.remove('bg-[var(--accent)]', 'text-white');
-                this.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                this.style.background = 'var(--surface-2)';
+                this.style.borderColor = 'var(--border-2)';
+                this.style.color = 'var(--text-2)';
             } else {
                 parts.push(tag);
-                this.classList.add('bg-[var(--accent)]', 'text-white');
-                this.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
+                this.style.background = 'var(--accent)';
+                this.style.borderColor = 'var(--accent)';
+                this.style.color = '#000';
             }
             input.value = parts.join(', ');
         });
