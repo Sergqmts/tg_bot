@@ -201,3 +201,51 @@ Key routing rules:
 - Ship/deploy/PR → invoke /ship or /land-and-deploy
 - Save progress → invoke /context-save
 - Resume context → invoke /context-restore
+
+---
+
+## Design Review — Незакрытые проблемы (2026-06-07)
+
+Аудит показал: CSS-слой обновлён правильно, HTML-шаблоны **не обновлены**. Tailwind utility-классы в шаблонах перекрывают новые CSS-компоненты — поэтому визуально приложение почти не изменилось.
+
+### КРИТИЧНЫЕ (HIGH)
+
+**1. ~~Glassmorphism в inline-стиле~~ — ИСПРАВЛЕНО 2026-06-07**
+Удалён `style="backdrop-filter: blur(12px)..."` из `templates/index.html:5`. `.glass` переопределён в `base.html <style>` как `background: var(--surface); border: 1px solid var(--border)` без blur.
+
+**2. ~~Класс `.glass` без CSS-определения (59 мест)~~ — ИСПРАВЛЕНО 2026-06-07**
+Добавлено корректное определение `.glass` в `base.html <style>` блок. Glassmorphism полностью убран.
+
+**3. ~~Навигация в `base.html` — старые цвета~~ — ИСПРАВЛЕНО 2026-06-07**
+Все `text-slate-*`, `hover:bg-slate-*`, `dark:*` классы в хедере, bottom nav и обоих dropdown-меню заменены на `text-[var(--accent)]`, `text-[var(--text-2)]`, `hover:bg-[var(--surface)]`, `border-[var(--border)]`.
+
+**4. ~~Tailwind dark mode не активирован~~ — ИСПРАВЛЕНО 2026-06-07**
+Логика темы в `base.html` изменена: dark активируется по умолчанию, если пользователь явно не выбрал `light` (`savedTheme !== 'light'`).
+
+### ВАЖНЫЕ (MEDIUM)
+
+**5. ~~Аватары — `rounded-full` перекрывает CSS~~ — ИСПРАВЛЕНО 2026-06-07**
+Заменено `rounded-full` → `rounded-[6px]` в `base.html` (аватар в хедере, account switcher, moreMenu) и `accounts.html`. Градиентные заглушки-инициалы заменены на `bg-[var(--accent)] text-black`.
+
+**6. 216 мест с gradient-классами** — 28 шаблонов — **ОТКРЫТО**
+```html
+class="bg-gradient-to-r from-brand-start to-brand-middle"
+```
+`brand-start` и `brand-middle` теперь оба = `--accent`, но `background-image: gradient` перекрывает `background-color` из `.btn-primary`. Заменить на `bg-[var(--accent)]` или solid-цвет. Требует правки в 28 шаблонах — отдельная задача.
+
+**7. Десктоп-раскладка не подключена к HTML** — все шаблоны — **ОТКРЫТО**
+CSS-правила `.desktop-layout`, `.sidebar-nav`, `.feed-column`, `.widgets-column` добавлены в `style.css`, но ни один шаблон не использует эти классы. На ширине ≥1024px боковой навигации нет, `bottom-nav` не скрывается.
+
+**8. ~~`forgot_password.html` — старый дизайн полностью~~ — ИСПРАВЛЕНО 2026-06-07**
+Шаблон полностью переписан под dark electric: убраны glassmorphism, `rounded-2xl/3xl`, `slate-*` цвета, градиентная кнопка. Теперь использует `var(--surface)`, `var(--accent)`, `rounded-lg`, `rounded-[12px]`.
+
+**9. ~~`accounts.html` — glassmorphism~~ — ИСПРАВЛЕНО 2026-06-07**
+Убраны `.glass`, `rounded-2xl`, `bg-gradient-to-r from-brand-start`, `slate-*` цвета. Заменено на `bg-[var(--surface)]`, `border-[var(--border)]`, `rounded-[10px]`, `bg-[var(--accent)]`.
+
+**10. ~~Логотип — gradient text вместо solid~~ — ИСПРАВЛЕНО 2026-06-07**
+`bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle` → `text-[var(--accent)]` в `base.html`.
+
+### Открытые задачи
+
+1. **Gradient-классы (216 мест, 28 шаблонов)** — заменить `bg-gradient-to-r from-brand-start to-brand-middle` на `bg-[var(--accent)]` во всех оставшихся шаблонах
+2. **Десктоп-раскладка** — добавить `.desktop-layout`, `.sidebar-nav`, `.feed-column`, `.widgets-column` классы в `base.html` и другие шаблоны

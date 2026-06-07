@@ -64,14 +64,8 @@
             font-weight: bold;
         }
         .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        .dark .glass {
-            background: rgba(17, 17, 17, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--surface);
+            border: 1px solid var(--border);
         }
         .dark #accountMenu:hover,
         .dark #moreMenu:hover {
@@ -130,34 +124,34 @@
 </head>
 <body class="font-sans transition-colors duration-300">
     {% if request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
-    <header class="fixed top-0 w-full glass border-b border-slate-200 dark:border-dark-border" style="z-index: 100;">
+    <header class="fixed top-0 w-full glass border-b border-[var(--border)]" style="z-index: 100;">
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
             <div class="flex items-center gap-2 flex-shrink-0">
                 <a href="{{ url_for('index') }}" class="flex items-center gap-2">
                     <img src="{{ url_for('static', filename='icon-192.png') }}?v=2" class="w-9 h-9 rounded-xl object-cover shadow-lg" alt="Vibe">
-                    <span class="text-2xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle">VIBEHUB</span>
+                    <span class="text-2xl font-extrabold tracking-tighter text-[var(--accent)]">VIBEHUB</span>
                 </a>
             </div>
             <!-- Desktop navigation (hidden on mobile — mobile uses bottom nav) -->
             {% if current_user.is_authenticated %}
             <nav class="hidden md:flex items-center gap-1 flex-shrink-0">
-                <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'index' %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] hover:bg-[var(--surface)]{% endif %}">
                     <i class="fa-solid fa-house text-lg"></i>
                     <span class="hidden lg:inline">Лента</span>
                 </a>
-                <a href="{{ url_for('shorts') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <a href="{{ url_for('shorts') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] hover:bg-[var(--surface)]{% endif %}">
                     <i class="fa-solid fa-clapperboard text-lg"></i>
                     <span class="hidden lg:inline">Shorts</span>
                 </a>
-                <a href="{{ url_for('messages') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <a href="{{ url_for('messages') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] hover:bg-[var(--surface)]{% endif %}">
                     <i class="fa-solid fa-paper-plane text-lg"></i>
                     <span class="hidden lg:inline">Сообщения</span>
                 </a>
-                <a href="{{ url_for('communities') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <a href="{{ url_for('communities') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] hover:bg-[var(--surface)]{% endif %}">
                     <i class="fa-solid fa-users text-lg"></i>
                     <span class="hidden lg:inline">Сообщества</span>
                 </a>
-                <a href="{{ url_for('music_home') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl text-xs transition-colors {% if request.endpoint in ['music_home', 'music_search'] %}text-brand-middle{% else %}text-slate-500 dark:text-slate-400 hover:text-brand-middle hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+                <a href="{{ url_for('music_home') }}" class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint in ['music_home', 'music_search'] %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] hover:bg-[var(--surface)]{% endif %}">
                     <i class="fa-solid fa-music text-lg"></i>
                     <span class="hidden lg:inline">Музыка</span>
                 </a>
@@ -165,54 +159,54 @@
             {% endif %}
             <div class="flex-1 max-w-xs mx-2 hidden md:block">
                 <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-[var(--text-3)]">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
                     <form method="GET" action="{{ url_for('explore') }}">
-                        <input type="text" name="q" placeholder="Поиск вдохновения..." class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-brand-middle transition-all outline-none text-sm">
+                        <input type="text" name="q" placeholder="Поиск вдохновения..." class="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-[var(--accent)] transition-all outline-none text-sm text-[var(--text)] placeholder:text-[var(--text-3)]">
                     </form>
                 </div>
             </div>
             <div class="flex items-center gap-3 sm:gap-6 ml-auto">
                 <!-- Mobile: search icon -->
-                <a href="{{ url_for('explore') }}" class="md:hidden w-11 h-11 flex items-center justify-center text-xl text-slate-500 dark:text-slate-400 hover:text-brand-middle transition-colors rounded-xl">
+                <a href="{{ url_for('explore') }}" class="md:hidden w-11 h-11 flex items-center justify-center text-xl text-[var(--text-2)] hover:text-[var(--accent)] transition-colors rounded-lg">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </a>
                 {% if current_user.is_authenticated %}
-                <a href="{{ url_for('notifications') }}" class="w-11 h-11 flex items-center justify-center text-xl hover:text-brand-middle transition-colors relative rounded-xl">
+                <a href="{{ url_for('notifications') }}" class="w-11 h-11 flex items-center justify-center text-xl text-[var(--text-2)] hover:text-[var(--accent)] transition-colors relative rounded-lg">
                     <i class="fa-regular fa-bell"></i>
                     {% if unread_notifications > 0 %}
                     <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold" id="notif-badge" {% if unread_notifications == 0 %}style="display:none"{% endif %}>{{ unread_notifications }}</span>
                     {% endif %}
                 </a>
-                <button id="theme-toggle" class="hidden md:flex w-10 h-10 rounded-xl items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                <button id="theme-toggle" class="hidden md:flex w-10 h-10 rounded-lg items-center justify-center hover:bg-[var(--surface)] transition-all text-[var(--text-2)]">
                     <i class="fa-solid fa-moon dark:hidden"></i>
                     <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
                 </button>
                 <div class="relative hidden md:block" id="accountSwitcher">
                     <button onclick="toggleAccountMenu()" class="flex items-center gap-1 cursor-pointer" title="Переключить аккаунт">
-                        <div class="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-200 dark:border-dark-border">
+                        <div class="w-8 h-8 rounded-[6px] overflow-hidden border-2 border-[var(--border-2)]">
                             {% set avatar_url = get_avatar_url(current_user) %}
                             {% if avatar_url %}
                             <img src="{{ avatar_url }}" alt="Profile" class="w-full h-full object-cover">
                             {% else %}
-                            <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">
+                            <div class="w-full h-full bg-[var(--accent)] flex items-center justify-center text-black text-xs font-bold">
                                 {{ current_user.username[0].upper() }}
                             </div>
                             {% endif %}
                         </div>
-                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-[var(--text-2)]"></i>
                     </button>
-                    <div id="accountMenu" class="absolute right-0 top-12 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[200px] w-[min(250px,calc(100vw-2rem))] hidden" style="z-index:100;">
+                    <div id="accountMenu" class="absolute right-0 top-12 bg-[var(--surface)] rounded-xl shadow-2xl border border-[var(--border-2)] py-2 min-w-[200px] w-[min(250px,calc(100vw-2rem))] hidden" style="z-index:100;">
                         {% if linked_accounts %}
                             {% for member in linked_accounts %}
-                            <a href="{% if member.user_id == current_user.id %}{{ url_for('user_profile', username=current_user.username) }}{% else %}{{ url_for('switch_account', account_id=member.user_id) }}{% endif %}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm {% if member.user_id == current_user.id %}bg-slate-50 dark:bg-slate-700/50{% endif %}">
+                            <a href="{% if member.user_id == current_user.id %}{{ url_for('user_profile', username=current_user.username) }}{% else %}{{ url_for('switch_account', account_id=member.user_id) }}{% endif %}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm {% if member.user_id == current_user.id %}bg-[var(--surface-2)]{% endif %}">
                                 {% set m_avatar = get_avatar_url(member.user) %}
-                                <div class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-600 flex-shrink-0">
+                                <div class="w-8 h-8 rounded-[6px] overflow-hidden border border-[var(--border-2)] flex-shrink-0">
                                     {% if m_avatar %}
                                     <img src="{{ m_avatar }}" class="w-full h-full object-cover">
                                     {% else %}
-                                    <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-[10px] font-bold">
+                                    <div class="w-full h-full bg-[var(--accent)] flex items-center justify-center text-black text-[10px] font-bold">
                                         {{ (member.business_name or member.user.username)[0].upper() }}
                                     </div>
                                     {% endif %}
@@ -232,23 +226,23 @@
                             </a>
                             {% endfor %}
                         {% else %}
-                            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm bg-slate-50 dark:bg-slate-700/50">
+                            <a href="{{ url_for('user_profile', username=current_user.username) }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm bg-[var(--surface-2)]">
                                 {% set avatar_url = get_avatar_url(current_user) %}
-                                <div class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 dark:border-slate-600 flex-shrink-0">
+                                <div class="w-8 h-8 rounded-[6px] overflow-hidden border border-[var(--border-2)] flex-shrink-0">
                                     {% if avatar_url %}
                                     <img src="{{ avatar_url }}" class="w-full h-full object-cover">
                                     {% else %}
-                                    <div class="w-full h-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-[10px] font-bold">{{ current_user.username[0].upper() }}</div>
+                                    <div class="w-full h-full bg-[var(--accent)] flex items-center justify-center text-black text-[10px] font-bold">{{ current_user.username[0].upper() }}</div>
                                     {% endif %}
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <div class="font-medium truncate">{{ current_user.username }}</div>
-                                    <div class="text-xs text-slate-400">Личный аккаунт</div>
+                                    <div class="text-xs text-[var(--text-2)]">Личный аккаунт</div>
                                 </div>
-                                <i class="fa-solid fa-check text-green-500 text-xs"></i>
+                                <i class="fa-solid fa-check text-[var(--accent)] text-xs"></i>
                             </a>
                         {% endif %}
-                        <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
+                        <div class="border-t border-[var(--border)] my-1"></div>
                         {% set ns3 = namespace(is_business=false) %}
                         {% for m in linked_accounts %}
                             {% if m.user_id == current_user.id and m.account_type == 'business' %}
@@ -256,24 +250,24 @@
                             {% endif %}
                         {% endfor %}
                         {% if ns3.is_business %}
-                        <a href="{{ url_for('switch_back_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-brand-middle font-medium">
+                        <a href="{{ url_for('switch_back_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--accent)] font-medium">
                             <i class="fa-solid fa-arrow-left text-base w-5"></i> Вернуться к личному
                         </a>
                         {% endif %}
-                        <a href="{{ url_for('accounts_list') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-600 dark:text-slate-400">
+                        <a href="{{ url_for('accounts_list') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text-2)]">
                             <i class="fa-solid fa-gear text-base w-5"></i> Управление аккаунтами
                         </a>
-                        <a href="{{ url_for('create_business_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-600 dark:text-slate-400">
+                        <a href="{{ url_for('create_business_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text-2)]">
                             <i class="fa-solid fa-plus text-base w-5"></i> Создать бизнес-аккаунт
                         </a>
                         {% if ns3.is_business %}
-                        <a href="{{ url_for('business_analytics') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-600 dark:text-slate-400">
+                        <a href="{{ url_for('business_analytics') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text-2)]">
                             <i class="fa-solid fa-chart-bar text-base w-5"></i> Аналитика
                         </a>
                         {% endif %}
                         {% if current_user.is_staff %}
-                        <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
-                        <a href="{{ url_for('admin_panel') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-amber-600">
+                        <div class="border-t border-[var(--border)] my-1"></div>
+                        <a href="{{ url_for('admin_panel') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-amber-500">
                             <i class="fa-solid fa-shield-halved text-base w-5"></i> Админ-панель
                         </a>
                         {% endif %}
@@ -287,8 +281,9 @@
 
     <script nonce="{{ csp_nonce }}">
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    if (savedTheme !== 'light') {
         document.documentElement.classList.add('dark');
+        if (!savedTheme) localStorage.setItem('theme', 'dark');
     }
     function toggleTheme() {
         document.documentElement.classList.toggle('dark');
@@ -328,40 +323,40 @@
         </div>
         <audio id="playerAudio" style="display:none;"></audio>
     </div>
-    <nav class="fixed bottom-0 w-full glass border-t border-slate-200 dark:border-dark-border md:hidden" style="z-index: 110; padding-bottom: env(safe-area-inset-bottom);">
+    <nav class="fixed bottom-0 w-full glass border-t border-[var(--border)] md:hidden" style="z-index: 110; padding-bottom: env(safe-area-inset-bottom);">
         <div class="flex items-center h-16">
-            <a href="{{ url_for('index') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint == 'index' %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+            <a href="{{ url_for('index') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint == 'index' %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] transition-colors{% endif %}">
                 <i class="fa-solid fa-house text-xl"></i>
                 <span>Лента</span>
             </a>
-            <a href="{{ url_for('shorts') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+            <a href="{{ url_for('shorts') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] transition-colors{% endif %}">
                 <i class="fa-solid fa-clapperboard text-xl"></i>
                 <span>Shorts</span>
             </a>
-            <a href="{{ url_for('messages') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+            <a href="{{ url_for('messages') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] transition-colors{% endif %}">
                 <i class="fa-solid fa-paper-plane text-xl"></i>
                 <span>Сообщения</span>
             </a>
-            <a href="{{ url_for('communities') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-brand-middle{% else %}text-slate-400 hover:text-brand-middle transition-colors{% endif %}">
+            <a href="{{ url_for('communities') }}" class="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}text-[var(--accent)]{% else %}text-[var(--text-2)] hover:text-[var(--accent)] transition-colors{% endif %}">
                 <i class="fa-solid fa-users text-xl"></i>
                 <span>Сообщества</span>
             </a>
             <div class="flex-1 relative" id="moreMenuContainer">
-                <button onclick="toggleMoreMenu()" class="w-full flex flex-col items-center justify-center gap-0.5 text-xs text-slate-400 hover:text-brand-middle transition-colors py-2">
+                <button onclick="toggleMoreMenu()" class="w-full flex flex-col items-center justify-center gap-0.5 text-xs text-[var(--text-2)] hover:text-[var(--accent)] transition-colors py-2">
                     <i class="fa-solid fa-ellipsis text-xl"></i>
                     <span>Ещё</span>
                 </button>
-                <div id="moreMenu" class="absolute bottom-16 right-0 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 min-w-[180px] w-[min(200px,calc(100vw-2rem))] hidden" style="z-index:100;">
-                    <a href="{{ url_for('user_profile', username=current_user.username) }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm">
+                <div id="moreMenu" class="absolute bottom-16 right-0 bg-[var(--surface)] rounded-xl shadow-2xl border border-[var(--border-2)] py-2 min-w-[180px] w-[min(200px,calc(100vw-2rem))] hidden" style="z-index:100;">
+                    <a href="{{ url_for('user_profile', username=current_user.username) }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm">
                         {% set avatar_url = get_avatar_url(current_user) %}
                         {% if avatar_url %}
-                        <img src="{{ avatar_url }}" class="w-8 h-8 rounded-full object-cover">
+                        <img src="{{ avatar_url }}" class="w-8 h-8 rounded-[6px] object-cover">
                         {% else %}
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-xs font-bold">{{ current_user.username[0].upper() }}</div>
+                        <div class="w-8 h-8 rounded-[6px] bg-[var(--accent)] flex items-center justify-center text-black text-xs font-bold">{{ current_user.username[0].upper() }}</div>
                         {% endif %}
                         <div class="flex-1 min-w-0">
                             <span class="font-medium block truncate">{{ current_user.username }}</span>
-                            <span class="text-xs text-slate-400">
+                            <span class="text-xs text-[var(--text-2)]">
                                 {% set ns = namespace(acctype='personal') %}
                                 {% for m in linked_accounts %}
                                     {% if m.user_id == current_user.id %}
@@ -372,8 +367,8 @@
                             </span>
                         </div>
                     </a>
-                    <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
-                    <a href="{{ url_for('accounts_list') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <div class="border-t border-[var(--border)] my-1"></div>
+                    <a href="{{ url_for('accounts_list') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-solid fa-arrows-rotate text-lg w-6"></i> Переключить аккаунт
                     </a>
                     {% set ns2 = namespace(is_business=false) %}
@@ -383,43 +378,43 @@
                         {% endif %}
                     {% endfor %}
                     {% if ns2.is_business %}
-                    <a href="{{ url_for('switch_back_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-brand-middle font-medium">
+                    <a href="{{ url_for('switch_back_account') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--accent)] font-medium">
                         <i class="fa-solid fa-arrow-left text-lg w-6"></i> Вернуться к личному
                     </a>
-                    <a href="{{ url_for('business_analytics') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <a href="{{ url_for('business_analytics') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-solid fa-chart-bar text-lg w-6"></i> Аналитика
                     </a>
                     {% endif %}
-                    <a href="{{ url_for('create') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <a href="{{ url_for('create') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-regular fa-square-plus text-lg w-6"></i> Создать пост
                     </a>
-                    <a href="{{ url_for('proxy_photo_editor') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <a href="{{ url_for('proxy_photo_editor') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-solid fa-wand-magic-sparkles text-lg w-6"></i> Фоторедактор
                     </a>
-                    <a href="{{ url_for('music_home') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <a href="{{ url_for('music_home') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-solid fa-music text-lg w-6"></i> Музыка
                     </a>
-                    <a href="{{ url_for('explore') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <a href="{{ url_for('explore') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-solid fa-magnifying-glass text-lg w-6"></i> Поиск
                     </a>
-                    <a href="{{ url_for('notifications') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <a href="{{ url_for('notifications') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-regular fa-bell text-lg w-6"></i> Уведомления
                         {% if unread_notifications > 0 %}
-                        <span class="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{{ unread_notifications }}</span>
+                        <span class="ml-auto bg-[var(--danger)] text-white text-[10px] px-2 py-0.5 rounded-full">{{ unread_notifications }}</span>
                         {% endif %}
                     </a>
-                    <a href="{{ url_for('drafts') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <a href="{{ url_for('drafts') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-regular fa-file-lines text-lg w-6"></i> Черновики
                     </a>
-                    <button onclick="toggleTheme(); toggleMoreMenu();" class="md:hidden flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-slate-700 dark:text-slate-300">
+                    <button onclick="toggleTheme(); toggleMoreMenu();" class="md:hidden flex items-center gap-3 w-full px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-[var(--text)]">
                         <i class="fa-solid fa-moon dark:hidden text-lg w-6"></i>
                         <i class="fa-solid fa-sun hidden dark:block text-yellow-400 text-lg w-6"></i>
                         <span class="dark:hidden">Тёмная тема</span>
                         <span class="hidden dark:block">Светлая тема</span>
                     </button>
                     {% if current_user.is_staff %}
-                    <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
-                    <a href="{{ url_for('admin_panel') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm text-amber-600">
+                    <div class="border-t border-[var(--border)] my-1"></div>
+                    <a href="{{ url_for('admin_panel') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface-2)] transition-colors text-sm text-amber-500">
                         <i class="fa-solid fa-shield-halved text-lg w-6"></i> Админ-панель
                     </a>
                     {% endif %}
@@ -444,8 +439,8 @@
     
     {% if not current_user.is_authenticated and request.endpoint not in ['login', 'register'] %}
     <div class="fixed top-4 right-4 z-50 flex gap-2">
-        <a href="{{ url_for('login') }}" class="px-4 py-2 border border-brand-middle text-brand-middle rounded-2xl hover:bg-brand-middle hover:text-white transition-all text-sm font-medium">Войти</a>
-        <a href="{{ url_for('register') }}" class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl hover:shadow-lg transition-all text-sm font-medium">Регистрация</a>
+        <a href="{{ url_for('login') }}" class="px-4 py-2 border border-[var(--accent)] text-[var(--accent)] rounded-lg hover:bg-[var(--accent)] hover:text-black transition-all text-sm font-medium">Войти</a>
+        <a href="{{ url_for('register') }}" class="px-4 py-2 bg-[var(--accent)] text-black rounded-lg font-bold hover:opacity-90 transition-all text-sm">Регистрация</a>
     </div>
     {% endif %}
     
