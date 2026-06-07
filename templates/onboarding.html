@@ -6,7 +6,7 @@
 
         <!-- Заголовок -->
         <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-gradient-to-tr from-brand-start via-brand-middle to-brand-end rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-4 shadow-lg">
+            <div class="w-16 h-16 bg-[var(--accent)] rounded-2xl flex items-center justify-center text-white text-3xl mx-auto mb-4 shadow-lg">
                 <i class="fa-solid fa-bolt-lightning"></i>
             </div>
             <h1 class="text-2xl font-extrabold tracking-tighter text-slate-900 dark:text-white">Настроим твой профиль</h1>
@@ -15,7 +15,7 @@
 
         <!-- Прогресс-бар (4 точки) -->
         <div class="flex justify-center gap-3 mb-8" id="progress-dots">
-            <span class="dot w-3 h-3 rounded-full bg-gradient-to-r from-brand-start to-brand-middle" data-step="1"></span>
+            <span class="dot w-3 h-3 rounded-full bg-[var(--accent)]" data-step="1"></span>
             <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="2"></span>
             <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="3"></span>
             <span class="dot w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" data-step="4"></span>
@@ -29,7 +29,7 @@
                 <p class="text-sm text-slate-500 mb-6">Загрузи аватар, чтобы тебя узнавали</p>
 
                 <div class="flex flex-col items-center gap-4 mb-6">
-                    <div id="avatar-preview-wrap" class="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
+                    <div id="avatar-preview-wrap" class="w-24 h-24 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-4xl font-bold overflow-hidden">
                         <span id="avatar-initial">{{ current_user.username[0].upper() }}</span>
                         <img id="avatar-preview-img" src="" alt="" class="hidden w-full h-full object-cover">
                     </div>
@@ -47,7 +47,7 @@
                     <button type="button" id="step1-skip" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
                         Продолжить без фото
                     </button>
-                    <button type="button" id="step1-next" class="flex-1 py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all">
+                    <button type="button" id="step1-next" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all">
                         Далее
                     </button>
                 </div>
@@ -64,21 +64,21 @@
                         name="bio"
                         rows="3"
                         placeholder="Пару слов о себе..."
-                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none"
+                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 resize-none"
                     ></textarea>
                     <input
                         id="occupation"
                         name="occupation"
                         type="text"
                         placeholder="Чем занимаешься?"
-                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                     >
                     <input
                         id="location"
                         name="location"
                         type="text"
                         placeholder="Откуда ты?"
-                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                     >
                 </div>
 
@@ -86,7 +86,7 @@
                     <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="2">
                         Пропустить
                     </button>
-                    <button type="button" class="flex-1 py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="2">
+                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="2">
                         Далее
                     </button>
                 </div>
@@ -103,14 +103,14 @@
                         name="interests"
                         type="text"
                         placeholder="музыка, спорт, путешествия..."
-                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-brand-middle text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                        class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                     >
                 </div>
 
                 <!-- Быстрые теги -->
                 <div class="flex flex-wrap gap-2 mb-6" id="interest-tags">
                     {% for tag in ['🎵 Музыка','🎮 Игры','📚 Книги','🏃 Спорт','✈️ Путешествия','🍕 Еда','🎨 Арт','💻 Технологии','📸 Фото','🎬 Кино'] %}
-                    <button type="button" class="tag-btn px-3 py-1.5 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-middle hover:text-white transition-colors" data-tag="{{ tag }}">
+                    <button type="button" class="tag-btn px-3 py-1.5 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-[var(--accent)] hover:text-white transition-colors" data-tag="{{ tag }}">
                         {{ tag }}
                     </button>
                     {% endfor %}
@@ -120,7 +120,7 @@
                     <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="3">
                         Пропустить
                     </button>
-                    <button type="button" class="flex-1 py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="3">
+                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="3">
                         Далее
                     </button>
                 </div>
@@ -137,7 +137,7 @@
                             <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Закрытый профиль</p>
                             <p class="text-xs text-slate-400 mt-0.5">Публикации видны только подписчикам</p>
                         </div>
-                        <input type="checkbox" id="is_private" name="is_private" class="w-5 h-5 rounded border-slate-300 text-brand-middle focus:ring-brand-middle">
+                        <input type="checkbox" id="is_private" name="is_private" class="w-5 h-5 rounded border-slate-300 text-[var(--accent)] focus:ring-[var(--accent)]">
                     </label>
 
                     <label class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl cursor-pointer">
@@ -145,7 +145,7 @@
                             <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Одобрять подписчиков</p>
                             <p class="text-xs text-slate-400 mt-0.5">Запросы на подписку нужно подтверждать</p>
                         </div>
-                        <input type="checkbox" id="approve_followers" name="approve_followers" class="w-5 h-5 rounded border-slate-300 text-brand-middle focus:ring-brand-middle">
+                        <input type="checkbox" id="approve_followers" name="approve_followers" class="w-5 h-5 rounded border-slate-300 text-[var(--accent)] focus:ring-[var(--accent)]">
                     </label>
                 </div>
 
@@ -153,7 +153,7 @@
                     <button type="button" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all skip-btn" data-step="4">
                         Завершить позже
                     </button>
-                    <button type="button" class="flex-1 py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="4">
+                    <button type="button" class="flex-1 py-3 bg-[var(--accent)] text-black rounded-2xl font-bold text-sm hover:shadow-lg transition-all next-btn" data-step="4">
                         Готово!
                     </button>
                 </div>
@@ -176,10 +176,10 @@
         document.querySelectorAll('#progress-dots .dot').forEach((dot, i) => {
             if (i + 1 <= n) {
                 dot.classList.remove('bg-slate-300', 'dark:bg-slate-600');
-                dot.classList.add('bg-gradient-to-r', 'from-brand-start', 'to-brand-middle');
+                dot.classList.add('bg-[var(--accent)]');
             } else {
                 dot.classList.add('bg-slate-300');
-                dot.classList.remove('bg-gradient-to-r', 'from-brand-start', 'to-brand-middle');
+                dot.classList.remove('bg-[var(--accent)]');
             }
         });
         current = n;
@@ -300,11 +300,11 @@
             if (parts.includes(tag)) {
                 const idx = parts.indexOf(tag);
                 parts.splice(idx, 1);
-                this.classList.remove('bg-brand-middle', 'text-white');
+                this.classList.remove('bg-[var(--accent)]', 'text-white');
                 this.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
             } else {
                 parts.push(tag);
-                this.classList.add('bg-brand-middle', 'text-white');
+                this.classList.add('bg-[var(--accent)]', 'text-white');
                 this.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-300');
             }
             input.value = parts.join(', ');

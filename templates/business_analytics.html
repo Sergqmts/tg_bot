@@ -116,7 +116,7 @@
                     {% for pd in posts_data %}
                     <tr class="border-b border-slate-100 dark:border-slate-800">
                         <td class="py-2 pr-4">
-                            <a href="{{ url_for('view_post', post_id=pd.post.id) }}" class="hover:text-brand-middle truncate block max-w-xs">
+                            <a href="{{ url_for('view_post', post_id=pd.post.id) }}" class="hover:text-[var(--accent)] truncate block max-w-xs">
                                 {{ pd.post.body[:80] or '(без текста)' }}{% if pd.post.body and pd.post.body|length > 80 %}...{% endif %}
                             </a>
                             <div class="text-[10px] text-slate-400">{{ pd.post.created_at.strftime('%d.%m.%Y') }}</div>

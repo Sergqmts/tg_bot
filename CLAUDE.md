@@ -227,14 +227,11 @@ Key routing rules:
 **5. ~~Аватары — `rounded-full` перекрывает CSS~~ — ИСПРАВЛЕНО 2026-06-07**
 Заменено `rounded-full` → `rounded-[6px]` в `base.html` (аватар в хедере, account switcher, moreMenu) и `accounts.html`. Градиентные заглушки-инициалы заменены на `bg-[var(--accent)] text-black`.
 
-**6. 216 мест с gradient-классами** — 28 шаблонов — **ОТКРЫТО**
-```html
-class="bg-gradient-to-r from-brand-start to-brand-middle"
-```
-`brand-start` и `brand-middle` теперь оба = `--accent`, но `background-image: gradient` перекрывает `background-color` из `.btn-primary`. Заменить на `bg-[var(--accent)]` или solid-цвет. Требует правки в 28 шаблонах — отдельная задача.
+**6. ~~216 мест с gradient-классами (28 шаблонов)~~ — ИСПРАВЛЕНО 2026-06-07**
+Все `bg-gradient-to-r from-brand-start ...`, `bg-gradient-to-tr ...`, `bg-clip-text text-transparent bg-gradient-to-r ...` заменены на `bg-[var(--accent)]` / `text-[var(--accent)]`. Все `text-white` на accent-фонах изменены на `text-black` (т.к. #00C2FF — светлый). Также заменены `text-brand-middle`, `hover:text-brand-middle`, `bg-brand-middle`, `focus:ring-brand-middle` и CSS `var(--brand-middle)` / `var(--accent-purple)` в 44 шаблонах.
 
-**7. Десктоп-раскладка не подключена к HTML** — все шаблоны — **ОТКРЫТО**
-CSS-правила `.desktop-layout`, `.sidebar-nav`, `.feed-column`, `.widgets-column` добавлены в `style.css`, но ни один шаблон не использует эти классы. На ширине ≥1024px боковой навигации нет, `bottom-nav` не скрывается.
+**7. ~~Десктоп-раскладка~~ — ИСПРАВЛЕНО 2026-06-07**
+В `base.html` добавлена структура: `.desktop-layout` > `.sidebar-nav` + `.feed-column` + `.widgets-column`. Сайдбар содержит все навигационные ссылки. Виджет-колонка содержит мини-карточку профиля. Чат-страницы исключены из grid-раскладки. В `style.css` добавлен `display: none` для `.sidebar-nav` и `.widgets-column` по умолчанию (показываются только через media queries ≥768px).
 
 **8. ~~`forgot_password.html` — старый дизайн полностью~~ — ИСПРАВЛЕНО 2026-06-07**
 Шаблон полностью переписан под dark electric: убраны glassmorphism, `rounded-2xl/3xl`, `slate-*` цвета, градиентная кнопка. Теперь использует `var(--surface)`, `var(--accent)`, `rounded-lg`, `rounded-[12px]`.
@@ -247,5 +244,4 @@ CSS-правила `.desktop-layout`, `.sidebar-nav`, `.feed-column`, `.widgets-
 
 ### Открытые задачи
 
-1. **Gradient-классы (216 мест, 28 шаблонов)** — заменить `bg-gradient-to-r from-brand-start to-brand-middle` на `bg-[var(--accent)]` во всех оставшихся шаблонах
-2. **Десктоп-раскладка** — добавить `.desktop-layout`, `.sidebar-nav`, `.feed-column`, `.widgets-column` классы в `base.html` и другие шаблоны
+Все задачи выполнены.

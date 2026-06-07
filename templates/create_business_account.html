@@ -14,21 +14,21 @@
             {{ form.hidden_tag() }}
             <div class="mb-4">
                 <label class="block text-sm font-medium mb-1">{{ form.business_name.label }}</label>
-                {{ form.business_name(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-brand-middle outline-none") }}
+                {{ form.business_name(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-[var(--accent)] outline-none") }}
                 {% for error in form.business_name.errors %}
                 <p class="text-red-500 text-xs mt-1">{{ error }}</p>
                 {% endfor %}
             </div>
             <div class="mb-6">
                 <label class="block text-sm font-medium mb-1">{{ form.business_category.label }}</label>
-                {{ form.business_category(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-brand-middle outline-none") }}
+                {{ form.business_category(class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl py-3 px-4 focus:ring-2 focus:ring-[var(--accent)] outline-none") }}
                 <p class="text-xs text-slate-400 mt-1">Например: Магазин, Бренд, СМИ, Образование</p>
             </div>
             <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 mb-6 text-sm text-slate-600 dark:text-slate-400">
                 <i class="fa-solid fa-info-circle mr-1"></i>
                 Username будет сгенерирован автоматически. Вы сможете войти в этот аккаунт только через переключение.
             </div>
-            {{ form.submit(class="w-full py-3 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl font-semibold hover:shadow-lg transition-all cursor-pointer") }}
+            {{ form.submit(class="w-full py-3 bg-[var(--accent)] text-black rounded-2xl font-semibold hover:shadow-lg transition-all cursor-pointer") }}
         </form>
     </div>
 </div>

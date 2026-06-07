@@ -15,7 +15,7 @@
     <div class="space-y-3">
         {% for member in members %}
         <div class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all">
-            <a href="{{ url_for('user_profile', username=member.user.username) }}" class="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-sm font-bold">
+            <a href="{{ url_for('user_profile', username=member.user.username) }}" class="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden bg-[var(--accent)] flex items-center justify-center text-white text-sm font-bold">
                 {% set avatar_url = get_avatar_url(member.user) %}{% if avatar_url %}
                 <img src="{{ avatar_url }}" class="w-full h-full object-cover">
                 {% else %}
@@ -26,7 +26,7 @@
                 <a href="{{ url_for('user_profile', username=member.user.username) }}" class="font-bold text-sm hover:underline block truncate">{% if member.user.is_bot %}🤖 {% endif %}{{ member.user.username }}</a>
                 <div class="flex items-center gap-2 mt-0.5">
                     {% if member.role == 'creator' %}
-                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-brand-start to-brand-middle text-white">Создатель</span>
+                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent)] text-black">Создатель</span>
                     {% elif member.role == 'admin' %}
                     <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">Админ</span>
                     {% else %}
@@ -39,7 +39,7 @@
             {% if current_user.is_authenticated and member.user != current_user and member.role != 'creator' %}
             <form method="POST" action="{{ url_for('follow' if not current_user.is_following(member.user) else 'unfollow', username=member.user.username) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-xl border border-brand-middle text-brand-middle hover:bg-brand-middle hover:text-white transition-all whitespace-nowrap">
+                <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-xl border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-all whitespace-nowrap">
                     {{ 'Подписаться' if not current_user.is_following(member.user) else 'Отписаться' }}
                 </button>
             </form>

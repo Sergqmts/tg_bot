@@ -187,7 +187,7 @@
                     <audio src="{{ comment.media_url }}" controls class="w-full"></audio>
                     {% elif comment.media_type == 'document' %}
                     <a href="{{ comment.media_url }}" download class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-sm">
-                        <i class="fa-solid fa-file text-brand-middle"></i>
+                        <i class="fa-solid fa-file text-[var(--accent)]"></i>
                         <span>Скачать файл</span>
                     </a>
                     {% else %}
@@ -273,10 +273,10 @@ function closeCommentModal() {
 
 <div class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center hidden" id="commentImageModal" onclick="closeCommentModal()">
     <div class="absolute top-4 right-4 flex items-center gap-4 z-10">
-        <a id="commentModalDownload" href="#" download class="text-white text-xl hover:text-brand-middle transition-colors" title="Скачать">
+        <a id="commentModalDownload" href="#" download class="text-white text-xl hover:text-[var(--accent)] transition-colors" title="Скачать">
             <i class="fa-solid fa-download"></i>
         </a>
-        <span class="text-white text-3xl cursor-pointer hover:text-brand-middle transition-colors">&times;</span>
+        <span class="text-white text-3xl cursor-pointer hover:text-[var(--accent)] transition-colors">&times;</span>
     </div>
     <img id="commentModalImg" class="max-h-[90vh] max-w-[90vw] object-contain hidden">
     <video id="commentModalVideo" class="max-h-[90vh] max-w-[90vw] object-contain hidden" controls autoplay></video>

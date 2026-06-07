@@ -292,13 +292,96 @@
     }
     </script>
 
-    <main class="{% if request.endpoint in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}h-screen{% else %}pt-20 pb-24 lg:pt-28 max-w-6xl mx-auto px-4{% endif %}" style="{% if request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}padding-bottom: calc(6rem + env(safe-area-inset-bottom));{% endif %}">
+    {% set is_chat = request.endpoint in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}
+    <main class="{% if is_chat %}h-screen overflow-hidden{% else %}pt-20 pb-24 lg:pt-28{% endif %}" style="{% if not is_chat %}padding-bottom: calc(6rem + env(safe-area-inset-bottom));{% endif %}">
+        {% if not is_chat %}
         {% with messages = get_flashed_messages() %}
         {% for message in messages %}
         <div class="flash-message">{{ message }}</div>
         {% endfor %}
         {% endwith %}
-        {% block content %}{% endblock %}
+        {% endif %}
+        <div class="{% if not is_chat %}desktop-layout{% endif %}">
+            {% if not is_chat %}
+            <aside class="sidebar-nav">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('index') }}" class="sidebar-nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+                    <i class="fa-solid fa-house text-lg w-5 text-center"></i>
+                    <span>Лента</span>
+                </a>
+                <a href="{{ url_for('shorts') }}" class="sidebar-nav-item {% if request.endpoint in ['shorts', 'view_shorts', 'create_shorts'] %}active{% endif %}">
+                    <i class="fa-solid fa-clapperboard text-lg w-5 text-center"></i>
+                    <span>Shorts</span>
+                </a>
+                <a href="{{ url_for('messages') }}" class="sidebar-nav-item {% if request.endpoint in ['messages', 'conversation', 'chat_view', 'chat_add_member', 'chat_members', 'chat_edit', 'chat_shared_media', 'forward_message', 'direct_edit', 'direct_shared_media'] %}active{% endif %}">
+                    <i class="fa-solid fa-paper-plane text-lg w-5 text-center"></i>
+                    <span>Сообщения</span>
+                </a>
+                <a href="{{ url_for('communities') }}" class="sidebar-nav-item {% if request.endpoint in ['communities', 'community', 'create_community', 'community_members', 'community_requests', 'community_events', 'community_post'] %}active{% endif %}">
+                    <i class="fa-solid fa-users text-lg w-5 text-center"></i>
+                    <span>Сообщества</span>
+                </a>
+                <a href="{{ url_for('explore') }}" class="sidebar-nav-item {% if request.endpoint == 'explore' %}active{% endif %}">
+                    <i class="fa-solid fa-magnifying-glass text-lg w-5 text-center"></i>
+                    <span>Поиск</span>
+                </a>
+                <a href="{{ url_for('music_home') }}" class="sidebar-nav-item {% if request.endpoint in ['music_home', 'music_search'] %}active{% endif %}">
+                    <i class="fa-solid fa-music text-lg w-5 text-center"></i>
+                    <span>Музыка</span>
+                </a>
+                <a href="{{ url_for('notifications') }}" class="sidebar-nav-item {% if request.endpoint == 'notifications' %}active{% endif %}">
+                    <i class="fa-regular fa-bell text-lg w-5 text-center"></i>
+                    <span>Уведомления</span>
+                    {% if unread_notifications > 0 %}
+                    <span class="ml-auto text-xs bg-[var(--danger)] text-white px-1.5 py-0.5 rounded-full font-bold">{{ unread_notifications }}</span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('create') }}" class="sidebar-nav-item">
+                    <i class="fa-regular fa-square-plus text-lg w-5 text-center"></i>
+                    <span>Создать</span>
+                </a>
+                <div style="margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border);">
+                    <a href="{{ url_for('user_profile', username=current_user.username) }}" class="sidebar-nav-item {% if request.endpoint == 'user_profile' and request.view_args.get('username') == current_user.username %}active{% endif %}">
+                        <div class="w-6 h-6 rounded-[4px] overflow-hidden flex-shrink-0">
+                            {% set sidebar_avatar = get_avatar_url(current_user) %}
+                            {% if sidebar_avatar %}
+                            <img src="{{ sidebar_avatar }}" class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full bg-[var(--accent)] flex items-center justify-center text-black text-[9px] font-bold">{{ current_user.username[0].upper() }}</div>
+                            {% endif %}
+                        </div>
+                        <span class="truncate">{{ current_user.username }}</span>
+                    </a>
+                </div>
+                {% endif %}
+            </aside>
+            {% endif %}
+            <div class="{% if not is_chat %}feed-column min-w-0{% else %}h-full{% endif %}">
+                {% block content %}{% endblock %}
+            </div>
+            {% if not is_chat %}
+            <aside class="widgets-column">
+                {% if current_user.is_authenticated %}
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem;">
+                    <a href="{{ url_for('user_profile', username=current_user.username) }}" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                        <div style="width: 40px; height: 40px; border-radius: 6px; overflow: hidden; flex-shrink: 0;">
+                            {% set widget_avatar = get_avatar_url(current_user) %}
+                            {% if widget_avatar %}
+                            <img src="{{ widget_avatar }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                            <div style="width: 100%; height: 100%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #000; font-size: 13px; font-weight: 700;">{{ current_user.username[0].upper() }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text);">{{ current_user.username }}</div>
+                            <div style="font-size: 12px; color: var(--text-2);">Мой профиль</div>
+                        </div>
+                    </a>
+                </div>
+                {% endif %}
+            </aside>
+            {% endif %}
+        </div>
     </main>
 
     {% if current_user.is_authenticated and request.endpoint not in ['chat_view', 'conversation', 'chats_list', 'create_chat', 'chat_members', 'chat_add_member', 'forward_message', 'edit_chat', 'delete_message', 'chats_api'] %}

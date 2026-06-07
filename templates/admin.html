@@ -3,7 +3,7 @@
 {% block content %}
 <div class="max-w-6xl mx-auto">
     <div class="flex items-center gap-3 mb-6">
-        <h1 class="text-2xl font-bold"><i class="fa-solid fa-shield-halved text-brand-middle"></i> Admin Panel</h1>
+        <h1 class="text-2xl font-bold"><i class="fa-solid fa-shield-halved text-[var(--accent)]"></i> Admin Panel</h1>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
@@ -50,7 +50,7 @@
                         <td class="py-2 font-mono text-xs max-w-[200px] truncate">{{ bot.bot_token }}</td>
                         <td class="py-2 text-xs text-slate-500 max-w-[200px] truncate">{{ bot.bio or '—' }}</td>
                         <td class="py-2">
-                            <a href="{{ url_for('bot_settings', bot_id=bot.id) }}" class="text-xs text-brand-middle hover:underline">Settings</a>
+                            <a href="{{ url_for('bot_settings', bot_id=bot.id) }}" class="text-xs text-[var(--accent)] hover:underline">Settings</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -154,7 +154,7 @@
                         </td>
                         <td class="py-2">
                             {% if u.is_staff %}
-                            <span class="text-brand-middle">✅ Staff</span>
+                            <span class="text-[var(--accent)]">✅ Staff</span>
                             {% else %}
                             —
                             {% endif %}
@@ -203,7 +203,7 @@
                     {% for c in communities %}
                     <tr class="border-b dark:border-dark-border hover:bg-slate-50 dark:hover:bg-dark-card">
                         <td class="py-2 font-mono text-xs">{{ c.id }}</td>
-                        <td class="py-2"><a href="{{ url_for('community', slug=c.slug) }}" class="text-brand-middle hover:underline">{{ c.name }}</a></td>
+                        <td class="py-2"><a href="{{ url_for('community', slug=c.slug) }}" class="text-[var(--accent)] hover:underline">{{ c.name }}</a></td>
                         <td class="py-2 text-xs">@{{ c.creator.username }}</td>
                         <td class="py-2">
                             {% if c.is_banned %}

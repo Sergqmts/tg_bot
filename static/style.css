@@ -2663,6 +2663,12 @@ textarea,
     border-radius: 8px;
 }
 
+/* Hide sidebar/widgets by default (shown only via media queries below) */
+.sidebar-nav,
+.widgets-column {
+    display: none;
+}
+
 /* ===== DESKTOP LAYOUT (≥1024px) ===== */
 @media (min-width: 1024px) {
   /* Three-column grid */

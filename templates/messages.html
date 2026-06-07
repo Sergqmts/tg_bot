@@ -3,8 +3,8 @@
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 pt-24 pb-24 lg:pt-28">
     <div class="flex items-center justify-between mb-8">
-        <h1 class="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-start to-brand-middle">Сообщения</h1>
-        <a href="{{ url_for('create_chat') }}" class="px-4 py-2 bg-gradient-to-r from-brand-start to-brand-middle text-white rounded-2xl hover:shadow-lg transition-all text-sm font-medium">
+        <h1 class="text-3xl font-extrabold tracking-tighter text-[var(--accent)]">Сообщения</h1>
+        <a href="{{ url_for('create_chat') }}" class="px-4 py-2 bg-[var(--accent)] text-black rounded-2xl hover:shadow-lg transition-all text-sm font-medium">
             Новый чат
         </a>
     </div>
@@ -14,7 +14,7 @@
             <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </span>
-            <input type="text" placeholder="Поиск сообщений..." class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-brand-middle transition-all outline-none text-sm">
+            <input type="text" placeholder="Поиск сообщений..." class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-2xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-[var(--accent)] transition-all outline-none text-sm">
         </div>
     </div>
     
@@ -27,7 +27,7 @@
                 <div class="flex items-center gap-3">
                     <a href="{{ url_for('user_profile', username=user.username) }}">
                         {% set avatar_url = get_avatar_url(user) %}
-                        <div class="w-10 h-10 rounded-full {% if avatar_url %}overflow-hidden{% else %}bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-sm font-bold{% endif %}">
+                        <div class="w-10 h-10 rounded-full {% if avatar_url %}overflow-hidden{% else %}bg-[var(--accent)] flex items-center justify-center text-white text-sm font-bold{% endif %}">
                             {% if avatar_url %}
                             <img src="{{ avatar_url }}" class="w-full h-full object-cover">
                             {% else %}
@@ -37,7 +37,7 @@
                     </a>
                     <a href="{{ url_for('user_profile', username=user.username) }}" class="font-bold text-sm">{% if user.is_bot %}🤖 {% endif %}{{ user.username }}</a>
                 </div>
-                <a href="{{ url_for('conversation', username=user.username) }}" class="text-xs font-bold text-brand-middle hover:text-brand-end transition-colors">
+                <a href="{{ url_for('conversation', username=user.username) }}" class="text-xs font-bold text-[var(--accent)] hover:text-[var(--accent)] transition-colors">
                     Написать
                 </a>
             </div>
@@ -53,7 +53,7 @@
     <div class="space-y-3 mb-8">
         {% for item in group_chats %}
         <a href="{{ url_for('chat_view', chat_id=item.chat.id) }}" class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all group">
-            <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-brand-start via-brand-middle to-brand-end flex items-center justify-center text-white text-xl flex-shrink-0">
+            <div class="w-12 h-12 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-xl flex-shrink-0">
                 👥
             </div>
             <div class="flex-1 min-w-0">
@@ -65,7 +65,7 @@
                 <div class="text-[10px] text-slate-400">{{ item.last.created_at.strftime('%H:%M') }}</div>
                 {% endif %}
                 {% if item.unread > 0 %}
-                <div class="w-5 h-5 bg-brand-middle text-white text-[10px] flex items-center justify-center rounded-full font-bold">{{ item.unread }}</div>
+                <div class="w-5 h-5 bg-[var(--accent)] text-black text-[10px] flex items-center justify-center rounded-full font-bold">{{ item.unread }}</div>
                 {% endif %}
             </div>
         </a>
@@ -81,7 +81,7 @@
         {% for conv in conversations %}
         <a href="{{ url_for('conversation', username=conv.user.username) }}" class="glass rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all group">
             {% set avatar_url = get_avatar_url(conv.user) %}
-            <div class="w-12 h-12 rounded-full flex-shrink-0 {% if avatar_url %}overflow-hidden{% else %}bg-gradient-to-tr from-brand-start to-brand-middle flex items-center justify-center text-white text-sm font-bold{% endif %}">
+            <div class="w-12 h-12 rounded-full flex-shrink-0 {% if avatar_url %}overflow-hidden{% else %}bg-[var(--accent)] flex items-center justify-center text-white text-sm font-bold{% endif %}">
                 {% if avatar_url %}
                 <img src="{{ avatar_url }}" class="w-full h-full object-cover">
                 {% else %}
@@ -95,7 +95,7 @@
             <div class="flex flex-col items-end gap-1 flex-shrink-0">
                 <div class="text-[10px] text-slate-400">{{ conv.last.created_at.strftime('%H:%M') }}</div>
                 {% if conv.unread > 0 %}
-                <div class="w-5 h-5 bg-brand-middle text-white text-[10px] flex items-center justify-center rounded-full font-bold">{{ conv.unread }}</div>
+                <div class="w-5 h-5 bg-[var(--accent)] text-black text-[10px] flex items-center justify-center rounded-full font-bold">{{ conv.unread }}</div>
                 {% endif %}
             </div>
         </a>
